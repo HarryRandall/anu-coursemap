@@ -33,11 +33,12 @@ test("server-renders the routed Coursemap degree planner", async () => {
   const html = await response.text();
   assert.match(html, /Coursemap · Your ANU degree, mapped/i);
   assert.match(html, /coursemap/i);
-  assert.match(html, /Your degree, mapped\./i);
+  assert.match(html, /Course plan/i);
   assert.match(html, /Bachelor of Computing/i);
   assert.match(html, /Software Development/i);
   assert.match(html, /COMP1100/i);
-  assert.match(html, /Roadmap board/i);
+  assert.match(html, /class="year-row"/i);
+  assert.match(html, /Semester 2/i);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
 
@@ -62,7 +63,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(planPage, /Roadmap board/);
+  assert.match(planPage, /year-board/);
   assert.match(planPage, /CourseDrawer/);
   assert.match(planPage, /onDrop/);
   assert.match(adminPage, /Changed pages/);
