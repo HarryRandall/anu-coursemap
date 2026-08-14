@@ -43,6 +43,13 @@ Replace the publishable-key placeholder with the local `Publishable` value from
 `supabase status`, then open [http://localhost:3000](http://localhost:3000). Do
 not commit `.env.local` or any Supabase secret key.
 
+Student and admin routes require a local Supabase account when
+`COURSEMAP_DEMO_MODE=false`. Request a magic link at `/auth/sign-in`, then open
+the message in the local Mailpit interface reported by `supabase status`.
+Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` so PKCE begins and completes
+on the same trusted origin. Exact `COURSEMAP_DEMO_MODE=true` is reserved for
+the isolated prototype fixture and rendered CI tests.
+
 A free hosted development project is reserved in Sydney, but it currently has
 no migrations or public tables. The application, Auth and database remain local
 until a hosted migration is explicitly approved. Vercel deployment is also
@@ -50,21 +57,21 @@ intentionally disabled.
 
 ## Commands
 
-| Command                | Purpose                                        |
-| ---------------------- | ---------------------------------------------- |
-| `npm run dev`          | Start the development server                   |
-| `npm run db:start`     | Start the full local Supabase stack            |
-| `npm run db:reset`     | Rebuild the local database from migrations     |
-| `npm run db:test`      | Run local pgTAP database tests                 |
-| `npm run db:lint`      | Run strict local schema linting                |
-| `npm run db:types`     | Regenerate committed local database types      |
-| `npm run format:check` | Check repository formatting                    |
-| `npm run lint`         | Run ESLint and accessibility rules             |
-| `npm run typecheck`    | Run strict TypeScript checks                   |
-| `npm test`             | Build and run rendered-route integration tests |
-| `npm run check`        | Run formatting, linting and type checks        |
-| `npm run verify`       | Run the complete local quality gate            |
-| `npm run build`        | Create the Vercel-compatible production build  |
+| Command                | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
+| `npm run dev`          | Start the development server                  |
+| `npm run db:start`     | Start the full local Supabase stack           |
+| `npm run db:reset`     | Rebuild the local database from migrations    |
+| `npm run db:test`      | Run local pgTAP database tests                |
+| `npm run db:lint`      | Run strict local schema linting               |
+| `npm run db:types`     | Regenerate committed local database types     |
+| `npm run format:check` | Check repository formatting                   |
+| `npm run lint`         | Run ESLint and accessibility rules            |
+| `npm run typecheck`    | Run strict TypeScript checks                  |
+| `npm test`             | Run unit, build and rendered-route tests      |
+| `npm run check`        | Run formatting, linting and type checks       |
+| `npm run verify`       | Run the complete local quality gate           |
+| `npm run build`        | Create the Vercel-compatible production build |
 
 ## Repository guide
 
@@ -79,7 +86,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURIT
 
 ## Status
 
-Private alpha. The native Next.js foundation and local Supabase database are in
-place. The reserved hosted project remains empty. Authentication, user plans and
-verified catalogue ingestion are being introduced through focused pull requests
-before any hosted migration or Vercel deployment.
+Private alpha. The native Next.js foundation, local Supabase database and local
+magic-link authentication are in place. The reserved hosted project remains
+empty. Persistent user plans and verified catalogue ingestion are being
+introduced through focused pull requests before any hosted migration or Vercel
+deployment.

@@ -18,7 +18,11 @@ before(
       [nextBin, "start", "--hostname", "127.0.0.1", "--port", "3217"],
       {
         cwd: fileURLToPath(projectRoot),
-        env: { ...process.env, NODE_ENV: "production" },
+        env: {
+          ...process.env,
+          NODE_ENV: "production",
+          COURSEMAP_DEMO_MODE: "true",
+        },
         stdio: ["ignore", "pipe", "pipe"],
       },
     );
@@ -60,6 +64,50 @@ async function render(path = "/plan") {
     headers: { accept: "text/html" },
   });
 }
+
+test("keeps the public entry, catalogue and authentication routes accessible", async () => {
+  const [homeResponse, coursesResponse, signInResponse] = await Promise.all([
+    render("/"),
+    render("/courses"),
+    render("/auth/sign-in?next=%2F%2Fevil.example%2Fplan"),
+  ]);
+
+  assert.equal(homeResponse.status, 200);
+  assert.equal(coursesResponse.status, 200);
+  assert.equal(signInResponse.status, 200);
+
+  const homeHtml = await homeResponse.text();
+  const signInHtml = await signInResponse.text();
+  assert.match(homeHtml, /See how every course fits before you enrol/i);
+  assert.match(homeHtml, /Explore courses/i);
+  assert.match(signInHtml, /Sign in to your plan/i);
+  assert.match(signInHtml, /name="next" value="\/plan"/i);
+});
+
+test("fails closed for malformed auth handlers and cross-origin logout", async () => {
+  const [callbackResponse, confirmResponse, logoutResponse] = await Promise.all(
+    [
+      fetch(`${origin}/auth/callback?code=&code=duplicate`, {
+        redirect: "manual",
+      }),
+      fetch(`${origin}/auth/confirm?token_hash=value&type=magiclink`, {
+        redirect: "manual",
+      }),
+      fetch(`${origin}/auth/logout`, {
+        method: "POST",
+        headers: { origin: "https://evil.example" },
+        redirect: "manual",
+      }),
+    ],
+  );
+
+  assert.equal(callbackResponse.status, 303);
+  assert.equal(confirmResponse.status, 303);
+  assert.equal(logoutResponse.status, 403);
+  for (const response of [callbackResponse, confirmResponse, logoutResponse]) {
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
+  }
+});
 
 test("server-renders the routed Coursemap degree planner", async () => {
   const response = await render("/plan");
@@ -138,6 +186,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
     sidebar,
     topbar,
     layout,
+    proxy,
+    logoutRoute,
     packageJson,
   ] = await Promise.all([
     readFile(new URL("../app/plan/page.tsx", import.meta.url), "utf8"),
@@ -174,6 +224,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
       "utf8",
     ),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../proxy.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/auth/logout/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
@@ -247,6 +299,18 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(providers, /top-4/);
   assert.match(layout, /Coursemap/);
   assert.match(layout, /og\.png/);
+  assert.match(proxy, /request:\s*\{ headers: request\.headers \}/);
+  assert.match(
+    proxy,
+    /const downstreamResponse = applyTo\(\s*NextResponse\.next\(\{[\s\S]*?request:\s*\{ headers: request\.headers \}/,
+  );
+  assert.match(
+    proxy,
+    /return authenticated\s*\?\s*privateNoStore\(downstreamResponse\)/,
+  );
+  assert.match(providers, /event\.persisted/);
+  assert.match(providers, /window\.location\.reload\(\)/);
+  assert.match(logoutRoute, /Clear-Site-Data/);
   assert.match(packageJson, /"name": "anu-coursemap"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 

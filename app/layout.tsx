@@ -1,25 +1,19 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
+import { getAuthContext } from "@/lib/auth/viewer";
+import { getCanonicalSiteOrigin, isDemoMode } from "@/lib/supabase/config";
 import "./globals.css";
 import { AppProvider } from "./providers";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ??
-    requestHeaders.get("host") ??
-    "localhost:3000";
-  const protocol =
-    requestHeaders.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
+  const origin = getCanonicalSiteOrigin() ?? "http://localhost:3000";
 
   return {
     title: "Coursemap · Your ANU degree, mapped",
     description:
       "A clear, modern degree roadmap for courses, prerequisites, majors and approvals.",
+    icons: { icon: "/favicon.svg" },
     openGraph: {
       title: "Coursemap · Your ANU degree, mapped",
       description:
@@ -44,15 +38,24 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const demoMode = isDemoMode();
+  const { viewer, canAccessAdmin } = await getAuthContext();
+
   return (
     <html lang="en">
       <body className={`${GeistSans.variable} ${GeistMono.variable}`}>
-        <AppProvider>{children}</AppProvider>
+        <AppProvider
+          demoMode={demoMode}
+          viewer={viewer}
+          canAccessAdmin={canAccessAdmin}
+        >
+          {children}
+        </AppProvider>
       </body>
     </html>
   );

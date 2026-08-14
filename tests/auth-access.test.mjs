@@ -1,0 +1,130 @@
+import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import test, { after, before } from "node:test";
+
+const projectRoot = new URL("../", import.meta.url);
+const origin = "http://127.0.0.1:3218";
+let server;
+
+before(
+  async () => {
+    const nextBin = fileURLToPath(
+      new URL("../node_modules/next/dist/bin/next", import.meta.url),
+    );
+    server = spawn(
+      process.execPath,
+      [nextBin, "start", "--hostname", "127.0.0.1", "--port", "3218"],
+      {
+        cwd: fileURLToPath(projectRoot),
+        env: {
+          ...process.env,
+          NODE_ENV: "production",
+          COURSEMAP_DEMO_MODE: "false",
+          NEXT_PUBLIC_SITE_URL: origin,
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9",
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+
+    let diagnostics = "";
+    server.stdout.on("data", (chunk) => {
+      diagnostics += chunk;
+    });
+    server.stderr.on("data", (chunk) => {
+      diagnostics += chunk;
+    });
+
+    const deadline = Date.now() + 20_000;
+    while (Date.now() < deadline) {
+      if (server.exitCode !== null) {
+        throw new Error(
+          `Next.js exited before it became ready:\n${diagnostics}`,
+        );
+      }
+      try {
+        const response = await fetch(`${origin}/auth/sign-in`);
+        if (response.ok) return;
+      } catch {
+        // The server is still starting.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    throw new Error(`Timed out waiting for Next.js:\n${diagnostics}`);
+  },
+  { timeout: 30_000 },
+);
+
+after(() => {
+  server?.kill("SIGTERM");
+});
+
+function request(path, init = {}) {
+  return fetch(`${origin}${path}`, init);
+}
+
+test("keeps anonymous public routes available without demo data", async () => {
+  const responses = await Promise.all(
+    ["/", "/courses", "/courses/COMP2100", "/auth/sign-in"].map((path) =>
+      request(path, { headers: { accept: "text/html" } }),
+    ),
+  );
+
+  responses.forEach((response) => assert.equal(response.status, 200));
+
+  const html = (
+    await Promise.all(responses.map((response) => response.text()))
+  ).join("\n");
+  assert.doesNotMatch(html, /Harry Student/i);
+  assert.doesNotMatch(html, /u7499609/i);
+  assert.doesNotMatch(html, /Admin console/i);
+});
+
+test("redirects protected routes to the canonical sign-in page", async () => {
+  for (const path of [
+    "/plan?year=2026",
+    "/profile",
+    "/requirements",
+    "/history",
+    "/timetable",
+    "/admin/courses",
+  ]) {
+    const response = await request(path, { redirect: "manual" });
+
+    assert.equal(response.status, 307);
+    const location = new URL(response.headers.get("location"), origin);
+    assert.equal(location.origin, origin);
+    assert.equal(location.pathname, "/auth/sign-in");
+    assert.equal(location.searchParams.get("next"), path);
+    assert.equal(location.searchParams.get("reason"), null);
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
+  }
+});
+
+test("does not expose logout over GET", async () => {
+  const response = await request("/auth/logout", { redirect: "manual" });
+  assert.equal(response.status, 405);
+});
+
+test("keeps public and built static assets outside authentication", async () => {
+  const homeResponse = await request("/", {
+    headers: { accept: "text/html" },
+  });
+  const homeHtml = await homeResponse.text();
+  const builtAssetPath = homeHtml.match(
+    /(?:src|href)="(\/_next\/static\/[^"? ]+)/,
+  )?.[1];
+  assert.ok(builtAssetPath, "expected a built Next.js static asset");
+
+  const [publicAsset, builtAsset] = await Promise.all([
+    request("/favicon.svg", { redirect: "manual" }),
+    request(builtAssetPath, { redirect: "manual" }),
+  ]);
+
+  assert.equal(publicAsset.status, 200);
+  assert.equal(builtAsset.status, 200);
+  assert.equal(publicAsset.headers.get("location"), null);
+  assert.equal(builtAsset.headers.get("location"), null);
+});
