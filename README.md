@@ -57,21 +57,64 @@ intentionally disabled.
 
 ## Commands
 
-| Command                | Purpose                                       |
-| ---------------------- | --------------------------------------------- |
-| `npm run dev`          | Start the development server                  |
-| `npm run db:start`     | Start the full local Supabase stack           |
-| `npm run db:reset`     | Rebuild the local database from migrations    |
-| `npm run db:test`      | Run local pgTAP database tests                |
-| `npm run db:lint`      | Run strict local schema linting               |
-| `npm run db:types`     | Regenerate committed local database types     |
-| `npm run format:check` | Check repository formatting                   |
-| `npm run lint`         | Run ESLint and accessibility rules            |
-| `npm run typecheck`    | Run strict TypeScript checks                  |
-| `npm test`             | Run unit, build and rendered-route tests      |
-| `npm run check`        | Run formatting, linting and type checks       |
-| `npm run verify`       | Run the complete local quality gate           |
-| `npm run build`        | Create the Vercel-compatible production build |
+| Command                    | Purpose                                       |
+| -------------------------- | --------------------------------------------- |
+| `npm run dev`              | Start the development server                  |
+| `npm run db:start`         | Start the full local Supabase stack           |
+| `npm run db:reset`         | Rebuild the local database from migrations    |
+| `npm run db:test`          | Run local pgTAP database tests                |
+| `npm run db:lint`          | Run strict local schema linting               |
+| `npm run db:types`         | Regenerate committed local database types     |
+| `npm run catalogue:fetch`  | Fetch official ANU HTML into a local manifest |
+| `npm run catalogue:import` | Import a manifest into local Supabase         |
+| `npm run format:check`     | Check repository formatting                   |
+| `npm run lint`             | Run ESLint and accessibility rules            |
+| `npm run typecheck`        | Run strict TypeScript checks                  |
+| `npm test`                 | Run unit, build and rendered-route tests      |
+| `npm run check`            | Run formatting, linting and type checks       |
+| `npm run verify`           | Run the complete local quality gate           |
+| `npm run build`            | Create the Vercel-compatible production build |
+
+The catalogue fetcher defaults to the 16 in-scope 2026 course codes and never
+writes to the database. Give it a new path inside the ignored local cache, or
+use `--stdout` for a pipeline:
+
+```bash
+npm run catalogue:fetch -- --output .catalogue-cache/anu-2026.json
+```
+
+Each manifest retains its official canonical URL, retrieval time, content hash,
+raw requisite text and parser diagnostics. Existing manifest files are never
+overwritten, so prior source provenance remains reviewable.
+
+Import a captured manifest only after the local Supabase stack is running:
+
+```bash
+npm run catalogue:import -- .catalogue-cache/anu-2026.json
+```
+
+The importer discovers the local database port from `supabase/config.toml`, or
+accepts `COURSEMAP_DATABASE_URL` when it targets a literal loopback address or
+exact `localhost`. It refuses hosted and other non-loopback databases. Each
+manifest is validated before a connection transaction begins, then its source,
+year, run, documents, courses, versions, offerings and sessions are reconciled
+through natural keys in one transaction. Re-running the same manifest preserves
+domain rows and content-hash snapshots while recording a new import run.
+Ambiguous prerequisite text and conflicting source facts remain attached to
+open review items rather than being treated as verified catalogue rules.
+
+ANU Programs and Courses pages remain the authoritative source. Cached
+manifests are ignored local review artefacts; Coursemap stores normalised facts
+with their provenance, not a replacement catalogue. Imported rows remain
+`draft` or `review` until an authorised reviewer explicitly verifies and
+publishes them. Any public redistribution of captured ANU source content needs
+a separate rights decision before it is enabled.
+
+Shared academic periods are currently inferred from course class start and end
+dates, retained as draft provenance and flagged for review. They must be
+verified against the official ANU University Calendar before publication. A
+later forward migration can retain class dates in dedicated session columns and
+import calendar periods from their own authoritative source.
 
 ## Repository guide
 
