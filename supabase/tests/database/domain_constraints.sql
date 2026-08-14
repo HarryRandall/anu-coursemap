@@ -254,7 +254,12 @@ select
   0,
   roots.source_document_id
 from public.requirement_groups as roots
-where roots.code = 'ROOT';
+join public.academic_structure_versions as versions
+  on versions.id = roots.structure_version_id
+join public.academic_structures as structures
+  on structures.id = versions.structure_id
+where roots.code = 'ROOT'
+  and structures.code = 'TEST-DEGREE';
 
 insert into public.requirement_groups (
   structure_version_id,
@@ -276,7 +281,12 @@ select
   0,
   children.source_document_id
 from public.requirement_groups as children
-where children.code = 'CHILD';
+join public.academic_structure_versions as versions
+  on versions.id = children.structure_version_id
+join public.academic_structures as structures
+  on structures.id = versions.structure_id
+where children.code = 'CHILD'
+  and structures.code = 'TEST-DEGREE';
 
 insert into public.course_rules (
   course_version_id,
@@ -303,18 +313,41 @@ where rules.source_text = 'Tree fixture prerequisite';
 insert into public.course_rule_groups (course_rule_id, parent_group_id, operator, position)
 select roots.course_rule_id, roots.id, 'all_of', 0
 from public.course_rule_groups as roots
-where roots.parent_group_id is null;
+join public.course_rules as rules on rules.id = roots.course_rule_id
+join public.course_versions as versions on versions.id = rules.course_version_id
+join public.courses as courses on courses.id = versions.course_id
+where roots.parent_group_id is null
+  and courses.code = 'TREE1000';
 
 insert into public.course_rule_groups (course_rule_id, parent_group_id, operator, position)
 select children.course_rule_id, children.id, 'all_of', 0
 from public.course_rule_groups as children
-where children.parent_group_id is not null;
+join public.course_rules as rules on rules.id = children.course_rule_id
+join public.course_versions as versions on versions.id = rules.course_version_id
+join public.courses as courses on courses.id = versions.course_id
+where children.parent_group_id is not null
+  and courses.code = 'TREE1000';
 
 set constraints all immediate;
 
 select extensions.ok(
-  (select count(*) = 3 from public.requirement_groups)
-  and (select count(*) = 3 from public.course_rule_groups),
+  (
+    select count(*) = 3
+    from public.requirement_groups as groups
+    join public.academic_structure_versions as versions
+      on versions.id = groups.structure_version_id
+    join public.academic_structures as structures
+      on structures.id = versions.structure_id
+    where structures.code = 'TEST-DEGREE'
+  )
+  and (
+    select count(*) = 3
+    from public.course_rule_groups as groups
+    join public.course_rules as rules on rules.id = groups.course_rule_id
+    join public.course_versions as versions on versions.id = rules.course_version_id
+    join public.courses as courses on courses.id = versions.course_id
+    where courses.code = 'TREE1000'
+  ),
   'valid connected requirement and course rule trees pass deferred validation'
 );
 
@@ -322,9 +355,25 @@ select extensions.throws_ok(
   $$
     update public.requirement_groups
     set parent_group_id = (
-      select id from public.requirement_groups where code = 'GRANDCHILD'
+      select groups.id
+      from public.requirement_groups as groups
+      join public.academic_structure_versions as versions
+        on versions.id = groups.structure_version_id
+      join public.academic_structures as structures
+        on structures.id = versions.structure_id
+      where groups.code = 'GRANDCHILD'
+        and structures.code = 'TEST-DEGREE'
     )
-    where code = 'CHILD'
+    where id = (
+      select groups.id
+      from public.requirement_groups as groups
+      join public.academic_structure_versions as versions
+        on versions.id = groups.structure_version_id
+      join public.academic_structures as structures
+        on structures.id = versions.structure_id
+      where groups.code = 'CHILD'
+        and structures.code = 'TEST-DEGREE'
+    )
   $$,
   '23514',
   null,
@@ -333,20 +382,30 @@ select extensions.throws_ok(
 
 select extensions.throws_ok(
   $$
+    with fixture_groups as (
+      select groups.id, groups.parent_group_id
+      from public.course_rule_groups as groups
+      join public.course_rules as rules on rules.id = groups.course_rule_id
+      join public.course_versions as versions on versions.id = rules.course_version_id
+      join public.courses as courses on courses.id = versions.course_id
+      where courses.code = 'TREE1000'
+    ),
+    fixture_root as (
+      select id from fixture_groups where parent_group_id is null
+    ),
+    fixture_child as (
+      select groups.id
+      from fixture_groups as groups
+      join fixture_root as root on root.id = groups.parent_group_id
+    ),
+    fixture_grandchild as (
+      select groups.id
+      from fixture_groups as groups
+      join fixture_child as child on child.id = groups.parent_group_id
+    )
     update public.course_rule_groups
-    set parent_group_id = (
-      select id
-      from public.course_rule_groups
-      order by id desc
-      limit 1
-    )
-    where id = (
-      select id
-      from public.course_rule_groups
-      order by id
-      offset 1
-      limit 1
-    )
+    set parent_group_id = (select id from fixture_grandchild)
+    where id = (select id from fixture_child)
   $$,
   '23514',
   null,
@@ -373,6 +432,9 @@ select extensions.throws_ok(
       1,
       versions.source_document_id
     from public.academic_structure_versions as versions
+    join public.academic_structures as structures
+      on structures.id = versions.structure_id
+    where structures.code = 'TEST-DEGREE'
   $$,
   '23505',
   null,
@@ -380,7 +442,15 @@ select extensions.throws_ok(
 );
 
 select extensions.throws_ok(
-  $$delete from public.requirement_groups where code = 'ROOT'$$,
+  $$
+    delete from public.requirement_groups as groups
+    using public.academic_structure_versions as versions,
+      public.academic_structures as structures
+    where groups.structure_version_id = versions.id
+      and versions.structure_id = structures.id
+      and groups.code = 'ROOT'
+      and structures.code = 'TEST-DEGREE'
+  $$,
   '23514',
   null,
   'deleting the only requirement root is rejected'
@@ -412,7 +482,12 @@ select extensions.throws_ok(
       9,
       roots.source_document_id
     from public.requirement_groups as roots
+    join public.academic_structure_versions as versions
+      on versions.id = roots.structure_version_id
+    join public.academic_structures as structures
+      on structures.id = versions.structure_id
     where roots.code = 'ROOT'
+      and structures.code = 'TEST-DEGREE'
   $$,
   '23514',
   null,
@@ -437,7 +512,12 @@ select extensions.throws_ok(
       2000,
       6
     from public.requirement_groups as roots
+    join public.academic_structure_versions as versions
+      on versions.id = roots.structure_version_id
+    join public.academic_structures as structures
+      on structures.id = versions.structure_id
     where roots.code = 'ROOT'
+      and structures.code = 'TEST-DEGREE'
   $$,
   '23514',
   null,
@@ -460,8 +540,12 @@ select extensions.throws_ok(
       structures.id,
       'Conflicting free text admission rule'
     from public.course_rule_groups as groups
+    join public.course_rules as rules on rules.id = groups.course_rule_id
+    join public.course_versions as versions on versions.id = rules.course_version_id
+    join public.courses as courses on courses.id = versions.course_id
     cross join public.academic_structures as structures
     where groups.parent_group_id is null
+      and courses.code = 'TREE1000'
       and structures.code = 'TEST-DEGREE'
   $$,
   '23514',

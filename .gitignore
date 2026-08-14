@@ -44,5 +44,6 @@ yarn-error.log*
 /supabase/.temp/
 
 # local build and tooling state
+/.catalogue-cache/
 /.turbo/
 /dist/
