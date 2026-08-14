@@ -75,9 +75,11 @@ intentionally disabled.
 | `npm run verify`           | Run the complete local quality gate           |
 | `npm run build`            | Create the Vercel-compatible production build |
 
-The catalogue fetcher defaults to the 16 in-scope 2026 course codes and never
-writes to the database. Give it a new path inside the ignored local cache, or
-use `--stdout` for a pipeline:
+The catalogue fetcher defaults to 44 Coursemap courses, including every course
+referenced by the authoritative 2026 [Bachelor of Computing](https://programsandcourses.anu.edu.au/2026/program/BCOMP)
+and [Software Development major](https://programsandcourses.anu.edu.au/2026/major/SOFT-MAJ)
+structures. It never writes to the database. Give it a new path inside the
+ignored local cache, or use `--stdout` for a pipeline:
 
 ```bash
 npm run catalogue:fetch -- --output .catalogue-cache/anu-2026.json
@@ -102,6 +104,13 @@ through natural keys in one transaction. Re-running the same manifest preserves
 domain rows and content-hash snapshots while recording a new import run.
 Ambiguous prerequisite text and conflicting source facts remain attached to
 open review items rather than being treated as verified catalogue rules.
+
+The 2026 BCOMP and SOFT-MAJ structures are also stored as forward-migrated,
+normalised facts with official source hashes. Supported course, structure,
+subject, level and elective rules are typed. Maximum-unit caps, tag rules,
+COMP3500's 6+6 sequence and programme exclusions stay explicit in the review
+queue. Both structures remain `draft` and `review` until those exceptions and
+the six other major versions are resolved.
 
 ANU Programs and Courses pages remain the authoritative source. Cached
 manifests are ignored local review artefacts; Coursemap stores normalised facts

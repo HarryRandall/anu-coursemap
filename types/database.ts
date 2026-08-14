@@ -1238,6 +1238,7 @@ export type Database = {
       }
       requirement_conditions: {
         Row: {
+          code: string
           condition_kind: string
           course_id: number | null
           created_at: string
@@ -1254,6 +1255,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          code: string
           condition_kind: string
           course_id?: number | null
           created_at?: string
@@ -1270,6 +1272,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          code?: string
           condition_kind?: string
           course_id?: number | null
           created_at?: string
@@ -1323,6 +1326,7 @@ export type Database = {
           parent_group_id: number | null
           position: number
           source_document_id: number
+          source_text: string
           structure_version_id: number
           updated_at: string
         }
@@ -1339,6 +1343,7 @@ export type Database = {
           parent_group_id?: number | null
           position?: number
           source_document_id: number
+          source_text: string
           structure_version_id: number
           updated_at?: string
         }
@@ -1355,6 +1360,7 @@ export type Database = {
           parent_group_id?: number | null
           position?: number
           source_document_id?: number
+          source_text?: string
           structure_version_id?: number
           updated_at?: string
         }

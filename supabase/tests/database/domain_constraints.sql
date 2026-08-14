@@ -216,6 +216,7 @@ insert into public.requirement_groups (
   parent_group_id,
   code,
   name,
+  source_text,
   operator,
   position,
   source_document_id
@@ -226,6 +227,7 @@ select
   null,
   'ROOT',
   'Root',
+  'Root source requirement.',
   'all_of',
   0,
   versions.source_document_id
@@ -240,6 +242,7 @@ insert into public.requirement_groups (
   parent_group_id,
   code,
   name,
+  source_text,
   operator,
   position,
   source_document_id
@@ -250,6 +253,7 @@ select
   roots.id,
   'CHILD',
   'Child',
+  'Child source requirement.',
   'all_of',
   0,
   roots.source_document_id
@@ -267,6 +271,7 @@ insert into public.requirement_groups (
   parent_group_id,
   code,
   name,
+  source_text,
   operator,
   position,
   source_document_id
@@ -277,6 +282,7 @@ select
   children.id,
   'GRANDCHILD',
   'Grandchild',
+  'Grandchild source requirement.',
   'all_of',
   0,
   children.source_document_id
@@ -419,6 +425,7 @@ select extensions.throws_ok(
       catalogue_year_id,
       code,
       name,
+      source_text,
       operator,
       position,
       source_document_id
@@ -428,6 +435,7 @@ select extensions.throws_ok(
       versions.catalogue_year_id,
       'SECOND-ROOT',
       'Second root',
+      'Second root source requirement.',
       'all_of',
       1,
       versions.source_document_id
@@ -464,6 +472,7 @@ select extensions.throws_ok(
       parent_group_id,
       code,
       name,
+      source_text,
       operator,
       minimum_count,
       minimum_units,
@@ -476,6 +485,7 @@ select extensions.throws_ok(
       roots.id,
       'BAD-MINIMUM',
       'Bad minimum',
+      'Invalid minimum source requirement.',
       'at_least',
       -1,
       6,
@@ -499,6 +509,7 @@ select extensions.throws_ok(
     insert into public.requirement_conditions (
       structure_version_id,
       requirement_group_id,
+      code,
       condition_kind,
       subject_code,
       minimum_course_level,
@@ -507,6 +518,7 @@ select extensions.throws_ok(
     select
       roots.structure_version_id,
       roots.id,
+      'BAD-TYPED-CONDITION',
       'subject',
       'COMP',
       2000,
