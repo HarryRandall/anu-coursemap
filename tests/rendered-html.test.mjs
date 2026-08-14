@@ -263,10 +263,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(courseDrawer, /Move course to|\bmoveAttempt\b/);
   assert.doesNotMatch(courseDrawer, />Undo</);
   assert.match(courseDrawer, />\s*Completed\s*</);
-  assert.match(
-    courseDrawer,
-    /attempt\.status === "completed" \? "planned" : "completed"/,
-  );
+  assert.match(courseDrawer, /updateAttempt\(attempt\.id, "completed"\)/);
+  assert.doesNotMatch(courseDrawer, /\? "planned" : "completed"/);
   assert.match(courseDrawer, /grid grid-cols-3 gap-2/);
   assert.match(courseDrawer, /must be completed or planned\s+earlier/);
   assert.match(courseDrawer, />\s*Requisites\s*</);

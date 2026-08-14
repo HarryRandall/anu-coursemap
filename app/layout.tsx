@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import { getAuthContext } from "@/lib/auth/viewer";
+import { loadCoursemapState } from "@/lib/coursemap/state";
 import { getCanonicalSiteOrigin, isDemoMode } from "@/lib/supabase/config";
 import "./globals.css";
 import { AppProvider } from "./providers";
@@ -45,6 +46,8 @@ export default async function RootLayout({
 }>) {
   const demoMode = isDemoMode();
   const { viewer, canAccessAdmin } = await getAuthContext();
+  const initialState =
+    !demoMode && viewer ? await loadCoursemapState(viewer) : undefined;
 
   return (
     <html lang="en">
@@ -53,6 +56,7 @@ export default async function RootLayout({
           demoMode={demoMode}
           viewer={viewer}
           canAccessAdmin={canAccessAdmin}
+          initialState={initialState}
         >
           {children}
         </AppProvider>
