@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supabase Change"
+  short_description: "Ship safe Coursemap database changes"
+  default_prompt: "Use $supabase-change to plan and verify a Coursemap Supabase change."

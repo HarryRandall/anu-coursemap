@@ -1,43 +1,68 @@
 # Coursemap
 
-A modern ANU degree-planning prototype for mapping courses, prerequisites,
-majors, attempts, overload approvals and versioned catalogue rules.
+Coursemap helps ANU students discover courses, understand prerequisite paths and build a degree plan they can explain. It is being rebuilt as a private, production-minded Next.js application backed by Supabase and deployed on Vercel.
 
-## Run locally
+> [!NOTE]
+> Coursemap is an independent planning tool. It is not an official ANU system and does not replace the Programs and Courses catalogue or academic advice.
 
-Requires Node.js `>=22.13.0`.
+## What it does
+
+- searches and filters versioned course information
+- visualises prerequisite relationships and missing requirements
+- separates planned courses from completed attempts
+- audits a plan against degree and major requirements
+- provides reviewable catalogue administration and import workflows
+
+The existing course-selection and prerequisite experiences are intentionally being preserved while the prototype data and browser-only state are moved to a secure, multi-user data model.
+
+## Stack
+
+- [Next.js](https://nextjs.org/) App Router with React and TypeScript
+- [Tailwind CSS](https://tailwindcss.com/) with shadcn and Radix primitives
+- [Supabase](https://supabase.com/) for Postgres, authentication and Row Level Security
+- [Vercel](https://vercel.com/) for previews and production deployment
+- GitHub Actions for repository checks
+
+## Local development
+
+Requirements:
+
+- Node.js 24
+- npm 10
+- a Coursemap Supabase project for authenticated and database-backed routes
 
 ```bash
+cp .env.example .env.local
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The root redirects to the
-degree plan.
+Open [http://localhost:3000](http://localhost:3000). Do not commit `.env.local` or any Supabase secret key.
 
-## Product routes
+## Commands
 
-- `/plan` - horizontally scrolling semester board with drag-and-drop courses
-- `/requirements` - degree and major rule audit
-- `/courses` and `/courses/[code]` - filterable catalogue and versioned details
-- `/history` - separate course attempts and results
-- `/profile` - student, degree, rules-year and major setup
-- `/admin` - catalogue KPIs and change monitoring
-- `/admin/courses` - full data grid and CSV export
-- `/admin/programmes` - degrees, majors, minors and specialisations
-- `/admin/relations` - rule-edge table and dependency graph
-- `/admin/sync` - schedules, scoped syncs and run history
+| Command                | Purpose                                        |
+| ---------------------- | ---------------------------------------------- |
+| `npm run dev`          | Start the development server                   |
+| `npm run format:check` | Check repository formatting                    |
+| `npm run lint`         | Run ESLint and accessibility rules             |
+| `npm run typecheck`    | Run strict TypeScript checks                   |
+| `npm test`             | Build and run rendered-route integration tests |
+| `npm run check`        | Run formatting, linting and type checks        |
+| `npm run verify`       | Run the complete local quality gate            |
+| `npm run build`        | Create the Vercel-compatible production build  |
 
-## Current data boundary
+## Repository guide
 
-This version uses realistic prototype catalogue records and stores the student's
-profile and plan in browser storage. The admin sync is an interactive simulation.
-No scraper or database is connected yet. The UI and data model are designed so
-the persistence layer can move to Supabase without changing the product model.
+- `app/` contains App Router routes and layouts.
+- `components/` contains product components and shared UI primitives.
+- `lib/` contains domain and integration code.
+- `supabase/` contains database migrations, seed tooling and local configuration.
+- `.agents/skills/` contains repeatable workflows for UI, Supabase, catalogue import and verification work.
+- `docs/architecture.md` records the intended boundaries and data model.
 
-## Validation
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
-```bash
-npm run lint
-npm test
-```
+## Status
+
+Private alpha. The native Next.js foundation is in place. Supabase auth, versioned catalogue persistence, user plans, verified catalogue ingestion and Vercel deployment are being introduced through focused pull requests.

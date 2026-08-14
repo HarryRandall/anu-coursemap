@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Coursemap"
+  short_description: "Run the complete Coursemap quality gate"
+  default_prompt: "Use $verify-coursemap to validate the current Coursemap changes."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coursemap UI"
+  short_description: "Build accessible Coursemap interfaces"
+  default_prompt: "Use $coursemap-ui to design or improve a Coursemap interface."
