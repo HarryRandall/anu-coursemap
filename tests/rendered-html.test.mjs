@@ -1,28 +1,51 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
-import test from "node:test";
+import { fileURLToPath } from "node:url";
+import test, { after, before } from "node:test";
 
 const projectRoot = new URL("../", import.meta.url);
+const origin = "http://127.0.0.1:3217";
+let server;
+
+before(async () => {
+  const nextBin = fileURLToPath(
+    new URL("../node_modules/next/dist/bin/next", import.meta.url),
+  );
+  server = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", "3217"], {
+    cwd: fileURLToPath(projectRoot),
+    env: { ...process.env, NODE_ENV: "production" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  let diagnostics = "";
+  server.stdout.on("data", (chunk) => { diagnostics += chunk; });
+  server.stderr.on("data", (chunk) => { diagnostics += chunk; });
+
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    if (server.exitCode !== null) {
+      throw new Error(`Next.js exited before it became ready:\n${diagnostics}`);
+    }
+    try {
+      const response = await fetch(`${origin}/plan`);
+      if (response.ok) return;
+    } catch {
+      // The server is still starting.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  throw new Error(`Timed out waiting for Next.js:\n${diagnostics}`);
+}, { timeout: 30_000 });
+
+after(() => {
+  server?.kill("SIGTERM");
+});
 
 async function render(path = "/plan") {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
-  const { default: worker } = await import(workerUrl.href);
-
-  return worker.fetch(
-    new Request(`http://localhost${path}`, {
-      headers: { accept: "text/html", host: "coursemap.example" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+  return fetch(`${origin}${path}`, {
+    headers: { accept: "text/html" },
+  });
 }
 
 test("server-renders the routed Coursemap degree planner", async () => {
@@ -159,7 +182,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(providers, /fixed right-4 top-4/);
   assert.match(layout, /Coursemap/);
   assert.match(layout, /og\.png/);
-  assert.match(packageJson, /"name": "anu-degree-roadmap"/);
+  assert.match(packageJson, /"name": "anu-coursemap"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
 
   await assert.rejects(access(new URL("app/_sites-preview", projectRoot)));
