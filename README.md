@@ -39,21 +39,27 @@ npm install
 npm run dev
 ```
 
-Replace the publishable-key placeholder with the local `Publishable` value from
-`supabase status`, then open [http://localhost:3000](http://localhost:3000). Do
-not commit `.env.local` or any Supabase secret key.
+For local Supabase, replace the publishable-key placeholder with the local
+`Publishable` value from `supabase status`. To use the hosted development
+project, set `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to its API URL and publishable key. Then
+open [http://localhost:3000](http://localhost:3000). Do not commit `.env.local`
+or any Supabase secret key.
 
-Student and admin routes require a local Supabase account when
-`COURSEMAP_DEMO_MODE=false`. Request a magic link at `/auth/sign-in`, then open
-the message in the local Mailpit interface reported by `supabase status`.
+Student and admin routes require an account in the configured Supabase project
+when `COURSEMAP_DEMO_MODE=false`. Request a magic link at `/auth/sign-in`. The
+local stack delivers it through the Mailpit interface reported by
+`supabase status`; the hosted project delivers it to the supplied address.
 Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` so PKCE begins and completes
 on the same trusted origin. Exact `COURSEMAP_DEMO_MODE=true` is reserved for
 the isolated prototype fixture and rendered CI tests.
 
-A free hosted development project is reserved in Sydney, but it currently has
-no migrations or public tables. The application, Auth and database remain local
-until a hosted migration is explicitly approved. Vercel deployment is also
-intentionally disabled.
+The Sydney hosted development project has the complete migration history,
+Row Level Security policies and the reviewed 2026 BCOMP and SOFT-MAJ structure
+seed. Its Auth redirect configuration accepts the trusted local callback. The
+catalogue importer remains deliberately local-only, so hosted course versions
+must be promoted through a reviewed migration rather than an unrestricted
+database connection. Vercel deployment is intentionally outside this setup.
 
 ## Commands
 
