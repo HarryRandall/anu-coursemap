@@ -1,0 +1,4 @@
+-- Coursemap deliberately has no authoritative seed data.
+--
+-- Prototype courses and user plans are test fixtures only. Catalogue records
+-- must enter the database through a provenance-backed import.

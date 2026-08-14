@@ -6,3 +6,11 @@ required = false
 default_tools_approval_mode = "prompt"
 startup_timeout_sec = 30
 tool_timeout_sec = 60
+
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=mogdmhkqkpvksvtvwdgl&read_only=true&features=docs,database,debugging,development"
+enabled = true
+required = false
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 30
+tool_timeout_sec = 60

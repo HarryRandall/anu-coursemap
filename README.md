@@ -1,6 +1,6 @@
 # Coursemap
 
-Coursemap helps ANU students discover courses, understand prerequisite paths and build a degree plan they can explain. It is being rebuilt as a private, production-minded Next.js application backed by Supabase and deployed on Vercel.
+Coursemap helps ANU students discover courses, understand prerequisite paths and build a degree plan they can explain. It is being rebuilt as a private, production-minded Next.js application backed by Supabase and intended for Vercel.
 
 > [!NOTE]
 > Coursemap is an independent planning tool. It is not an official ANU system and does not replace the Programs and Courses catalogue or academic advice.
@@ -29,21 +29,35 @@ Requirements:
 
 - Node.js 24
 - npm 10
-- a Coursemap Supabase project for authenticated and database-backed routes
+- Docker Desktop and the local Coursemap Supabase stack
+- Supabase CLI 2.x for local database migrations and tests
 
 ```bash
+supabase start
 cp .env.example .env.local
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Do not commit `.env.local` or any Supabase secret key.
+Replace the publishable-key placeholder with the local `Publishable` value from
+`supabase status`, then open [http://localhost:3000](http://localhost:3000). Do
+not commit `.env.local` or any Supabase secret key.
+
+A free hosted development project is reserved in Sydney, but it currently has
+no migrations or public tables. The application, Auth and database remain local
+until a hosted migration is explicitly approved. Vercel deployment is also
+intentionally disabled.
 
 ## Commands
 
 | Command                | Purpose                                        |
 | ---------------------- | ---------------------------------------------- |
 | `npm run dev`          | Start the development server                   |
+| `npm run db:start`     | Start the full local Supabase stack            |
+| `npm run db:reset`     | Rebuild the local database from migrations     |
+| `npm run db:test`      | Run local pgTAP database tests                 |
+| `npm run db:lint`      | Run strict local schema linting                |
+| `npm run db:types`     | Regenerate committed local database types      |
 | `npm run format:check` | Check repository formatting                    |
 | `npm run lint`         | Run ESLint and accessibility rules             |
 | `npm run typecheck`    | Run strict TypeScript checks                   |
@@ -65,4 +79,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURIT
 
 ## Status
 
-Private alpha. The native Next.js foundation is in place. Supabase auth, versioned catalogue persistence, user plans, verified catalogue ingestion and Vercel deployment are being introduced through focused pull requests.
+Private alpha. The native Next.js foundation and local Supabase database are in
+place. The reserved hosted project remains empty. Authentication, user plans and
+verified catalogue ingestion are being introduced through focused pull requests
+before any hosted migration or Vercel deployment.
