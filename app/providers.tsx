@@ -15,6 +15,7 @@ import {
   courseOccurrenceLimit,
   initialAttempts,
 } from "@/lib/catalogue";
+import type { AuthViewer } from "@/lib/auth/viewer";
 
 type Profile = {
   name: string;
@@ -39,6 +40,8 @@ type Toast = { message: string; tone: ToastTone };
 type AppContextValue = {
   state: AppState;
   ready: boolean;
+  demoMode: boolean;
+  canAccessAdmin: boolean;
   updateProfile: (profile: Partial<Profile>) => void;
   addCourse: (
     courseCode: string,
@@ -62,7 +65,7 @@ type AppContextValue = {
   notify: (message: string, tone?: ToastTone) => void;
 };
 
-const STORAGE_KEY = "coursemap.demo.v1";
+const DEMO_STORAGE_KEY = "coursemap.demo.v1";
 
 const statusPriority: Record<AttemptStatus, number> = {
   completed: 4,
@@ -106,20 +109,41 @@ function normaliseAttempts(attempts: Attempt[]) {
   return attempts.filter((attempt) => selectedIds.has(attempt.id));
 }
 
-const defaultState: AppState = {
-  schemaVersion: 1,
-  profile: {
-    name: "Harry Student",
-    studentId: "u7499609",
-    email: "harry.student@anu.edu.au",
-    commencementYear: 2026,
-    catalogueYear: 2026,
-    degreeCode: "BCOMP",
-    majorCode: "SOFT-MAJ",
-    studyLoad: "Full time",
-  },
-  attempts: normaliseAttempts(initialAttempts),
-};
+function createDemoState(): AppState {
+  return {
+    schemaVersion: 1,
+    profile: {
+      name: "Harry Student",
+      studentId: "u7499609",
+      email: "harry.student@anu.edu.au",
+      commencementYear: 2026,
+      catalogueYear: 2026,
+      degreeCode: "BCOMP",
+      majorCode: "SOFT-MAJ",
+      studyLoad: "Full time",
+    },
+    attempts: normaliseAttempts(initialAttempts),
+  };
+}
+
+function createInitialState(demoMode: boolean, viewer: AuthViewer | null) {
+  if (demoMode) return createDemoState();
+
+  return {
+    schemaVersion: 1,
+    profile: {
+      name: "",
+      studentId: "",
+      email: viewer?.email ?? "",
+      commencementYear: 2026,
+      catalogueYear: 2026,
+      degreeCode: "BCOMP",
+      majorCode: "SOFT-MAJ",
+      studyLoad: "Full time",
+    },
+    attempts: [],
+  } satisfies AppState;
+}
 
 const AppContext = createContext<AppContextValue | null>(null);
 
@@ -133,15 +157,42 @@ function isValidStoredState(value: unknown): value is AppState {
   );
 }
 
-export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AppState>(defaultState);
+export function AppProvider({
+  children,
+  demoMode,
+  viewer,
+  canAccessAdmin,
+}: {
+  children: React.ReactNode;
+  demoMode: boolean;
+  viewer: AuthViewer | null;
+  canAccessAdmin: boolean;
+}) {
+  const initialState = useMemo(
+    () => createInitialState(demoMode, viewer),
+    [demoMode, viewer],
+  );
+  const [state, setState] = useState<AppState>(initialState);
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!demoMode) {
+      window.queueMicrotask(() => {
+        if (!cancelled) {
+          setState(initialState);
+          setReady(true);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
+      const stored = window.localStorage.getItem(DEMO_STORAGE_KEY);
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (isValidStoredState(parsed)) {
@@ -156,7 +207,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch {
-      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(DEMO_STORAGE_KEY);
     } finally {
       window.queueMicrotask(() => {
         if (!cancelled) setReady(true);
@@ -165,11 +216,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [demoMode, initialState]);
 
   useEffect(() => {
-    if (ready) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [ready, state]);
+    if (demoMode && ready) {
+      window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
+    }
+  }, [demoMode, ready, state]);
+
+  useEffect(() => {
+    if (!viewer) return;
+
+    const refreshRestoredPage = (event: PageTransitionEvent) => {
+      if (event.persisted) window.location.reload();
+    };
+    window.addEventListener("pageshow", refreshRestoredPage);
+    return () => window.removeEventListener("pageshow", refreshRestoredPage);
+  }, [viewer]);
 
   const notify = useCallback((message: string, tone: ToastTone = "success") => {
     setToast({ message, tone });
@@ -317,12 +380,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const resetDemo = useCallback(() => setState(defaultState), []);
+  const resetDemo = useCallback(() => {
+    if (demoMode) setState(createDemoState());
+  }, [demoMode]);
 
   const value = useMemo<AppContextValue>(
     () => ({
       state,
       ready,
+      demoMode,
+      canAccessAdmin,
       updateProfile,
       addCourse,
       reorderAttempt,
@@ -337,6 +404,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [
       state,
       ready,
+      demoMode,
+      canAccessAdmin,
       updateProfile,
       addCourse,
       reorderAttempt,

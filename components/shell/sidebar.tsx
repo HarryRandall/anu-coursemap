@@ -110,15 +110,15 @@ export function Sidebar({
   onClose: () => void;
   onOpenSearch: () => void;
 }) {
-  const { state } = useCoursemap();
+  const { state, canAccessAdmin } = useCoursemap();
   const nav = admin ? adminNav : studentNav;
   const initials =
-    state.profile.name
+    (state.profile.name || state.profile.email)
       .split(" ")
       .map((part) => part[0])
       .join("")
       .slice(0, 2)
-      .toUpperCase() || "HS";
+      .toUpperCase() || "?";
 
   return (
     <>
@@ -179,7 +179,7 @@ export function Sidebar({
             />
           ))}
 
-          {!admin && (
+          {!admin && canAccessAdmin && (
             <>
               <div className="my-1.5 border-t border-zinc-200/80" />
               <Link

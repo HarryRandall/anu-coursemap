@@ -5,6 +5,7 @@ import {
   Check,
   GraduationCap,
   Info,
+  LogOut,
   RotateCcw,
   Save,
   UserRound,
@@ -54,7 +55,7 @@ function InfoTip({ text }: { text: string }) {
     <button
       type="button"
       aria-label={text}
-      className="group relative inline-flex cursor-help"
+      className="group relative grid size-10 shrink-0 cursor-help place-items-center rounded-lg focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
     >
       <Info
         size={13}
@@ -68,7 +69,8 @@ function InfoTip({ text }: { text: string }) {
 }
 
 export default function ProfilePage() {
-  const { state, ready, updateProfile, resetDemo, notify } = useCoursemap();
+  const { state, ready, demoMode, updateProfile, resetDemo, notify } =
+    useCoursemap();
   const [draft, setDraft] = useState(state.profile);
 
   useEffect(() => {
@@ -104,7 +106,19 @@ export default function ProfilePage() {
       .toUpperCase() || "?";
 
   return (
-    <AppShell title="Profile" subtitle="Your details and academic plan">
+    <AppShell
+      title="Profile"
+      subtitle="Your details and academic plan"
+      actions={
+        !demoMode ? (
+          <form action="/auth/logout" method="post">
+            <Button variant="secondary" type="submit" size="sm">
+              <LogOut size={15} /> Sign out
+            </Button>
+          </form>
+        ) : undefined
+      }
+    >
       <form onSubmit={save}>
         <h1 className="sr-only">Profile</h1>
         <div className="mb-5 flex justify-end">
@@ -121,7 +135,11 @@ export default function ProfilePage() {
                 icon={<UserRound size={18} />}
                 tone="bg-sky-50 text-sky-600"
                 title="Student profile"
-                description="Stored only on this device in the prototype."
+                description={
+                  demoMode
+                    ? "Stored only on this device in demo mode."
+                    : "Your account details and degree settings."
+                }
               />
               <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
                 <Field label="Full name">
@@ -255,37 +273,42 @@ export default function ProfilePage() {
                 {majors.map((major) => {
                   const selected = draft.majorCode === major.code;
                   return (
-                    <button
+                    <div
                       key={major.code}
-                      type="button"
-                      onClick={() =>
-                        setDraft({ ...draft, majorCode: major.code })
-                      }
                       style={{ "--major": major.colour } as React.CSSProperties}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left ring-1 transition",
+                        "flex items-center rounded-xl p-1 ring-1 transition",
                         selected
                           ? "ring-2 ring-[var(--major)]"
                           : "ring-zinc-200 hover:ring-zinc-300",
                       )}
                     >
-                      <span className="size-2.5 shrink-0 rounded-full bg-[var(--major)]" />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold text-zinc-900">
-                          {major.name}
+                      <button
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() =>
+                          setDraft({ ...draft, majorCode: major.code })
+                        }
+                        className="flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-left focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+                      >
+                        <span className="size-2.5 shrink-0 rounded-full bg-[var(--major)]" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[13px] font-semibold text-zinc-900">
+                            {major.name}
+                          </span>
+                          <span className="block text-[11px] text-zinc-400">
+                            {major.code} · {major.units} units
+                          </span>
                         </span>
-                        <span className="block text-[11px] text-zinc-400">
-                          {major.code} · {major.units} units
-                        </span>
-                      </span>
-                      {selected && (
-                        <Check
-                          size={14}
-                          className="shrink-0 text-[var(--major)]"
-                        />
-                      )}
+                        {selected && (
+                          <Check
+                            size={14}
+                            className="shrink-0 text-[var(--major)]"
+                          />
+                        )}
+                      </button>
                       <InfoTip text={major.description} />
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -323,25 +346,32 @@ export default function ProfilePage() {
                   </div>
                 ))}
               </dl>
-              <div className="mt-4 flex w-full items-start gap-2.5 rounded-xl bg-emerald-50/70 p-3 text-left ring-1 ring-emerald-100">
-                <Check size={16} className="mt-0.5 shrink-0 text-emerald-600" />
-                <div>
-                  <p className="text-xs font-semibold text-emerald-800">
-                    Saved locally for now
-                  </p>
-                  <p className="mt-0.5 text-[11px] leading-snug text-emerald-700/80">
-                    Ready to move to Supabase when the database is connected.
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                fullWidth
-                className="mt-4 text-rose-600 hover:bg-rose-50"
-                onClick={reset}
-              >
-                <RotateCcw size={15} /> Reset demo data
-              </Button>
+              {demoMode && (
+                <>
+                  <div className="mt-4 flex w-full items-start gap-2.5 rounded-xl bg-emerald-50/70 p-3 text-left ring-1 ring-emerald-100">
+                    <Check
+                      size={16}
+                      className="mt-0.5 shrink-0 text-emerald-600"
+                    />
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-800">
+                        Saved locally in demo mode
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-snug text-emerald-700/80">
+                        This fixture data is isolated from signed-in accounts.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    fullWidth
+                    className="mt-4 text-rose-600 hover:bg-rose-50"
+                    onClick={reset}
+                  >
+                    <RotateCcw size={15} /> Reset demo data
+                  </Button>
+                </>
+              )}
             </Card>
           </aside>
         </div>
