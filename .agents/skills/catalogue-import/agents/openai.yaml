@@ -1,0 +1,4 @@
+interface:
+  display_name: "Catalogue Import"
+  short_description: "Import and validate ANU catalogue data"
+  default_prompt: "Use $catalogue-import to plan or review an ANU catalogue import."

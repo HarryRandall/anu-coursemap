@@ -50,7 +50,14 @@ function buildLayout(code: string): Layout {
   const columns = Array.from({ length: columnCount }, (_, index) => {
     const lvl = index + minLevel;
     return {
-      label: lvl === 0 ? "This course" : lvl === 1 ? "Unlocks" : lvl === -1 ? "Requires" : "Then requires",
+      label:
+        lvl === 0
+          ? "This course"
+          : lvl === 1
+            ? "Unlocks"
+            : lvl === -1
+              ? "Requires"
+              : "Then requires",
       codes: [...level.entries()]
         .filter(([, value]) => value === lvl)
         .map(([key]) => key)
@@ -95,7 +102,8 @@ export function PrereqGraph({
   if (columnCount === 1) {
     return (
       <p className="px-5 py-8 text-center text-[12px] text-zinc-400">
-        No prerequisites, and nothing in the catalogue depends on this course yet.
+        No prerequisites, and nothing in the catalogue depends on this course
+        yet.
       </p>
     );
   }
@@ -117,12 +125,14 @@ export function PrereqGraph({
     <div className="px-5 pb-5">
       <div
         className="grid gap-4"
-        style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+        style={{
+          gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+        }}
       >
         {columns.map((column, index) => (
           <p
             key={index}
-            className="pb-2 text-center text-[10px] font-bold uppercase tracking-wider text-zinc-400"
+            className="pb-2 text-center text-[10px] font-bold tracking-wider text-zinc-400 uppercase"
           >
             {column.label}
           </p>
@@ -144,7 +154,8 @@ export function PrereqGraph({
             const y2 = yOf(edge.to);
             const mid = (x1 + x2) / 2;
             const touches = edge.from === code || edge.to === code;
-            const completedPath = completedCodes.has(edge.from) && completedCodes.has(edge.to);
+            const completedPath =
+              completedCodes.has(edge.from) && completedCodes.has(edge.to);
             return (
               <path
                 key={index}
@@ -166,7 +177,9 @@ export function PrereqGraph({
 
         <div
           className="pointer-events-none absolute inset-0 grid gap-4"
-          style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+          }}
           aria-hidden="true"
         >
           {columns.map((column, index) => (
@@ -189,7 +202,9 @@ export function PrereqGraph({
         {/* Nodes */}
         <div
           className="relative grid h-full gap-4"
-          style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+          }}
         >
           {columns.map((column, colIndex) => {
             const colRows = column.codes.length;

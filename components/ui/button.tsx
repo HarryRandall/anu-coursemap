@@ -3,11 +3,7 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "ghost"
-  | "subtle"
-  | "danger";
+  "primary" | "secondary" | "ghost" | "subtle" | "danger";
 export type ButtonSize = "sm" | "md";
 
 const base =
@@ -44,7 +40,13 @@ export function buttonClasses({
   fullWidth,
   className,
 }: Omit<CommonProps, "children">) {
-  return cn(base, sizes[size], variants[variant], fullWidth && "w-full", className);
+  return cn(
+    base,
+    sizes[size],
+    variants[variant],
+    fullWidth && "w-full",
+    className,
+  );
 }
 
 type ButtonProps = CommonProps &
@@ -95,7 +97,10 @@ type IconButtonProps = {
   label: string;
   className?: string;
   children: ReactNode;
-} & Omit<ComponentPropsWithoutRef<"button">, "className" | "children" | "aria-label">;
+} & Omit<
+  ComponentPropsWithoutRef<"button">,
+  "className" | "children" | "aria-label"
+>;
 
 export function IconButton({
   label,
@@ -110,7 +115,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        "inline-grid size-9 place-items-center rounded-lg bg-white text-zinc-500 shadow-xs ring-1 ring-inset ring-zinc-200 transition hover:bg-zinc-50 hover:text-zinc-800 hover:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50",
+        "inline-grid size-9 place-items-center rounded-lg bg-white text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:bg-zinc-50 hover:text-zinc-800 hover:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...rest}

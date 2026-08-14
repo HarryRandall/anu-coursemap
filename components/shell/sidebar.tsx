@@ -43,14 +43,23 @@ const adminNav: NavItem[] = [
 
 function Brand() {
   return (
-    <Link href="/plan" aria-label="Coursemap home" className="flex items-center gap-2.5 px-1.5">
-      <span className="grid size-6 -rotate-3 grid-cols-2 gap-0.5" aria-hidden="true">
+    <Link
+      href="/plan"
+      aria-label="Coursemap home"
+      className="flex items-center gap-2.5 px-1.5"
+    >
+      <span
+        className="grid size-6 -rotate-3 grid-cols-2 gap-0.5"
+        aria-hidden="true"
+      >
         <i className="rounded-[3px] bg-zinc-900" />
         <i className="rounded-[3px] bg-zinc-400" />
         <i className="rounded-[3px] bg-zinc-400" />
         <i className="rounded-[3px] bg-zinc-900" />
       </span>
-      <strong className="text-[17px] font-bold tracking-tight">coursemap</strong>
+      <strong className="text-[17px] font-bold tracking-tight">
+        coursemap
+      </strong>
     </Link>
   );
 }
@@ -123,7 +132,7 @@ export function Sidebar({
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 px-3 pb-3 pt-5 backdrop-blur transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 px-3 pt-5 pb-3 backdrop-blur transition-transform lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -144,7 +153,7 @@ export function Sidebar({
             type="button"
             onClick={onOpenSearch}
             aria-label="Search courses"
-            className="mt-5 flex h-9 w-full items-center gap-2 rounded-lg bg-white px-2.5 text-zinc-500 shadow-xs ring-1 ring-inset ring-zinc-200 transition hover:ring-zinc-300"
+            className="mt-5 flex h-9 w-full items-center gap-2 rounded-lg bg-white px-2.5 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:ring-zinc-300"
           >
             <SearchIcon size={15} />
             <span className="flex-1 text-left text-xs">Search courses</span>
@@ -158,11 +167,16 @@ export function Sidebar({
           aria-label={admin ? "Admin navigation" : "Student navigation"}
           className="mt-6 flex flex-col gap-1"
         >
-          <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+          <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
             {admin ? "Catalogue" : "Your degree"}
           </p>
           {nav.map((item) => (
-            <NavLink key={item.href} item={item} admin={admin} onNavigate={onClose} />
+            <NavLink
+              key={item.href}
+              item={item}
+              admin={admin}
+              onNavigate={onClose}
+            />
           ))}
 
           {!admin && (
@@ -178,7 +192,6 @@ export function Sidebar({
               </Link>
             </>
           )}
-
         </nav>
 
         <div className="flex-1" />

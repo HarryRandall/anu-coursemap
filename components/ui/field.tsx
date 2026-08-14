@@ -21,7 +21,11 @@ export function Field({
         <span className="text-xs font-medium text-zinc-600">{label}</span>
       )}
       {children}
-      {hint && <span className="text-[11px] leading-relaxed text-zinc-400">{hint}</span>}
+      {hint && (
+        <span className="text-[11px] leading-relaxed text-zinc-400">
+          {hint}
+        </span>
+      )}
     </label>
   );
 }

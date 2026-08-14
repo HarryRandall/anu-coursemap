@@ -24,7 +24,13 @@ type Draft = {
   parseState: Course["parseState"];
 };
 
-export function AdminCourseEditor({ course, onClose }: { course: Course; onClose: () => void }) {
+export function AdminCourseEditor({
+  course,
+  onClose,
+}: {
+  course: Course;
+  onClose: () => void;
+}) {
   const { notify } = useCoursemap();
   const initial: Draft = {
     name: course.name,
@@ -44,13 +50,20 @@ export function AdminCourseEditor({ course, onClose }: { course: Course; onClose
     setDraft((current) => ({ ...current, [key]: value }));
 
   return (
-    <Drawer onClose={onClose} labelledBy="course-editor-title" className="sm:w-[480px]">
+    <Drawer
+      onClose={onClose}
+      labelledBy="course-editor-title"
+      className="sm:w-[480px]"
+    >
       <header className="flex items-center justify-between gap-3 border-b border-zinc-100 px-5 py-3.5">
         <div className="flex min-w-0 items-center gap-3">
           <CourseToken code={course.code} accent={course.accent} />
           <div className="min-w-0">
             <p className="font-mono text-[11px] text-zinc-400">{course.code}</p>
-            <p id="course-editor-title" className="truncate text-[13px] font-semibold text-zinc-900">
+            <p
+              id="course-editor-title"
+              className="truncate text-[13px] font-semibold text-zinc-900"
+            >
               Edit source data
             </p>
           </div>
@@ -64,7 +77,9 @@ export function AdminCourseEditor({ course, onClose }: { course: Course; onClose
         {/* Source provenance */}
         <div className="flex items-center justify-between rounded-xl bg-zinc-50/70 p-3 ring-1 ring-zinc-200">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Source</p>
+            <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+              Source
+            </p>
             <p className="mt-0.5 text-xs text-zinc-500">
               ANU Programs &amp; Courses · changed {course.lastChanged}
             </p>
@@ -82,7 +97,10 @@ export function AdminCourseEditor({ course, onClose }: { course: Course; onClose
 
         <div className="mt-5 flex flex-col gap-4">
           <Field label="Course title">
-            <Input value={draft.name} onChange={(event) => set("name", event.target.value)} />
+            <Input
+              value={draft.name}
+              onChange={(event) => set("name", event.target.value)}
+            />
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Units">
@@ -105,13 +123,25 @@ export function AdminCourseEditor({ course, onClose }: { course: Course; onClose
             </Field>
           </div>
           <Field label="Convener">
-            <Input value={draft.convener} onChange={(event) => set("convener", event.target.value)} />
+            <Input
+              value={draft.convener}
+              onChange={(event) => set("convener", event.target.value)}
+            />
           </Field>
           <Field label="School">
-            <Input value={draft.school} onChange={(event) => set("school", event.target.value)} />
+            <Input
+              value={draft.school}
+              onChange={(event) => set("school", event.target.value)}
+            />
           </Field>
-          <Field label="Sessions" hint="Comma-separated, e.g. Semester 1, Semester 2">
-            <Input value={draft.sessions} onChange={(event) => set("sessions", event.target.value)} />
+          <Field
+            label="Sessions"
+            hint="Comma-separated, e.g. Semester 1, Semester 2"
+          >
+            <Input
+              value={draft.sessions}
+              onChange={(event) => set("sessions", event.target.value)}
+            />
           </Field>
           <Field label="Prerequisite (raw text)">
             <Input
@@ -120,26 +150,40 @@ export function AdminCourseEditor({ course, onClose }: { course: Course; onClose
             />
           </Field>
           <Field label="Source URL">
-            <Input value={draft.sourceUrl} onChange={(event) => set("sourceUrl", event.target.value)} />
+            <Input
+              value={draft.sourceUrl}
+              onChange={(event) => set("sourceUrl", event.target.value)}
+            />
           </Field>
           <Field label="Parse state">
             <div className="flex items-center gap-3">
               <Select
                 aria-label="Parse state"
                 value={draft.parseState}
-                onChange={(value) => set("parseState", value as Course["parseState"])}
-                options={(["Verified", "Automatic", "Review"] as const).map((item) => ({
-                  value: item,
-                  label: item,
-                }))}
+                onChange={(value) =>
+                  set("parseState", value as Course["parseState"])
+                }
+                options={(["Verified", "Automatic", "Review"] as const).map(
+                  (item) => ({
+                    value: item,
+                    label: item,
+                  }),
+                )}
                 className="flex-1"
               />
-              <Badge tone={parseTone(draft.parseState)}>{draft.parseState}</Badge>
+              <Badge tone={parseTone(draft.parseState)}>
+                {draft.parseState}
+              </Badge>
             </div>
           </Field>
         </div>
 
-        <ButtonLink variant="secondary" fullWidth href={`/courses/${course.code}`} className="mt-6">
+        <ButtonLink
+          variant="secondary"
+          fullWidth
+          href={`/courses/${course.code}`}
+          className="mt-6"
+        >
           Open student course page <ExternalLink size={15} />
         </ButtonLink>
       </div>

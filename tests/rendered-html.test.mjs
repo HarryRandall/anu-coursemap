@@ -8,35 +8,48 @@ const projectRoot = new URL("../", import.meta.url);
 const origin = "http://127.0.0.1:3217";
 let server;
 
-before(async () => {
-  const nextBin = fileURLToPath(
-    new URL("../node_modules/next/dist/bin/next", import.meta.url),
-  );
-  server = spawn(process.execPath, [nextBin, "start", "--hostname", "127.0.0.1", "--port", "3217"], {
-    cwd: fileURLToPath(projectRoot),
-    env: { ...process.env, NODE_ENV: "production" },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+before(
+  async () => {
+    const nextBin = fileURLToPath(
+      new URL("../node_modules/next/dist/bin/next", import.meta.url),
+    );
+    server = spawn(
+      process.execPath,
+      [nextBin, "start", "--hostname", "127.0.0.1", "--port", "3217"],
+      {
+        cwd: fileURLToPath(projectRoot),
+        env: { ...process.env, NODE_ENV: "production" },
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
 
-  let diagnostics = "";
-  server.stdout.on("data", (chunk) => { diagnostics += chunk; });
-  server.stderr.on("data", (chunk) => { diagnostics += chunk; });
+    let diagnostics = "";
+    server.stdout.on("data", (chunk) => {
+      diagnostics += chunk;
+    });
+    server.stderr.on("data", (chunk) => {
+      diagnostics += chunk;
+    });
 
-  const deadline = Date.now() + 20_000;
-  while (Date.now() < deadline) {
-    if (server.exitCode !== null) {
-      throw new Error(`Next.js exited before it became ready:\n${diagnostics}`);
+    const deadline = Date.now() + 20_000;
+    while (Date.now() < deadline) {
+      if (server.exitCode !== null) {
+        throw new Error(
+          `Next.js exited before it became ready:\n${diagnostics}`,
+        );
+      }
+      try {
+        const response = await fetch(`${origin}/plan`);
+        if (response.ok) return;
+      } catch {
+        // The server is still starting.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
-    try {
-      const response = await fetch(`${origin}/plan`);
-      if (response.ok) return;
-    } catch {
-      // The server is still starting.
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  throw new Error(`Timed out waiting for Next.js:\n${diagnostics}`);
-}, { timeout: 30_000 });
+    throw new Error(`Timed out waiting for Next.js:\n${diagnostics}`);
+  },
+  { timeout: 30_000 },
+);
 
 after(() => {
   server?.kill("SIGTERM");
@@ -71,7 +84,13 @@ test("server-renders the routed Coursemap degree planner", async () => {
 });
 
 test("server-renders admin and course-detail routes", async () => {
-  const [adminResponse, adminCoursesResponse, relationsResponse, courseResponse, chainResponse] = await Promise.all([
+  const [
+    adminResponse,
+    adminCoursesResponse,
+    relationsResponse,
+    courseResponse,
+    chainResponse,
+  ] = await Promise.all([
     render("/admin/dashboard"),
     render("/admin/courses"),
     render("/admin/relations"),
@@ -105,19 +124,55 @@ test("server-renders admin and course-detail routes", async () => {
 });
 
 test("removes the disposable starter and keeps product metadata", async () => {
-  const [planPage, adminPage, coursePage, prereqGraph, courseDrawer, coursePicker, providers, catalogue, globals, appShell, sidebar, topbar, layout, packageJson] = await Promise.all([
+  const [
+    planPage,
+    adminPage,
+    coursePage,
+    prereqGraph,
+    courseDrawer,
+    coursePicker,
+    providers,
+    catalogue,
+    globals,
+    appShell,
+    sidebar,
+    topbar,
+    layout,
+    packageJson,
+  ] = await Promise.all([
     readFile(new URL("../app/plan/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/courses/[code]/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../components/prereq-graph.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../components/overlays/course-drawer.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../components/overlays/course-picker.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/courses/[code]/page.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/prereq-graph.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/overlays/course-drawer.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/overlays/course-picker.tsx", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../app/providers.tsx", import.meta.url), "utf8"),
     readFile(new URL("../lib/catalogue.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
-    readFile(new URL("../components/shell/app-shell.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../components/shell/sidebar.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../components/shell/topbar.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../components/shell/app-shell.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/shell/sidebar.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/shell/topbar.tsx", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
@@ -156,15 +211,21 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(courseDrawer, /Move course to|\bmoveAttempt\b/);
   assert.doesNotMatch(courseDrawer, />Undo</);
   assert.match(courseDrawer, />\s*Completed\s*</);
-  assert.match(courseDrawer, /attempt\.status === "completed" \? "planned" : "completed"/);
+  assert.match(
+    courseDrawer,
+    /attempt\.status === "completed" \? "planned" : "completed"/,
+  );
   assert.match(courseDrawer, /grid grid-cols-3 gap-2/);
-  assert.match(courseDrawer, /must be completed or planned earlier/);
-  assert.match(courseDrawer, />Requisites</);
+  assert.match(courseDrawer, /must be completed or planned\s+earlier/);
+  assert.match(courseDrawer, />\s*Requisites\s*</);
   assert.match(courseDrawer, /bg-rose-50 text-rose-700 ring-rose-200/);
   assert.match(courseDrawer, /!ring-emerald-300 hover:!bg-emerald-50/);
   assert.match(courseDrawer, /hover:!bg-rose-50 hover:!text-rose-700/);
   assert.match(courseDrawer, /More course information/);
-  assert.match(courseDrawer, /View assessment, learning outcomes and the complete course record/);
+  assert.match(
+    courseDrawer,
+    /View assessment, learning outcomes and the complete course record/,
+  );
   assert.doesNotMatch(courseDrawer, /Course information|Action needed|✓/);
   assert.match(coursePicker, /courseOccurrenceLimit\(course\.code\)/);
   assert.doesNotMatch(coursePicker, /In plan/);
@@ -174,12 +235,16 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(catalogue, /function prerequisiteChainCodes/);
   assert.match(globals, /scrollbar-gutter: stable/);
   assert.doesNotMatch(appShell, /max-w-\[1440px\]/);
-  assert.match(appShell, /min-w-0 w-full max-w-none/);
+  assert.match(appShell, /min-w-0/);
+  assert.match(appShell, /w-full/);
+  assert.match(appShell, /max-w-none/);
   assert.match(appShell, /!fullBleed && "px-4/);
   assert.match(sidebar, /\/admin\/dashboard/);
   assert.match(sidebar, /!admin &&/);
   assert.match(topbar, /after:inset-x-0/);
-  assert.match(providers, /fixed right-4 top-4/);
+  assert.match(providers, /fixed/);
+  assert.match(providers, /right-4/);
+  assert.match(providers, /top-4/);
   assert.match(layout, /Coursemap/);
   assert.match(layout, /og\.png/);
   assert.match(packageJson, /"name": "anu-coursemap"/);

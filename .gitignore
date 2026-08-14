@@ -12,15 +12,19 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+/.playwright-cli
 
 # next.js
 /.next/
-/.vinext/
 /out/
 
 # misc
 .DS_Store
 *.pem
+*.tsbuildinfo
+.eslintcache
 
 # debug
 npm-debug.log*
@@ -28,13 +32,17 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# environment files
 .env*
+!.env.example
 
 # vercel
 .vercel
 
+# local Supabase state
+/.supabase/
+/supabase/.temp/
+
+# local build and tooling state
+/.turbo/
 /dist/
-/.wrangler/
-/outputs/
-/work/

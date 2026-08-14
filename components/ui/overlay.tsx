@@ -34,7 +34,7 @@ function Scrim({
       aria-label={label}
       onClick={onClose}
       className={cn(
-        "absolute inset-0 h-full w-full cursor-default bg-zinc-950/45 backdrop-blur-[3px] animate-fade-in",
+        "absolute inset-0 h-full w-full animate-fade-in cursor-default bg-zinc-950/45 backdrop-blur-[3px]",
         className,
       )}
     />
@@ -69,7 +69,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={labelledBy}
         className={cn(
-          "relative z-10 flex max-h-[calc(100dvh-3rem)] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-zinc-200 animate-modal-in",
+          "relative z-10 flex max-h-[calc(100dvh-3rem)] w-full animate-modal-in flex-col overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-zinc-200",
           className,
         )}
       >
@@ -100,7 +100,7 @@ export function Drawer({
         aria-modal="true"
         aria-labelledby={labelledBy}
         className={cn(
-          "relative z-10 flex h-dvh w-full flex-col bg-white shadow-lg ring-1 ring-zinc-200 animate-drawer-in sm:w-[440px]",
+          "relative z-10 flex h-dvh w-full animate-drawer-in flex-col bg-white shadow-lg ring-1 ring-zinc-200 sm:w-[440px]",
           className,
         )}
       >

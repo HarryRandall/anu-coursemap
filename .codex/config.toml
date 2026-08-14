@@ -1,0 +1,8 @@
+[mcp_servers.shadcn]
+command = "npx"
+args = ["-y", "shadcn@4.18.0", "mcp"]
+enabled = true
+required = false
+default_tools_approval_mode = "prompt"
+startup_timeout_sec = 30
+tool_timeout_sec = 60

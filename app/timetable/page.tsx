@@ -12,10 +12,19 @@ import { Select } from "@/components/ui/field";
 import { courseByCode, terms, type Course } from "@/lib/catalogue";
 
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-const rooms = ["Hancock Lab 2", "Copland G31", "Marie Reay 4.02", "Kambri T1", "Birch 1.14"];
+const rooms = [
+  "Hancock Lab 2",
+  "Copland G31",
+  "Marie Reay 4.02",
+  "Kambri T1",
+  "Birch 1.14",
+];
 const startHour = 8;
 const endHour = 18;
-const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
+const hours = Array.from(
+  { length: endHour - startHour },
+  (_, index) => startHour + index,
+);
 
 type Session = {
   course: Course;
@@ -74,14 +83,21 @@ export default function TimetablePage() {
 
   const sessions = useMemo(() => {
     const termCourses = state.attempts
-      .filter((attempt) => attempt.termId === termId && attempt.status !== "failed")
+      .filter(
+        (attempt) => attempt.termId === termId && attempt.status !== "failed",
+      )
       .map((attempt) => courseByCode(attempt.courseCode))
       .filter((course): course is Course => Boolean(course));
-    const unique = [...new Map(termCourses.map((course) => [course.code, course])).values()];
+    const unique = [
+      ...new Map(termCourses.map((course) => [course.code, course])).values(),
+    ];
     return unique.flatMap(sessionsFor);
   }, [state.attempts, termId]);
 
-  const contactHours = sessions.reduce((total, session) => total + (session.end - session.start), 0);
+  const contactHours = sessions.reduce(
+    (total, session) => total + (session.end - session.start),
+    0,
+  );
 
   return (
     <AppShell title="Timetable" subtitle="Weekly class schedule">
@@ -96,7 +112,9 @@ export default function TimetablePage() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-zinc-500">Semester</span>
+          <span className="text-[11px] font-medium text-zinc-500">
+            Semester
+          </span>
           <Select
             aria-label="Timetable semester"
             value={termId}
@@ -116,15 +134,21 @@ export default function TimetablePage() {
             <h2 className="text-[15px] font-semibold text-zinc-900">
               {term.name} {term.year}
             </h2>
-            <p className="mt-0.5 text-xs text-zinc-500">Indicative lecture and tutorial pattern · {term.dates}</p>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              Indicative lecture and tutorial pattern · {term.dates}
+            </p>
           </div>
         </div>
 
         {sessions.length === 0 ? (
           <div className="flex flex-col items-center gap-1 px-5 py-16 text-center">
             <CalendarDays size={26} className="text-zinc-300" />
-            <p className="mt-2 text-sm font-medium text-zinc-700">No classes this semester</p>
-            <p className="text-xs text-zinc-400">Add courses to this semester from your plan.</p>
+            <p className="mt-2 text-sm font-medium text-zinc-700">
+              No classes this semester
+            </p>
+            <p className="text-xs text-zinc-400">
+              Add courses to this semester from your plan.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto p-4">
@@ -135,7 +159,7 @@ export default function TimetablePage() {
                 {days.map((day) => (
                   <div
                     key={day}
-                    className="pb-2 text-center text-[11px] font-bold uppercase tracking-wider text-zinc-400"
+                    className="pb-2 text-center text-[11px] font-bold tracking-wider text-zinc-400 uppercase"
                   >
                     {day}
                   </div>
@@ -165,7 +189,10 @@ export default function TimetablePage() {
                     <div
                       key={`${hour}-${colIndex}`}
                       className="rounded-lg border border-zinc-100"
-                      style={{ gridColumn: colIndex + 2, gridRow: rowIndex + 1 }}
+                      style={{
+                        gridColumn: colIndex + 2,
+                        gridRow: rowIndex + 1,
+                      }}
                     />
                   )),
                 )}
@@ -185,8 +212,10 @@ export default function TimetablePage() {
                     )}
                   >
                     <div>
-                      <p className="font-mono text-[10px] font-bold">{session.course.code}</p>
-                      <p className="mt-0.5 line-clamp-2 text-[10px] font-medium leading-tight opacity-90">
+                      <p className="font-mono text-[10px] font-bold">
+                        {session.course.code}
+                      </p>
+                      <p className="mt-0.5 line-clamp-2 text-[10px] leading-tight font-medium opacity-90">
                         {session.kind}
                       </p>
                     </div>

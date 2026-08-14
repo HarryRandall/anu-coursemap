@@ -21,7 +21,9 @@ export default function AdminCoursesPage() {
     () =>
       courses.filter(
         (course) =>
-          `${course.code} ${course.name} ${course.convener}`.toLowerCase().includes(query.toLowerCase()) &&
+          `${course.code} ${course.name} ${course.convener}`
+            .toLowerCase()
+            .includes(query.toLowerCase()) &&
           (level === "All levels" || String(course.level / 1000) === level) &&
           (stateFilter === "All states" || course.parseState === stateFilter),
       ),
@@ -35,7 +37,7 @@ export default function AdminCoursesPage() {
       <Card className="overflow-hidden">
         {/* Toolbar */}
         <div className="flex flex-col gap-3 border-b border-zinc-100 bg-zinc-50/70 px-4 py-3 lg:flex-row lg:items-end">
-          <label className="flex h-10 flex-1 items-center gap-2 rounded-lg bg-white px-3 shadow-xs ring-1 ring-inset ring-zinc-200">
+          <label className="flex h-10 flex-1 items-center gap-2 rounded-lg bg-white px-3 shadow-xs ring-1 ring-zinc-200 ring-inset">
             <Search size={16} className="text-zinc-400" />
             <input
               value={query}
@@ -43,7 +45,9 @@ export default function AdminCoursesPage() {
               placeholder="Search code, name or convener"
               className="min-w-0 flex-1 bg-transparent text-[13px] placeholder:text-zinc-400 focus:outline-none"
             />
-            <span className="shrink-0 text-[11px] text-zinc-400">{filtered.length} rows</span>
+            <span className="shrink-0 text-[11px] text-zinc-400">
+              {filtered.length} rows
+            </span>
           </label>
           <div className="flex items-end gap-3">
             <Field label="Level" className="w-32">
@@ -64,7 +68,9 @@ export default function AdminCoursesPage() {
                 aria-label="Parse state"
                 value={stateFilter}
                 onChange={setStateFilter}
-                options={["All states", "Verified", "Automatic", "Review"].map((item) => ({ value: item, label: item }))}
+                options={["All states", "Verified", "Automatic", "Review"].map(
+                  (item) => ({ value: item, label: item }),
+                )}
               />
             </Field>
             <Button
@@ -85,14 +91,27 @@ export default function AdminCoursesPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[960px] text-left text-[12px]">
             <thead>
-              <tr className="border-b border-zinc-100 bg-zinc-50/60 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                {["Course", "Year", "Units", "Level", "Sessions", "Convener", "Prereqs", "Used by", "State", "Changed", ""].map(
-                  (head, index) => (
-                    <th key={index} className="whitespace-nowrap px-3 py-2.5 font-bold">
-                      {head}
-                    </th>
-                  ),
-                )}
+              <tr className="border-b border-zinc-100 bg-zinc-50/60 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                {[
+                  "Course",
+                  "Year",
+                  "Units",
+                  "Level",
+                  "Sessions",
+                  "Convener",
+                  "Prereqs",
+                  "Used by",
+                  "State",
+                  "Changed",
+                  "",
+                ].map((head, index) => (
+                  <th
+                    key={index}
+                    className="px-3 py-2.5 font-bold whitespace-nowrap"
+                  >
+                    {head}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -113,8 +132,10 @@ export default function AdminCoursesPage() {
                   <td className="px-3 py-3 text-zinc-600">{course.year}</td>
                   <td className="px-3 py-3 text-zinc-600">{course.units}</td>
                   <td className="px-3 py-3 text-zinc-600">{course.level}</td>
-                  <td className="whitespace-nowrap px-3 py-3 text-zinc-600">
-                    {course.sessions.map((item) => item.replace("Semester ", "S")).join(" · ")}
+                  <td className="px-3 py-3 whitespace-nowrap text-zinc-600">
+                    {course.sessions
+                      .map((item) => item.replace("Semester ", "S"))
+                      .join(" · ")}
                   </td>
                   <td className="px-3 py-3">
                     <span className="block max-w-40 truncate font-medium text-zinc-700">
@@ -124,13 +145,24 @@ export default function AdminCoursesPage() {
                       {course.school}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-zinc-600">{course.prerequisiteCodes.length}</td>
-                  <td className="px-3 py-3 text-zinc-600">{course.countsTowards.length}</td>
-                  <td className="px-3 py-3">
-                    <Badge tone={parseTone(course.parseState)}>{course.parseState}</Badge>
+                  <td className="px-3 py-3 text-zinc-600">
+                    {course.prerequisiteCodes.length}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3 text-zinc-500">{course.lastChanged}</td>
-                  <td className="px-3 py-3" onClick={(event) => event.stopPropagation()}>
+                  <td className="px-3 py-3 text-zinc-600">
+                    {course.countsTowards.length}
+                  </td>
+                  <td className="px-3 py-3">
+                    <Badge tone={parseTone(course.parseState)}>
+                      {course.parseState}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-zinc-500">
+                    {course.lastChanged}
+                  </td>
+                  <td
+                    className="px-3 py-3"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
@@ -158,12 +190,16 @@ export default function AdminCoursesPage() {
         </div>
 
         <div className="flex flex-col gap-1 border-t border-zinc-100 bg-zinc-50/70 px-4 py-2.5 text-[11px] text-zinc-400 sm:flex-row sm:justify-between">
-          <span>Showing {filtered.length} sample rows from 3,012 course versions</span>
+          <span>
+            Showing {filtered.length} sample rows from 3,012 course versions
+          </span>
           <span>Prototype data · database connection TBD</span>
         </div>
       </Card>
 
-      {editing && <AdminCourseEditor course={editing} onClose={() => setEditing(null)} />}
+      {editing && (
+        <AdminCourseEditor course={editing} onClose={() => setEditing(null)} />
+      )}
     </AppShell>
   );
 }

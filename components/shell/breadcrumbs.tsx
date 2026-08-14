@@ -34,7 +34,11 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     const label = labels[segment] ?? decodeURIComponent(segment).toUpperCase();
     crumbs.push({
       label,
-      href: isLast ? undefined : admin && index === 0 ? "/admin/dashboard" : href,
+      href: isLast
+        ? undefined
+        : admin && index === 0
+          ? "/admin/dashboard"
+          : href,
     });
   });
 
@@ -53,7 +57,9 @@ export function Breadcrumbs() {
       <ol className="flex min-w-0 items-center gap-1.5">
         {crumbs.map((crumb, index) => (
           <Fragment key={index}>
-            {index > 0 && <ChevronRight size={14} className="shrink-0 text-zinc-300" />}
+            {index > 0 && (
+              <ChevronRight size={14} className="shrink-0 text-zinc-300" />
+            )}
             <li className="min-w-0">
               {crumb.href ? (
                 <Link

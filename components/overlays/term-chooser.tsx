@@ -7,15 +7,30 @@ import { Modal } from "@/components/ui/overlay";
 import { IconButton } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export function TermChooser({ course, onClose }: { course: Course; onClose: () => void }) {
+export function TermChooser({
+  course,
+  onClose,
+}: {
+  course: Course;
+  onClose: () => void;
+}) {
   const { addCourse, notify } = useCoursemap();
 
   return (
-    <Modal onClose={onClose} labelledBy="term-dialog-title" className="w-full max-w-md">
+    <Modal
+      onClose={onClose}
+      labelledBy="term-dialog-title"
+      className="w-full max-w-md"
+    >
       <header className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">{course.code}</p>
-          <h2 id="term-dialog-title" className="mt-0.5 text-lg font-bold tracking-tight text-zinc-900">
+          <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+            {course.code}
+          </p>
+          <h2
+            id="term-dialog-title"
+            className="mt-0.5 text-lg font-bold tracking-tight text-zinc-900"
+          >
             Choose a semester
           </h2>
         </div>
@@ -41,9 +56,13 @@ export function TermChooser({ course, onClose }: { course: Course; onClose: () =
                 <span className="block text-[13px] font-semibold text-zinc-900">
                   {term.name} {term.year}
                 </span>
-                <span className="block text-xs text-zinc-500">{term.dates}</span>
+                <span className="block text-xs text-zinc-500">
+                  {term.dates}
+                </span>
               </span>
-              <Badge tone={available ? "success" : "neutral"}>{available ? "Offered" : "Not listed"}</Badge>
+              <Badge tone={available ? "success" : "neutral"}>
+                {available ? "Offered" : "Not listed"}
+              </Badge>
               <ArrowRight size={16} className="text-zinc-300" />
             </button>
           );

@@ -49,12 +49,7 @@ export const accent: Record<
 
 /** Visual tone shared by badges and status pills. */
 export type Tone =
-  | "neutral"
-  | "brand"
-  | "success"
-  | "warning"
-  | "danger"
-  | "info";
+  "neutral" | "brand" | "success" | "warning" | "danger" | "info";
 
 export const toneClasses: Record<Tone, string> = {
   neutral: "bg-zinc-100 text-zinc-600 ring-zinc-200",
