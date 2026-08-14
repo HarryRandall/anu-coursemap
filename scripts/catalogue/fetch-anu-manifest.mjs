@@ -20,7 +20,8 @@ Options:
   --stdout        Print the JSON manifest instead of writing a file.
   --help, -h      Show this help text.
 
-The default scope is the 16 Coursemap 2026 course codes. This command fetches
+The default scope is 44 Coursemap courses, including every course referenced by
+the authoritative 2026 BCOMP and SOFT-MAJ structures. This command fetches
 official ANU HTML only and never writes to a database.`;
 
 function requireSupportedNode() {

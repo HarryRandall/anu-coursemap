@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  ANU_2026_COURSE_CODES,
   ANU_COURSE_PARSER_VERSION,
   ANU_PROGRAMS_AND_COURSES_SOURCE,
   fetchAnuCourseManifest,
@@ -12,6 +13,55 @@ import {
   parseCatalogueManifest,
   validateCatalogueManifest,
 } from "../lib/catalogue-import/manifest.ts";
+
+test("keeps the Coursemap scope and every 2026 BCOMP and SOFT-MAJ reference", () => {
+  assert.deepEqual(ANU_2026_COURSE_CODES, [
+    "ARTH2181",
+    "ASIA3032",
+    "COMP1100",
+    "COMP1110",
+    "COMP1130",
+    "COMP1140",
+    "COMP1600",
+    "COMP2100",
+    "COMP2120",
+    "COMP2300",
+    "COMP2310",
+    "COMP2400",
+    "COMP2610",
+    "COMP2700",
+    "COMP3430",
+    "COMP3500",
+    "COMP3600",
+    "COMP3610",
+    "COMP3620",
+    "COMP3670",
+    "COMP3703",
+    "COMP3900",
+    "COMP4130",
+    "DESN2010",
+    "ENGN1211",
+    "ENGN2300",
+    "ENVS2015",
+    "INFS2024",
+    "INFS3002",
+    "INFS3024",
+    "INFS3059",
+    "MATH1005",
+    "MATH1013",
+    "MATH1115",
+    "MATH2222",
+    "MATH2301",
+    "MATH2307",
+    "MGMT2009",
+    "MUSI3309",
+    "SCOM3029",
+    "SOCY2038",
+    "SOCY2166",
+    "STAT1003",
+    "STAT1008",
+  ]);
+});
 
 const fetchedAt = "2026-08-14T01:02:03.000Z";
 const comp2100Url =
