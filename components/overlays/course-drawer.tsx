@@ -27,7 +27,8 @@ export function CourseDrawer({
   attemptId: string;
   onClose: () => void;
 }) {
-  const { state, updateAttempt, removeAttempt, togglePermission, notify } = useCoursemap();
+  const { state, updateAttempt, removeAttempt, togglePermission, notify } =
+    useCoursemap();
   const attempt = state.attempts.find((item) => item.id === attemptId);
   const course = attempt ? courseByCode(attempt.courseCode) : undefined;
   const status = attempt ? effectiveStatus(attempt, state.attempts) : "planned";
@@ -36,7 +37,8 @@ export function CourseDrawer({
 
   const missing = new Set(missingPrereqs(attempt, state.attempts));
   const prereqsMet = missing.size === 0;
-  const recorded = attempt.status === "completed" || attempt.status === "failed";
+  const recorded =
+    attempt.status === "completed" || attempt.status === "failed";
   const remove = () => {
     const result = removeAttempt(attempt.id);
     notify(result.message, result.ok ? "success" : "warning");
@@ -48,34 +50,47 @@ export function CourseDrawer({
       <IconButton
         label="Close course details"
         onClick={onClose}
-        className="absolute right-4 top-4 z-10"
+        className="absolute top-4 right-4 z-10"
       >
         <X size={18} />
       </IconButton>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-6 pt-5">
+      <div className="flex-1 overflow-y-auto px-5 pt-5 pb-6">
         <div className="flex min-w-0 items-center gap-2 pr-12">
-          <p className="font-mono text-[11px] font-medium text-zinc-400">{course.code}</p>
+          <p className="font-mono text-[11px] font-medium text-zinc-400">
+            {course.code}
+          </p>
           <StatusPill status={status} />
         </div>
         <h2
           id="drawer-title"
-          className="mt-3 text-2xl font-bold leading-tight tracking-tight text-zinc-900"
+          className="mt-3 text-2xl leading-tight font-bold tracking-tight text-zinc-900"
         >
           {course.name}
         </h2>
 
-        <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">{course.description}</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">
+          {course.description}
+        </p>
 
         <div className="mt-4 grid grid-cols-3 divide-x divide-zinc-200 rounded-xl ring-1 ring-zinc-200">
           {[
             ["Units", String(course.units)],
             ["Level", String(course.level)],
-            ["Offered", course.sessions.map((item) => item.replace("Semester ", "S")).join(" · ")],
+            [
+              "Offered",
+              course.sessions
+                .map((item) => item.replace("Semester ", "S"))
+                .join(" · "),
+            ],
           ].map(([label, value]) => (
             <div key={label} className="min-w-0 px-3 py-2.5">
-              <p className="text-[10px] uppercase tracking-wide text-zinc-400">{label}</p>
-              <p className="mt-0.5 truncate text-[13px] font-semibold text-zinc-800">{value}</p>
+              <p className="text-[10px] tracking-wide text-zinc-400 uppercase">
+                {label}
+              </p>
+              <p className="mt-0.5 truncate text-[13px] font-semibold text-zinc-800">
+                {value}
+              </p>
             </div>
           ))}
         </div>
@@ -84,7 +99,11 @@ export function CourseDrawer({
           {[
             [<UserRound key="i" size={16} />, "Convener", course.convener],
             [<CalendarDays key="i" size={16} />, "Delivery", course.delivery],
-            [<BookMarked key="i" size={16} />, "Counts towards", course.countsTowards.join(", ")],
+            [
+              <BookMarked key="i" size={16} />,
+              "Counts towards",
+              course.countsTowards.join(", "),
+            ],
           ].map(([icon, label, value], index) => (
             <div
               key={index}
@@ -104,8 +123,10 @@ export function CourseDrawer({
           className="mt-3 !h-auto w-full justify-between px-3 py-2.5 text-left"
         >
           <span className="min-w-0 whitespace-normal">
-            <span className="block text-xs font-semibold text-zinc-800">More course information</span>
-            <span className="mt-0.5 block text-[11px] font-normal leading-relaxed text-zinc-500">
+            <span className="block text-xs font-semibold text-zinc-800">
+              More course information
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-relaxed font-normal text-zinc-500">
               View assessment, learning outcomes and the complete course record.
             </span>
           </span>
@@ -113,21 +134,33 @@ export function CourseDrawer({
         </ButtonLink>
 
         <section className="mt-5 border-t border-zinc-100 pt-5">
-          <h3 className="text-[13px] font-semibold text-zinc-900">Requisites</h3>
+          <h3 className="text-[13px] font-semibold text-zinc-900">
+            Requisites
+          </h3>
 
           <div className="mt-3 divide-y divide-zinc-100 overflow-hidden rounded-xl ring-1 ring-zinc-200">
             <div className="flex gap-3 p-3">
               <span
                 className={cn(
                   "grid size-8 shrink-0 place-items-center rounded-lg",
-                  prereqsMet ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600",
+                  prereqsMet
+                    ? "bg-emerald-50 text-emerald-600"
+                    : "bg-rose-50 text-rose-600",
                 )}
               >
-                {prereqsMet ? <BookMarked size={17} /> : <AlertTriangle size={17} />}
+                {prereqsMet ? (
+                  <BookMarked size={17} />
+                ) : (
+                  <AlertTriangle size={17} />
+                )}
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-zinc-800">Prerequisite</p>
-                <p className="mt-0.5 text-xs text-zinc-500">{course.prerequisiteText}</p>
+                <p className="text-[13px] font-semibold text-zinc-800">
+                  Prerequisite
+                </p>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  {course.prerequisiteText}
+                </p>
                 {course.prerequisiteCodes.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {course.prerequisiteCodes.map((code) => (
@@ -146,10 +179,11 @@ export function CourseDrawer({
                   </div>
                 )}
                 {!prereqsMet && (
-                  <div className="mt-2 flex items-center gap-2 rounded-lg bg-rose-50 px-2.5 py-2 text-rose-700 ring-1 ring-inset ring-rose-100">
+                  <div className="mt-2 flex items-center gap-2 rounded-lg bg-rose-50 px-2.5 py-2 text-rose-700 ring-1 ring-rose-100 ring-inset">
                     <Info size={14} className="shrink-0" />
-                    <p className="text-[11px] font-medium leading-snug">
-                      {[...missing].join(" + ")} must be completed or planned earlier
+                    <p className="text-[11px] leading-snug font-medium">
+                      {[...missing].join(" + ")} must be completed or planned
+                      earlier
                     </p>
                   </div>
                 )}
@@ -162,7 +196,9 @@ export function CourseDrawer({
                   <X size={17} />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-zinc-800">Incompatible with</p>
+                  <p className="text-[13px] font-semibold text-zinc-800">
+                    Incompatible with
+                  </p>
                   <p className="mt-0.5 text-xs text-zinc-500">
                     {course.incompatibilities.join(", ")}
                   </p>
@@ -183,8 +219,12 @@ export function CourseDrawer({
                   <ShieldCheck size={17} />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-zinc-800">Permission code</p>
-                  <p className="mt-0.5 text-xs text-zinc-500">{course.permissionText}</p>
+                  <p className="text-[13px] font-semibold text-zinc-800">
+                    Permission code
+                  </p>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    {course.permissionText}
+                  </p>
                   <button
                     type="button"
                     className="mt-1.5 text-[11px] font-semibold text-brand-600 hover:text-brand-700"
@@ -197,7 +237,9 @@ export function CourseDrawer({
                       );
                     }}
                   >
-                    {attempt.permissionApproved ? "Remove approval" : "Record approval"}
+                    {attempt.permissionApproved
+                      ? "Remove approval"
+                      : "Record approval"}
                   </button>
                 </div>
               </div>
@@ -220,7 +262,8 @@ export function CourseDrawer({
                 "hover:!bg-emerald-50 hover:!text-emerald-700 hover:!ring-emerald-200",
             )}
             onClick={() => {
-              const nextStatus = attempt.status === "completed" ? "planned" : "completed";
+              const nextStatus =
+                attempt.status === "completed" ? "planned" : "completed";
               updateAttempt(attempt.id, nextStatus);
               notify(
                 nextStatus === "completed"
@@ -243,7 +286,8 @@ export function CourseDrawer({
                 "hover:!bg-rose-50 hover:!text-rose-700 hover:!ring-rose-200",
             )}
             onClick={() => {
-              const nextStatus = attempt.status === "failed" ? "planned" : "failed";
+              const nextStatus =
+                attempt.status === "failed" ? "planned" : "failed";
               updateAttempt(attempt.id, nextStatus);
               notify(
                 nextStatus === "failed"
@@ -255,7 +299,13 @@ export function CourseDrawer({
             <X size={14} />
             Failed
           </Button>
-          <Button variant="danger" size="sm" fullWidth disabled={recorded} onClick={remove}>
+          <Button
+            variant="danger"
+            size="sm"
+            fullWidth
+            disabled={recorded}
+            onClick={remove}
+          >
             <Trash2 size={14} /> Remove
           </Button>
         </div>

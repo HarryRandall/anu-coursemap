@@ -41,7 +41,10 @@ export default function CoursePage() {
   );
   const plannedCodes = new Set(
     state.attempts
-      .filter((attempt) => attempt.status === "planned" || attempt.status === "enrolled")
+      .filter(
+        (attempt) =>
+          attempt.status === "planned" || attempt.status === "enrolled",
+      )
       .map((attempt) => attempt.courseCode),
   );
 
@@ -50,7 +53,9 @@ export default function CoursePage() {
       <AppShell title="Course not found">
         <div className="flex flex-col items-center gap-3 py-24 text-center">
           <BookOpen size={28} className="text-zinc-300" />
-          <p className="text-sm font-medium text-zinc-700">We could not find that course</p>
+          <p className="text-sm font-medium text-zinc-700">
+            We could not find that course
+          </p>
           <ButtonLink variant="secondary" href="/courses">
             View course catalogue
           </ButtonLink>
@@ -60,7 +65,9 @@ export default function CoursePage() {
   }
 
   const prerequisiteChain = prerequisiteChainCodes(course.code);
-  const prerequisitesMet = prerequisiteChain.every((code) => completedCodes.has(code));
+  const prerequisitesMet = prerequisiteChain.every((code) =>
+    completedCodes.has(code),
+  );
 
   return (
     <AppShell title={course.code} subtitle={`${year} course version`}>
@@ -70,10 +77,10 @@ export default function CoursePage() {
           <div className="flex min-w-0 items-start gap-4">
             <CourseToken code={course.code} accent={course.accent} size="lg" />
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
                 {course.code} · {course.subject} · Level {course.level / 1000}
               </p>
-              <h1 className="mt-0.5 text-xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-2xl">
+              <h1 className="mt-0.5 text-xl leading-tight font-bold tracking-tight text-zinc-900 sm:text-2xl">
                 {course.name}
               </h1>
               <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-zinc-600">
@@ -83,11 +90,17 @@ export default function CoursePage() {
                 <Badge tone="neutral">{course.units} units</Badge>
                 <Badge tone="neutral">{course.sessions.join(" · ")}</Badge>
                 <Badge tone="neutral">{course.delivery}</Badge>
-                <Badge tone={parseTone(course.parseState)}>{course.parseState}</Badge>
+                <Badge tone={parseTone(course.parseState)}>
+                  {course.parseState}
+                </Badge>
               </div>
             </div>
           </div>
-          <Button variant="primary" className="shrink-0" onClick={() => setPlanCourse(course)}>
+          <Button
+            variant="primary"
+            className="shrink-0"
+            onClick={() => setPlanCourse(course)}
+          >
             <Plus size={16} /> Add to plan
           </Button>
         </div>
@@ -98,7 +111,9 @@ export default function CoursePage() {
           {/* Prerequisite chain graph */}
           <Card>
             <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">Prerequisite chain</h2>
+              <h2 className="text-[15px] font-semibold text-zinc-900">
+                Prerequisite chain
+              </h2>
               <p className="mt-0.5 text-xs text-zinc-500">
                 Everything this course needs, and what it unlocks.
               </p>
@@ -118,7 +133,9 @@ export default function CoursePage() {
               <h2 className="text-[15px] font-semibold text-zinc-900">
                 Requisites and compatibility
               </h2>
-              <p className="mt-0.5 text-xs text-zinc-500">Rules for the {year} course version.</p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Rules for the {year} course version.
+              </p>
             </div>
             <div className="space-y-2 p-4">
               <div
@@ -135,11 +152,17 @@ export default function CoursePage() {
                       : "bg-rose-50 text-rose-600",
                   )}
                 >
-                  {prerequisitesMet ? <CheckCircle2 size={17} /> : <GitBranch size={17} />}
+                  {prerequisitesMet ? (
+                    <CheckCircle2 size={17} />
+                  ) : (
+                    <GitBranch size={17} />
+                  )}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-[13px] font-semibold text-zinc-900">Prerequisite</p>
+                    <p className="text-[13px] font-semibold text-zinc-900">
+                      Prerequisite
+                    </p>
                     <Badge tone={prerequisitesMet ? "success" : "danger"}>
                       {course.prerequisiteCodes.length === 0
                         ? "None"
@@ -153,7 +176,7 @@ export default function CoursePage() {
                   </p>
                   {prerequisiteChain.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                      <p className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
                         Full prerequisite chain
                       </p>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -165,7 +188,7 @@ export default function CoursePage() {
                               key={code}
                               href={`/courses/${code}`}
                               className={cn(
-                                "inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-[10px] font-medium ring-1 ring-inset transition",
+                                "inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono text-[10px] font-medium ring-1 transition ring-inset",
                                 completed
                                   ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
                                   : planned
@@ -184,12 +207,14 @@ export default function CoursePage() {
               </div>
 
               {course.corequisiteText && (
-                <div className="flex items-start gap-3 rounded-xl p-3.5 ring-1 ring-inset ring-zinc-200">
+                <div className="flex items-start gap-3 rounded-xl p-3.5 ring-1 ring-zinc-200 ring-inset">
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-600">
                     <GitBranch size={17} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-zinc-900">Corequisite</p>
+                    <p className="text-[13px] font-semibold text-zinc-900">
+                      Corequisite
+                    </p>
                     <p className="mt-1 text-[12px] leading-relaxed text-zinc-600">
                       {course.corequisiteText}
                     </p>
@@ -198,12 +223,14 @@ export default function CoursePage() {
               )}
 
               {course.permissionText && (
-                <div className="flex items-start gap-3 rounded-xl p-3.5 ring-1 ring-inset ring-zinc-200">
+                <div className="flex items-start gap-3 rounded-xl p-3.5 ring-1 ring-zinc-200 ring-inset">
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
                     <ShieldCheck size={17} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-zinc-900">Permission</p>
+                    <p className="text-[13px] font-semibold text-zinc-900">
+                      Permission
+                    </p>
                     <p className="mt-1 text-[12px] leading-relaxed text-zinc-600">
                       {course.permissionText}
                     </p>
@@ -212,18 +239,20 @@ export default function CoursePage() {
               )}
 
               {course.incompatibilities.length > 0 && (
-                <div className="flex items-start gap-3 rounded-xl p-3.5 ring-1 ring-inset ring-zinc-200">
+                <div className="flex items-start gap-3 rounded-xl p-3.5 ring-1 ring-zinc-200 ring-inset">
                   <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-rose-50 text-rose-600">
                     <X size={17} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-zinc-900">Incompatible with</p>
+                    <p className="text-[13px] font-semibold text-zinc-900">
+                      Incompatible with
+                    </p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {course.incompatibilities.map((code) => (
                         <Link
                           key={code}
                           href={`/courses/${code}`}
-                          className="rounded-md bg-rose-50 px-2 py-1 font-mono text-[10px] font-medium text-rose-700 ring-1 ring-inset ring-rose-200 transition hover:bg-rose-100"
+                          className="rounded-md bg-rose-50 px-2 py-1 font-mono text-[10px] font-medium text-rose-700 ring-1 ring-rose-200 transition ring-inset hover:bg-rose-100"
                         >
                           {code}
                         </Link>
@@ -238,7 +267,9 @@ export default function CoursePage() {
           {/* Versions */}
           <Card>
             <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">Versions</h2>
+              <h2 className="text-[15px] font-semibold text-zinc-900">
+                Versions
+              </h2>
             </div>
             <div className="flex gap-2 p-3">
               {[2026, 2025, 2024].map((item) => (
@@ -247,15 +278,24 @@ export default function CoursePage() {
                   type="button"
                   onClick={() => setYear(item)}
                   className={cn(
-                    "flex-1 rounded-lg px-3 py-2.5 text-center transition ring-1",
+                    "flex-1 rounded-lg px-3 py-2.5 text-center ring-1 transition",
                     year === item
                       ? "bg-zinc-900 text-white ring-zinc-900"
                       : "text-zinc-600 ring-zinc-200 hover:ring-zinc-300",
                   )}
                 >
-                  <span className="block text-[13px] font-semibold">{item}</span>
-                  <span className={cn("block text-[10px]", year === item ? "text-zinc-300" : "text-zinc-400")}>
-                    {item === 2026 ? `Current · ${course.lastChanged}` : "Archived"}
+                  <span className="block text-[13px] font-semibold">
+                    {item}
+                  </span>
+                  <span
+                    className={cn(
+                      "block text-[10px]",
+                      year === item ? "text-zinc-300" : "text-zinc-400",
+                    )}
+                  >
+                    {item === 2026
+                      ? `Current · ${course.lastChanged}`
+                      : "Archived"}
                   </span>
                 </button>
               ))}
@@ -269,20 +309,38 @@ export default function CoursePage() {
             <h2 className="text-[15px] font-semibold text-zinc-900">Details</h2>
             <dl className="mt-2 divide-y divide-zinc-100 text-[13px]">
               {[
-                [<CalendarDays key="i" size={14} />, "Offered", course.sessions.join(", ")],
+                [
+                  <CalendarDays key="i" size={14} />,
+                  "Offered",
+                  course.sessions.join(", "),
+                ],
                 [<UserRound key="i" size={14} />, "Convener", course.convener],
                 [<BookOpen key="i" size={14} />, "School", course.school],
-                [<ShieldAlert key="i" size={14} />, "Parse state", course.parseState],
+                [
+                  <ShieldAlert key="i" size={14} />,
+                  "Parse state",
+                  course.parseState,
+                ],
               ].map(([icon, label, value], index) => (
-                <div key={index} className="flex items-center justify-between gap-3 py-2.5">
+                <div
+                  key={index}
+                  className="flex items-center justify-between gap-3 py-2.5"
+                >
                   <dt className="flex items-center gap-1.5 text-[11px] text-zinc-400">
                     {icon} {label}
                   </dt>
-                  <dd className="text-right text-[12px] font-medium text-zinc-700">{value}</dd>
+                  <dd className="text-right text-[12px] font-medium text-zinc-700">
+                    {value}
+                  </dd>
                 </div>
               ))}
             </dl>
-            <a href={course.sourceUrl} target="_blank" rel="noreferrer" className="mt-3 block">
+            <a
+              href={course.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 block"
+            >
               <Button variant="secondary" fullWidth>
                 Open ANU source <ExternalLink size={15} />
               </Button>
@@ -290,7 +348,9 @@ export default function CoursePage() {
           </Card>
 
           <Card className="p-5">
-            <h2 className="text-[15px] font-semibold text-zinc-900">Counts towards</h2>
+            <h2 className="text-[15px] font-semibold text-zinc-900">
+              Counts towards
+            </h2>
             <div className="mt-3 flex flex-col gap-2">
               {course.countsTowards.map((item, index) => (
                 <div key={item} className="flex items-center gap-2.5">
@@ -314,7 +374,9 @@ export default function CoursePage() {
         </aside>
       </div>
 
-      {planCourse && <TermChooser course={planCourse} onClose={() => setPlanCourse(null)} />}
+      {planCourse && (
+        <TermChooser course={planCourse} onClose={() => setPlanCourse(null)} />
+      )}
     </AppShell>
   );
 }

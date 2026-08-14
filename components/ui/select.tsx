@@ -57,7 +57,12 @@ export function Select<T extends string | number>({
   const openMenu = () => {
     if (disabled) return;
     place();
-    setActive(Math.max(0, options.findIndex((option) => option.value === value)));
+    setActive(
+      Math.max(
+        0,
+        options.findIndex((option) => option.value === value),
+      ),
+    );
     setOpen(true);
   };
 
@@ -104,13 +109,17 @@ export function Select<T extends string | number>({
         aria-expanded={open}
         onClick={() => (open ? close() : openMenu())}
         onKeyDown={(event) => {
-          if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+          if (
+            event.key === "ArrowDown" ||
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
             event.preventDefault();
             openMenu();
           }
         }}
         className={cn(
-          "flex h-10 w-full items-center justify-between gap-2 rounded-lg bg-white px-3 text-left text-[13px] text-zinc-900 shadow-xs ring-1 ring-inset ring-zinc-200 transition hover:ring-zinc-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:pointer-events-none disabled:opacity-50 data-[open=true]:ring-brand-400",
+          "flex h-10 w-full items-center justify-between gap-2 rounded-lg bg-white px-3 text-left text-[13px] text-zinc-900 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:ring-zinc-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 disabled:pointer-events-none disabled:opacity-50 data-[open=true]:ring-brand-400",
           className,
         )}
         data-open={open}
@@ -120,7 +129,10 @@ export function Select<T extends string | number>({
         </span>
         <ChevronDown
           size={15}
-          className={cn("shrink-0 text-zinc-400 transition", open && "rotate-180")}
+          className={cn(
+            "shrink-0 text-zinc-400 transition",
+            open && "rotate-180",
+          )}
         />
       </button>
 
@@ -153,13 +165,16 @@ export function Select<T extends string | number>({
               return {
                 position: "fixed" as const,
                 top: rect.bottom + 6,
-                left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+                left: Math.max(
+                  8,
+                  Math.min(rect.left, window.innerWidth - width - 8),
+                ),
                 width,
                 maxHeight: `min(18rem, ${Math.max(120, window.innerHeight - rect.bottom - 24)}px)`,
               };
             })()}
             className={cn(
-              "z-[120] overflow-y-auto rounded-xl bg-white p-1 shadow-lg ring-1 ring-zinc-200 animate-modal-in",
+              "z-[120] animate-modal-in overflow-y-auto rounded-xl bg-white p-1 shadow-lg ring-1 ring-zinc-200",
               menuClassName,
             )}
           >
@@ -175,11 +190,15 @@ export function Select<T extends string | number>({
                   onClick={() => commit(option)}
                   className={cn(
                     "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition",
-                    index === active ? "bg-zinc-100 text-zinc-900" : "text-zinc-700 hover:bg-zinc-50",
+                    index === active
+                      ? "bg-zinc-100 text-zinc-900"
+                      : "text-zinc-700 hover:bg-zinc-50",
                   )}
                 >
                   <span className="truncate">{option.label}</span>
-                  {isSelected && <Check size={14} className="shrink-0 text-brand-600" />}
+                  {isSelected && (
+                    <Check size={14} className="shrink-0 text-brand-600" />
+                  )}
                 </button>
               );
             })}

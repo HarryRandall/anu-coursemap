@@ -51,7 +51,7 @@ export function AppShell({
         <Topbar actions={actions} onOpenNav={() => setMobileOpen(true)} />
         <main
           className={cn(
-            "min-h-[calc(100dvh-4rem)] min-w-0 w-full max-w-none bg-zinc-50/60",
+            "min-h-[calc(100dvh-4rem)] w-full max-w-none min-w-0 bg-zinc-50/60",
             !fullBleed && "px-4 py-6 sm:px-6 sm:py-7",
           )}
         >
@@ -59,7 +59,9 @@ export function AppShell({
         </main>
       </div>
 
-      {!admin && searchOpen && <SearchDialog onClose={() => setSearchOpen(false)} />}
+      {!admin && searchOpen && (
+        <SearchDialog onClose={() => setSearchOpen(false)} />
+      )}
     </div>
   );
 }

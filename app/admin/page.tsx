@@ -71,7 +71,11 @@ const reviewQueue = [
 
 export default function AdminOverviewPage() {
   return (
-    <AppShell title="Catalogue overview" subtitle="Mock admin data · Supabase ready" admin>
+    <AppShell
+      title="Catalogue overview"
+      subtitle="Mock admin data · Supabase ready"
+      admin
+    >
       <h1 className="sr-only">Catalogue health at a glance</h1>
 
       {/* Compact single-row KPIs */}
@@ -82,16 +86,20 @@ export default function AdminOverviewPage() {
             href={kpi.href}
             className="group flex items-center gap-3 rounded-xl bg-white p-3.5 shadow-xs ring-1 ring-zinc-200/70 transition hover:ring-zinc-300"
           >
-            <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${kpi.tone}`}>
+            <span
+              className={`grid size-9 shrink-0 place-items-center rounded-lg ${kpi.tone}`}
+            >
               {kpi.icon}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[11px] font-medium text-zinc-500">
                 {kpi.label}
               </span>
-              <span className="block text-lg font-bold leading-tight tracking-tight text-zinc-900">
+              <span className="block text-lg leading-tight font-bold tracking-tight text-zinc-900">
                 {kpi.value}
-                <span className="ml-1.5 text-[10px] font-medium text-zinc-400">{kpi.note}</span>
+                <span className="ml-1.5 text-[10px] font-medium text-zinc-400">
+                  {kpi.note}
+                </span>
               </span>
             </span>
             <ArrowRight
@@ -108,8 +116,12 @@ export default function AdminOverviewPage() {
         <Card className="p-5">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900">Changed pages</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">Daily incremental checks · last 7 runs</p>
+              <h2 className="text-sm font-semibold text-zinc-900">
+                Changed pages
+              </h2>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Daily incremental checks · last 7 runs
+              </p>
             </div>
             <Badge tone="success">Low churn</Badge>
           </div>
@@ -124,13 +136,26 @@ export default function AdminOverviewPage() {
             <div className="absolute inset-x-0 bottom-6 h-px bg-zinc-200" />
             <div className="absolute inset-0 flex items-end justify-around gap-3 pb-6">
               {changes.map((value, index) => (
-                <div key={index} className="relative flex h-full w-8 flex-col items-center justify-end">
-                  <span className="mb-1 text-[10px] font-medium text-zinc-400">{value}</span>
+                <div
+                  key={index}
+                  className="relative flex h-full w-8 flex-col items-center justify-end"
+                >
+                  <span className="mb-1 text-[10px] font-medium text-zinc-400">
+                    {value}
+                  </span>
                   <div
-                    className={value === 0 ? "w-5 rounded-full bg-zinc-200" : "w-5 rounded-full bg-brand-500"}
-                    style={{ height: `${Math.max(3, (value / maxChange) * 82)}%` }}
+                    className={
+                      value === 0
+                        ? "w-5 rounded-full bg-zinc-200"
+                        : "w-5 rounded-full bg-brand-500"
+                    }
+                    style={{
+                      height: `${Math.max(3, (value / maxChange) * 82)}%`,
+                    }}
                   />
-                  <span className="absolute -bottom-5 text-[10px] text-zinc-400">{days[index]}</span>
+                  <span className="absolute -bottom-5 text-[10px] text-zinc-400">
+                    {days[index]}
+                  </span>
                 </div>
               ))}
             </div>
@@ -140,7 +165,9 @@ export default function AdminOverviewPage() {
         {/* Parse state donut */}
         <Card className="p-5">
           <h2 className="text-sm font-semibold text-zinc-900">Parse state</h2>
-          <p className="mt-0.5 text-xs text-zinc-500">Across 2026 versioned entities</p>
+          <p className="mt-0.5 text-xs text-zinc-500">
+            Across 2026 versioned entities
+          </p>
           <div className="mt-6 flex flex-col items-center gap-8 sm:flex-row sm:justify-center">
             <div
               className="grid size-32 place-items-center rounded-full"
@@ -153,7 +180,9 @@ export default function AdminOverviewPage() {
             >
               <div className="grid size-[6.25rem] place-items-center rounded-full bg-white text-center">
                 <div>
-                  <p className="text-lg font-bold tracking-tight text-zinc-900">98.5%</p>
+                  <p className="text-lg font-bold tracking-tight text-zinc-900">
+                    98.5%
+                  </p>
                   <p className="text-[10px] text-zinc-400">usable</p>
                 </div>
               </div>
@@ -178,8 +207,12 @@ export default function AdminOverviewPage() {
         <Card className="p-5">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900">Review queue</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">Issues grouped by parser finding</p>
+              <h2 className="text-sm font-semibold text-zinc-900">
+                Review queue
+              </h2>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Issues grouped by parser finding
+              </p>
             </div>
             <Link
               href="/admin/relations?state=review"
@@ -192,13 +225,18 @@ export default function AdminOverviewPage() {
             {reviewQueue.map((item) => (
               <div key={item.label}>
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-medium text-zinc-700">{item.label}</span>
+                  <span className="font-medium text-zinc-700">
+                    {item.label}
+                  </span>
                   <span className="text-zinc-400">{item.value}</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-100">
                   <div
                     className="h-full rounded-full"
-                    style={{ width: `${(item.value / 21) * 100}%`, background: item.colour }}
+                    style={{
+                      width: `${(item.value / 21) * 100}%`,
+                      background: item.colour,
+                    }}
                   />
                 </div>
               </div>
@@ -210,8 +248,12 @@ export default function AdminOverviewPage() {
         <Card className="p-5">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-zinc-900">Latest catalogue run</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">12 Aug 2026 at 2:15 am</p>
+              <h2 className="text-sm font-semibold text-zinc-900">
+                Latest catalogue run
+              </h2>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                12 Aug 2026 at 2:15 am
+              </p>
             </div>
             <Badge tone="success">
               <CheckCircle2 size={12} /> Complete
@@ -225,7 +267,9 @@ export default function AdminOverviewPage() {
               ["0", "failed"],
             ].map(([value, label]) => (
               <div key={label} className="px-3 py-3">
-                <p className="text-base font-bold tracking-tight text-zinc-900">{value}</p>
+                <p className="text-base font-bold tracking-tight text-zinc-900">
+                  {value}
+                </p>
                 <p className="text-[10px] text-zinc-400">{label}</p>
               </div>
             ))}
@@ -234,7 +278,9 @@ export default function AdminOverviewPage() {
             <Clock3 size={16} className="text-zinc-400" />
             <div className="flex-1">
               <p className="text-[12px] font-semibold text-zinc-800">9m 14s</p>
-              <p className="text-[10px] text-zinc-400">Incremental · 2026 courses</p>
+              <p className="text-[10px] text-zinc-400">
+                Incremental · 2026 courses
+              </p>
             </div>
             <Link
               href="/admin/sync"

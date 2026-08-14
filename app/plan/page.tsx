@@ -35,7 +35,11 @@ import {
 } from "@/lib/planner";
 
 type Entry = { attempt: Attempt; course: Course; status: EffectiveStatus };
-type PendingDrop = { attemptId: string; termId: string; beforeAttemptId?: string };
+type PendingDrop = {
+  attemptId: string;
+  termId: string;
+  beforeAttemptId?: string;
+};
 type DragPointer = {
   initialX: number;
   initialY: number;
@@ -47,9 +51,17 @@ type DragPointer = {
 const STANDARD_COURSE_SLOTS = 4;
 
 /** Single muted status mark - the only colour on the board. */
-function StatusMark({ status, size = 15 }: { status: EffectiveStatus; size?: number }) {
-  if (status === "completed") return <CheckCircle2 size={size} className="shrink-0 text-emerald-500" />;
-  if (status === "failed") return <XCircle size={size} className="shrink-0 text-rose-500" />;
+function StatusMark({
+  status,
+  size = 15,
+}: {
+  status: EffectiveStatus;
+  size?: number;
+}) {
+  if (status === "completed")
+    return <CheckCircle2 size={size} className="shrink-0 text-emerald-500" />;
+  if (status === "failed")
+    return <XCircle size={size} className="shrink-0 text-rose-500" />;
   if (status === "blocked" || status === "approval")
     return <AlertTriangle size={size} className="shrink-0 text-amber-500" />;
   return <Circle size={size} className="shrink-0 text-zinc-300" />;
@@ -70,12 +82,18 @@ export default function PlanPage() {
 
   const scheduledYears = useMemo(
     () =>
-      [...new Set(terms.filter((term) => term.id !== "unscheduled").map((term) => term.year))].map(
-        (year) => ({
-          year,
-          terms: terms.filter((term) => term.year === year && term.id !== "unscheduled"),
-        }),
-      ),
+      [
+        ...new Set(
+          terms
+            .filter((term) => term.id !== "unscheduled")
+            .map((term) => term.year),
+        ),
+      ].map((year) => ({
+        year,
+        terms: terms.filter(
+          (term) => term.year === year && term.id !== "unscheduled",
+        ),
+      })),
     [],
   );
   const unscheduled = terms.find((term) => term.id === "unscheduled");
@@ -93,14 +111,19 @@ export default function PlanPage() {
       .map((attempt) => {
         const course = courseByCode(attempt.courseCode);
         return course
-          ? { attempt, course, status: effectiveStatus(attempt, state.attempts) }
+          ? {
+              attempt,
+              course,
+              status: effectiveStatus(attempt, state.attempts),
+            }
           : null;
       })
       .filter((entry): entry is Entry => Boolean(entry));
 
   const unitsOf = (entries: Entry[]) =>
     entries.reduce(
-      (total, entry) => total + (entry.status === "failed" ? 0 : entry.course.units),
+      (total, entry) =>
+        total + (entry.status === "failed" ? 0 : entry.course.units),
       0,
     );
 
@@ -235,12 +258,16 @@ export default function PlanPage() {
         floatingCardRef.current.style.transform = `translate3d(${moveEvent.clientX - (event.clientX - rect.left)}px, ${moveEvent.clientY - (event.clientY - rect.top)}px, 0)`;
       }
 
-      if (moveEvent.clientY < 72) window.scrollBy({ top: -12, behavior: "auto" });
+      if (moveEvent.clientY < 72)
+        window.scrollBy({ top: -12, behavior: "auto" });
       if (moveEvent.clientY > window.innerHeight - 72) {
         window.scrollBy({ top: 12, behavior: "auto" });
       }
 
-      const target = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+      const target = document.elementFromPoint(
+        moveEvent.clientX,
+        moveEvent.clientY,
+      );
       const lane = target?.closest<HTMLElement>("[data-drop-term]");
       const termId = lane?.dataset.dropTerm;
       if (!lane || !termId) return;
@@ -271,7 +298,9 @@ export default function PlanPage() {
     const previewAttempt = dragging
       ? state.attempts.find((attempt) => attempt.id === dragging)
       : undefined;
-    const previewCourse = previewAttempt ? courseByCode(previewAttempt.courseCode) : undefined;
+    const previewCourse = previewAttempt
+      ? courseByCode(previewAttempt.courseCode)
+      : undefined;
     const previewEntry =
       previewAttempt && previewCourse
         ? {
@@ -280,7 +309,9 @@ export default function PlanPage() {
             status: effectiveStatus(previewAttempt, state.attempts),
           }
         : undefined;
-    const previewApplies = Boolean(previewEntry && dragPreview?.termId === term.id);
+    const previewApplies = Boolean(
+      previewEntry && dragPreview?.termId === term.id,
+    );
     const containsDragged = Boolean(
       dragging && entries.some((entry) => entry.attempt.id === dragging),
     );
@@ -291,17 +322,21 @@ export default function PlanPage() {
     );
     const emptySlots =
       term.id === "unscheduled"
-        ? entries.length === 0 && !previewUsesEmptySlot ? 1 : 0
+        ? entries.length === 0 && !previewUsesEmptySlot
+          ? 1
+          : 0
         : Math.max(
             0,
-            STANDARD_COURSE_SLOTS - entries.length - Number(previewUsesEmptySlot),
+            STANDARD_COURSE_SLOTS -
+              entries.length -
+              Number(previewUsesEmptySlot),
           );
 
     const dropPreview = previewEntry ? (
       <div
         key={`drop-preview-${previewEntry.attempt.id}-${term.id}`}
         aria-hidden="true"
-        className="pointer-events-none animate-drop-slot-in flex min-h-[52px] origin-top items-center gap-2.5 rounded-lg bg-brand-50/70 px-2 py-2 text-left ring-1 ring-inset ring-brand-200"
+        className="pointer-events-none flex min-h-[52px] origin-top animate-drop-slot-in items-center gap-2.5 rounded-lg bg-brand-50/70 px-2 py-2 text-left ring-1 ring-brand-200 ring-inset"
       >
         <GripVertical size={13} className="shrink-0 text-brand-300" />
         <StatusMark status={previewEntry.status} />
@@ -335,8 +370,15 @@ export default function PlanPage() {
             <span className="ml-2 font-normal text-zinc-400">{term.dates}</span>
           </p>
           <div className="flex items-center gap-1.5">
-            <span className={cn("text-[11px] font-medium", units > 24 ? "text-amber-600" : "text-zinc-400")}>
-              {term.id === "unscheduled" ? `${units} units` : `${units} / 24 units`}
+            <span
+              className={cn(
+                "text-[11px] font-medium",
+                units > 24 ? "text-amber-600" : "text-zinc-400",
+              )}
+            >
+              {term.id === "unscheduled"
+                ? `${units} units`
+                : `${units} / 24 units`}
               {units > 24 && " · Overload"}
             </span>
             <button
@@ -369,51 +411,52 @@ export default function PlanPage() {
               );
             }
             return (
-                <div
-                  key={entry.attempt.id}
-                  data-attempt-id={entry.attempt.id}
-                  className="group relative grid min-h-[52px] grid-cols-[1.75rem_minmax(0,1fr)] rounded-lg transition-colors hover:bg-zinc-50"
+              <div
+                key={entry.attempt.id}
+                data-attempt-id={entry.attempt.id}
+                className="group relative grid min-h-[52px] grid-cols-[1.75rem_minmax(0,1fr)] rounded-lg transition-colors hover:bg-zinc-50"
+              >
+                <button
+                  type="button"
+                  aria-label={`Reorder ${entry.course.code}`}
+                  onPointerDown={(event) =>
+                    startPointerDrag(event, entry, term)
+                  }
+                  className="grid cursor-grab touch-none place-items-center rounded-l-lg text-zinc-200 transition hover:text-zinc-500 active:cursor-grabbing"
                 >
-                  <button
-                    type="button"
-                    aria-label={`Reorder ${entry.course.code}`}
-                    onPointerDown={(event) => startPointerDrag(event, entry, term)}
-                    className="grid touch-none cursor-grab place-items-center rounded-l-lg text-zinc-200 transition hover:text-zinc-500 active:cursor-grabbing"
-                  >
-                    <GripVertical
-                      size={13}
-                      aria-hidden="true"
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAttempt(entry.attempt.id)}
-                    aria-describedby={note ? `course-issue-${entry.attempt.id}` : undefined}
-                    className="min-w-0 py-2 pr-2 text-left"
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <StatusMark status={entry.status} />
-                      <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-zinc-500">
-                        {entry.course.code}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
-                        {entry.course.name}
-                      </span>
-                      <span className="shrink-0 text-[11px] text-zinc-400">
-                        {entry.course.units}u
-                      </span>
+                  <GripVertical size={13} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAttempt(entry.attempt.id)}
+                  aria-describedby={
+                    note ? `course-issue-${entry.attempt.id}` : undefined
+                  }
+                  className="min-w-0 py-2 pr-2 text-left"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <StatusMark status={entry.status} />
+                    <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-zinc-500">
+                      {entry.course.code}
                     </span>
-                  </button>
-                  {note && (
-                    <span
-                      id={`course-issue-${entry.attempt.id}`}
-                      role="tooltip"
-                      className="pointer-events-none invisible absolute left-8 top-[calc(100%+0.25rem)] z-40 max-w-72 translate-y-1 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-[11px] font-medium leading-relaxed text-white opacity-0 shadow-lg transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100"
-                    >
-                      {note}
+                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
+                      {entry.course.name}
                     </span>
-                  )}
-                </div>
+                    <span className="shrink-0 text-[11px] text-zinc-400">
+                      {entry.course.units}u
+                    </span>
+                  </span>
+                </button>
+                {note && (
+                  <span
+                    id={`course-issue-${entry.attempt.id}`}
+                    role="tooltip"
+                    className="pointer-events-none invisible absolute top-[calc(100%+0.25rem)] left-8 z-40 max-w-72 translate-y-1 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-[11px] leading-relaxed font-medium text-white opacity-0 shadow-lg transition duration-150 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+                  >
+                    {note}
+                  </span>
+                )}
+              </div>
             );
           })}
           {previewUsesEmptySlot && dropPreview}
@@ -446,7 +489,9 @@ export default function PlanPage() {
   const draggedAttempt = dragging
     ? state.attempts.find((attempt) => attempt.id === dragging)
     : undefined;
-  const draggedCourse = draggedAttempt ? courseByCode(draggedAttempt.courseCode) : undefined;
+  const draggedCourse = draggedAttempt
+    ? courseByCode(draggedAttempt.courseCode)
+    : undefined;
   const draggedStatus = draggedAttempt
     ? effectiveStatus(draggedAttempt, state.attempts)
     : undefined;
@@ -455,7 +500,10 @@ export default function PlanPage() {
     <AppShell>
       <section aria-label="Course plan" className="year-board">
         <div className="mb-2.5 flex justify-end px-1">
-          <div className="flex gap-4 text-[11px] text-zinc-500" aria-label="Course statuses">
+          <div
+            className="flex gap-4 text-[11px] text-zinc-500"
+            aria-label="Course statuses"
+          >
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 size={12} className="text-emerald-500" /> Completed
             </span>
@@ -463,22 +511,31 @@ export default function PlanPage() {
               <Circle size={12} className="text-zinc-300" /> Planned
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <AlertTriangle size={12} className="text-amber-500" /> Needs attention
+              <AlertTriangle size={12} className="text-amber-500" /> Needs
+              attention
             </span>
           </div>
         </div>
 
         <div data-testid="roadmap-board" className="flex flex-col gap-5">
           {scheduledYears.map((yearGroup, index) => {
-            const yearEntries = yearGroup.terms.flatMap((term) => entriesFor(term.id));
+            const yearEntries = yearGroup.terms.flatMap((term) =>
+              entriesFor(term.id),
+            );
             return (
               <section className="year-row" key={yearGroup.year}>
                 <div className="mb-2 flex items-end justify-between px-1">
                   <div className="flex items-baseline gap-2">
-                    <h2 className="text-sm font-semibold text-zinc-900">Year {index + 1}</h2>
-                    <span className="text-xs text-zinc-400">{yearGroup.year}</span>
+                    <h2 className="text-sm font-semibold text-zinc-900">
+                      Year {index + 1}
+                    </h2>
+                    <span className="text-xs text-zinc-400">
+                      {yearGroup.year}
+                    </span>
                   </div>
-                  <span className="text-[11px] text-zinc-400">{unitsOf(yearEntries)} units</span>
+                  <span className="text-[11px] text-zinc-400">
+                    {unitsOf(yearEntries)} units
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {yearGroup.terms.map(renderLane)}
@@ -489,7 +546,9 @@ export default function PlanPage() {
 
           {unscheduled && (
             <section>
-              <h2 className="mb-2 px-1 text-sm font-semibold text-zinc-900">Later</h2>
+              <h2 className="mb-2 px-1 text-sm font-semibold text-zinc-900">
+                Later
+              </h2>
               {renderLane(unscheduled)}
             </section>
           )}
@@ -501,7 +560,7 @@ export default function PlanPage() {
           <div
             ref={floatingCardRef}
             aria-hidden="true"
-            className="absolute left-0 top-0 flex min-h-[52px] will-change-transform items-center gap-2.5 rounded-lg bg-white px-2 py-2 text-left opacity-95 shadow-lg ring-1 ring-zinc-200"
+            className="absolute top-0 left-0 flex min-h-[52px] items-center gap-2.5 rounded-lg bg-white px-2 py-2 text-left opacity-95 shadow-lg ring-1 ring-zinc-200 will-change-transform"
             style={{
               width: dragPointer.width,
               transform: `translate3d(${dragPointer.initialX - dragPointer.offsetX}px, ${dragPointer.initialY - dragPointer.offsetY}px, 0)`,
@@ -522,7 +581,9 @@ export default function PlanPage() {
         </div>
       )}
 
-      {pickerTerm && <CoursePicker termId={pickerTerm} onClose={() => setPickerTerm(null)} />}
+      {pickerTerm && (
+        <CoursePicker termId={pickerTerm} onClose={() => setPickerTerm(null)} />
+      )}
       {overloadTarget && (
         <Modal
           onClose={() => {
@@ -534,17 +595,21 @@ export default function PlanPage() {
         >
           <div className="p-5 sm:p-6">
             <div className="flex items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-200">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-200 ring-inset">
                 <AlertTriangle size={19} />
               </span>
-              <h2 id="overload-warning-title" className="text-lg font-bold tracking-tight text-zinc-900">
+              <h2
+                id="overload-warning-title"
+                className="text-lg font-bold tracking-tight text-zinc-900"
+              >
                 This semester is already full
               </h2>
             </div>
             <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">
               {pendingDrop
                 ? `Moving this course to ${overloadTarget.name} ${overloadTarget.year} would exceed the standard four-course, 24-unit study load.`
-                : `Adding another course would take ${overloadTarget.name} ${overloadTarget.year} above the standard four-course, 24-unit study load.`} Overloading may require approval.
+                : `Adding another course would take ${overloadTarget.name} ${overloadTarget.year} above the standard four-course, 24-unit study load.`}{" "}
+              Overloading may require approval.
             </p>
           </div>
           <div className="flex justify-end gap-2 border-t border-zinc-100 bg-zinc-50/70 px-5 py-3.5">
@@ -569,7 +634,10 @@ export default function PlanPage() {
         </Modal>
       )}
       {selectedAttempt && (
-        <CourseDrawer attemptId={selectedAttempt} onClose={() => setSelectedAttempt(null)} />
+        <CourseDrawer
+          attemptId={selectedAttempt}
+          onClose={() => setSelectedAttempt(null)}
+        />
       )}
     </AppShell>
   );

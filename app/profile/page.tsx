@@ -32,7 +32,14 @@ function SectionHead({
 }) {
   return (
     <header className="flex items-start gap-3 border-b border-zinc-100 px-5 py-4">
-      <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", tone)}>{icon}</span>
+      <span
+        className={cn(
+          "grid size-9 shrink-0 place-items-center rounded-lg",
+          tone,
+        )}
+      >
+        {icon}
+      </span>
       <div>
         <h2 className="text-[15px] font-semibold text-zinc-900">{title}</h2>
         <p className="mt-0.5 text-xs text-zinc-500">{description}</p>
@@ -49,8 +56,11 @@ function InfoTip({ text }: { text: string }) {
       aria-label={text}
       className="group relative inline-flex cursor-help"
     >
-      <Info size={13} className="text-zinc-300 transition group-hover:text-zinc-500 group-focus:text-zinc-500" />
-      <span className="pointer-events-none absolute right-0 top-full z-20 mt-1.5 w-56 rounded-lg bg-zinc-900 p-2.5 text-left text-[11px] font-normal leading-snug text-zinc-100 opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
+      <Info
+        size={13}
+        className="text-zinc-300 transition group-hover:text-zinc-500 group-focus:text-zinc-500"
+      />
+      <span className="pointer-events-none absolute top-full right-0 z-20 mt-1.5 w-56 rounded-lg bg-zinc-900 p-2.5 text-left text-[11px] leading-snug font-normal text-zinc-100 opacity-0 shadow-lg transition group-hover:opacity-100 group-focus:opacity-100">
         {text}
       </span>
     </button>
@@ -83,7 +93,8 @@ export default function ProfilePage() {
     notify("Demo profile and plan restored");
   };
 
-  const selectedDegree = degrees.find((item) => item.code === draft.degreeCode) ?? degrees[0];
+  const selectedDegree =
+    degrees.find((item) => item.code === draft.degreeCode) ?? degrees[0];
   const initials =
     draft.name
       .split(" ")
@@ -116,14 +127,18 @@ export default function ProfilePage() {
                 <Field label="Full name">
                   <Input
                     value={draft.name}
-                    onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                    onChange={(event) =>
+                      setDraft({ ...draft, name: event.target.value })
+                    }
                     placeholder="Your name"
                   />
                 </Field>
                 <Field label="Student ID">
                   <Input
                     value={draft.studentId}
-                    onChange={(event) => setDraft({ ...draft, studentId: event.target.value })}
+                    onChange={(event) =>
+                      setDraft({ ...draft, studentId: event.target.value })
+                    }
                     placeholder="u1234567"
                   />
                 </Field>
@@ -131,7 +146,9 @@ export default function ProfilePage() {
                   <Input
                     type="email"
                     value={draft.email}
-                    onChange={(event) => setDraft({ ...draft, email: event.target.value })}
+                    onChange={(event) =>
+                      setDraft({ ...draft, email: event.target.value })
+                    }
                     placeholder="name@anu.edu.au"
                   />
                 </Field>
@@ -139,7 +156,9 @@ export default function ProfilePage() {
                   <Select
                     aria-label="Commencement year"
                     value={draft.commencementYear}
-                    onChange={(value) => setDraft({ ...draft, commencementYear: value })}
+                    onChange={(value) =>
+                      setDraft({ ...draft, commencementYear: value })
+                    }
                     options={yearOptions([2024, 2025, 2026, 2027])}
                   />
                 </Field>
@@ -148,7 +167,10 @@ export default function ProfilePage() {
                     aria-label="Study load"
                     value={draft.studyLoad}
                     onChange={(value) =>
-                      setDraft({ ...draft, studyLoad: value as "Full time" | "Part time" })
+                      setDraft({
+                        ...draft,
+                        studyLoad: value as "Full time" | "Part time",
+                      })
                     }
                     options={[
                       { value: "Full time", label: "Full time" },
@@ -173,7 +195,9 @@ export default function ProfilePage() {
                     {selectedDegree.code.slice(0, 2)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold text-zinc-900">{selectedDegree.name}</p>
+                    <p className="text-[13px] font-semibold text-zinc-900">
+                      {selectedDegree.name}
+                    </p>
                     <p className="text-[11px] text-zinc-400">
                       {selectedDegree.code} · {selectedDegree.duration} years ·{" "}
                       {selectedDegree.units} units · {selectedDegree.college}
@@ -185,7 +209,9 @@ export default function ProfilePage() {
                   <Select
                     aria-label="Degree"
                     value={draft.degreeCode}
-                    onChange={(value) => setDraft({ ...draft, degreeCode: value })}
+                    onChange={(value) =>
+                      setDraft({ ...draft, degreeCode: value })
+                    }
                     options={degrees.map((degree) => ({
                       value: degree.code,
                       label: `${degree.name} (${degree.code})`,
@@ -208,7 +234,9 @@ export default function ProfilePage() {
                   <Select
                     aria-label="Rules year"
                     value={draft.catalogueYear}
-                    onChange={(value) => setDraft({ ...draft, catalogueYear: value })}
+                    onChange={(value) =>
+                      setDraft({ ...draft, catalogueYear: value })
+                    }
                     options={yearOptions([2024, 2025, 2026], " catalogue")}
                   />
                 </Field>
@@ -230,11 +258,15 @@ export default function ProfilePage() {
                     <button
                       key={major.code}
                       type="button"
-                      onClick={() => setDraft({ ...draft, majorCode: major.code })}
+                      onClick={() =>
+                        setDraft({ ...draft, majorCode: major.code })
+                      }
                       style={{ "--major": major.colour } as React.CSSProperties}
                       className={cn(
-                        "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition ring-1",
-                        selected ? "ring-2 ring-[var(--major)]" : "ring-zinc-200 hover:ring-zinc-300",
+                        "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left ring-1 transition",
+                        selected
+                          ? "ring-2 ring-[var(--major)]"
+                          : "ring-zinc-200 hover:ring-zinc-300",
                       )}
                     >
                       <span className="size-2.5 shrink-0 rounded-full bg-[var(--major)]" />
@@ -246,7 +278,12 @@ export default function ProfilePage() {
                           {major.code} · {major.units} units
                         </span>
                       </span>
-                      {selected && <Check size={14} className="shrink-0 text-[var(--major)]" />}
+                      {selected && (
+                        <Check
+                          size={14}
+                          className="shrink-0 text-[var(--major)]"
+                        />
+                      )}
                       <InfoTip text={major.description} />
                     </button>
                   );
@@ -264,15 +301,23 @@ export default function ProfilePage() {
               <h2 className="mt-3 text-lg font-bold tracking-tight text-zinc-900">
                 {draft.name || "Your profile"}
               </h2>
-              <p className="text-xs text-zinc-400">{draft.studentId || "No student ID"}</p>
+              <p className="text-xs text-zinc-400">
+                {draft.studentId || "No student ID"}
+              </p>
               <dl className="mt-5 w-full divide-y divide-zinc-100 border-y border-zinc-100 text-left text-[13px]">
                 {[
                   ["Degree", selectedDegree.name],
-                  ["Major", majors.find((item) => item.code === draft.majorCode)?.name],
+                  [
+                    "Major",
+                    majors.find((item) => item.code === draft.majorCode)?.name,
+                  ],
                   ["Rules", `${draft.catalogueYear} catalogue`],
                   ["Load", draft.studyLoad],
                 ].map(([label, value]) => (
-                  <div key={label} className="grid grid-cols-[5rem_1fr] gap-2 py-2.5">
+                  <div
+                    key={label}
+                    className="grid grid-cols-[5rem_1fr] gap-2 py-2.5"
+                  >
                     <dt className="text-xs text-zinc-400">{label}</dt>
                     <dd className="font-medium text-zinc-700">{value}</dd>
                   </div>
@@ -281,7 +326,9 @@ export default function ProfilePage() {
               <div className="mt-4 flex w-full items-start gap-2.5 rounded-xl bg-emerald-50/70 p-3 text-left ring-1 ring-emerald-100">
                 <Check size={16} className="mt-0.5 shrink-0 text-emerald-600" />
                 <div>
-                  <p className="text-xs font-semibold text-emerald-800">Saved locally for now</p>
+                  <p className="text-xs font-semibold text-emerald-800">
+                    Saved locally for now
+                  </p>
                   <p className="mt-0.5 text-[11px] leading-snug text-emerald-700/80">
                     Ready to move to Supabase when the database is connected.
                   </p>

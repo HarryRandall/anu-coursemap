@@ -74,7 +74,7 @@ export function RelationGraph({
     <div className="p-6 sm:p-10">
       <div className="mx-auto flex max-w-xl items-start">
         <div className="w-28 shrink-0 sm:w-32">
-          <p className="h-8 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+          <p className="h-8 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
             Prerequisite
           </p>
           {left.map((code) => nodeButton(code, "left"))}
@@ -93,7 +93,8 @@ export function RelationGraph({
               const yL = yOf(left.indexOf(edge.target));
               const yR = yOf(right.indexOf(edge.source));
               const isActive =
-                active !== "" && (edge.source === active || edge.target === active);
+                active !== "" &&
+                (edge.source === active || edge.target === active);
               return (
                 <path
                   key={edge.id}
@@ -102,7 +103,11 @@ export function RelationGraph({
                   vectorEffect="non-scaling-stroke"
                   className={cn(
                     "transition-[stroke]",
-                    isActive ? "stroke-brand-500" : active ? "stroke-zinc-200" : "stroke-zinc-300",
+                    isActive
+                      ? "stroke-brand-500"
+                      : active
+                        ? "stroke-zinc-200"
+                        : "stroke-zinc-300",
                   )}
                   strokeWidth={isActive ? 2 : 1.25}
                 />
@@ -112,7 +117,7 @@ export function RelationGraph({
         </div>
 
         <div className="w-28 shrink-0 sm:w-32">
-          <p className="h-8 text-right text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+          <p className="h-8 text-right text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
             Unlocks
           </p>
           {right.map((code) => nodeButton(code, "right"))}

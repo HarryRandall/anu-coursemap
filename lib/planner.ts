@@ -19,7 +19,10 @@ export function completedCodes(attempts: Attempt[]) {
  * earlier term or the same term — only prereqs scheduled later (or missing
  * entirely) are a problem.
  */
-export function missingPrereqs(attempt: Attempt, attempts: Attempt[]): string[] {
+export function missingPrereqs(
+  attempt: Attempt,
+  attempts: Attempt[],
+): string[] {
   const course = courseByCode(attempt.courseCode);
   if (!course) return [];
   const myOrder = orderOf(attempt.termId);
@@ -34,7 +37,10 @@ export function missingPrereqs(attempt: Attempt, attempts: Attempt[]): string[] 
   );
 }
 
-export function effectiveStatus(attempt: Attempt, attempts: Attempt[]): EffectiveStatus {
+export function effectiveStatus(
+  attempt: Attempt,
+  attempts: Attempt[],
+): EffectiveStatus {
   if (attempt.status !== "planned") return attempt.status;
   const course = courseByCode(attempt.courseCode);
   if (!course) return attempt.status;
@@ -56,7 +62,10 @@ export function statusLabel(status: EffectiveStatus) {
 
 export function earnedUnits(attempts: Attempt[]) {
   const unique = completedCodes(attempts);
-  return [...unique].reduce((total, code) => total + (courseByCode(code)?.units ?? 0), 0);
+  return [...unique].reduce(
+    (total, code) => total + (courseByCode(code)?.units ?? 0),
+    0,
+  );
 }
 
 export function mappedUnits(attempts: Attempt[]) {

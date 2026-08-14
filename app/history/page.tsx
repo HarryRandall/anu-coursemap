@@ -54,11 +54,18 @@ export default function HistoryPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {summary.map((item) => (
           <Card key={item.label} className="flex items-center gap-3 p-4">
-            <span className={cn("grid size-9 shrink-0 place-items-center rounded-lg", item.tone)}>
+            <span
+              className={cn(
+                "grid size-9 shrink-0 place-items-center rounded-lg",
+                item.tone,
+              )}
+            >
               {item.icon}
             </span>
             <div>
-              <p className="text-xl font-bold tracking-tight text-zinc-900">{item.value}</p>
+              <p className="text-xl font-bold tracking-tight text-zinc-900">
+                {item.value}
+              </p>
               <p className="text-[11px] text-zinc-400">{item.label}</p>
             </div>
           </Card>
@@ -68,14 +75,18 @@ export default function HistoryPage() {
       <Card className="mt-4 overflow-hidden">
         <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
           <div>
-            <h2 className="text-[15px] font-semibold text-zinc-900">All attempts</h2>
-            <p className="mt-0.5 text-xs text-zinc-500">Chronological view of your current demo plan.</p>
+            <h2 className="text-[15px] font-semibold text-zinc-900">
+              All attempts
+            </h2>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              Chronological view of your current demo plan.
+            </p>
           </div>
           <Badge tone="neutral">{attempts.length} records</Badge>
         </div>
 
         {/* Header row (desktop) */}
-        <div className="hidden grid-cols-[minmax(0,1.6fr)_1fr_0.8fr_0.5fr_0.8fr_auto] gap-4 border-b border-zinc-100 bg-zinc-50/70 px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 md:grid">
+        <div className="hidden grid-cols-[minmax(0,1.6fr)_1fr_0.8fr_0.5fr_0.8fr_auto] gap-4 border-b border-zinc-100 bg-zinc-50/70 px-5 py-2.5 text-[10px] font-bold tracking-wider text-zinc-400 uppercase md:grid">
           <span>Course</span>
           <span>Study period</span>
           <span>Status</span>
@@ -97,12 +108,18 @@ export default function HistoryPage() {
                 className="grid w-full grid-cols-[1fr_auto] items-center gap-4 px-5 py-3.5 text-left transition hover:bg-zinc-50/70 md:grid-cols-[minmax(0,1.6fr)_1fr_0.8fr_0.5fr_0.8fr_auto]"
               >
                 <span className="flex min-w-0 items-center gap-3">
-                  <CourseToken code={course.code} accent={course.accent} size="sm" />
+                  <CourseToken
+                    code={course.code}
+                    accent={course.accent}
+                    size="sm"
+                  />
                   <span className="min-w-0">
                     <span className="block truncate text-[13px] font-semibold text-zinc-900">
                       {course.code}
                     </span>
-                    <span className="block truncate text-[11px] text-zinc-400">{course.name}</span>
+                    <span className="block truncate text-[11px] text-zinc-400">
+                      {course.name}
+                    </span>
                   </span>
                 </span>
                 <span className="hidden text-[12px] text-zinc-600 md:block">
@@ -118,11 +135,18 @@ export default function HistoryPage() {
                     {attempt.status}
                   </span>
                 </span>
-                <span className="hidden text-[12px] text-zinc-600 md:block">{attempt.mark ?? "–"}</span>
                 <span className="hidden text-[12px] text-zinc-600 md:block">
-                  {attempt.status === "completed" ? `${course.units} units` : "0 units"}
+                  {attempt.mark ?? "–"}
                 </span>
-                <ArrowRight size={16} className="justify-self-end text-zinc-300" />
+                <span className="hidden text-[12px] text-zinc-600 md:block">
+                  {attempt.status === "completed"
+                    ? `${course.units} units`
+                    : "0 units"}
+                </span>
+                <ArrowRight
+                  size={16}
+                  className="justify-self-end text-zinc-300"
+                />
               </button>
             );
           })}
@@ -130,7 +154,10 @@ export default function HistoryPage() {
       </Card>
 
       {selectedAttempt && (
-        <CourseDrawer attemptId={selectedAttempt} onClose={() => setSelectedAttempt(null)} />
+        <CourseDrawer
+          attemptId={selectedAttempt}
+          onClose={() => setSelectedAttempt(null)}
+        />
       )}
     </AppShell>
   );

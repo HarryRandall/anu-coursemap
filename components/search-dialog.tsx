@@ -32,7 +32,12 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal onClose={onClose} align="top" className="w-full max-w-xl" labelledBy="search-dialog-title">
+    <Modal
+      onClose={onClose}
+      align="top"
+      className="w-full max-w-xl"
+      labelledBy="search-dialog-title"
+    >
       <h2 id="search-dialog-title" className="sr-only">
         Search courses
       </h2>
@@ -66,8 +71,12 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
         {results.length === 0 ? (
           <div className="flex flex-col items-center gap-1 px-4 py-12 text-center">
             <Search size={20} className="text-zinc-300" />
-            <p className="mt-2 text-sm font-medium text-zinc-700">No courses found</p>
-            <p className="text-xs text-zinc-400">Try a different code or keyword.</p>
+            <p className="mt-2 text-sm font-medium text-zinc-700">
+              No courses found
+            </p>
+            <p className="text-xs text-zinc-400">
+              Try a different code or keyword.
+            </p>
           </div>
         ) : (
           <ul role="listbox" aria-label="Course results">
@@ -84,7 +93,11 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
                     index === active ? "bg-zinc-100" : "hover:bg-zinc-50",
                   )}
                 >
-                  <CourseToken code={course.code} accent={course.accent} size="sm" />
+                  <CourseToken
+                    code={course.code}
+                    accent={course.accent}
+                    size="sm"
+                  />
                   <span className="min-w-0 flex-1">
                     <span className="truncate text-[13px] font-medium text-zinc-900">
                       {course.name}
@@ -94,7 +107,10 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
                     </span>
                   </span>
                   {index === active ? (
-                    <CornerDownLeft size={14} className="shrink-0 text-zinc-400" />
+                    <CornerDownLeft
+                      size={14}
+                      className="shrink-0 text-zinc-400"
+                    />
                   ) : (
                     <ArrowRight size={14} className="shrink-0 text-zinc-200" />
                   )}
@@ -107,13 +123,22 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
 
       <div className="flex items-center gap-3 border-t border-zinc-100 bg-zinc-50/70 px-4 py-2 text-[10px] text-zinc-400">
         <span>
-          <kbd className="rounded bg-white px-1 py-0.5 ring-1 ring-zinc-200">↑↓</kbd> navigate
+          <kbd className="rounded bg-white px-1 py-0.5 ring-1 ring-zinc-200">
+            ↑↓
+          </kbd>{" "}
+          navigate
         </span>
         <span>
-          <kbd className="rounded bg-white px-1 py-0.5 ring-1 ring-zinc-200">↵</kbd> open
+          <kbd className="rounded bg-white px-1 py-0.5 ring-1 ring-zinc-200">
+            ↵
+          </kbd>{" "}
+          open
         </span>
         <span>
-          <kbd className="rounded bg-white px-1 py-0.5 ring-1 ring-zinc-200">esc</kbd> close
+          <kbd className="rounded bg-white px-1 py-0.5 ring-1 ring-zinc-200">
+            esc
+          </kbd>{" "}
+          close
         </span>
       </div>
     </Modal>

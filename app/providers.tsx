@@ -40,9 +40,20 @@ type AppContextValue = {
   state: AppState;
   ready: boolean;
   updateProfile: (profile: Partial<Profile>) => void;
-  addCourse: (courseCode: string, termId: string) => { ok: boolean; message: string };
-  reorderAttempt: (attemptId: string, termId: string, beforeAttemptId?: string) => void;
-  updateAttempt: (attemptId: string, status: AttemptStatus, mark?: number) => void;
+  addCourse: (
+    courseCode: string,
+    termId: string,
+  ) => { ok: boolean; message: string };
+  reorderAttempt: (
+    attemptId: string,
+    termId: string,
+    beforeAttemptId?: string,
+  ) => void;
+  updateAttempt: (
+    attemptId: string,
+    status: AttemptStatus,
+    mark?: number,
+  ) => void;
   removeAttempt: (attemptId: string) => { ok: boolean; message: string };
   togglePermission: (attemptId: string) => void;
   toggleOverloadApproval: (attemptId: string) => void;
@@ -74,17 +85,24 @@ function normaliseAttempts(attempts: Attempt[]) {
 
     const lowestPriority = current.reduce(
       (lowest, item, index) =>
-        statusPriority[item.status] < statusPriority[current[lowest].status] ? index : lowest,
+        statusPriority[item.status] < statusPriority[current[lowest].status]
+          ? index
+          : lowest,
       0,
     );
-    if (statusPriority[attempt.status] > statusPriority[current[lowestPriority].status]) {
+    if (
+      statusPriority[attempt.status] >
+      statusPriority[current[lowestPriority].status]
+    ) {
       const replacement = [...current];
       replacement[lowestPriority] = attempt;
       selected.set(attempt.courseCode, replacement);
     }
   });
 
-  const selectedIds = new Set([...selected.values()].flat().map((attempt) => attempt.id));
+  const selectedIds = new Set(
+    [...selected.values()].flat().map((attempt) => attempt.id),
+  );
   return attempts.filter((attempt) => selectedIds.has(attempt.id));
 }
 
@@ -129,7 +147,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (isValidStoredState(parsed)) {
           window.queueMicrotask(() => {
             if (!cancelled) {
-              setState({ ...parsed, attempts: normaliseAttempts(parsed.attempts) });
+              setState({
+                ...parsed,
+                attempts: normaliseAttempts(parsed.attempts),
+              });
             }
           });
         }
@@ -141,7 +162,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) setReady(true);
       });
     }
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -172,7 +195,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         (attempt) => attempt.courseCode === courseCode,
       ).length;
       if (occurrenceCount >= courseOccurrenceLimit(courseCode)) {
-        result = { ok: false, message: `${courseCode} is already in your plan` };
+        result = {
+          ok: false,
+          message: `${courseCode} is already in your plan`,
+        };
         return current;
       }
       const id = `a-${courseCode.toLowerCase()}-${termId}-${current.attempts.length + 1}`;
@@ -190,10 +216,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const reorderAttempt = useCallback(
     (attemptId: string, termId: string, beforeAttemptId?: string) => {
       setState((current) => {
-        const moving = current.attempts.find((attempt) => attempt.id === attemptId);
+        const moving = current.attempts.find(
+          (attempt) => attempt.id === attemptId,
+        );
         if (!moving || beforeAttemptId === attemptId) return current;
 
-        const remaining = current.attempts.filter((attempt) => attempt.id !== attemptId);
+        const remaining = current.attempts.filter(
+          (attempt) => attempt.id !== attemptId,
+        );
         const next = { ...moving, termId };
         const beforeIndex = beforeAttemptId
           ? remaining.findIndex((attempt) => attempt.id === beforeAttemptId)
@@ -229,9 +259,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 status,
                 mark:
                   status === "completed"
-                    ? mark ?? attempt.mark ?? 68
+                    ? (mark ?? attempt.mark ?? 68)
                     : status === "failed"
-                      ? mark ?? attempt.mark ?? 42
+                      ? (mark ?? attempt.mark ?? 42)
                       : undefined,
               }
             : attempt,
@@ -246,10 +276,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setState((current) => {
       const attempt = current.attempts.find((item) => item.id === attemptId);
       if (attempt?.status === "completed" || attempt?.status === "failed") {
-        result = { ok: false, message: "Recorded attempts stay in your academic history" };
+        result = {
+          ok: false,
+          message: "Recorded attempts stay in your academic history",
+        };
         return current;
       }
-      if (attempt) result = { ok: true, message: `${attempt.courseCode} removed from the plan` };
+      if (attempt)
+        result = {
+          ok: true,
+          message: `${attempt.courseCode} removed from the plan`,
+        };
       return {
         ...current,
         attempts: current.attempts.filter((item) => item.id !== attemptId),
@@ -320,14 +357,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="fixed right-4 top-4 z-[200] flex w-[min(24rem,calc(100vw-2rem))] items-start gap-3 rounded-xl bg-white p-3.5 text-zinc-900 shadow-lg ring-1 ring-zinc-200 animate-toast-in sm:right-6 sm:top-6"
+          className="fixed top-4 right-4 z-[200] flex w-[min(24rem,calc(100vw-2rem))] animate-toast-in items-start gap-3 rounded-xl bg-white p-3.5 text-zinc-900 shadow-lg ring-1 ring-zinc-200 sm:top-6 sm:right-6"
         >
           <span
             aria-hidden="true"
             className={
               toast.tone === "warning"
-                ? "grid size-8 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100"
-                : "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-100"
+                ? "grid size-8 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100 ring-inset"
+                : "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 ring-inset"
             }
           >
             {toast.tone === "warning" ? (
