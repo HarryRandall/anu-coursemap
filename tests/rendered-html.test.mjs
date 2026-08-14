@@ -68,7 +68,7 @@ async function render(path = "/plan") {
 test("keeps the public entry, catalogue and authentication routes accessible", async () => {
   const [homeResponse, coursesResponse, signInResponse] = await Promise.all([
     render("/"),
-    render("/courses"),
+    render("/courses?q=COMP3900"),
     render("/auth/sign-in?next=%2F%2Fevil.example%2Fplan"),
   ]);
 
@@ -77,9 +77,16 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.equal(signInResponse.status, 200);
 
   const homeHtml = await homeResponse.text();
+  const coursesHtml = await coursesResponse.text();
   const signInHtml = await signInResponse.text();
   assert.match(homeHtml, /See how every course fits before you enrol/i);
+  assert.match(homeHtml, /name="q"/i);
+  assert.match(homeHtml, /Coursemap product areas/i);
+  assert.match(homeHtml, />Prerequisites<\/button>/i);
+  assert.match(homeHtml, /Start with a course, then build the rest/i);
   assert.match(homeHtml, /Explore courses/i);
+  assert.match(coursesHtml, /1(?:<!-- -->)? results/i);
+  assert.match(coursesHtml, /Computing Project/i);
   assert.match(signInHtml, /Sign in to your plan/i);
   assert.match(signInHtml, /name="next" value="\/plan"/i);
 });

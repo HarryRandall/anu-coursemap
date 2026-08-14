@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 
 export type ButtonVariant =
   "primary" | "secondary" | "ghost" | "subtle" | "danger";
-export type ButtonSize = "sm" | "md";
+export type ButtonSize = "sm" | "md" | "lg";
 
 const base =
   "inline-flex select-none items-center justify-center gap-2 rounded-lg font-semibold whitespace-nowrap transition-[background,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400";
@@ -12,6 +12,7 @@ const base =
 const sizes: Record<ButtonSize, string> = {
   sm: "h-8 px-2.5 text-xs",
   md: "h-10 px-3.5 text-[13px]",
+  lg: "h-12 px-5 text-sm",
 };
 
 const variants: Record<ButtonVariant, string> = {
