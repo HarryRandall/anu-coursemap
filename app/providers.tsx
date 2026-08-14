@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -11,6 +12,7 @@ import {
 import {
   Attempt,
   AttemptStatus,
+  courseOccurrenceLimit,
   initialAttempts,
 } from "@/lib/catalogue";
 
@@ -31,22 +33,60 @@ type AppState = {
   attempts: Attempt[];
 };
 
+type ToastTone = "success" | "warning";
+type Toast = { message: string; tone: ToastTone };
+
 type AppContextValue = {
   state: AppState;
   ready: boolean;
   updateProfile: (profile: Partial<Profile>) => void;
   addCourse: (courseCode: string, termId: string) => { ok: boolean; message: string };
-  moveAttempt: (attemptId: string, termId: string) => void;
+  reorderAttempt: (attemptId: string, termId: string, beforeAttemptId?: string) => void;
   updateAttempt: (attemptId: string, status: AttemptStatus, mark?: number) => void;
   removeAttempt: (attemptId: string) => { ok: boolean; message: string };
   togglePermission: (attemptId: string) => void;
   toggleOverloadApproval: (attemptId: string) => void;
   resetDemo: () => void;
-  toast: string | null;
-  notify: (message: string) => void;
+  toast: Toast | null;
+  notify: (message: string, tone?: ToastTone) => void;
 };
 
 const STORAGE_KEY = "coursemap.demo.v1";
+
+const statusPriority: Record<AttemptStatus, number> = {
+  completed: 4,
+  enrolled: 3,
+  planned: 2,
+  failed: 1,
+};
+
+function normaliseAttempts(attempts: Attempt[]) {
+  const selected = new Map<string, Attempt[]>();
+
+  attempts.forEach((attempt) => {
+    const current = selected.get(attempt.courseCode) ?? [];
+    const limit = courseOccurrenceLimit(attempt.courseCode);
+
+    if (current.length < limit) {
+      selected.set(attempt.courseCode, [...current, attempt]);
+      return;
+    }
+
+    const lowestPriority = current.reduce(
+      (lowest, item, index) =>
+        statusPriority[item.status] < statusPriority[current[lowest].status] ? index : lowest,
+      0,
+    );
+    if (statusPriority[attempt.status] > statusPriority[current[lowestPriority].status]) {
+      const replacement = [...current];
+      replacement[lowestPriority] = attempt;
+      selected.set(attempt.courseCode, replacement);
+    }
+  });
+
+  const selectedIds = new Set([...selected.values()].flat().map((attempt) => attempt.id));
+  return attempts.filter((attempt) => selectedIds.has(attempt.id));
+}
 
 const defaultState: AppState = {
   schemaVersion: 1,
@@ -60,7 +100,7 @@ const defaultState: AppState = {
     majorCode: "SOFT-MAJ",
     studyLoad: "Full time",
   },
-  attempts: initialAttempts,
+  attempts: normaliseAttempts(initialAttempts),
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -78,7 +118,7 @@ function isValidStoredState(value: unknown): value is AppState {
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(defaultState);
   const [ready, setReady] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,7 +128,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const parsed: unknown = JSON.parse(stored);
         if (isValidStoredState(parsed)) {
           window.queueMicrotask(() => {
-            if (!cancelled) setState(parsed);
+            if (!cancelled) {
+              setState({ ...parsed, attempts: normaliseAttempts(parsed.attempts) });
+            }
           });
         }
       }
@@ -106,10 +148,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (ready) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [ready, state]);
 
-  const notify = useCallback((message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(null), 2600);
+  const notify = useCallback((message: string, tone: ToastTone = "success") => {
+    setToast({ message, tone });
   }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(null), 3600);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
 
   const updateProfile = useCallback((profile: Partial<Profile>) => {
     setState((current) => ({
@@ -121,14 +168,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const addCourse = useCallback((courseCode: string, termId: string) => {
     let result = { ok: true, message: `${courseCode} added to the plan` };
     setState((current) => {
-      const duplicate = current.attempts.some(
-        (attempt) =>
-          attempt.courseCode === courseCode &&
-          attempt.status !== "failed" &&
-          attempt.termId === termId,
-      );
-      if (duplicate) {
-        result = { ok: false, message: `${courseCode} is already in that semester` };
+      const occurrenceCount = current.attempts.filter(
+        (attempt) => attempt.courseCode === courseCode,
+      ).length;
+      if (occurrenceCount >= courseOccurrenceLimit(courseCode)) {
+        result = { ok: false, message: `${courseCode} is already in your plan` };
         return current;
       }
       const id = `a-${courseCode.toLowerCase()}-${termId}-${current.attempts.length + 1}`;
@@ -143,14 +187,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return result;
   }, []);
 
-  const moveAttempt = useCallback((attemptId: string, termId: string) => {
-    setState((current) => ({
-      ...current,
-      attempts: current.attempts.map((attempt) =>
-        attempt.id === attemptId ? { ...attempt, termId } : attempt,
-      ),
-    }));
-  }, []);
+  const reorderAttempt = useCallback(
+    (attemptId: string, termId: string, beforeAttemptId?: string) => {
+      setState((current) => {
+        const moving = current.attempts.find((attempt) => attempt.id === attemptId);
+        if (!moving || beforeAttemptId === attemptId) return current;
+
+        const remaining = current.attempts.filter((attempt) => attempt.id !== attemptId);
+        const next = { ...moving, termId };
+        const beforeIndex = beforeAttemptId
+          ? remaining.findIndex((attempt) => attempt.id === beforeAttemptId)
+          : -1;
+
+        if (beforeIndex >= 0) {
+          remaining.splice(beforeIndex, 0, next);
+        } else {
+          let insertAt = remaining.length;
+          for (let index = remaining.length - 1; index >= 0; index -= 1) {
+            if (remaining[index].termId === termId) {
+              insertAt = index + 1;
+              break;
+            }
+          }
+          remaining.splice(insertAt, 0, next);
+        }
+
+        return { ...current, attempts: remaining };
+      });
+    },
+    [],
+  );
 
   const updateAttempt = useCallback(
     (attemptId: string, status: AttemptStatus, mark?: number) => {
@@ -183,6 +249,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         result = { ok: false, message: "Recorded attempts stay in your academic history" };
         return current;
       }
+      if (attempt) result = { ok: true, message: `${attempt.courseCode} removed from the plan` };
       return {
         ...current,
         attempts: current.attempts.filter((item) => item.id !== attemptId),
@@ -221,7 +288,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ready,
       updateProfile,
       addCourse,
-      moveAttempt,
+      reorderAttempt,
       updateAttempt,
       removeAttempt,
       togglePermission,
@@ -235,7 +302,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ready,
       updateProfile,
       addCourse,
-      moveAttempt,
+      reorderAttempt,
       updateAttempt,
       removeAttempt,
       togglePermission,
@@ -250,9 +317,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={value}>
       {children}
       {toast && (
-        <div className="toast" role="status" aria-live="polite">
-          <span aria-hidden="true">✓</span>
-          {toast}
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed right-4 top-4 z-[200] flex w-[min(24rem,calc(100vw-2rem))] items-start gap-3 rounded-xl bg-white p-3.5 text-zinc-900 shadow-lg ring-1 ring-zinc-200 animate-toast-in sm:right-6 sm:top-6"
+        >
+          <span
+            aria-hidden="true"
+            className={
+              toast.tone === "warning"
+                ? "grid size-8 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100"
+                : "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-100"
+            }
+          >
+            {toast.tone === "warning" ? (
+              <AlertTriangle size={17} />
+            ) : (
+              <CheckCircle2 size={17} />
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold">
+              {toast.tone === "warning" ? "Action needed" : "Plan updated"}
+            </span>
+            <span className="mt-0.5 block text-[11px] leading-relaxed text-zinc-500">
+              {toast.message}
+            </span>
+          </span>
+          <button
+            type="button"
+            aria-label="Dismiss notification"
+            onClick={() => setToast(null)}
+            className="grid size-7 shrink-0 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
     </AppContext.Provider>

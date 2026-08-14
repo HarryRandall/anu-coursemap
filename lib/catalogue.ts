@@ -448,7 +448,7 @@ export const majors: Major[] = [
     code: "SOFT-MAJ",
     name: "Software Development",
     units: 48,
-    colour: "#635bdb",
+    colour: "#8b5cf6",
     description: "Design, build and maintain dependable software systems.",
     courseCodes: ["COMP1100", "COMP1110", "COMP2100", "COMP2120", "COMP3703", "COMP3900"],
   },
@@ -519,7 +519,7 @@ export const relations: Relation[] = [
 ];
 
 export const requirementGroups = [
-  { id: "core", name: "Computing core", description: "Eight compulsory computing courses", total: 48, colour: "#635bdb" },
+  { id: "core", name: "Computing core", description: "Eight compulsory computing courses", total: 48, colour: "#8b5cf6" },
   { id: "math", name: "Mathematics requirement", description: "Six units from the approved mathematics list", total: 6, colour: "#2883d8" },
   { id: "major", name: "Selected major", description: "Complete one 48-unit computing major", total: 48, colour: "#158b68" },
   { id: "advanced", name: "Advanced computing", description: "At least 18 units of 3000-level COMP courses", total: 18, colour: "#ca7b16" },
@@ -528,6 +528,30 @@ export const requirementGroups = [
 
 export function courseByCode(code: string) {
   return courses.find((course) => course.code === code);
+}
+
+/** Direct prerequisites followed by every earlier prerequisite in the chain. */
+export function prerequisiteChainCodes(code: string) {
+  const result: string[] = [];
+  const visited = new Set<string>();
+
+  const visit = (courseCode: string) => {
+    const course = courseByCode(courseCode);
+    if (!course) return;
+    for (const prerequisite of course.prerequisiteCodes) {
+      if (visited.has(prerequisite)) continue;
+      visited.add(prerequisite);
+      result.push(prerequisite);
+      visit(prerequisite);
+    }
+  };
+
+  visit(code);
+  return result;
+}
+
+export function courseOccurrenceLimit(code: string) {
+  return courseByCode(code)?.units === 12 ? 2 : 1;
 }
 
 export function degreeByCode(code: string) {
