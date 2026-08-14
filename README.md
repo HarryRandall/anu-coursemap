@@ -65,6 +65,7 @@ intentionally disabled.
 | `npm run db:test`          | Run local pgTAP database tests                |
 | `npm run db:lint`          | Run strict local schema linting               |
 | `npm run db:types`         | Regenerate committed local database types     |
+| `npm run db:grant-preview` | Grant one local user draft catalogue access   |
 | `npm run catalogue:fetch`  | Fetch official ANU HTML into a local manifest |
 | `npm run catalogue:import` | Import a manifest into local Supabase         |
 | `npm run format:check`     | Check repository formatting                   |
@@ -112,6 +113,18 @@ COMP3500's 6+6 sequence and programme exclusions stay explicit in the review
 queue. Both structures remain `draft` and `review` until those exceptions and
 the six other major versions are resolved.
 
+Draft catalogue rows remain hidden by RLS. To test them with an existing local
+Auth account, grant the narrow preview role by email:
+
+```bash
+npm run db:grant-preview -- student@example.com
+```
+
+This command refuses non-loopback database connections. Signed-in students can
+then save their profile, primary programme and major, planned course periods and
+recorded results through owner-scoped database RPCs. Reloading the application
+hydrates that state from Supabase rather than browser storage.
+
 ANU Programs and Courses pages remain the authoritative source. Cached
 manifests are ignored local review artefacts; Coursemap stores normalised facts
 with their provenance, not a replacement catalogue. Imported rows remain
@@ -138,8 +151,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURIT
 
 ## Status
 
-Private alpha. The native Next.js foundation, local Supabase database and local
-magic-link authentication are in place. The reserved hosted project remains
-empty. Persistent user plans and verified catalogue ingestion are being
-introduced through focused pull requests before any hosted migration or Vercel
-deployment.
+Private alpha. The native Next.js foundation, local Supabase authentication,
+owner-scoped student plan persistence and draft ANU catalogue are in place. The
+reserved hosted project remains empty. Verified catalogue publication is the
+next data milestone.

@@ -39,8 +39,8 @@ export function CourseDrawer({
   const prereqsMet = missing.size === 0;
   const recorded =
     attempt.status === "completed" || attempt.status === "failed";
-  const remove = () => {
-    const result = removeAttempt(attempt.id);
+  const remove = async () => {
+    const result = await removeAttempt(attempt.id);
     notify(result.message, result.ok ? "success" : "warning");
     if (result.ok) onClose();
   };
@@ -261,14 +261,13 @@ export function CourseDrawer({
               attempt.status !== "completed" &&
                 "hover:!bg-emerald-50 hover:!text-emerald-700 hover:!ring-emerald-200",
             )}
-            onClick={() => {
-              const nextStatus =
-                attempt.status === "completed" ? "planned" : "completed";
-              updateAttempt(attempt.id, nextStatus);
+            onClick={async () => {
+              const result = await updateAttempt(attempt.id, "completed");
               notify(
-                nextStatus === "completed"
+                result.ok
                   ? `${course.code} marked as completed`
-                  : `${course.code} marked as planned`,
+                  : result.message,
+                result.ok ? "success" : "warning",
               );
             }}
           >
@@ -285,14 +284,13 @@ export function CourseDrawer({
               attempt.status !== "failed" &&
                 "hover:!bg-rose-50 hover:!text-rose-700 hover:!ring-rose-200",
             )}
-            onClick={() => {
-              const nextStatus =
-                attempt.status === "failed" ? "planned" : "failed";
-              updateAttempt(attempt.id, nextStatus);
+            onClick={async () => {
+              const result = await updateAttempt(attempt.id, "failed");
               notify(
-                nextStatus === "failed"
+                result.ok
                   ? `${course.code} recorded as a failed attempt`
-                  : `${course.code} marked as planned`,
+                  : result.message,
+                result.ok ? "success" : "warning",
               );
             }}
           >
@@ -304,7 +302,7 @@ export function CourseDrawer({
             size="sm"
             fullWidth
             disabled={recorded}
-            onClick={remove}
+            onClick={() => void remove()}
           >
             <Trash2 size={14} /> Remove
           </Button>

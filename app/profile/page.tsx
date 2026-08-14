@@ -79,14 +79,14 @@ export default function ProfilePage() {
     window.queueMicrotask(() => setDraft(profile));
   }, [ready, state.profile]);
 
-  const save = (event: FormEvent) => {
+  const save = async (event: FormEvent) => {
     event.preventDefault();
     if (!draft.name.trim() || !draft.studentId.trim()) {
       notify("Add your name and student ID before saving");
       return;
     }
-    updateProfile(draft);
-    notify("Profile and academic plan saved");
+    const result = await updateProfile(draft);
+    notify(result.message, result.ok ? "success" : "warning");
   };
 
   const reset = () => {
@@ -164,7 +164,9 @@ export default function ProfilePage() {
                   <Input
                     type="email"
                     value={draft.email}
+                    readOnly={!demoMode}
                     onChange={(event) =>
+                      demoMode &&
                       setDraft({ ...draft, email: event.target.value })
                     }
                     placeholder="name@anu.edu.au"

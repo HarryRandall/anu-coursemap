@@ -1065,6 +1065,8 @@ export type Database = {
           notes: string | null
           owner_id: string
           plan_id: string
+          planned_calendar_year: number | null
+          planned_period_code: string | null
           sort_order: number
           updated_at: string
         }
@@ -1076,6 +1078,8 @@ export type Database = {
           notes?: string | null
           owner_id: string
           plan_id: string
+          planned_calendar_year?: number | null
+          planned_period_code?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -1087,6 +1091,8 @@ export type Database = {
           notes?: string | null
           owner_id?: string
           plan_id?: string
+          planned_calendar_year?: number | null
+          planned_period_code?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -1393,9 +1399,50 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_current_user_plan_item: {
+        Args: {
+          p_course_code: string
+          p_planned_calendar_year?: number
+          p_planned_period_code?: string
+        }
+        Returns: string
+      }
       current_user_has_permission: {
         Args: { required_permission: string }
         Returns: boolean
+      }
+      move_current_user_plan_item: {
+        Args: {
+          p_before_plan_item_id?: string
+          p_plan_item_id: string
+          p_planned_calendar_year?: number
+          p_planned_period_code?: string
+        }
+        Returns: undefined
+      }
+      record_current_user_course_attempt: {
+        Args: {
+          p_attempt_mark?: number
+          p_attempt_status: string
+          p_plan_item_id: string
+        }
+        Returns: string
+      }
+      remove_current_user_plan_item: {
+        Args: { p_plan_item_id: string }
+        Returns: boolean
+      }
+      save_current_user_primary_plan: {
+        Args: {
+          p_catalogue_year: number
+          p_commencement_year: number
+          p_display_name: string
+          p_major_code?: string
+          p_programme_code: string
+          p_student_number: string
+          p_study_load: string
+        }
+        Returns: string
       }
     }
     Enums: {

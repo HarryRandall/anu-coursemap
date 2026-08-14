@@ -64,8 +64,8 @@ export function CoursePicker({
     [query, subject, level, convener, courseCounts],
   );
 
-  const choose = (course: Course) => {
-    const result = addCourse(course.code, termId);
+  const choose = async (course: Course) => {
+    const result = await addCourse(course.code, termId);
     notify(
       result.ok
         ? `${course.code} added to ${term.name}${term.year < 2029 ? ` ${term.year}` : ""}`
@@ -191,7 +191,7 @@ export function CoursePicker({
                   role="option"
                   aria-selected={selected?.code === course.code}
                   onClick={() => setSelected(course)}
-                  onDoubleClick={() => choose(course)}
+                  onDoubleClick={() => void choose(course)}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition",
                     selected?.code === course.code

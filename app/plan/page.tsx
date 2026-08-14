@@ -137,16 +137,23 @@ export default function PlanPage() {
     return null;
   };
 
-  const applyDrop = ({ attemptId, termId, beforeAttemptId }: PendingDrop) => {
+  const applyDrop = async ({
+    attemptId,
+    termId,
+    beforeAttemptId,
+  }: PendingDrop) => {
     const attempt = state.attempts.find((item) => item.id === attemptId);
     if (!attempt || attemptId === beforeAttemptId) return;
     const originalTermId = attempt.termId;
-    reorderAttempt(attemptId, termId, beforeAttemptId);
+    const result = await reorderAttempt(attemptId, termId, beforeAttemptId);
     const term = terms.find((item) => item.id === termId);
     notify(
-      originalTermId === termId
-        ? `${attempt.courseCode} reordered in ${term?.name} ${term?.year ?? ""}`
-        : `${attempt.courseCode} moved to ${term?.name} ${term?.year ?? ""}`,
+      result.ok
+        ? originalTermId === termId
+          ? `${attempt.courseCode} reordered in ${term?.name} ${term?.year ?? ""}`
+          : `${attempt.courseCode} moved to ${term?.name} ${term?.year ?? ""}`
+        : result.message,
+      result.ok ? "success" : "warning",
     );
   };
 

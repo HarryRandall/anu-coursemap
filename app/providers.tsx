@@ -16,8 +16,16 @@ import {
   initialAttempts,
 } from "@/lib/catalogue";
 import type { AuthViewer } from "@/lib/auth/viewer";
+import {
+  addPlanCourse,
+  movePlanCourse,
+  recordCourseAttempt,
+  removePlanCourse,
+  saveProfileAndPlan,
+  type CoursemapActionResult,
+} from "@/lib/coursemap/actions";
 
-type Profile = {
+export type Profile = {
   name: string;
   studentId: string;
   email: string;
@@ -28,7 +36,7 @@ type Profile = {
   studyLoad: "Full time" | "Part time";
 };
 
-type AppState = {
+export type AppState = {
   schemaVersion: 1;
   profile: Profile;
   attempts: Attempt[];
@@ -42,22 +50,22 @@ type AppContextValue = {
   ready: boolean;
   demoMode: boolean;
   canAccessAdmin: boolean;
-  updateProfile: (profile: Partial<Profile>) => void;
+  updateProfile: (profile: Partial<Profile>) => Promise<CoursemapActionResult>;
   addCourse: (
     courseCode: string,
     termId: string,
-  ) => { ok: boolean; message: string };
+  ) => Promise<CoursemapActionResult>;
   reorderAttempt: (
     attemptId: string,
     termId: string,
     beforeAttemptId?: string,
-  ) => void;
+  ) => Promise<CoursemapActionResult>;
   updateAttempt: (
     attemptId: string,
     status: AttemptStatus,
     mark?: number,
-  ) => void;
-  removeAttempt: (attemptId: string) => { ok: boolean; message: string };
+  ) => Promise<CoursemapActionResult>;
+  removeAttempt: (attemptId: string) => Promise<CoursemapActionResult>;
   togglePermission: (attemptId: string) => void;
   toggleOverloadApproval: (attemptId: string) => void;
   resetDemo: () => void;
@@ -162,15 +170,17 @@ export function AppProvider({
   demoMode,
   viewer,
   canAccessAdmin,
+  initialState: suppliedInitialState,
 }: {
   children: React.ReactNode;
   demoMode: boolean;
   viewer: AuthViewer | null;
   canAccessAdmin: boolean;
+  initialState?: AppState;
 }) {
   const initialState = useMemo(
-    () => createInitialState(demoMode, viewer),
-    [demoMode, viewer],
+    () => suppliedInitialState ?? createInitialState(demoMode, viewer),
+    [demoMode, suppliedInitialState, viewer],
   );
   const [state, setState] = useState<AppState>(initialState);
   const [ready, setReady] = useState(false);
@@ -244,40 +254,50 @@ export function AppProvider({
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  const updateProfile = useCallback((profile: Partial<Profile>) => {
-    setState((current) => ({
-      ...current,
-      profile: { ...current.profile, ...profile },
-    }));
-  }, []);
+  const updateProfile = useCallback(
+    async (profile: Partial<Profile>) => {
+      const nextProfile = { ...state.profile, ...profile };
+      if (!demoMode) {
+        const result = await saveProfileAndPlan(nextProfile);
+        if (!result.ok) return result;
+      }
+      setState((current) => ({ ...current, profile: nextProfile }));
+      return { ok: true, message: "Profile and academic plan saved" };
+    },
+    [demoMode, state.profile],
+  );
 
-  const addCourse = useCallback((courseCode: string, termId: string) => {
-    let result = { ok: true, message: `${courseCode} added to the plan` };
-    setState((current) => {
-      const occurrenceCount = current.attempts.filter(
+  const addCourse = useCallback(
+    async (courseCode: string, termId: string) => {
+      const occurrenceCount = state.attempts.filter(
         (attempt) => attempt.courseCode === courseCode,
       ).length;
       if (occurrenceCount >= courseOccurrenceLimit(courseCode)) {
-        result = {
-          ok: false,
-          message: `${courseCode} is already in your plan`,
-        };
-        return current;
+        return { ok: false, message: `${courseCode} is already in your plan` };
       }
-      const id = `a-${courseCode.toLowerCase()}-${termId}-${current.attempts.length + 1}`;
-      return {
+      const result = demoMode
+        ? {
+            ok: true,
+            id: `a-${courseCode.toLowerCase()}-${termId}-${state.attempts.length + 1}`,
+            message: `${courseCode} added to the plan`,
+          }
+        : await addPlanCourse(courseCode, termId);
+      if (!result.ok || !result.id) return result;
+      setState((current) => ({
         ...current,
         attempts: [
           ...current.attempts,
-          { id, courseCode, termId, status: "planned" },
+          { id: result.id!, courseCode, termId, status: "planned" },
         ],
-      };
-    });
-    return result;
-  }, []);
+      }));
+      return result;
+    },
+    [demoMode, state.attempts],
+  );
 
   const reorderAttempt = useCallback(
-    (attemptId: string, termId: string, beforeAttemptId?: string) => {
+    async (attemptId: string, termId: string, beforeAttemptId?: string) => {
+      const previousAttempts = state.attempts;
       setState((current) => {
         const moving = current.attempts.find(
           (attempt) => attempt.id === attemptId,
@@ -307,56 +327,90 @@ export function AppProvider({
 
         return { ...current, attempts: remaining };
       });
+      if (demoMode) return { ok: true, message: "Course moved" };
+      const result = await movePlanCourse(attemptId, termId, beforeAttemptId);
+      if (!result.ok) {
+        setState((current) => ({ ...current, attempts: previousAttempts }));
+      }
+      return result;
     },
-    [],
+    [demoMode, state.attempts],
   );
 
   const updateAttempt = useCallback(
-    (attemptId: string, status: AttemptStatus, mark?: number) => {
+    async (attemptId: string, status: AttemptStatus, mark?: number) => {
+      const attempt = state.attempts.find((item) => item.id === attemptId);
+      if (!attempt) return { ok: false, message: "Course was not found" };
+      if (!demoMode && attempt.status !== "planned") {
+        return {
+          ok: false,
+          message: "Recorded attempts stay in your academic history",
+        };
+      }
+      if (!demoMode && status === "planned") {
+        return {
+          ok: false,
+          message: "Recorded attempts stay in your academic history",
+        };
+      }
+      const savedMark =
+        status === "completed"
+          ? demoMode
+            ? (mark ?? attempt.mark ?? 68)
+            : mark
+          : status === "failed"
+            ? demoMode
+              ? (mark ?? attempt.mark ?? 42)
+              : mark
+            : undefined;
+      const result =
+        !demoMode && status !== "planned"
+          ? await recordCourseAttempt(attemptId, status, savedMark)
+          : { ok: true, id: attemptId, message: "Academic history updated" };
+      if (!result.ok) return result;
       setState((current) => ({
         ...current,
         attempts: current.attempts.map((attempt) =>
           attempt.id === attemptId
             ? {
                 ...attempt,
+                id: result.id ?? attempt.id,
                 status,
-                mark:
-                  status === "completed"
-                    ? (mark ?? attempt.mark ?? 68)
-                    : status === "failed"
-                      ? (mark ?? attempt.mark ?? 42)
-                      : undefined,
+                mark: savedMark,
               }
             : attempt,
         ),
       }));
+      return result;
     },
-    [],
+    [demoMode, state.attempts],
   );
 
-  const removeAttempt = useCallback((attemptId: string) => {
-    let result = { ok: true, message: "Course removed from the plan" };
-    setState((current) => {
-      const attempt = current.attempts.find((item) => item.id === attemptId);
+  const removeAttempt = useCallback(
+    async (attemptId: string) => {
+      const attempt = state.attempts.find((item) => item.id === attemptId);
       if (attempt?.status === "completed" || attempt?.status === "failed") {
-        result = {
+        return {
           ok: false,
           message: "Recorded attempts stay in your academic history",
         };
-        return current;
       }
-      if (attempt)
-        result = {
-          ok: true,
-          message: `${attempt.courseCode} removed from the plan`,
-        };
-      return {
+      if (!attempt) return { ok: false, message: "Course was not found" };
+      const result = demoMode
+        ? {
+            ok: true,
+            message: `${attempt.courseCode} removed from the plan`,
+          }
+        : await removePlanCourse(attemptId);
+      if (!result.ok) return result;
+      setState((current) => ({
         ...current,
         attempts: current.attempts.filter((item) => item.id !== attemptId),
-      };
-    });
-    return result;
-  }, []);
+      }));
+      return result;
+    },
+    [demoMode, state.attempts],
+  );
 
   const togglePermission = useCallback((attemptId: string) => {
     setState((current) => ({

@@ -45,9 +45,9 @@ export function TermChooser({
             <button
               key={term.id}
               type="button"
-              onClick={() => {
-                const result = addCourse(course.code, term.id);
-                notify(result.message);
+              onClick={async () => {
+                const result = await addCourse(course.code, term.id);
+                notify(result.message, result.ok ? "success" : "warning");
                 if (result.ok) onClose();
               }}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-50"
