@@ -37,3 +37,31 @@ jobs:
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
+
+  database:
+    name: Database gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: 2.114.0
+
+      - name: Start local database
+        run: supabase db start
+
+      - name: Run database tests
+        run: supabase test db
+
+      - name: Lint database schemas
+        run: supabase db lint --local --schema public,private --level warning --fail-on warning
+
+      - name: Verify generated database types
+        run: |
+          supabase gen types typescript --local --schema public > /tmp/database.ts
+          diff --ignore-blank-lines --unified types/database.ts /tmp/database.ts

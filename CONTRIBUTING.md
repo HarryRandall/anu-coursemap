@@ -6,7 +6,8 @@ Coursemap is currently a private project. Keep changes focused, reviewable and r
 
 1. Create a branch prefixed with `feat/`, `fix/` or `refactor/`.
 2. Make one coherent change and update tests and documentation with it.
-3. Run `npm run verify`.
+3. Run `npm run verify`. For database changes, also run `npm run db:reset`,
+   `npm run db:test`, `npm run db:lint` and `npm run db:types`.
 4. Open a pull request using the repository template.
 5. Merge only after required checks pass.
 
@@ -16,8 +17,10 @@ Use conventional commit subjects such as `feat: add email sign-in` or `refactor:
 
 - Put forward-only SQL migrations in `supabase/migrations`.
 - Enable RLS and add explicit grants and policies for every exposed relation.
-- Regenerate committed TypeScript database types after applying a migration.
+- Regenerate committed TypeScript database types from the local database after
+  applying a migration.
 - Include tests for ownership boundaries and privileged actions.
+- Keep the local Supabase CLI version aligned with the pinned CI version.
 - Never expose a service-role key to browser code.
 
 ## Catalogue changes
