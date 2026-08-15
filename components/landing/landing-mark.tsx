@@ -10,10 +10,10 @@ export function LandingMark({
 }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
-      <BrandMark className="size-7" />
+      <BrandMark className="size-8" />
       <strong
         className={cn(
-          "text-lg tracking-tight text-zinc-950",
+          "brand-wordmark text-lg text-zinc-950",
           wordmarkClassName,
         )}
       >
