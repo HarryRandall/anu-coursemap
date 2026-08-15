@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/viewer";
 import { isDemoMode } from "@/lib/supabase/config";
 
@@ -15,7 +15,7 @@ export default async function AdminLayout({
   }
 
   if (!canAccessAdmin) {
-    redirect("/plan?notice=admin-access-required");
+    notFound();
   }
 
   return children;
