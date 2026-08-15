@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Check, ExternalLink, Plus, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
@@ -127,7 +128,21 @@ export default function AdminSyncPage() {
   return (
     <AppShell admin>
       <div className="w-full">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
+        <nav
+          aria-label="Sync type"
+          className="flex gap-5 border-b border-zinc-200 text-sm font-medium"
+        >
+          <span className="-mb-px border-b-2 border-zinc-950 pb-3 text-zinc-950">
+            Programmes
+          </span>
+          <Link
+            href="/admin/sync/courses"
+            className="-mb-px border-b-2 border-transparent pb-3 text-zinc-500 hover:text-zinc-900"
+          >
+            Course pages
+          </Link>
+        </nav>
+        <h1 className="mt-7 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
           Sync programmes
         </h1>
 
