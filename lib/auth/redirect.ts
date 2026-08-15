@@ -1,4 +1,4 @@
-const FALLBACK_PATH = "/plan";
+const FALLBACK_PATH = "/dashboard";
 const AUTH_HANDLER_PATHS = [
   "/auth/callback",
   "/auth/confirm",

@@ -8,14 +8,19 @@ import { Fragment } from "react";
 type Crumb = { label: string; href?: string };
 
 const labels: Record<string, string> = {
+  dashboard: "Home",
   plan: "Plan",
   requirements: "Requirements",
   courses: "Courses",
+  academic: "Academic",
+  calendar: "Calendar",
+  roadmap: "Roadmap",
+  rooms: "Room finder",
+  help: "Help & support",
   timetable: "Timetable",
   history: "History",
   profile: "Profile",
   admin: "Admin",
-  dashboard: "Dashboard",
   programmes: "Programmes",
   relations: "Relations",
   sync: "Sync",
