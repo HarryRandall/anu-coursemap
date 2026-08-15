@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
+import { BrandMark } from "@/components/brand-mark";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -48,8 +49,9 @@ function Brand() {
     <Link
       href="/plan"
       aria-label="Coursemap home"
-      className="flex items-center px-1.5"
+      className="flex items-center gap-2.5 px-1.5"
     >
+      <BrandMark className="size-8" />
       <strong className="text-[17px] font-bold tracking-tight">
         coursemap
       </strong>

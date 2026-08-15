@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
+import { BrandMark } from "@/components/brand-mark";
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 
@@ -27,9 +28,10 @@ export default async function SignInPage({
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200 sm:p-8">
         <Link
           href="/courses"
-          className="inline-flex items-center text-zinc-900"
+          className="inline-flex items-center gap-2.5 text-zinc-900"
           aria-label="Browse Coursemap courses"
         >
+          <BrandMark className="size-9" />
           <strong className="text-lg tracking-tight">coursemap</strong>
         </Link>
 
