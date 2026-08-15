@@ -1,213 +1,122 @@
 "use client";
 
-import Link from "next/link";
 import {
-  ArrowRight,
   BookOpen,
-  CheckCircle2,
+  CalendarDays,
   CircleAlert,
   GraduationCap,
-  ListChecks,
-  Map,
-  Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
-import { StudyCalendarPreview } from "@/components/dashboard/study-calendar-preview";
-import { RequirementGlance } from "@/components/dashboard/requirement-glance";
-import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
-import { FixIssueButton } from "@/components/plan/fix-issue-button";
+import { DegreeCharts } from "@/components/dashboard/degree-charts";
+import { MonthCalendar } from "@/components/dashboard/month-calendar";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
 import { degreeByCode, majorByCode } from "@/lib/catalogue";
-import { degreeUnitProgress } from "@/lib/planner";
-import { planIssues } from "@/lib/student-progress";
-
-const quickActions = [
-  {
-    href: "/plan",
-    label: "Continue planning",
-    description: "Move courses and shape each semester.",
-    icon: Map,
-  },
-  {
-    href: "/courses",
-    label: "Find a course",
-    description: "Search the catalogue and prerequisites.",
-    icon: BookOpen,
-  },
-  {
-    href: "/requirements",
-    label: "Review requirements",
-    description: "See what is covered and still missing.",
-    icon: ListChecks,
-  },
-];
+import {
+  STANDARD_TERM_UNITS,
+  degreeUnitProgress,
+  unitsByCalendarYear,
+} from "@/lib/planner";
+import { currentTermLoad } from "@/lib/study-calendar";
+import { planIssues, recordedAverage } from "@/lib/student-progress";
 
 export default function DashboardPage() {
   const { state } = useCoursemap();
   const degree = degreeByCode(state.profile.degreeCode);
   const major = majorByCode(state.profile.majorCode);
   const progress = degreeUnitProgress(state.attempts, degree.units);
+  const years = unitsByCalendarYear(state.attempts);
+  const load = currentTermLoad(state.attempts);
+  const average = recordedAverage(state.attempts);
   const issues = planIssues(state.attempts);
-  const firstName = state.profile.name.trim().split(/\s+/)[0] || "there";
-  const empty = progress.mapped === 0;
+
+  const kpis = [
+    {
+      label: "Degree complete",
+      value: `${progress.percent}%`,
+      hint: `${progress.completed} of ${progress.total} units`,
+      icon: GraduationCap,
+    },
+    {
+      label: "Units earned",
+      value: progress.completed,
+      hint: `${progress.planned} still in the plan`,
+      icon: BookOpen,
+    },
+    {
+      label: load.term
+        ? `${load.term.shortName} ${load.term.year}`
+        : "This period",
+      value: load.units,
+      hint: `${load.courses} courses · ${STANDARD_TERM_UNITS}u load`,
+      icon: CalendarDays,
+    },
+    {
+      label: "Recorded average",
+      value: average ?? "Not set",
+      hint: average ? "From marks in Coursemap" : "No marks recorded",
+      icon: TrendingUp,
+    },
+  ];
 
   return (
     <AppShell title="Home" subtitle="Your degree at a glance">
       <div className="mx-auto max-w-7xl">
-        <section className="overflow-hidden rounded-2xl bg-zinc-900 p-5 text-white shadow-sm sm:p-7">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <div className="flex items-center gap-2 text-xs font-semibold text-brand-200">
-                <Sparkles size={14} aria-hidden="true" />
-                Welcome back, {firstName}
-              </div>
-              <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-                {empty
-                  ? "Start mapping your degree"
-                  : "Your degree is taking shape"}
-              </h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-300">
-                {degree.name} · {major.name} · {state.profile.catalogueYear}{" "}
-                rules
-              </p>
-            </div>
-            <ButtonLink
-              href="/plan"
-              variant="secondary"
-              className="border-0 bg-white text-zinc-900 hover:bg-zinc-100"
-            >
-              {empty ? "Add your first course" : "Open your plan"}{" "}
-              <ArrowRight size={15} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-zinc-900">
+              Overview
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              {degree.code} · {major.code} · {state.profile.catalogueYear}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {issues.length > 0 && (
+              <ButtonLink href="/plan" variant="ghost" size="sm">
+                <CircleAlert size={14} aria-hidden="true" />
+                {issues.length} {issues.length === 1 ? "alert" : "alerts"}
+              </ButtonLink>
+            )}
+            <ButtonLink href="/plan" size="sm">
+              Open plan
             </ButtonLink>
           </div>
-
-          <div className="mt-7">
-            <DegreeProgressBar progress={progress} tone="dark" />
-          </div>
-        </section>
-
-        <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]">
-          <StudyCalendarPreview attempts={state.attempts} />
-          <RequirementGlance
-            attempts={state.attempts}
-            majorCodes={major.courseCodes}
-          />
         </div>
 
-        <div className="mt-4">
-          <Card className="overflow-hidden">
-            <CardHeader
-              title="Plan health"
-              description={
-                issues.length > 0
-                  ? `${issues.length} items need attention`
-                  : "No prerequisite or approval issues found"
-              }
-              icon={
-                <span
-                  className={`grid size-9 place-items-center rounded-lg ${
-                    issues.length > 0
-                      ? "bg-amber-50 text-amber-600"
-                      : "bg-emerald-50 text-emerald-600"
-                  }`}
-                >
-                  {issues.length > 0 ? (
-                    <CircleAlert size={17} aria-hidden="true" />
-                  ) : (
-                    <CheckCircle2 size={17} aria-hidden="true" />
-                  )}
-                </span>
-              }
-            />
-            <div className="border-t border-zinc-100 px-5 py-4">
-              {issues.length > 0 ? (
-                <ul className="space-y-3">
-                  {issues.slice(0, 4).map(({ attempt, status }) => (
-                    <li
-                      key={attempt.id}
-                      className="flex flex-wrap items-start justify-between gap-3"
-                    >
-                      <div className="flex min-w-0 items-start gap-2.5">
-                        <CircleAlert
-                          size={15}
-                          className="mt-0.5 shrink-0 text-amber-500"
-                          aria-hidden="true"
-                        />
-                        <div>
-                          <p className="text-xs font-semibold text-zinc-800">
-                            {attempt.courseCode}
-                          </p>
-                          <p className="text-[11px] text-zinc-500">
-                            {status === "blocked"
-                              ? "A prerequisite is missing or scheduled too late."
-                              : "Convener approval still needs to be recorded."}
-                          </p>
-                        </div>
-                      </div>
-                      {status === "blocked" && (
-                        <FixIssueButton attempt={attempt} />
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs leading-relaxed text-zinc-500">
-                  {empty
-                    ? "Once courses are in your plan, Coursemap will flag sequencing and approval issues here."
-                    : "Coursemap has not found any sequencing or approval issues in the courses currently in your plan."}
-                </p>
-              )}
-              <ButtonLink
-                href={issues.length > 0 ? "/plan" : "/requirements"}
-                variant="ghost"
-                size="sm"
-                className="mt-3 -ml-2"
+        <section
+          aria-label="Key figures"
+          className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4"
+        >
+          {kpis.map((item) => {
+            const Icon = item.icon;
+            return (
+              <article
+                key={item.label}
+                className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200/70"
               >
-                {issues.length > 0
-                  ? "Review them on the plan"
-                  : "Review degree progress"}{" "}
-                <ArrowRight size={14} />
-              </ButtonLink>
-            </div>
-          </Card>
-        </div>
-
-        <section className="mt-4">
-          <div className="mb-3 flex items-center gap-2">
-            <GraduationCap
-              size={16}
-              className="text-zinc-500"
-              aria-hidden="true"
-            />
-            <h2 className="text-sm font-semibold text-zinc-900">
-              Quick actions
-            </h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={action.href}
-                  href={action.href}
-                  className="group rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200/70 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-zinc-300 motion-reduce:transform-none"
-                >
-                  <span className="grid size-9 place-items-center rounded-lg bg-brand-50 text-brand-600">
-                    <Icon size={17} aria-hidden="true" />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                    {item.label}
+                  </p>
+                  <span className="grid size-8 place-items-center rounded-lg bg-zinc-50 text-zinc-500">
+                    <Icon size={15} aria-hidden="true" />
                   </span>
-                  <p className="mt-3 text-[13px] font-semibold text-zinc-900">
-                    {action.label}
-                  </p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
-                    {action.description}
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
+                </div>
+                <p className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 tabular-nums">
+                  {item.value}
+                </p>
+                <p className="mt-1 text-[11px] text-zinc-500">{item.hint}</p>
+              </article>
+            );
+          })}
         </section>
+
+        <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
+          <MonthCalendar attempts={state.attempts} />
+          <DegreeCharts progress={progress} years={years} />
+        </div>
       </div>
     </AppShell>
   );

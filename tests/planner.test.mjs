@@ -11,7 +11,11 @@ const libDir = new URL("../lib/", import.meta.url);
 async function compileLib(name) {
   const dir = await mkdtemp(join(tmpdir(), `coursemap-${name}-`));
   const needed =
-    name === "planner" ? ["catalogue.ts", "planner.ts"] : ["catalogue.ts"];
+    name === "planner"
+      ? ["catalogue.ts", "planner.ts"]
+      : name === "study-calendar"
+        ? ["catalogue.ts", "study-calendar.ts"]
+        : ["catalogue.ts"];
   for (const file of needed) {
     const source = await readFile(new URL(file, libDir), "utf8");
     const rewritten = source.replaceAll(/@\/lib\/([^"]+)/g, "./$1.js");
@@ -34,6 +38,7 @@ const {
   proposePrerequisiteFix,
   recommendedCoursesForTerm,
   termHasCapacity,
+  unitsByCalendarYear,
 } = planner;
 const { terms } = catalogue;
 const s1 = terms.find((term) => term.id === "2026-s1");
@@ -181,4 +186,48 @@ test("course availability follows the catalogue sessions", () => {
   assert.equal(courseIsAvailable(course, "Semester 1"), false);
   assert.equal(courseIsAvailable(course, "Semester 2"), true);
   assert.equal(courseIsAvailable(course, "Later"), true);
+});
+
+test("groups completed and planned units by calendar year", () => {
+  const series = unitsByCalendarYear([
+    attempt("a1", "COMP1100", "2026-s1", "completed"),
+    attempt("a2", "COMP1600", "2026-s2"),
+    attempt("a3", "COMP2100", "2027-s2"),
+  ]);
+  const year2026 = series.find((item) => item.year === 2026);
+  const year2027 = series.find((item) => item.year === 2027);
+  assert.equal(year2026?.completed, 6);
+  assert.equal(year2026?.planned, 6);
+  assert.equal(year2027?.planned, 6);
+});
+
+const calendar = await compileLib("study-calendar");
+const { eventsOnDay, focusMonthForPlan, monthCells, termContaining } = calendar;
+
+test("places a Semester 2 course on its weekday inside the study period", () => {
+  const attempts = [attempt("a1", "COMP1600", "2026-s2")];
+  const days = Array.from(
+    { length: 31 },
+    (_, index) => new Date(2026, 7, index + 1),
+  );
+  const hits = days.filter((day) => eventsOnDay(day, attempts).length > 0);
+  assert.ok(hits.length > 0);
+  assert.ok(hits.every((day) => day.getDay() >= 1 && day.getDay() <= 5));
+  assert.equal(new Set(hits.map((day) => day.getDay())).size, 1);
+});
+
+test("focuses the calendar on the current study period when it has courses", () => {
+  const focus = focusMonthForPlan(
+    [attempt("a1", "COMP1600", "2026-s2")],
+    new Date(2026, 7, 15),
+  );
+  assert.deepEqual(focus, { year: 2026, month: 7 });
+});
+
+test("builds a Monday-first month grid", () => {
+  const cells = monthCells({ year: 2026, month: 7 });
+  const first = cells.find((cell) => cell);
+  assert.equal(first?.getDate(), 1);
+  assert.equal(termContaining(new Date(2026, 7, 15))?.id, "2026-s2");
+  assert.equal(termContaining(new Date(2026, 0, 10)), null);
 });

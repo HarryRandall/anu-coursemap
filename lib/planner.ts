@@ -121,6 +121,37 @@ export function mappedUnits(attempts: Attempt[]) {
   );
 }
 
+export function unitsByCalendarYear(attempts: Attempt[]) {
+  const years = [
+    ...new Set(
+      terms
+        .filter((term) => term.id !== "unscheduled")
+        .map((term) => term.year),
+    ),
+  ];
+  return years.map((year) => {
+    const inYear = attempts.filter((attempt) => {
+      const term = terms.find((item) => item.id === attempt.termId);
+      return term?.year === year && attempt.status !== "failed";
+    });
+    const completed = inYear
+      .filter((attempt) => attempt.status === "completed")
+      .reduce(
+        (total, attempt) =>
+          total + (courseByCode(attempt.courseCode)?.units ?? 0),
+        0,
+      );
+    const planned = inYear
+      .filter((attempt) => attempt.status !== "completed")
+      .reduce(
+        (total, attempt) =>
+          total + (courseByCode(attempt.courseCode)?.units ?? 0),
+        0,
+      );
+    return { year, completed, planned, total: completed + planned };
+  });
+}
+
 export function courseIsAvailable(course: Course, termName: string) {
   if (termName === "Later") return true;
   return course.sessions.includes(termName);

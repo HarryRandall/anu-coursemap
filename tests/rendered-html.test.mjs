@@ -118,10 +118,13 @@ test("server-renders the complete student workspace", async () => {
     helpHtml,
   ] = await Promise.all(responses.map((response) => response.text()));
 
-  assert.match(dashboardHtml, /Your degree is taking shape/i);
-  assert.match(dashboardHtml, /Plan health/i);
-  assert.match(dashboardHtml, /Study calendar/i);
-  assert.match(dashboardHtml, /How you are going/i);
+  assert.match(dashboardHtml, /Overview/i);
+  assert.match(dashboardHtml, /Degree complete/i);
+  assert.match(dashboardHtml, /Units by year/i);
+  assert.match(dashboardHtml, /Calendar/i);
+  assert.doesNotMatch(dashboardHtml, /Your degree is taking shape/i);
+  assert.doesNotMatch(dashboardHtml, /Plan health/i);
+  assert.doesNotMatch(dashboardHtml, /How you are going/i);
   assert.match(academicHtml, /Your academic overview/i);
   assert.match(academicHtml, /recorded mark average/i);
   assert.match(calendarHtml, /Your study calendar/i);
