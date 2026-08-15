@@ -13,7 +13,22 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Coursemap · Your ANU degree, mapped",
     description:
       "A clear, modern degree roadmap for courses, prerequisites, majors and approvals.",
-    icons: { icon: "/favicon.svg" },
+    manifest: "/site.webmanifest",
+    icons: {
+      icon: [
+        { url: "/favicon.svg?v=3", type: "image/svg+xml" },
+        { url: "/favicon.ico?v=3", sizes: "32x32", type: "image/x-icon" },
+        { url: "/icon-32.png?v=3", sizes: "32x32", type: "image/png" },
+      ],
+      shortcut: "/favicon.ico?v=3",
+      apple: [
+        {
+          url: "/apple-touch-icon.png?v=3",
+          sizes: "180x180",
+          type: "image/png",
+        },
+      ],
+    },
     openGraph: {
       title: "Coursemap · Your ANU degree, mapped",
       description:

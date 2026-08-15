@@ -20,6 +20,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 
@@ -48,15 +49,7 @@ function Brand() {
       aria-label="Coursemap home"
       className="flex items-center gap-2.5 px-1.5"
     >
-      <span
-        className="grid size-6 -rotate-3 grid-cols-2 gap-0.5"
-        aria-hidden="true"
-      >
-        <i className="rounded-[3px] bg-zinc-900" />
-        <i className="rounded-[3px] bg-zinc-400" />
-        <i className="rounded-[3px] bg-zinc-400" />
-        <i className="rounded-[3px] bg-zinc-900" />
-      </span>
+      <BrandMark className="size-8" />
       <strong className="text-[17px] font-bold tracking-tight">
         coursemap
       </strong>

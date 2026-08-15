@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen, GitBranch, Map } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 import { ButtonLink } from "@/components/ui/button";
 import { getAuthViewer } from "@/lib/auth/viewer";
 import { isDemoMode } from "@/lib/supabase/config";
@@ -38,15 +39,7 @@ export default async function Home() {
             className="flex items-center gap-2.5"
             aria-label="Coursemap home"
           >
-            <span
-              className="grid size-7 -rotate-3 grid-cols-2 gap-0.5"
-              aria-hidden="true"
-            >
-              <i className="rounded-[3px] bg-zinc-900" />
-              <i className="rounded-[3px] bg-zinc-400" />
-              <i className="rounded-[3px] bg-zinc-400" />
-              <i className="rounded-[3px] bg-zinc-900" />
-            </span>
+            <BrandMark className="size-9" />
             <strong className="text-lg tracking-tight text-zinc-950">
               coursemap
             </strong>

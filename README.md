@@ -44,16 +44,19 @@ Replace the publishable-key placeholder with the local `Publishable` value from
 not commit `.env.local` or any Supabase secret key.
 
 Student and admin routes require a local Supabase account when
-`COURSEMAP_DEMO_MODE=false`. Request a magic link at `/auth/sign-in`, then open
-the message in the local Mailpit interface reported by `supabase status`.
-Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` so PKCE begins and completes
-on the same trusted origin. Exact `COURSEMAP_DEMO_MODE=true` is reserved for
-the isolated prototype fixture and rendered CI tests.
+`COURSEMAP_DEMO_MODE=false`. Create an email-and-password account at
+`/auth/sign-in`; local email confirmations are disabled in `supabase/config.toml`
+so the account receives a session immediately. Disable **Confirm email** under
+**Authentication → Sign In / Providers → Email** in a hosted Supabase project
+before enabling password-only sign-up there. Keep
+`NEXT_PUBLIC_SITE_URL=http://localhost:3000` on the same trusted origin. Exact
+`COURSEMAP_DEMO_MODE=true` is reserved for the isolated prototype fixture and
+rendered CI tests.
 
-A free hosted development project is reserved in Sydney, but it currently has
-no migrations or public tables. The application, Auth and database remain local
-until a hosted migration is explicitly approved. Vercel deployment is also
-intentionally disabled.
+Production runs on Vercel against a hosted Supabase project. Keep the hosted
+schema aligned with committed migrations and configure the public Supabase URL,
+publishable key and canonical site URL in the deployment environment. Never
+reuse local credentials or expose a Supabase secret key to the browser.
 
 ## Commands
 

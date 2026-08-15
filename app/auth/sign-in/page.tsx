@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
+import { BrandMark } from "@/components/brand-mark";
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 import {
   getCanonicalSiteOrigin,
@@ -34,15 +35,7 @@ export default async function SignInPage({
           className="inline-flex items-center gap-2.5 text-zinc-900"
           aria-label="Browse Coursemap courses"
         >
-          <span
-            className="grid size-7 -rotate-3 grid-cols-2 gap-0.5"
-            aria-hidden="true"
-          >
-            <i className="rounded-[3px] bg-zinc-900" />
-            <i className="rounded-[3px] bg-zinc-400" />
-            <i className="rounded-[3px] bg-zinc-400" />
-            <i className="rounded-[3px] bg-zinc-900" />
-          </span>
+          <BrandMark className="size-9" />
           <strong className="text-lg tracking-tight">coursemap</strong>
         </Link>
 
@@ -51,7 +44,7 @@ export default async function SignInPage({
             Sign in to your plan
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-            Use a secure, one-time email link. No password is required.
+            Use your email address and Coursemap password.
           </p>
         </div>
 
@@ -72,18 +65,14 @@ export default async function SignInPage({
         )}
 
         <div className="mt-6">
-          <SignInForm
-            next={next}
-            configured={configured}
-            callbackOrigin={callbackOrigin}
-          />
+          <SignInForm next={next} configured={configured} />
         </div>
 
         <div className="mt-6 flex items-start gap-2 border-t border-zinc-100 pt-5 text-[11px] leading-relaxed text-zinc-400">
           <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <p>
-            Authentication is handled by Supabase. Coursemap never asks for or
-            stores an ANU password.
+            Passwords are handled securely by Supabase. Use a unique password,
+            not your ANU password.
           </p>
         </div>
       </section>
