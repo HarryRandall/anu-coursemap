@@ -1,25 +1,33 @@
 "use client";
 
-import {
-  BookOpen,
-  CalendarDays,
-  CircleAlert,
-  GraduationCap,
-  TrendingUp,
-} from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
+import { CourseMixChart } from "@/components/dashboard/course-mix-chart";
+import { CourseProgressChart } from "@/components/dashboard/course-progress-chart";
 import { DegreeCharts } from "@/components/dashboard/degree-charts";
+import { KpiCard } from "@/components/dashboard/kpi-card";
 import { MonthCalendar } from "@/components/dashboard/month-calendar";
+import { TermLoadChart } from "@/components/dashboard/term-load-chart";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
 import { degreeByCode, majorByCode } from "@/lib/catalogue";
+import {
+  coursesByLevel,
+  cumulativeCompletedByTerm,
+  loadByTerm,
+  markSeries,
+} from "@/lib/dashboard-series";
 import {
   STANDARD_TERM_UNITS,
   degreeUnitProgress,
   unitsByCalendarYear,
 } from "@/lib/planner";
 import { currentTermLoad } from "@/lib/study-calendar";
-import { planIssues, recordedAverage } from "@/lib/student-progress";
+import {
+  planIssues,
+  recordedAverage,
+  requirementProgress,
+} from "@/lib/student-progress";
 
 export default function DashboardPage() {
   const { state } = useCoursemap();
@@ -30,35 +38,11 @@ export default function DashboardPage() {
   const load = currentTermLoad(state.attempts);
   const average = recordedAverage(state.attempts);
   const issues = planIssues(state.attempts);
-
-  const kpis = [
-    {
-      label: "Degree complete",
-      value: `${progress.percent}%`,
-      hint: `${progress.completed} of ${progress.total} units`,
-      icon: GraduationCap,
-    },
-    {
-      label: "Units earned",
-      value: progress.completed,
-      hint: `${progress.planned} still in the plan`,
-      icon: BookOpen,
-    },
-    {
-      label: load.term
-        ? `${load.term.shortName} ${load.term.year}`
-        : "This period",
-      value: load.units,
-      hint: `${load.courses} courses · ${STANDARD_TERM_UNITS}u load`,
-      icon: CalendarDays,
-    },
-    {
-      label: "Recorded average",
-      value: average ?? "Not set",
-      hint: average ? "From marks in Coursemap" : "No marks recorded",
-      icon: TrendingUp,
-    },
-  ];
+  const completedSeries = cumulativeCompletedByTerm(state.attempts);
+  const loadSeries = loadByTerm(state.attempts);
+  const marks = markSeries(state.attempts);
+  const mix = coursesByLevel(state.attempts);
+  const groups = requirementProgress(state.attempts, major.courseCodes);
 
   return (
     <AppShell title="Home" subtitle="Your degree at a glance">
@@ -87,35 +71,53 @@ export default function DashboardPage() {
 
         <section
           aria-label="Key figures"
-          className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4"
+          className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
         >
-          {kpis.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article
-                key={item.label}
-                className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200/70"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
-                    {item.label}
-                  </p>
-                  <span className="grid size-8 place-items-center rounded-lg bg-zinc-50 text-zinc-500">
-                    <Icon size={15} aria-hidden="true" />
-                  </span>
-                </div>
-                <p className="mt-3 text-2xl font-bold tracking-tight text-zinc-900 tabular-nums">
-                  {item.value}
-                </p>
-                <p className="mt-1 text-[11px] text-zinc-500">{item.hint}</p>
-              </article>
-            );
-          })}
+          <KpiCard
+            label="Degree complete"
+            value={`${progress.percent}%`}
+            hint={`${progress.completed} of ${progress.total} units`}
+            series={completedSeries.map(
+              (units) => (units / progress.total) * 100,
+            )}
+            seriesLabel="Degree completion across study periods"
+          />
+          <KpiCard
+            label="Units earned"
+            value={progress.completed}
+            hint={`${progress.planned} still in the plan`}
+            series={completedSeries}
+            seriesLabel="Units earned across study periods"
+          />
+          <KpiCard
+            label={
+              load.term
+                ? `${load.term.shortName} ${load.term.year}`
+                : "This period"
+            }
+            value={load.units}
+            hint={`${load.courses} ${load.courses === 1 ? "course" : "courses"} · ${STANDARD_TERM_UNITS}u load`}
+            series={loadSeries.map((item) => item.units)}
+            seriesLabel="Units planned in each study period"
+          />
+          <KpiCard
+            label="Recorded average"
+            value={average ?? "Not set"}
+            hint={average ? "From marks in Coursemap" : "No marks recorded"}
+            series={marks}
+            seriesLabel="Recorded marks over time"
+          />
         </section>
 
-        <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
-          <MonthCalendar attempts={state.attempts} />
+        <div className="mt-4 grid items-start gap-4 xl:grid-cols-3">
+          <CourseProgressChart progressByGroup={groups} />
           <DegreeCharts progress={progress} years={years} />
+          <MonthCalendar attempts={state.attempts} />
+        </div>
+
+        <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
+          <TermLoadChart terms={loadSeries} />
+          <CourseMixChart levels={mix} />
         </div>
       </div>
     </AppShell>

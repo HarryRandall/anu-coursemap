@@ -120,7 +120,9 @@ test("server-renders the complete student workspace", async () => {
 
   assert.match(dashboardHtml, /Overview/i);
   assert.match(dashboardHtml, /Degree complete/i);
-  assert.match(dashboardHtml, /Units by year/i);
+  assert.match(dashboardHtml, /Course progress/i);
+  assert.match(dashboardHtml, /Semester load/i);
+  assert.match(dashboardHtml, /Course mix/i);
   assert.match(dashboardHtml, /Calendar/i);
   assert.doesNotMatch(dashboardHtml, /Your degree is taking shape/i);
   assert.doesNotMatch(dashboardHtml, /Plan health/i);

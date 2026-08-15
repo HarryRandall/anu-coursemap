@@ -84,7 +84,7 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
           {weekdayLabels.map((label) => (
             <div
               key={label}
-              className="bg-zinc-50 py-2 text-center text-[10px] font-semibold tracking-wide text-zinc-400 uppercase"
+              className="bg-zinc-50 py-1.5 text-center text-[10px] font-semibold tracking-wide text-zinc-400 uppercase"
             >
               {label}
             </div>
@@ -92,7 +92,7 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
           {cells.map((cell, index) => {
             if (!cell) {
               return (
-                <div key={`empty-${index}`} className="min-h-20 bg-white" />
+                <div key={`empty-${index}`} className="min-h-11 bg-white" />
               );
             }
             const events = eventsOnDay(cell, attempts);
@@ -107,8 +107,8 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
                 aria-label={`${cell.getDate()} ${monthLabel(focus)}${events.length ? `, ${events.map((event) => event.course.code).join(", ")}` : ""}`}
                 aria-pressed={isSelected}
                 className={cn(
-                  "flex min-h-20 flex-col gap-1 bg-white p-1.5 text-left transition hover:bg-zinc-50",
-                  inTerm && "bg-brand-50/30",
+                  "flex min-h-11 flex-col items-center gap-0.5 bg-white px-0.5 py-1 text-center transition hover:bg-zinc-50",
+                  inTerm && "bg-brand-50/40",
                   isSelected && "ring-2 ring-brand-400 ring-inset",
                 )}
               >
@@ -120,23 +120,17 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
                 >
                   {cell.getDate()}
                 </span>
-                <span className="flex min-h-0 flex-1 flex-col gap-0.5">
-                  {events.slice(0, 2).map((event) => (
+                <span className="flex h-1.5 items-center justify-center gap-0.5">
+                  {events.slice(0, 3).map((event) => (
                     <span
                       key={event.attempt.id}
                       className={cn(
-                        "truncate rounded px-1 py-0.5 font-mono text-[9px] font-semibold",
-                        accent[event.course.accent].token,
+                        "size-1.5 rounded-full",
+                        accent[event.course.accent].dot,
                       )}
-                    >
-                      {event.course.code}
-                    </span>
+                      aria-hidden="true"
+                    />
                   ))}
-                  {events.length > 2 && (
-                    <span className="px-1 text-[9px] font-medium text-zinc-400">
-                      +{events.length - 2}
-                    </span>
-                  )}
                 </span>
               </button>
             );

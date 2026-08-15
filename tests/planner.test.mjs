@@ -15,7 +15,9 @@ async function compileLib(name) {
       ? ["catalogue.ts", "planner.ts"]
       : name === "study-calendar"
         ? ["catalogue.ts", "study-calendar.ts"]
-        : ["catalogue.ts"];
+        : name === "dashboard-series"
+          ? ["catalogue.ts", "dashboard-series.ts"]
+          : ["catalogue.ts"];
   for (const file of needed) {
     const source = await readFile(new URL(file, libDir), "utf8");
     const rewritten = source.replaceAll(/@\/lib\/([^"]+)/g, "./$1.js");
@@ -230,4 +232,26 @@ test("builds a Monday-first month grid", () => {
   assert.equal(first?.getDate(), 1);
   assert.equal(termContaining(new Date(2026, 7, 15))?.id, "2026-s2");
   assert.equal(termContaining(new Date(2026, 0, 10)), null);
+});
+
+const series = await compileLib("dashboard-series");
+
+test("builds cumulative earned units after each study period", () => {
+  const values = series.cumulativeCompletedByTerm([
+    attempt("a1", "COMP1100", "2026-s1", "completed"),
+    attempt("a2", "MATH1005", "2026-s1", "completed"),
+    attempt("a3", "COMP1600", "2026-s2"),
+  ]);
+  assert.equal(values[0], 12);
+  assert.equal(values[1], 12);
+});
+
+test("reports study-period load without counting failed attempts", () => {
+  const loads = series.loadByTerm([
+    attempt("a1", "COMP1100", "2026-s1", "completed"),
+    attempt("a2", "COMP1110", "2026-s2", "failed"),
+    attempt("a3", "COMP1600", "2026-s2"),
+  ]);
+  assert.equal(loads[0].units, 6);
+  assert.equal(loads[1].units, 6);
 });
