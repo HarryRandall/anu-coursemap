@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
+import { BrandMark } from "@/components/brand-mark";
 
 type NavItem = {
   href: string;
@@ -83,15 +84,7 @@ function Brand() {
       aria-label="Coursemap home"
       className="flex items-center gap-2.5 px-1.5"
     >
-      <span
-        className="grid size-6 -rotate-3 grid-cols-2 gap-0.5"
-        aria-hidden="true"
-      >
-        <i className="rounded-[3px] bg-zinc-900" />
-        <i className="rounded-[3px] bg-zinc-400" />
-        <i className="rounded-[3px] bg-zinc-400" />
-        <i className="rounded-[3px] bg-zinc-900" />
-      </span>
+      <BrandMark className="size-8" />
       <strong className="text-[17px] font-bold tracking-tight">
         coursemap
       </strong>
@@ -124,7 +117,7 @@ function NavLink({
         isActive
           ? admin
             ? "bg-brand-50 text-brand-700"
-            : "bg-zinc-900 text-white"
+            : "bg-brand-700 text-white"
           : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
       )}
     >

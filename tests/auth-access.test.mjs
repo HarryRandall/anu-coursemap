@@ -138,7 +138,7 @@ test("keeps public and built static assets outside authentication", async () => 
   assert.ok(builtAssetPath, "expected a built Next.js static asset");
 
   const [publicAsset, builtAsset] = await Promise.all([
-    request("/favicon.svg", { redirect: "manual" }),
+    request("/icon-32.png", { redirect: "manual" }),
     request(builtAssetPath, { redirect: "manual" }),
   ]);
 

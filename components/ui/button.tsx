@@ -17,7 +17,7 @@ const sizes: Record<ButtonSize, string> = {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 ring-1 ring-inset ring-zinc-900",
+    "bg-brand-700 text-white shadow-sm hover:bg-brand-800 ring-1 ring-inset ring-brand-700",
   secondary:
     "bg-white text-zinc-700 shadow-xs ring-1 ring-inset ring-zinc-200 hover:bg-zinc-50 hover:ring-zinc-300",
   subtle:
