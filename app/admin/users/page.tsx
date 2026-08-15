@@ -1,6 +1,7 @@
-import { AlertTriangle, ShieldCheck, UsersRound } from "lucide-react";
-import { UserRoleManager } from "@/components/admin/user-role-manager";
+import { AlertTriangle, KeyRound, ShieldCheck, UsersRound } from "lucide-react";
+import { UserDirectory } from "@/components/admin/user-role-manager";
 import { AppShell } from "@/components/shell";
+import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { loadAdminUserManagement } from "@/lib/admin/users";
 import { getAuthContext } from "@/lib/auth/viewer";
@@ -79,22 +80,32 @@ export default async function AdminUsersPage() {
   }
 
   return (
-    <AppShell admin>
+    <AppShell
+      admin
+      actions={
+        <ButtonLink href="/admin/roles" size="sm" variant="secondary">
+          <KeyRound size={14} aria-hidden="true" />
+          Roles
+        </ButtonLink>
+      }
+    >
       <h1 className="sr-only">Users and access</h1>
-      <div className="mb-4 flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
-          <UsersRound size={19} aria-hidden="true" />
-        </span>
-        <div>
-          <p className="text-sm font-semibold text-zinc-900">
-            Users and access
-          </p>
-          <p className="text-xs text-zinc-500">
-            Assign application roles and review their effective permissions.
-          </p>
+      <div className="mx-auto w-full max-w-[1400px]">
+        <div className="mb-6 flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
+            <UsersRound size={20} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-xl font-semibold tracking-tight text-zinc-950">
+              Users
+            </p>
+            <p className="mt-1 text-sm text-zinc-500">
+              Find Coursemap accounts and manage their application access.
+            </p>
+          </div>
         </div>
+        <UserDirectory {...data} currentUserId={viewer.id} />
       </div>
-      <UserRoleManager {...data} currentUserId={viewer.id} />
     </AppShell>
   );
 }
