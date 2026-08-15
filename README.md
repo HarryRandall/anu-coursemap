@@ -54,7 +54,6 @@ when `COURSEMAP_DEMO_MODE=false`. Create an email-and-password account at
 hosted Supabase project before enabling password-only sign-up there. Exact
 `COURSEMAP_DEMO_MODE=true` is reserved for the isolated prototype fixture and
 rendered CI tests.
-
 The first catalogue administrator is granted once through the reviewed SQL in
 `supabase/README.md`. That administrator can then manage user role assignments
 at `/admin/users`; effective permissions remain migration-owned and read-only.
