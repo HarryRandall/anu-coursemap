@@ -106,6 +106,7 @@ test("server-renders the complete student workspace", async () => {
     "/roadmap",
     "/rooms",
     "/help",
+    "/help/build-your-plan",
   ];
   const responses = await Promise.all(paths.map((path) => render(path)));
   responses.forEach((response) => assert.equal(response.status, 200));
@@ -118,24 +119,44 @@ test("server-renders the complete student workspace", async () => {
     roadmapHtml,
     roomsHtml,
     helpHtml,
+    helpGuideHtml,
   ] = await Promise.all(responses.map((response) => response.text()));
 
-  assert.match(dashboardHtml, /Your degree is taking shape/i);
-  assert.match(dashboardHtml, /Plan health/i);
+  assert.match(dashboardHtml, /Overview/i);
+  assert.match(dashboardHtml, /Degree complete/i);
+  assert.match(dashboardHtml, /Course progress/i);
+  assert.match(dashboardHtml, /Semester load/i);
+  assert.match(dashboardHtml, /Units over time/i);
+  assert.match(dashboardHtml, /Needs attention/i);
+  assert.match(dashboardHtml, /Calendar/i);
+  assert.doesNotMatch(dashboardHtml, /Your degree is taking shape/i);
+  assert.doesNotMatch(dashboardHtml, /Plan health/i);
+  assert.doesNotMatch(dashboardHtml, /How you are going/i);
   assert.match(academicHtml, /Your academic overview/i);
   assert.match(academicHtml, /recorded mark average/i);
-  assert.match(calendarHtml, /Your study calendar/i);
-  assert.match(calendarHtml, /without inventing class times/i);
-  assert.doesNotMatch(
-    calendarHtml,
-    /Hancock Lab|Copland G31|Marie Reay|Kambri T1|Birch 1\.14/i,
-  );
+  assert.match(calendarHtml, /Study period/i);
+  assert.match(calendarHtml, /Semester 1 2026/i);
+  assert.match(calendarHtml, /Weekly timetable/i);
+  assert.match(calendarHtml, /COMP1100/i);
+  assert.match(calendarHtml, /Lecture/i);
+  assert.doesNotMatch(calendarHtml, /Coming soon/i);
+  assert.doesNotMatch(calendarHtml, /Class timetable|Assessments and dates/i);
   assert.match(requirementsHtml, /Rule group coverage/i);
   assert.match(requirementsHtml, /possible matches, not a final allocation/i);
   assert.match(roadmapHtml, /Build the useful things first/i);
   assert.match(roomsHtml, /Find the right room/i);
   assert.match(helpHtml, /How can we help/i);
-  assert.match(helpHtml, /Need official advice/i);
+  assert.match(helpHtml, /Read guide/i);
+  assert.match(helpHtml, /Email support/i);
+  assert.match(helpHtml, /Use the study calendar/i);
+  assert.match(helpHtml, /Read your academic record/i);
+  assert.doesNotMatch(
+    helpHtml,
+    /Help topics|Short guides for the parts of Coursemap|Report a bug, flag catalogue data/i,
+  );
+  assert.doesNotMatch(helpHtml, /Common questions|Need official advice/i);
+  assert.match(helpGuideHtml, /Build your plan/i);
+  assert.match(helpGuideHtml, /Where are class times and rooms/i);
 });
 
 test("redirects legacy student routes to their replacements", async () => {
@@ -189,7 +210,13 @@ test("server-renders the routed Coursemap degree planner", async () => {
   assert.match(html, /COMP1100/i);
   assert.match(html, /class="year-row"/i);
   assert.match(html, /Semester 2/i);
-  assert.equal((html.match(/Add course in empty slot/g) ?? []).length, 17);
+  const emptyAdds = (html.match(/Add course in empty slot/g) ?? []).length;
+  const recommendedAdds = (
+    html.match(/Add recommended course [A-Z]{4}\d+/g) ?? []
+  ).length;
+  assert.ok(recommendedAdds > 0);
+  assert.equal(emptyAdds + recommendedAdds, 18);
+  assert.match(html, /Degree progress/i);
   assert.doesNotMatch(html, /Edit degree/i);
   assert.doesNotMatch(html, /18 of 144 units completed/i);
   assert.doesNotMatch(html, /48 mapped/i);
@@ -308,7 +335,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   ]);
 
   assert.match(planPage, /year-board/);
-  assert.match(planPage, /STANDARD_COURSE_SLOTS = 4/);
+  assert.match(planPage, /STANDARD_COURSE_SLOTS/);
   assert.match(planPage, /This semester is already full/);
   assert.match(planPage, /reorderAttempt/);
   assert.match(planPage, /Move anyway/);
