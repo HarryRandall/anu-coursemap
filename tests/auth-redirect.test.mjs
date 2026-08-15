@@ -57,7 +57,7 @@ test("rejects external, decoded and handler redirect destinations", () => {
   unsafe.forEach((candidate) => {
     assert.equal(
       safeInternalRedirect(candidate),
-      "/plan",
+      "/dashboard",
       `expected ${String(candidate)} to be rejected`,
     );
   });

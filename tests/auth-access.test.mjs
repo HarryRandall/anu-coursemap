@@ -98,7 +98,13 @@ test("redirects protected routes to the canonical sign-in page", async () => {
   for (const path of [
     "/plan?year=2026",
     "/profile",
+    "/dashboard",
     "/requirements",
+    "/academic",
+    "/calendar",
+    "/roadmap",
+    "/rooms",
+    "/help",
     "/history",
     "/timetable",
     "/admin/courses",
