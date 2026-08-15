@@ -1399,9 +1399,65 @@ export type Database = {
       }
     }
     Views: {
+      admin_permissions: {
+        Row: {
+          permission_category: string | null
+          permission_description: string | null
+          permission_id: number | null
+          permission_key: string | null
+          permission_name: string | null
+        }
+        Insert: {
+          permission_category?: string | null
+          permission_description?: string | null
+          permission_id?: number | null
+          permission_key?: string | null
+          permission_name?: string | null
+        }
+        Update: {
+          permission_category?: string | null
+          permission_description?: string | null
+          permission_id?: number | null
+          permission_key?: string | null
+          permission_name?: string | null
+        }
+        Relationships: []
+      }
+      admin_role_permissions: {
+        Row: {
+          permission_id: number | null
+          role_id: number | null
+        }
+        Insert: {
+          permission_id?: number | null
+          role_id?: number | null
+        }
+        Update: {
+          permission_id?: number | null
+          role_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "admin_permissions"
+            referencedColumns: ["permission_id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "admin_roles"
+            referencedColumns: ["role_id"]
+          },
+        ]
+      }
       admin_roles: {
         Row: {
           permission_keys: string[] | null
+          role_description: string | null
+          role_id: number | null
           role_key: string | null
           role_name: string | null
         }
@@ -1487,9 +1543,13 @@ export type Database = {
         }
         Returns: string
       }
-      set_user_role: {
-        Args: { p_assigned: boolean; p_role_key: string; p_user_id: string }
+      set_role_permission: {
+        Args: { p_enabled: boolean; p_permission_id: number; p_role_id: number }
         Returns: boolean
+      }
+      set_user_role: {
+        Args: { p_role_key: string; p_user_id: string }
+        Returns: string
       }
     }
     Enums: {

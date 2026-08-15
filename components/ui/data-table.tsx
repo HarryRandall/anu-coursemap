@@ -1,0 +1,74 @@
+import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
+
+/** Adapted from ShowCrafter's shared admin table shell. */
+export function DataTableShell({
+  children,
+  className,
+  footer,
+  viewport = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  footer?: ReactNode;
+  viewport?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs",
+        viewport && "min-h-0 md:flex md:flex-1 md:flex-col",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          "relative isolate min-h-0 overflow-x-auto overscroll-x-contain",
+          viewport && "md:flex md:flex-1 md:overflow-auto",
+        )}
+      >
+        {children}
+      </div>
+      {footer ? (
+        <div className="shrink-0 border-t border-zinc-200/80 bg-zinc-50/40 px-4 py-2.5">
+          {footer}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function tableClasses(className?: string) {
+  return cn(
+    "w-full min-w-[720px] caption-bottom border-separate border-spacing-0 text-left text-sm",
+    className,
+  );
+}
+
+export function tableHeadClasses(className?: string) {
+  return cn(
+    "bg-zinc-50/70 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:border-b [&_th]:border-zinc-200/80 [&_th]:bg-zinc-50/95 [&_th]:backdrop-blur-sm",
+    className,
+  );
+}
+
+export function tableHeaderCellClasses(className?: string) {
+  return cn(
+    "h-10 px-4 py-2.5 text-left align-middle text-[11px] font-semibold tracking-wide whitespace-nowrap text-zinc-500 uppercase",
+    className,
+  );
+}
+
+export function tableRowClasses(className?: string) {
+  return cn(
+    "transition-colors duration-150 ease-out motion-reduce:transition-none last:[&>*]:border-b-0 [&>*]:border-b [&>*]:border-zinc-200/80",
+    className,
+  );
+}
+
+export function tableCellClasses(className?: string) {
+  return cn(
+    "px-4 py-2.5 align-middle text-sm whitespace-nowrap text-zinc-900",
+    className,
+  );
+}

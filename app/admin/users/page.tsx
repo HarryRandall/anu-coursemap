@@ -1,8 +1,8 @@
-import { AlertTriangle, KeyRound, ShieldCheck, UsersRound } from "lucide-react";
-import { UserDirectory } from "@/components/admin/user-role-manager";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { UserDirectory } from "@/components/admin/user-directory";
 import { AppShell } from "@/components/shell";
-import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { loadAdminUserManagement } from "@/lib/admin/users";
 import { getAuthContext } from "@/lib/auth/viewer";
 import { isDemoMode } from "@/lib/supabase/config";
@@ -49,7 +49,11 @@ async function loadUserManagement() {
   }
 }
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; role?: string }>;
+}) {
   if (isDemoMode()) {
     return (
       <AppShell admin>
@@ -62,7 +66,10 @@ export default async function AdminUsersPage() {
     );
   }
 
-  const { viewer } = await getAuthContext();
+  const [{ viewer }, params] = await Promise.all([
+    getAuthContext(),
+    searchParams,
+  ]);
   if (!viewer) return null;
 
   const data = await loadUserManagement();
@@ -79,32 +86,51 @@ export default async function AdminUsersPage() {
     );
   }
 
+  const rolesByUser = new Map<string, string[]>();
+  for (const assignment of data.assignments) {
+    rolesByUser.set(assignment.userId, [
+      ...(rolesByUser.get(assignment.userId) ?? []),
+      assignment.roleKey,
+    ]);
+  }
+  const query = (params.q ?? "").trim().toLowerCase();
+  const users = data.users.filter((user) => {
+    const roleKeys = rolesByUser.get(user.userId) ?? [];
+    const roleNames = data.roles
+      .filter((role) => roleKeys.includes(role.key))
+      .map((role) => role.name);
+    const matchesQuery =
+      !query ||
+      `${user.displayName} ${user.email ?? ""} ${roleNames.join(" ")}`
+        .toLowerCase()
+        .includes(query);
+    const matchesRole = !params.role || roleKeys.includes(params.role);
+    return matchesQuery && matchesRole;
+  });
+
   return (
-    <AppShell
-      admin
-      actions={
-        <ButtonLink href="/admin/roles" size="sm" variant="secondary">
-          <KeyRound size={14} aria-hidden="true" />
-          Roles
-        </ButtonLink>
-      }
-    >
+    <AppShell admin>
       <h1 className="sr-only">Users and access</h1>
-      <div className="mx-auto w-full max-w-[1400px]">
-        <div className="mb-6 flex items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
-            <UsersRound size={20} aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-xl font-semibold tracking-tight text-zinc-950">
-              Users
-            </p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Find Coursemap accounts and manage their application access.
-            </p>
-          </div>
-        </div>
-        <UserDirectory {...data} currentUserId={viewer.id} />
+      <div className="mx-auto flex min-h-0 w-full max-w-[1280px] flex-1 flex-col gap-5">
+        <FilterBar
+          searchPlaceholder="Search name, email or role…"
+          filters={[
+            {
+              key: "role",
+              label: "Role",
+              options: data.roles.map((role) => ({
+                value: role.key,
+                label: role.name,
+              })),
+            },
+          ]}
+        />
+        <UserDirectory
+          users={users}
+          roles={data.roles}
+          assignments={data.assignments}
+          currentUserId={viewer.id}
+        />
       </div>
     </AppShell>
   );

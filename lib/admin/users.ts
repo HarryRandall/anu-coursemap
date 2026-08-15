@@ -9,9 +9,24 @@ export type AdminUser = {
 };
 
 export type AdminRole = {
+  id: number;
   key: string;
   name: string;
+  description: string;
   permissionKeys: string[];
+};
+
+export type AdminPermission = {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  category: string;
+};
+
+export type AdminRolePermission = {
+  roleId: number;
+  permissionId: number;
 };
 
 export type AdminUserRole = {
@@ -28,7 +43,14 @@ export type AdminUserManagementData = {
 export type AdminUserDetailData = {
   user: AdminUser;
   roles: AdminRole[];
+  permissions: AdminPermission[];
   assignments: AdminUserRole[];
+};
+
+export type AdminRoleManagementData = {
+  roles: AdminRole[];
+  permissions: AdminPermission[];
+  grants: AdminRolePermission[];
 };
 
 function mapUser(user: {
@@ -49,16 +71,60 @@ function mapUser(user: {
 }
 
 function mapRole(role: {
+  role_id: number | null;
   role_key: string | null;
   role_name: string | null;
+  role_description: string | null;
   permission_keys: string[] | null;
 }): AdminRole | null {
-  if (!role.role_key || !role.role_name) return null;
+  if (
+    role.role_id === null ||
+    !role.role_key ||
+    !role.role_name ||
+    !role.role_description
+  ) {
+    return null;
+  }
   return {
+    id: role.role_id,
     key: role.role_key,
     name: role.role_name,
+    description: role.role_description,
     permissionKeys: role.permission_keys ?? [],
   };
+}
+
+function mapPermission(permission: {
+  permission_id: number | null;
+  permission_key: string | null;
+  permission_name: string | null;
+  permission_description: string | null;
+  permission_category: string | null;
+}): AdminPermission | null {
+  if (
+    permission.permission_id === null ||
+    !permission.permission_key ||
+    !permission.permission_name ||
+    !permission.permission_description ||
+    !permission.permission_category
+  ) {
+    return null;
+  }
+  return {
+    id: permission.permission_id,
+    key: permission.permission_key,
+    name: permission.permission_name,
+    description: permission.permission_description,
+    category: permission.permission_category,
+  };
+}
+
+function mapRolePermission(grant: {
+  role_id: number | null;
+  permission_id: number | null;
+}): AdminRolePermission | null {
+  if (grant.role_id === null || grant.permission_id === null) return null;
+  return { roleId: grant.role_id, permissionId: grant.permission_id };
 }
 
 function mapAssignment(assignment: {
@@ -81,7 +147,7 @@ export async function loadAdminUserManagement(): Promise<AdminUserManagementData
       .order("created_at", { ascending: false }),
     supabase
       .from("admin_roles")
-      .select("role_key,role_name,permission_keys")
+      .select("role_id,role_key,role_name,role_description,permission_keys")
       .order("role_name"),
     supabase.from("admin_user_roles").select("user_id,role_key"),
   ]);
@@ -110,24 +176,35 @@ export async function loadAdminUserDetail(
   userId: string,
 ): Promise<AdminUserDetailData | null> {
   const supabase = await createClient();
-  const [userResult, rolesResult, assignmentsResult] = await Promise.all([
-    supabase
-      .from("admin_users")
-      .select("user_id,email,display_name,created_at,updated_at")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase
-      .from("admin_roles")
-      .select("role_key,role_name,permission_keys")
-      .order("role_name"),
-    supabase
-      .from("admin_user_roles")
-      .select("user_id,role_key")
-      .eq("user_id", userId),
-  ]);
+  const [userResult, rolesResult, permissionsResult, assignmentsResult] =
+    await Promise.all([
+      supabase
+        .from("admin_users")
+        .select("user_id,email,display_name,created_at,updated_at")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("admin_roles")
+        .select("role_id,role_key,role_name,role_description,permission_keys")
+        .order("role_name"),
+      supabase
+        .from("admin_permissions")
+        .select(
+          "permission_id,permission_key,permission_name,permission_description,permission_category",
+        )
+        .order("permission_category")
+        .order("permission_name"),
+      supabase
+        .from("admin_user_roles")
+        .select("user_id,role_key")
+        .eq("user_id", userId),
+    ]);
 
   const error =
-    userResult.error ?? rolesResult.error ?? assignmentsResult.error;
+    userResult.error ??
+    rolesResult.error ??
+    permissionsResult.error ??
+    assignmentsResult.error;
   if (error) throw new Error("Coursemap could not load that user.");
 
   const user = userResult.data ? mapUser(userResult.data) : null;
@@ -139,6 +216,10 @@ export async function loadAdminUserDetail(
       const mapped = mapRole(role);
       return mapped ? [mapped] : [];
     }),
+    permissions: (permissionsResult.data ?? []).flatMap((permission) => {
+      const mapped = mapPermission(permission);
+      return mapped ? [mapped] : [];
+    }),
     assignments: (assignmentsResult.data ?? []).flatMap((assignment) => {
       const mapped = mapAssignment(assignment);
       return mapped ? [mapped] : [];
@@ -146,17 +227,39 @@ export async function loadAdminUserDetail(
   };
 }
 
-export async function loadAdminRoles(): Promise<AdminRole[]> {
+export async function loadAdminRoleManagement(): Promise<AdminRoleManagementData> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("admin_roles")
-    .select("role_key,role_name,permission_keys")
-    .order("role_name");
+  const [rolesResult, permissionsResult, grantsResult] = await Promise.all([
+    supabase
+      .from("admin_roles")
+      .select("role_id,role_key,role_name,role_description,permission_keys")
+      .order("role_name"),
+    supabase
+      .from("admin_permissions")
+      .select(
+        "permission_id,permission_key,permission_name,permission_description,permission_category",
+      )
+      .order("permission_category")
+      .order("permission_name"),
+    supabase.from("admin_role_permissions").select("role_id,permission_id"),
+  ]);
 
+  const error =
+    rolesResult.error ?? permissionsResult.error ?? grantsResult.error;
   if (error) throw new Error("Coursemap could not load application roles.");
 
-  return (data ?? []).flatMap((role) => {
-    const mapped = mapRole(role);
-    return mapped ? [mapped] : [];
-  });
+  return {
+    roles: (rolesResult.data ?? []).flatMap((role) => {
+      const mapped = mapRole(role);
+      return mapped ? [mapped] : [];
+    }),
+    permissions: (permissionsResult.data ?? []).flatMap((permission) => {
+      const mapped = mapPermission(permission);
+      return mapped ? [mapped] : [];
+    }),
+    grants: (grantsResult.data ?? []).flatMap((grant) => {
+      const mapped = mapRolePermission(grant);
+      return mapped ? [mapped] : [];
+    }),
+  };
 }
