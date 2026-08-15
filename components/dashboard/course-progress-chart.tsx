@@ -1,16 +1,17 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requirementGroups } from "@/lib/catalogue";
 import type { RequirementProgress } from "@/lib/student-progress";
-import type { Tone } from "@/lib/ui";
 
 function groupTag(progress: RequirementProgress, total: number) {
   const covered = progress.completedUnits + progress.plannedUnits;
   if (progress.completedUnits >= total)
-    return { label: "Done", tone: "success" as Tone };
-  if (covered >= total) return { label: "Planned", tone: "brand" as Tone };
-  return { label: `${total - covered}u to plan`, tone: "warning" as Tone };
+    return { label: "Done", className: "text-emerald-600" };
+  if (covered >= total) return { label: "Planned", className: "text-zinc-400" };
+  return {
+    label: `${total - covered}u to plan`,
+    className: "text-amber-600",
+  };
 }
 
 export function CourseProgressChart({
@@ -50,9 +51,11 @@ export function CourseProgressChart({
                     {covered}/{group.total}u
                   </span>
                 </span>
-                <Badge tone={tag.tone} className="shrink-0 px-2 py-0.5">
+                <span
+                  className={`shrink-0 text-[11px] font-semibold ${tag.className}`}
+                >
                   {tag.label}
-                </Badge>
+                </span>
               </div>
               <span
                 aria-hidden="true"

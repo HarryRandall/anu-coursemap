@@ -86,7 +86,7 @@ export function UnitsTrendChart({
       <div className="relative mt-3">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-48 w-full cursor-crosshair"
+          className="h-auto w-full cursor-crosshair"
           role="img"
           aria-label="Cumulative units by study period. Hover or use arrow keys to inspect values."
           tabIndex={0}
