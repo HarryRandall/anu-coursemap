@@ -203,6 +203,12 @@
     );
 }
 
+.brand-wordmark {
+  font-family: ui-rounded, "SF Pro Rounded", "Avenir Next", var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

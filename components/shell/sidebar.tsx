@@ -86,10 +86,8 @@ function Brand() {
       aria-label="Coursemap home"
       className="flex items-center gap-2.5 px-1.5"
     >
-      <BrandMark className="size-8" />
-      <strong className="text-[17px] font-bold tracking-tight">
-        coursemap
-      </strong>
+      <BrandMark className="size-9" />
+      <strong className="brand-wordmark text-[17px]">coursemap</strong>
     </Link>
   );
 }
