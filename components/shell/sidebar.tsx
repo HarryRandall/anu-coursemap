@@ -8,6 +8,7 @@ import {
   GitBranch,
   GraduationCap,
   History,
+  KeyRound,
   LayoutDashboard,
   LifeBuoy,
   ListChecks,
@@ -40,6 +41,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
   { href: "/admin/relations", label: "Relations", icon: GitBranch },
   { href: "/admin/users", label: "Users", icon: UsersRound },
+  { href: "/admin/roles", label: "Roles", icon: KeyRound },
   { href: "/admin/sync", label: "Sync", icon: RefreshCw },
 ];
 

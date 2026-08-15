@@ -18,6 +18,8 @@ const labels: Record<string, string> = {
   dashboard: "Dashboard",
   programmes: "Programmes",
   relations: "Relations",
+  users: "Users",
+  roles: "Roles",
   sync: "Sync",
 };
 
@@ -31,7 +33,10 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     href += `/${segment}`;
     const isLast = index === segments.length - 1;
     // Dynamic course code segment (e.g. /courses/COMP2100)
-    const label = labels[segment] ?? decodeURIComponent(segment).toUpperCase();
+    const label =
+      admin && segments[1] === "users" && index === 2
+        ? "User"
+        : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
     crumbs.push({
       label,
       href: isLast
