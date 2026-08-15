@@ -180,6 +180,24 @@ export function helpArticleBySlug(slug: string): HelpArticle | undefined {
   return helpArticles.find((article) => article.slug === slug);
 }
 
-export function otherHelpArticles(slug: string): HelpArticle[] {
-  return helpArticles.filter((article) => article.slug !== slug);
+export function helpSectionId(heading: string): string {
+  return heading
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+export type AdjacentHelpArticles = {
+  previous: HelpArticle | undefined;
+  next: HelpArticle | undefined;
+};
+
+export function adjacentHelpArticles(slug: string): AdjacentHelpArticles {
+  const index = helpArticles.findIndex((article) => article.slug === slug);
+  if (index === -1) return { previous: undefined, next: undefined };
+  return {
+    previous: index > 0 ? helpArticles[index - 1] : undefined,
+    next: index < helpArticles.length - 1 ? helpArticles[index + 1] : undefined,
+  };
 }

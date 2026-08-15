@@ -58,10 +58,6 @@ export function HelpContactCard() {
           >
             <Mail size={15} /> Email support
           </Button>
-          <p className="mt-3 text-xs leading-relaxed text-zinc-500">
-            Coursemap is a planning aid and does not replace official ANU
-            academic advice.
-          </p>
         </div>
       </Card>
       {reasonId ? (
