@@ -1,366 +1,430 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ExternalLink, Plus, Search, X } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  ChevronRight,
+  CircleAlert,
+  ExternalLink,
+  FileCheck2,
+  GraduationCap,
+  Layers3,
+  ListTree,
+  RotateCcw,
+  Sparkles,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
-import { Button, IconButton } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Field, Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
+import { courses, degrees, majors } from "@/lib/catalogue";
 
-const years = Array.from({ length: 13 }, (_, index) => 2026 - index);
+type Step = "select" | "scope" | "review";
 
-type ImportTarget = "selected" | "all";
+const years = [2026, 2027] as const;
 
-type ProgrammeSearchResult = {
-  code: string;
-  name: string;
-  year: number;
-  career: string | null;
-  duration: number | null;
+const programmeSources: Record<string, string> = {
+  BCOMP: "https://programsandcourses.anu.edu.au/2026/program/BCOMP",
+  BACOMPH: "https://programsandcourses.anu.edu.au/2026/program/BACOMPH",
+  BIT: "https://programsandcourses.anu.edu.au/2026/program/BIT",
 };
 
-type SearchState = "idle" | "loading" | "ready" | "error";
+const directCourseCodes = [
+  "COMP1100",
+  "MATH1005",
+  "COMP1110",
+  "COMP1600",
+  "COMP2100",
+  "COMP2300",
+  "COMP2400",
+];
 
-function programmeSourceUrl(year: number, code: string) {
-  return `https://programsandcourses.anu.edu.au/${year}/program/${code}`;
+function titleForStep(step: Step) {
+  return {
+    select: "Choose a programme",
+    scope: "Confirm the scope",
+    review: "Review the import plan",
+  }[step];
+}
+
+function StepItem({
+  number,
+  label,
+  current,
+  complete,
+}: {
+  number: number;
+  label: string;
+  current: boolean;
+  complete: boolean;
+}) {
+  return (
+    <li className="flex min-w-0 items-center gap-2.5">
+      <span
+        className={cn(
+          "grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ring-1 ring-inset",
+          complete
+            ? "bg-emerald-500 text-white ring-emerald-500"
+            : current
+              ? "bg-brand-700 text-white ring-brand-700"
+              : "bg-white text-zinc-400 ring-zinc-200",
+        )}
+      >
+        {complete ? <Check size={14} strokeWidth={3} /> : number}
+      </span>
+      <span
+        className={cn(
+          "truncate text-xs font-medium",
+          current || complete ? "text-zinc-800" : "text-zinc-400",
+        )}
+      >
+        {label}
+      </span>
+    </li>
+  );
 }
 
 export default function AdminSyncPage() {
-  const [target, setTarget] = useState<ImportTarget>("selected");
-  const [year, setYear] = useState(2026);
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ProgrammeSearchResult[]>([]);
-  const [selectedProgrammes, setSelectedProgrammes] = useState<
-    ProgrammeSearchResult[]
-  >([]);
-  const [searchState, setSearchState] = useState<SearchState>("idle");
-  const [searchMessage, setSearchMessage] = useState("");
-  const searchRequest = useRef(0);
-  const router = useRouter();
+  const { notify } = useCoursemap();
+  const [step, setStep] = useState<Step>("select");
+  const [year, setYear] = useState<(typeof years)[number]>(2026);
+  const [programmeCode, setProgrammeCode] = useState("BCOMP");
+  const [includeOptions, setIncludeOptions] = useState(true);
+  const [includePrerequisites, setIncludePrerequisites] = useState(true);
 
-  const selectedCodes = useMemo(
-    () => new Set(selectedProgrammes.map((programme) => programme.code)),
-    [selectedProgrammes],
+  const programme = degrees.find((item) => item.code === programmeCode) ?? degrees[0];
+  const selectedMajors = includeOptions ? majors : [];
+  const directCourses = courses.filter((course) =>
+    directCourseCodes.includes(course.code),
   );
-  const canPreview = target === "all" || selectedProgrammes.length > 0;
-
-  function setCatalogueYear(value: number) {
-    setYear(value);
-    setSelectedProgrammes([]);
-    setQuery("");
-    setResults([]);
-    setSearchState("idle");
-    setSearchMessage("");
-    searchRequest.current += 1;
-  }
-
-  function searchProgrammes(value: string) {
-    setQuery(value);
-    const requestId = searchRequest.current + 1;
-    searchRequest.current = requestId;
-    const trimmedQuery = value.trim();
-
-    if (!trimmedQuery) {
-      setResults([]);
-      setSearchState("idle");
-      setSearchMessage("");
-      return;
+  const selectedCourseCodes = useMemo(() => {
+    const selected = new Set(directCourseCodes);
+    for (const major of selectedMajors) {
+      major.courseCodes.forEach((code) => selected.add(code));
     }
-
-    setSearchState("loading");
-    setSearchMessage("");
-
-    window.setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `/api/admin/catalogue/programmes?q=${encodeURIComponent(trimmedQuery)}&year=${year}`,
-        );
-        const payload = (await response.json()) as {
-          results?: ProgrammeSearchResult[];
-          error?: string;
-        };
-
-        if (!response.ok)
-          throw new Error(payload.error ?? "Search unavailable.");
-        if (searchRequest.current !== requestId) return;
-
-        setResults(payload.results ?? []);
-        setSearchState("ready");
-      } catch (error) {
-        if (searchRequest.current !== requestId) return;
-        setResults([]);
-        setSearchState("error");
-        setSearchMessage(
-          error instanceof Error ? error.message : "Search unavailable.",
-        );
+    if (includePrerequisites) {
+      for (const course of courses) {
+        if (selected.has(course.code)) {
+          course.prerequisiteCodes.forEach((code) => selected.add(code));
+        }
       }
-    }, 220);
-  }
-
-  function addProgramme(programme: ProgrammeSearchResult) {
-    if (selectedCodes.has(programme.code)) return;
-    setSelectedProgrammes((current) => [...current, programme]);
-    searchRequest.current += 1;
-    setQuery("");
-    setResults([]);
-    setSearchState("idle");
-  }
-
-  function removeProgramme(code: string) {
-    setSelectedProgrammes((current) =>
-      current.filter((programme) => programme.code !== code),
-    );
-  }
-
-  function openPreview() {
-    const params = new URLSearchParams({ year: String(year), target });
-    if (target === "selected") {
-      params.set(
-        "programmes",
-        selectedProgrammes.map((programme) => programme.code).join(","),
-      );
     }
-    router.push(`/admin/sync/preview?${params}`);
-  }
+    return selected;
+  }, [includePrerequisites, selectedMajors]);
+  const sourceUrl = programmeSources[programme.code] ?? programmeSources.BCOMP;
+
+  const goToScope = () => setStep("scope");
+  const goToReview = () => setStep("review");
 
   return (
-    <AppShell admin>
-      <div className="w-full">
-        <nav
-          aria-label="Sync type"
-          className="flex gap-5 border-b border-zinc-200 text-sm font-medium"
-        >
-          <span className="-mb-px border-b-2 border-zinc-950 pb-3 text-zinc-950">
-            Programmes
-          </span>
-          <Link
-            href="/admin/sync/courses"
-            className="-mb-px border-b-2 border-transparent pb-3 text-zinc-500 hover:text-zinc-900"
-          >
-            Course pages
-          </Link>
-        </nav>
-        <h1 className="mt-7 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
-          Sync programmes
-        </h1>
+    <AppShell
+      admin
+      actions={
+        <ButtonLink href="/admin/programmes" size="sm" variant="secondary">
+          Browse programmes <ArrowRight size={14} />
+        </ButtonLink>
+      }
+    >
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-sm font-medium text-brand-700">Catalogue imports</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
+              Bring in a programme
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+              Start with one ANU programme, inspect exactly what it brings with it,
+              then send only the reviewed scope to the importer.
+            </p>
+          </div>
+          <Badge tone="neutral">Importer connection in progress</Badge>
+        </div>
 
-        <section className="mt-8 border-t border-zinc-200 pt-8">
-          <div className="space-y-7">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                aria-pressed={target === "selected"}
-                onClick={() => {
-                  setTarget("selected");
-                }}
-                className={cn(
-                  "min-h-24 rounded-xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
-                  target === "selected"
-                    ? "border-brand-500 bg-brand-50/50 ring-1 ring-brand-500"
-                    : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50",
+        <Card className="mt-7 overflow-hidden">
+          <ol className="grid gap-3 border-b border-zinc-100 px-5 py-4 sm:grid-cols-3 sm:gap-6 sm:px-6">
+            <StepItem
+              number={1}
+              label="Choose programme"
+              current={step === "select"}
+              complete={step !== "select"}
+            />
+            <StepItem
+              number={2}
+              label="Confirm scope"
+              current={step === "scope"}
+              complete={step === "review"}
+            />
+            <StepItem
+              number={3}
+              label="Review and run"
+              current={step === "review"}
+              complete={false}
+            />
+          </ol>
+
+          <div className="p-5 sm:p-7">
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
+                {step === "select" ? (
+                  <GraduationCap size={20} />
+                ) : step === "scope" ? (
+                  <Layers3 size={20} />
+                ) : (
+                  <FileCheck2 size={20} />
                 )}
-              >
-                <span className="block text-sm font-semibold text-zinc-900">
-                  Select programmes
-                </span>
-                <span className="mt-1 block text-xs text-zinc-500">
-                  Add one or more programmes from ANU.
-                </span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={target === "all"}
-                onClick={() => {
-                  setTarget("all");
-                }}
-                className={cn(
-                  "min-h-24 rounded-xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
-                  target === "all"
-                    ? "border-brand-500 bg-brand-50/50 ring-1 ring-brand-500"
-                    : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50",
-                )}
-              >
-                <span className="block text-sm font-semibold text-zinc-900">
-                  All programmes
-                </span>
-                <span className="mt-1 block text-xs text-zinc-500">
-                  Everything published for this year.
-                </span>
-              </button>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_11rem]">
-              {target === "selected" ? (
-                <div className="relative">
-                  <Field label="Find programmes">
-                    <div className="relative">
-                      <Search
-                        aria-hidden="true"
-                        size={17}
-                        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400"
-                      />
-                      <Input
-                        aria-label="Find programmes"
-                        className="pl-9"
-                        placeholder="Search ANU programmes"
-                        value={query}
-                        onChange={(event) =>
-                          searchProgrammes(event.target.value)
-                        }
-                      />
-                    </div>
-                  </Field>
-
-                  {query && (
-                    <div className="absolute z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-lg">
-                      {searchState === "loading" && (
-                        <p className="px-3 py-3 text-sm text-zinc-500">
-                          Searching ANU...
-                        </p>
-                      )}
-                      {searchState === "error" && (
-                        <p className="px-3 py-3 text-sm text-rose-600">
-                          {searchMessage}
-                        </p>
-                      )}
-                      {searchState === "ready" && results.length === 0 && (
-                        <p className="px-3 py-3 text-sm text-zinc-500">
-                          No programmes found.
-                        </p>
-                      )}
-                      {searchState === "ready" && results.length > 0 && (
-                        <ul
-                          aria-label="ANU programme search results"
-                          className="p-1"
-                        >
-                          {results.map((programme) => {
-                            const isSelected = selectedCodes.has(
-                              programme.code,
-                            );
-                            return (
-                              <li key={programme.code}>
-                                <button
-                                  type="button"
-                                  disabled={isSelected}
-                                  onClick={() => addProgramme(programme)}
-                                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-zinc-50 focus-visible:bg-zinc-50 focus-visible:outline-none disabled:cursor-default disabled:opacity-55"
-                                >
-                                  <span className="min-w-0">
-                                    <span className="block truncate text-sm font-medium text-zinc-900">
-                                      {programme.name}
-                                    </span>
-                                    <span className="mt-0.5 block font-mono text-xs text-zinc-500">
-                                      {programme.code}
-                                    </span>
-                                  </span>
-                                  {isSelected ? (
-                                    <Check
-                                      size={16}
-                                      className="shrink-0 text-emerald-600"
-                                    />
-                                  ) : (
-                                    <Plus
-                                      size={16}
-                                      className="shrink-0 text-brand-700"
-                                    />
-                                  )}
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex h-10 items-center rounded-lg bg-zinc-50 px-3 text-sm text-zinc-700 ring-1 ring-zinc-200">
-                  Every ANU programme published in {year}
-                </div>
-              )}
-
-              <Field label="Catalogue year">
-                <Select
-                  aria-label="Catalogue year"
-                  value={year}
-                  onChange={(value) => setCatalogueYear(Number(value))}
-                  options={years.map((item) => ({
-                    value: item,
-                    label: String(item),
-                  }))}
-                />
-              </Field>
-            </div>
-
-            {target === "selected" && selectedProgrammes.length > 0 && (
+              </span>
               <div>
-                <p className="text-sm font-medium text-zinc-800">
-                  Selected programmes ({selectedProgrammes.length})
+                <p className="text-xs font-semibold tracking-wide text-brand-700 uppercase">
+                  Step {step === "select" ? 1 : step === "scope" ? 2 : 3} of 3
                 </p>
-                <ul className="mt-3 divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200">
-                  {selectedProgrammes.map((programme) => (
-                    <li
-                      key={programme.code}
-                      className="flex min-h-12 items-center gap-3 px-3"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-zinc-900">
-                          {programme.name}
-                        </span>
-                        <span className="font-mono text-xs text-zinc-500">
-                          {programme.code}
-                        </span>
-                      </span>
-                      <a
-                        href={programmeSourceUrl(year, programme.code)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hidden items-center gap-1 text-xs font-medium text-brand-700 hover:underline sm:inline-flex"
-                      >
-                        Source <ExternalLink size={13} />
-                      </a>
-                      <IconButton
-                        label={`Remove ${programme.code}`}
-                        onClick={() => removeProgramme(programme.code)}
-                      >
-                        <X size={15} />
-                      </IconButton>
-                    </li>
-                  ))}
-                </ul>
+                <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-950">
+                  {titleForStep(step)}
+                </h2>
+              </div>
+            </div>
+
+            {step === "select" && (
+              <div className="mt-7 grid max-w-3xl gap-5 sm:grid-cols-[minmax(0,1fr)_11rem]">
+                <Field
+                  label="Programme"
+                  hint="A programme is the top-level degree record from ANU Programs and Courses."
+                >
+                  <Select
+                    aria-label="Programme to import"
+                    value={programmeCode}
+                    onChange={setProgrammeCode}
+                    options={degrees.map((degree) => ({
+                      value: degree.code,
+                      label: `${degree.code} · ${degree.name}`,
+                    }))}
+                  />
+                </Field>
+                <Field label="Catalogue year">
+                  <Select
+                    aria-label="Catalogue year"
+                    value={year}
+                    onChange={setYear}
+                    options={years.map((item) => ({
+                      value: item,
+                      label: String(item),
+                    }))}
+                  />
+                </Field>
               </div>
             )}
 
-            <div className="grid gap-3 border-y border-zinc-200 py-5 sm:grid-cols-2">
-              <div>
-                <p className="text-sm font-semibold text-zinc-900">
-                  Programmes
-                </p>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Requirements, study options and elective rules.
-                </p>
+            {step === "scope" && (
+              <div className="mt-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+                <div>
+                  <p className="text-sm font-medium text-zinc-800">
+                    What should be included?
+                  </p>
+                  <div className="mt-3 overflow-hidden rounded-xl border border-zinc-200">
+                    <label className="flex cursor-pointer items-start gap-3 border-b border-zinc-100 p-4 hover:bg-zinc-50/70">
+                      <input
+                        type="checkbox"
+                        checked
+                        readOnly
+                        className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-zinc-900">
+                          Programme and compulsory courses
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
+                          The degree page, its requirement tree and explicitly listed courses.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-3 border-b border-zinc-100 p-4 hover:bg-zinc-50/70">
+                      <input
+                        type="checkbox"
+                        checked={includeOptions}
+                        onChange={(event) => setIncludeOptions(event.target.checked)}
+                        className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-zinc-900">
+                          Listed majors, minors and specialisations
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
+                          Keep the programme's study options connected to this year.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-3 p-4 hover:bg-zinc-50/70">
+                      <input
+                        type="checkbox"
+                        checked={includePrerequisites}
+                        onChange={(event) => setIncludePrerequisites(event.target.checked)}
+                        className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-zinc-900">
+                          Prerequisite course pages
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
+                          Include the available prerequisite closure so the rules can be explained.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <aside className="rounded-xl bg-brand-50/70 p-4 ring-1 ring-brand-100">
+                  <p className="text-xs font-semibold text-brand-800">Why this is explicit</p>
+                  <p className="mt-1.5 text-xs leading-5 text-brand-800/75">
+                    Subject, level and elective requirements are rules, not a fixed list of courses.
+                    They remain attached to the programme for review instead of inflating the import.
+                  </p>
+                </aside>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-zinc-900">Courses</p>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Compulsory, elective and prerequisite course pages.
-                </p>
-              </div>
-            </div>
+            )}
 
-            <div className="flex justify-end">
+            {step === "review" && (
+              <div className="mt-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+                <div className="overflow-hidden rounded-xl border border-zinc-200">
+                  <div className="flex items-start justify-between gap-4 border-b border-zinc-100 p-4">
+                    <div>
+                      <p className="font-mono text-xs font-semibold text-zinc-900">
+                        {programme.code} · {year}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-600">{programme.name}</p>
+                    </div>
+                    <Badge tone="neutral">Draft scope</Badge>
+                  </div>
+                  <dl className="divide-y divide-zinc-100 text-sm">
+                    {[
+                      ["Programme source", "1 official page"],
+                      ["Study options", `${selectedMajors.length} structures`],
+                      ["Course pages", `${selectedCourseCodes.size} in this local preview`],
+                      ["Rule-only requirements", "3 preserved for review"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-center justify-between gap-4 px-4 py-3">
+                        <dt className="text-zinc-500">{label}</dt>
+                        <dd className="font-medium text-zinc-800">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+                <aside className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <CircleAlert size={16} />
+                    <p className="text-xs font-semibold">Not live yet</p>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-amber-900/75">
+                    This confirms the new import contract. The server-side programme parser and
+                    executor are the next implementation slice, so no source or database write
+                    can occur from this screen yet.
+                  </p>
+                </aside>
+              </div>
+            )}
+
+            <div className="mt-7 flex flex-col-reverse justify-between gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:items-center">
               <Button
-                variant="primary"
-                disabled={!canPreview}
-                onClick={openPreview}
+                variant="ghost"
+                onClick={() => {
+                  if (step === "review") setStep("scope");
+                  else if (step === "scope") setStep("select");
+                  else {
+                    setProgrammeCode("BCOMP");
+                    setYear(2026);
+                    setIncludeOptions(true);
+                    setIncludePrerequisites(true);
+                  }
+                }}
               >
-                Preview sync
+                <RotateCcw size={15} /> {step === "select" ? "Reset" : "Back"}
               </Button>
+              {step === "select" ? (
+                <Button variant="primary" onClick={goToScope}>
+                  Continue <ChevronRight size={16} />
+                </Button>
+              ) : step === "scope" ? (
+                <Button variant="primary" onClick={goToReview}>
+                  Review import plan <ChevronRight size={16} />
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    notify(
+                      "The import plan is ready. The executor will be connected in the next slice.",
+                    )
+                  }
+                >
+                  <Sparkles size={16} /> Mark plan ready
+                </Button>
+              )}
             </div>
           </div>
-        </section>
+        </Card>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+          <Card>
+            <CardHeader
+              title="Preview from the selected programme"
+              description="The course set is deliberately small and inspectable before a run."
+              icon={
+                <span className="grid size-8 place-items-center rounded-lg bg-violet-50 text-violet-700">
+                  <BookOpen size={16} />
+                </span>
+              }
+              action={<Badge tone="neutral">{directCourses.length} direct courses</Badge>}
+            />
+            <div className="border-t border-zinc-100 px-5 py-4">
+              <div className="flex flex-wrap gap-2">
+                {directCourses.map((course) => (
+                  <Link
+                    key={course.code}
+                    href={`/admin/courses/${course.code}`}
+                    className="group rounded-lg bg-zinc-50 px-2.5 py-2 text-left ring-1 ring-zinc-200 transition hover:bg-white hover:ring-brand-200"
+                  >
+                    <span className="block font-mono text-[11px] font-semibold text-zinc-800 group-hover:text-brand-700">
+                      {course.code}
+                    </span>
+                    <span className="mt-0.5 block max-w-40 truncate text-[10px] text-zinc-500">
+                      {course.name}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Source and rules"
+              description="Every import remains tied to its catalogue-year page."
+              icon={
+                <span className="grid size-8 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
+                  <ListTree size={16} />
+                </span>
+              }
+            />
+            <div className="border-t border-zinc-100 p-5">
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 p-3 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 transition hover:bg-white hover:ring-brand-200"
+              >
+                Open the ANU source
+                <ExternalLink size={15} className="shrink-0 text-zinc-400" />
+              </a>
+              <p className="mt-3 text-xs leading-5 text-zinc-500">
+                Content hashes, raw source text and unsupported rules are recorded for review,
+                rather than silently treated as verified data.
+              </p>
+            </div>
+          </Card>
+        </div>
       </div>
     </AppShell>
   );
