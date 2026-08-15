@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Bug, Database, Lightbulb, Mail } from "lucide-react";
 import { EmailSupportDialog } from "@/components/help/email-support-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { helpContactReasons } from "@/lib/help";
@@ -19,9 +18,11 @@ export function HelpContactCard() {
 
   return (
     <>
-      <Card className="flex h-full flex-col p-6 sm:p-7">
-        <Badge tone="brand">Contact us</Badge>
-        <div className="mt-4 flex flex-1 flex-col justify-evenly gap-1">
+      <Card className="overflow-hidden lg:sticky lg:top-20 lg:self-start">
+        <h2 className="px-5 pt-5 text-[13px] font-semibold tracking-wide text-zinc-500 uppercase">
+          Contact us
+        </h2>
+        <div className="mt-3 divide-y divide-zinc-100 border-y border-zinc-100">
           {helpContactReasons.map((contact) => {
             const Icon =
               reasonIcons[contact.id as keyof typeof reasonIcons] ?? Mail;
@@ -29,17 +30,17 @@ export function HelpContactCard() {
               <Button
                 key={contact.id}
                 variant="ghost"
-                className="h-auto min-h-16 w-full justify-start px-2 py-3 text-left !whitespace-normal"
+                className="h-auto w-full justify-start rounded-none px-5 py-3.5 text-left !whitespace-normal"
                 aria-haspopup="dialog"
                 aria-expanded={reasonId === contact.id}
                 onClick={() => setReasonId(contact.id)}
               >
-                <Icon size={20} className="shrink-0 text-brand-600" />
+                <Icon size={17} className="mt-0.5 shrink-0 text-brand-600" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-zinc-800">
+                  <span className="block text-[13px] font-semibold text-zinc-900">
                     {contact.label}
                   </span>
-                  <span className="mt-1 block text-xs leading-relaxed font-normal !whitespace-normal text-zinc-500">
+                  <span className="mt-0.5 block text-xs leading-relaxed font-normal !whitespace-normal text-zinc-500">
                     {contact.description}
                   </span>
                 </span>
@@ -47,21 +48,21 @@ export function HelpContactCard() {
             );
           })}
         </div>
-        <Button
-          variant="secondary"
-          size="lg"
-          fullWidth
-          className="mt-5"
-          aria-haspopup="dialog"
-          aria-expanded={reasonId === "other"}
-          onClick={() => setReasonId("other")}
-        >
-          <Mail size={16} /> Email support
-        </Button>
-        <p className="mt-4 text-xs leading-relaxed text-zinc-500">
-          Coursemap is a planning aid and does not replace official ANU academic
-          advice.
-        </p>
+        <div className="p-5">
+          <Button
+            variant="secondary"
+            fullWidth
+            aria-haspopup="dialog"
+            aria-expanded={reasonId === "other"}
+            onClick={() => setReasonId("other")}
+          >
+            <Mail size={15} /> Email support
+          </Button>
+          <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+            Coursemap is a planning aid and does not replace official ANU
+            academic advice.
+          </p>
+        </div>
       </Card>
       {reasonId ? (
         <EmailSupportDialog
