@@ -1,21 +1,70 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { TermChooser } from "@/components/overlays";
-import type { Course } from "@/lib/catalogue";
+import { courseByCode } from "@/lib/catalogue";
 
-const actionButtonClasses =
-  "grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:bg-zinc-100 focus-visible:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400";
+const menuItemClasses =
+  "flex min-h-9 w-full items-center px-3 text-left text-[13px] text-zinc-700 hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none";
 
-export function CourseRowActions({ course }: { course: Course }) {
+const MENU_HEIGHT = 128;
+
+/** The table scrolls, so the menu has to flip inside that clipping edge. */
+function placementFor(anchor: HTMLElement | null) {
+  if (!anchor) return "bottom" as const;
+
+  let limit = window.innerHeight;
+  for (
+    let node = anchor.parentElement;
+    node && node !== document.body;
+    node = node.parentElement
+  ) {
+    const overflow = getComputedStyle(node).overflowX;
+    if (overflow === "auto" || overflow === "scroll") {
+      limit = Math.min(limit, node.getBoundingClientRect().bottom);
+      break;
+    }
+  }
+
+  return anchor.getBoundingClientRect().bottom + MENU_HEIGHT > limit
+    ? ("top" as const)
+    : ("bottom" as const);
+}
+
+/** Only the code crosses the server boundary, so rows stay out of the payload. */
+export function CourseRowActions({ code }: { code: string }) {
+  const course = courseByCode(code);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [placement, setPlacement] = useState<"top" | "bottom">("bottom");
   const [planOpen, setPlanOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buttonId = useId();
   const menuId = useId();
+
+  const cancelClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+
+  // A short delay keeps the menu open while the pointer travels to it.
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setMenuOpen(false), 140);
+  };
+
+  const openMenu = () => {
+    cancelClose();
+    setPlacement(placementFor(root.current));
+    setMenuOpen(true);
+  };
+
+  useEffect(() => cancelClose, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -38,57 +87,47 @@ export function CourseRowActions({ course }: { course: Course }) {
   }, [menuOpen]);
 
   return (
-    <div ref={root} className="relative">
-      <div
+    <div
+      ref={root}
+      className="relative flex justify-end"
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
+      onFocus={openMenu}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+          setMenuOpen(false);
+        }
+      }}
+    >
+      <button
+        type="button"
+        id={buttonId}
+        aria-label={`Actions for ${code}`}
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        aria-controls={menuOpen ? menuId : undefined}
+        onClick={() => (menuOpen ? setMenuOpen(false) : openMenu())}
         className={cn(
-          "flex items-center justify-end gap-0.5 transition-opacity duration-150 motion-reduce:opacity-100 motion-reduce:transition-none",
-          menuOpen
-            ? "opacity-100"
-            : "opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100",
+          "grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 motion-reduce:transition-none",
+          menuOpen && "bg-zinc-100 text-zinc-900",
         )}
       >
-        <Link
-          href={`/courses/${course.code}`}
-          aria-label={`View ${course.code}`}
-          title="View course"
-          className={actionButtonClasses}
-        >
-          <ArrowUpRight size={16} aria-hidden="true" />
-        </Link>
-        <button
-          type="button"
-          aria-label={`Add ${course.code} to plan`}
-          title="Add to plan"
-          className={actionButtonClasses}
-          onClick={() => setPlanOpen(true)}
-        >
-          <Plus size={16} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          id={buttonId}
-          aria-label={`More actions for ${course.code}`}
-          title="More"
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          aria-controls={menuOpen ? menuId : undefined}
-          className={actionButtonClasses}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <MoreHorizontal size={16} aria-hidden="true" />
-        </button>
-      </div>
+        <MoreHorizontal size={16} aria-hidden="true" />
+      </button>
       {menuOpen ? (
         <div
           id={menuId}
           role="menu"
           aria-labelledby={buttonId}
-          className="absolute top-9 right-0 z-30 min-w-44 rounded-md border border-zinc-200 bg-white py-1 shadow-md"
+          className={cn(
+            "absolute right-0 z-30 min-w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-md",
+            placement === "top" ? "bottom-full mb-1" : "top-full mt-1",
+          )}
         >
           <Link
             role="menuitem"
-            href={`/courses/${course.code}`}
-            className="flex min-h-9 items-center px-3 text-[13px] text-zinc-700 hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none"
+            href={`/courses/${code}`}
+            className={menuItemClasses}
             onClick={() => setMenuOpen(false)}
           >
             View course
@@ -96,7 +135,7 @@ export function CourseRowActions({ course }: { course: Course }) {
           <button
             type="button"
             role="menuitem"
-            className="flex min-h-9 w-full items-center px-3 text-left text-[13px] text-zinc-700 hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none"
+            className={menuItemClasses}
             onClick={() => {
               setMenuOpen(false);
               setPlanOpen(true);
@@ -104,19 +143,21 @@ export function CourseRowActions({ course }: { course: Course }) {
           >
             Add to plan
           </button>
-          <a
-            role="menuitem"
-            href={course.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex min-h-9 items-center px-3 text-[13px] text-zinc-700 hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none"
-            onClick={() => setMenuOpen(false)}
-          >
-            Open ANU source
-          </a>
+          {course ? (
+            <a
+              role="menuitem"
+              href={course.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={menuItemClasses}
+              onClick={() => setMenuOpen(false)}
+            >
+              Open ANU source
+            </a>
+          ) : null}
         </div>
       ) : null}
-      {planOpen ? (
+      {planOpen && course ? (
         <TermChooser course={course} onClose={() => setPlanOpen(false)} />
       ) : null}
     </div>

@@ -19,12 +19,16 @@ function formatAvailability(sessions: string[]) {
     .filter((value): value is string => Boolean(value))
     .sort((left, right) => Number(left) - Number(right));
 
-  if (numbers.length === sessions.length) {
-    if (numbers.length === 1) return `Sem ${numbers[0]}`;
-    return `Sem ${numbers[0]} & ${numbers.slice(1).join(" & ")}`;
-  }
+  if (numbers.length !== sessions.length) return sessions.join(" & ");
+  if (numbers.length === 1) return `Sem ${numbers[0]}`;
+  return `Sem ${numbers.join(" & ")}`;
+}
 
-  return sessions.join(" & ");
+function formatPrerequisites(course: Course) {
+  const count = course.prerequisiteCodes.length;
+  if (count === 0) return "No prerequisites";
+  if (count === 1) return `1 prerequisite`;
+  return `${count} prerequisites`;
 }
 
 export function CourseDirectory({ courses }: { courses: Course[] }) {
@@ -41,13 +45,19 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
       <table className={tableClasses("table-fixed")}>
         <colgroup>
           <col />
-          <col className="w-[18rem]" />
+          <col className="w-[11rem]" />
+          <col className="w-[9rem]" />
+          <col className="w-[8rem]" />
+          <col className="w-[4rem]" />
         </colgroup>
         <thead className={tableHeadClasses()}>
           <tr>
             <th className={tableHeaderCellClasses()}>Course</th>
+            <th className={tableHeaderCellClasses()}>Subject</th>
+            <th className={tableHeaderCellClasses()}>Requisites</th>
+            <th className={tableHeaderCellClasses()}>Available</th>
             <th className={tableHeaderCellClasses()}>
-              <span className="block text-right">Available</span>
+              <span className="sr-only">Actions</span>
             </th>
           </tr>
         </thead>
@@ -55,7 +65,7 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
           {courses.length === 0 ? (
             <tr className={tableRowClasses()}>
               <td
-                colSpan={2}
+                colSpan={5}
                 className={tableCellClasses(
                   "py-12 text-center font-normal whitespace-normal text-zinc-500",
                 )}
@@ -66,17 +76,16 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
           ) : null}
           {courses.map((course) => {
             const href = `/courses/${course.code}`;
-            const availability = formatAvailability(course.sessions);
             return (
               <tr
                 key={course.code}
                 className={tableRowClasses("group hover:bg-zinc-50/60")}
               >
                 <td className={tableCellClasses("p-0")}>
-                  <div className="flex items-center gap-2.5 px-4 py-2.5">
+                  <div className="flex items-center gap-3 px-4 py-2.5">
                     <Link
                       href={href}
-                      className="shrink-0 rounded-md focus-visible:ring-2 focus-visible:ring-brand-400"
+                      className="shrink-0 rounded-[4px] focus-visible:ring-2 focus-visible:ring-brand-400"
                       aria-label={`View ${course.code}`}
                     >
                       <CourseToken
@@ -104,14 +113,37 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
                   </div>
                 </td>
                 <td className={tableCellClasses("p-0")}>
-                  <div className="flex min-h-12 items-center justify-end gap-2 pr-3 pl-4">
-                    <Link
-                      href={href}
-                      className="text-[13px] text-zinc-500 hover:text-zinc-800"
-                    >
-                      {availability}
-                    </Link>
-                    <CourseRowActions course={course} />
+                  <Link
+                    href={href}
+                    className="flex min-h-12 flex-col justify-center px-4 py-2.5 focus:outline-none"
+                  >
+                    <span className="truncate text-[13px] text-zinc-700">
+                      {course.subject}
+                    </span>
+                    <span className="mt-0.5 truncate text-[11px] text-zinc-500">
+                      Level {course.level / 1000}
+                    </span>
+                  </Link>
+                </td>
+                <td className={tableCellClasses("p-0")}>
+                  <Link
+                    href={href}
+                    className="flex min-h-12 items-center px-4 py-2.5 text-[13px] text-zinc-600 focus:outline-none"
+                  >
+                    {formatPrerequisites(course)}
+                  </Link>
+                </td>
+                <td className={tableCellClasses("p-0")}>
+                  <Link
+                    href={href}
+                    className="flex min-h-12 items-center px-4 py-2.5 text-[13px] text-zinc-600 focus:outline-none"
+                  >
+                    {formatAvailability(course.sessions)}
+                  </Link>
+                </td>
+                <td className={tableCellClasses("p-0")}>
+                  <div className="flex min-h-12 items-center justify-end pr-3">
+                    <CourseRowActions code={course.code} />
                   </div>
                 </td>
               </tr>
