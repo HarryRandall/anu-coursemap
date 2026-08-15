@@ -100,7 +100,10 @@ export default function AdminSyncPage() {
 
   const programme =
     degrees.find((item) => item.code === programmeCode) ?? degrees[0];
-  const selectedMajors = includeOptions ? majors : [];
+  const selectedMajors = useMemo(
+    () => (includeOptions ? majors : []),
+    [includeOptions],
+  );
   const directCourses = courses.filter((course) =>
     directCourseCodes.includes(course.code),
   );
