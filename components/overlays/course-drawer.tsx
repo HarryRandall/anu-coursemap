@@ -19,6 +19,7 @@ import { effectiveStatus, missingPrereqs } from "@/lib/planner";
 import { Drawer } from "@/components/ui/overlay";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
 import { StatusPill } from "@/components/ui/status-pill";
+import { FixIssueButton } from "@/components/plan/fix-issue-button";
 
 export function CourseDrawer({
   attemptId,
@@ -179,12 +180,15 @@ export function CourseDrawer({
                   </div>
                 )}
                 {!prereqsMet && (
-                  <div className="mt-2 flex items-center gap-2 rounded-lg bg-rose-50 px-2.5 py-2 text-rose-700 ring-1 ring-rose-100 ring-inset">
-                    <Info size={14} className="shrink-0" />
-                    <p className="text-[11px] leading-snug font-medium">
-                      {[...missing].join(" + ")} must be completed or planned
-                      earlier
-                    </p>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-2.5 py-2 text-rose-700 ring-1 ring-rose-100 ring-inset">
+                      <Info size={14} className="shrink-0" />
+                      <p className="text-[11px] leading-snug font-medium">
+                        {[...missing].join(" + ")} must be completed or planned
+                        earlier
+                      </p>
+                    </div>
+                    <FixIssueButton attempt={attempt} />
                   </div>
                 )}
               </div>
