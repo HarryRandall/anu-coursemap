@@ -1,16 +1,24 @@
 "use client";
 
-import Link from "next/link";
-import { MoreHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ExternalLink, Eye, MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { TermChooser } from "@/components/overlays";
 import { courseByCode } from "@/lib/catalogue";
 
 const menuItemClasses =
-  "flex min-h-9 w-full items-center px-3 text-left text-[13px] text-zinc-700 hover:bg-zinc-50 focus:bg-zinc-50 focus:outline-none";
+  "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] text-zinc-700 hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none";
 
-const MENU_HEIGHT = 128;
+function Keycap({ children }: { children: string }) {
+  return (
+    <kbd className="ml-auto rounded bg-zinc-100 px-1.5 py-0.5 font-sans text-[10px] font-medium text-zinc-500 uppercase">
+      {children}
+    </kbd>
+  );
+}
+
+const MENU_HEIGHT = 136;
 
 /** The table scrolls, so the menu has to flip inside that clipping edge. */
 function placementFor(anchor: HTMLElement | null) {
@@ -36,41 +44,50 @@ function placementFor(anchor: HTMLElement | null) {
 
 /** Only the code crosses the server boundary, so rows stay out of the payload. */
 export function CourseRowActions({ code }: { code: string }) {
+  const router = useRouter();
   const course = courseByCode(code);
   const [menuOpen, setMenuOpen] = useState(false);
   const [placement, setPlacement] = useState<"top" | "bottom">("bottom");
   const [planOpen, setPlanOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   const buttonId = useId();
   const menuId = useId();
 
-  const cancelClose = () => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  };
-
-  // A short delay keeps the menu open while the pointer travels to it.
-  const scheduleClose = () => {
-    cancelClose();
-    closeTimer.current = setTimeout(() => setMenuOpen(false), 140);
-  };
-
   const openMenu = () => {
-    cancelClose();
     setPlacement(placementFor(root.current));
     setMenuOpen(true);
   };
 
-  useEffect(() => cancelClose, []);
+  const viewCourse = () => {
+    setMenuOpen(false);
+    router.push(`/courses/${code}`);
+  };
+
+  const addToPlan = () => {
+    setMenuOpen(false);
+    setPlanOpen(true);
+  };
+
+  const openSource = () => {
+    setMenuOpen(false);
+    if (course) window.open(course.sourceUrl, "_blank", "noopener,noreferrer");
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
 
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        trigger.current?.focus();
+        return;
+      }
+      const shortcut = event.key.toLowerCase();
+      if (shortcut === "v") viewCourse();
+      if (shortcut === "a") addToPlan();
+      if (shortcut === "o") openSource();
     };
     const closeOnOutsideClick = (event: MouseEvent) => {
       if (root.current && !root.current.contains(event.target as Node)) {
@@ -78,21 +95,20 @@ export function CourseRowActions({ code }: { code: string }) {
       }
     };
 
-    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("keydown", onKeyDown);
     document.addEventListener("mousedown", closeOnOutsideClick);
     return () => {
-      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("mousedown", closeOnOutsideClick);
     };
+    // The handlers only read stable refs and the course looked up from the code.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [menuOpen]);
 
   return (
     <div
       ref={root}
       className="relative flex justify-end"
-      onMouseEnter={openMenu}
-      onMouseLeave={scheduleClose}
-      onFocus={openMenu}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node)) {
           setMenuOpen(false);
@@ -100,6 +116,7 @@ export function CourseRowActions({ code }: { code: string }) {
       }}
     >
       <button
+        ref={trigger}
         type="button"
         id={buttonId}
         aria-label={`Actions for ${code}`}
@@ -120,40 +137,45 @@ export function CourseRowActions({ code }: { code: string }) {
           role="menu"
           aria-labelledby={buttonId}
           className={cn(
-            "absolute right-0 z-30 min-w-44 rounded-lg border border-zinc-200 bg-white py-1 shadow-md",
+            "absolute right-0 z-30 min-w-52 animate-fade-in rounded-xl border border-zinc-200 bg-white p-1 shadow-lg motion-reduce:animate-none",
             placement === "top" ? "bottom-full mb-1" : "top-full mt-1",
           )}
         >
-          <Link
-            role="menuitem"
-            href={`/courses/${code}`}
-            className={menuItemClasses}
-            onClick={() => setMenuOpen(false)}
-          >
-            View course
-          </Link>
           <button
             type="button"
             role="menuitem"
             className={menuItemClasses}
-            onClick={() => {
-              setMenuOpen(false);
-              setPlanOpen(true);
-            }}
+            onClick={viewCourse}
           >
+            <Eye size={15} aria-hidden="true" className="text-zinc-500" />
+            View course
+            <Keycap>V</Keycap>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={menuItemClasses}
+            onClick={addToPlan}
+          >
+            <Plus size={15} aria-hidden="true" className="text-zinc-500" />
             Add to plan
+            <Keycap>A</Keycap>
           </button>
           {course ? (
-            <a
+            <button
+              type="button"
               role="menuitem"
-              href={course.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
               className={menuItemClasses}
-              onClick={() => setMenuOpen(false)}
+              onClick={openSource}
             >
+              <ExternalLink
+                size={15}
+                aria-hidden="true"
+                className="text-zinc-500"
+              />
               Open ANU source
-            </a>
+              <Keycap>O</Keycap>
+            </button>
           ) : null}
         </div>
       ) : null}

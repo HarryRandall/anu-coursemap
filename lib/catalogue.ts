@@ -794,3 +794,445 @@ export function degreeByCode(code: string) {
 export function majorByCode(code: string) {
   return majors.find((major) => major.code === code) ?? majors[0];
 }
+
+/* --- Rich course detail (demo data shaped like ANU Programs and Courses) --- */
+
+export type AssessmentItem = {
+  title: string;
+  weight: number;
+  outcomes: number[];
+};
+
+export type CourseOffering = {
+  session: string;
+  classNumber: number;
+  startDate: string;
+  lastEnrolDate: string;
+  censusDate: string;
+  endDate: string;
+  mode: string;
+};
+
+export type SeltResult = {
+  term: string;
+  enrolled: number;
+  responses: number;
+  agreement: number;
+};
+
+export type SeltTheme = {
+  theme: string;
+  agreement: number;
+};
+
+export type CourseDetail = {
+  about: string;
+  college: string;
+  career: string;
+  areasOfInterest: string[];
+  coTaught: string[];
+  workloadHours: number;
+  feeBand: number;
+  domesticFee: number;
+  internationalFee: number;
+  learningOutcomes: string[];
+  assessment: AssessmentItem[];
+  assessmentNote: string;
+  offerings: CourseOffering[];
+  selt: SeltResult[];
+  seltThemes: SeltTheme[];
+};
+
+const courseContent: Record<
+  string,
+  { about: string; learningOutcomes: string[]; assessment: AssessmentItem[] }
+> = {
+  COMP1100: {
+    about:
+      "An introduction to programming as a disciplined, creative activity. You will design small functional programs from scratch, learning how types, abstraction and systematic testing turn problem statements into working, trustworthy code.",
+    learningOutcomes: [
+      "Design and implement small functional programs from problem statements.",
+      "Reason about program correctness using types and equational thinking.",
+      "Choose appropriate data structures for simple computational problems.",
+      "Apply systematic testing and debugging practice.",
+    ],
+    assessment: [
+      {
+        title: "Labs and programming assignments",
+        weight: 45,
+        outcomes: [1, 3, 4],
+      },
+      { title: "Mid-semester exam", weight: 15, outcomes: [1, 2] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 3] },
+    ],
+  },
+  MATH1005: {
+    about:
+      "Discrete mathematics is the language of computing. This course builds fluency with logic, proof, sets, graphs and counting, giving you the reasoning tools that later computing and mathematics courses rely on.",
+    learningOutcomes: [
+      "Construct correct mathematical proofs using logic and induction.",
+      "Model problems with sets, relations, functions and graphs.",
+      "Apply counting and probability arguments to discrete problems.",
+      "Communicate mathematical reasoning clearly.",
+    ],
+    assessment: [
+      { title: "Weekly quizzes", weight: 20, outcomes: [1, 2, 3] },
+      { title: "Assignments", weight: 30, outcomes: [1, 2, 4] },
+      { title: "Final exam", weight: 50, outcomes: [1, 2, 3] },
+    ],
+  },
+  COMP1110: {
+    about:
+      "A second programming course that scales your skills from small exercises to real software. Working in teams, you will design object-oriented programs, use core data structures and practise the version-control and review workflows used in industry.",
+    learningOutcomes: [
+      "Design object-oriented programs with appropriate abstractions.",
+      "Implement and use fundamental data structures.",
+      "Build, test and refactor a medium-sized group project.",
+      "Use version control and code review in team workflows.",
+    ],
+    assessment: [
+      { title: "Group project", weight: 35, outcomes: [1, 3, 4] },
+      { title: "Individual assignments", weight: 25, outcomes: [1, 2] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 3] },
+    ],
+  },
+  COMP1600: {
+    about:
+      "What can computers actually do, and how do we reason about them precisely? This course introduces automata, formal languages and logic, building the mathematical foundations for algorithms, verification and theoretical computer science.",
+    learningOutcomes: [
+      "Model computation with automata and formal languages.",
+      "Apply propositional and predicate logic to program reasoning.",
+      "Prove program properties with induction and invariants.",
+      "Relate decidability limits to practical computing problems.",
+    ],
+    assessment: [
+      { title: "Assignments", weight: 40, outcomes: [1, 2, 3] },
+      { title: "Mid-semester exam", weight: 20, outcomes: [1, 2] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 3, 4] },
+    ],
+  },
+  COMP2100: {
+    about:
+      "Software rarely fails because typing code is hard; it fails when design, testing and collaboration break down. This course teaches the methodical side of software: patterns, modular architecture, automated testing and the tooling that keeps a shared codebase healthy.",
+    learningOutcomes: [
+      "Apply design patterns and modular architecture to evolving software.",
+      "Write effective automated tests across unit and integration levels.",
+      "Use tooling for building, profiling and debugging software.",
+      "Collaborate on a shared codebase with disciplined workflows.",
+    ],
+    assessment: [
+      { title: "Pair project", weight: 40, outcomes: [1, 2, 4] },
+      { title: "Lab exercises", weight: 20, outcomes: [2, 3] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 3] },
+    ],
+  },
+  COMP2120: {
+    about:
+      "How teams turn requirements into delivered software. You will practise the full engineering lifecycle, from eliciting requirements and designing architecture through to iterative delivery, quality assurance and release management, in a semester-long team project.",
+    learningOutcomes: [
+      "Elicit and document requirements with stakeholders.",
+      "Design software architectures and justify trade-offs.",
+      "Deliver working software iteratively in a team.",
+      "Apply quality assurance and release management practice.",
+    ],
+    assessment: [
+      { title: "Team project", weight: 50, outcomes: [1, 2, 3, 4] },
+      { title: "Individual reflection", weight: 10, outcomes: [3, 4] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 4] },
+    ],
+  },
+  COMP2300: {
+    about:
+      "A journey down the stack, from the code you write to the silicon that runs it. You will program close to the hardware, exploring instruction sets, memory and processor architecture to understand exactly how programs execute.",
+    learningOutcomes: [
+      "Explain how programs execute on modern processors.",
+      "Write and debug assembly for a small instruction set.",
+      "Build programs that interact with memory-mapped hardware.",
+      "Analyse the interaction of compilers, memory and architecture.",
+    ],
+    assessment: [
+      { title: "Hardware labs", weight: 30, outcomes: [2, 3] },
+      { title: "Design projects", weight: 40, outcomes: [2, 3, 4] },
+      { title: "Final exam", weight: 30, outcomes: [1, 4] },
+    ],
+  },
+  COMP2310: {
+    about:
+      "Modern software is concurrent and networked by default. This course covers operating system abstractions, writing concurrent programs without races or deadlock, and building reliable networked services on real transport protocols.",
+    learningOutcomes: [
+      "Design concurrent programs that avoid races and deadlock.",
+      "Explain operating system abstractions for processes and memory.",
+      "Build networked services over standard transport protocols.",
+      "Evaluate reliability trade-offs in systems software.",
+    ],
+    assessment: [
+      { title: "Systems projects", weight: 45, outcomes: [1, 3, 4] },
+      { title: "Lab checkpoints", weight: 15, outcomes: [1, 2] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 4] },
+    ],
+  },
+  COMP2400: {
+    about:
+      "Databases keep the world's information consistent under pressure. You will model data with relational theory, master SQL over normalised schemas and learn how transactions keep applications safe when everything happens at once.",
+    learningOutcomes: [
+      "Model data with entity-relationship and relational designs.",
+      "Write correct and efficient SQL over normalised schemas.",
+      "Apply normalisation theory to remove redundancy.",
+      "Build applications that use transactions safely.",
+    ],
+    assessment: [
+      { title: "Assignments", weight: 40, outcomes: [1, 2, 3] },
+      { title: "Mid-semester exam", weight: 20, outcomes: [1, 3] },
+      { title: "Final exam", weight: 40, outcomes: [2, 3, 4] },
+    ],
+  },
+  COMP2610: {
+    about:
+      "Information theory asks a deceptively simple question: how far can data be compressed, and how reliably can it be transmitted? You will study entropy, coding and channel capacity, with connections to statistics and machine learning.",
+    learningOutcomes: [
+      "Quantify information with entropy and related measures.",
+      "Design and analyse source coding and compression schemes.",
+      "Explain channel capacity and error-correcting codes.",
+      "Apply information-theoretic reasoning to learning problems.",
+    ],
+    assessment: [
+      { title: "Assignments", weight: 50, outcomes: [1, 2, 4] },
+      { title: "Final exam", weight: 50, outcomes: [1, 2, 3] },
+    ],
+  },
+  COMP3430: {
+    about:
+      "Cybercrime sits at the intersection of technology, law and human behaviour. This course examines attack campaigns and digital investigations end to end, developing both the technical and communication skills that security work demands.",
+    learningOutcomes: [
+      "Analyse cybercrime through technical and legal lenses.",
+      "Conduct structured digital investigations with sound evidence handling.",
+      "Evaluate defences against common attack campaigns.",
+      "Communicate risk to technical and non-technical audiences.",
+    ],
+    assessment: [
+      { title: "Case study portfolio", weight: 40, outcomes: [1, 3, 4] },
+      { title: "Investigation project", weight: 30, outcomes: [2, 4] },
+      { title: "Final exam", weight: 30, outcomes: [1, 2, 3] },
+    ],
+  },
+  COMP3600: {
+    about:
+      "Algorithm design and analysis is the core intellectual toolkit of computer science. You will master divide and conquer, greedy methods and dynamic programming, prove correctness and complexity, and learn to recognise problems that resist efficient solutions.",
+    learningOutcomes: [
+      "Design algorithms with divide and conquer, greedy and dynamic programming.",
+      "Prove correctness and analyse asymptotic complexity.",
+      "Select data structures that meet performance requirements.",
+      "Recognise intractability and apply approximation strategies.",
+    ],
+    assessment: [
+      { title: "Assignments", weight: 40, outcomes: [1, 2, 3] },
+      { title: "Mid-semester exam", weight: 20, outcomes: [1, 2] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 3, 4] },
+    ],
+  },
+  COMP3620: {
+    about:
+      "Artificial intelligence as an engineering discipline. You will formulate problems for search, planning and constraint solving, build agents that reason under uncertainty, and confront the practical and ethical questions raised by deployed AI systems.",
+    learningOutcomes: [
+      "Formulate problems for search, planning and constraint solving.",
+      "Build agents that reason under uncertainty.",
+      "Implement and evaluate core AI algorithms.",
+      "Assess ethical implications of deployed AI systems.",
+    ],
+    assessment: [
+      { title: "Programming assignments", weight: 45, outcomes: [1, 2, 3] },
+      { title: "Group research task", weight: 15, outcomes: [3, 4] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 4] },
+    ],
+  },
+  COMP3670: {
+    about:
+      "A mathematically grounded introduction to machine learning. Starting from linear algebra and probability, you will derive core learning algorithms from first principles and develop the judgement to validate, regularise and evaluate models on real data.",
+    learningOutcomes: [
+      "Derive and implement core learning algorithms from first principles.",
+      "Select models with sound validation and regularisation practice.",
+      "Analyse learning methods with linear algebra and probability.",
+      "Evaluate model performance and failure modes on real data.",
+    ],
+    assessment: [
+      { title: "Assignments", weight: 40, outcomes: [1, 3] },
+      { title: "Mid-semester exam", weight: 20, outcomes: [2, 3] },
+      { title: "Final exam", weight: 40, outcomes: [1, 2, 4] },
+    ],
+  },
+  COMP3703: {
+    about:
+      "Secure software is designed, not patched. This course covers vulnerabilities across the software lifecycle, threat modelling, static and dynamic analysis, and the professional practice of remediation and responsible disclosure.",
+    learningOutcomes: [
+      "Identify vulnerabilities across the software lifecycle.",
+      "Apply secure design principles and threat modelling.",
+      "Test software with static and dynamic analysis tooling.",
+      "Plan remediation and disclosure responsibly.",
+    ],
+    assessment: [
+      { title: "Security assessments", weight: 50, outcomes: [1, 2, 3] },
+      { title: "Practical exam", weight: 20, outcomes: [3] },
+      { title: "Final exam", weight: 30, outcomes: [1, 2, 4] },
+    ],
+  },
+  COMP3900: {
+    about:
+      "The capstone: a substantial software product delivered for a real client, in a team, over a full semester. You will integrate everything from the computing curriculum while managing scope, risk and delivery like a professional engineering team.",
+    learningOutcomes: [
+      "Deliver a substantial software product for a real client.",
+      "Manage scope, risk and delivery in a team setting.",
+      "Integrate technical knowledge across the computing curriculum.",
+      "Present and defend design decisions to a diverse audience.",
+    ],
+    assessment: [
+      { title: "Sprint deliverables", weight: 50, outcomes: [1, 2, 3] },
+      {
+        title: "Final product and demonstration",
+        weight: 35,
+        outcomes: [1, 3, 4],
+      },
+      { title: "Individual reflection", weight: 15, outcomes: [2, 4] },
+    ],
+  },
+};
+
+const collegeBySchool: Record<string, string> = {
+  "School of Computing": "College of Systems and Society",
+  "Mathematical Sciences Institute": "College of Science",
+};
+
+const areasBySubject: Record<string, string[]> = {
+  Computing: ["Computer Science", "Software Engineering"],
+  Mathematics: ["Mathematics", "Statistics"],
+  "Cyber Security": ["Cyber Security", "Computer Science"],
+  "Data Science": ["Data Science", "Machine Learning"],
+};
+
+const offeringDates: Record<
+  string,
+  {
+    startDate: string;
+    lastEnrolDate: string;
+    censusDate: string;
+    endDate: string;
+  }
+> = {
+  "Semester 1": {
+    startDate: "23 Feb 2026",
+    lastEnrolDate: "2 Mar 2026",
+    censusDate: "31 Mar 2026",
+    endDate: "29 May 2026",
+  },
+  "Semester 2": {
+    startDate: "27 Jul 2026",
+    lastEnrolDate: "3 Aug 2026",
+    censusDate: "31 Aug 2026",
+    endDate: "30 Oct 2026",
+  },
+};
+
+/** Deterministic generator so demo values stay stable across server and client renders. */
+function seededRandom(seedText: string) {
+  let seed = 0;
+  for (const character of seedText) {
+    seed = (seed * 31 + character.charCodeAt(0)) >>> 0;
+  }
+  return () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 2 ** 32;
+  };
+}
+
+function sampleSelt(course: Course): SeltResult[] {
+  const random = seededRandom(`selt-${course.code}`);
+  const baseEnrolled =
+    course.level === 1000 ? 320 : course.level === 2000 ? 180 : 110;
+  let agreement = 68 + random() * 22;
+  const results: SeltResult[] = [];
+
+  for (let year = 2022; year <= 2026; year += 1) {
+    for (const session of ["Semester 1", "Semester 2"]) {
+      if (!course.sessions.includes(session)) continue;
+      if (year === 2026 && session === "Semester 2") continue;
+      agreement = Math.min(97, Math.max(55, agreement + (random() - 0.5) * 14));
+      const enrolled = Math.round(baseEnrolled * (0.85 + random() * 0.3));
+      const responses = Math.max(
+        5,
+        Math.round(enrolled * (0.08 + random() * 0.22)),
+      );
+      results.push({
+        term: `${session === "Semester 1" ? "S1" : "S2"} ${year}`,
+        enrolled,
+        responses,
+        agreement: Math.round(agreement),
+      });
+    }
+  }
+  return results;
+}
+
+const seltThemeNames = [
+  "Teaching and learning activities",
+  "Workload",
+  "Feedback",
+  "Analytical development",
+  "Overall learning experience",
+];
+
+function sampleSeltThemes(course: Course, latest: SeltResult): SeltTheme[] {
+  const random = seededRandom(`themes-${course.code}`);
+  return seltThemeNames.map((theme) => ({
+    theme,
+    agreement:
+      theme === "Overall learning experience"
+        ? latest.agreement
+        : Math.round(
+            Math.min(
+              97,
+              Math.max(52, latest.agreement + (random() - 0.5) * 18),
+            ),
+          ),
+  }));
+}
+
+export function courseDetail(course: Course): CourseDetail {
+  const content = courseContent[course.code] ?? {
+    about: course.description,
+    learningOutcomes: [],
+    assessment: [],
+  };
+  const random = seededRandom(`class-${course.code}`);
+  const offerings: CourseOffering[] = course.sessions.map((session) => ({
+    session,
+    classNumber:
+      session === "Semester 1"
+        ? 2000 + Math.floor(random() * 3000)
+        : 7000 + Math.floor(random() * 2500),
+    mode: course.delivery,
+    ...offeringDates[session],
+  }));
+
+  const selt = sampleSelt(course);
+  const latest = selt[selt.length - 1];
+
+  return {
+    about: content.about,
+    college: collegeBySchool[course.school] ?? "College of Systems and Society",
+    career: "Undergraduate",
+    areasOfInterest: areasBySubject[course.subject] ?? [course.subject],
+    coTaught: course.incompatibilities.filter((item) =>
+      /^[A-Z]{4}6\d{3}$/.test(item),
+    ),
+    workloadHours: course.units === 12 ? 260 : 130,
+    feeBand: 2,
+    domesticFee: course.units * 920,
+    internationalFee: course.units * 1170,
+    learningOutcomes: content.learningOutcomes,
+    assessment: content.assessment,
+    assessmentNote:
+      "Indicative only. Assessment details are confirmed in the class summary at the start of each offering.",
+    offerings,
+    selt,
+    seltThemes: sampleSeltThemes(course, latest),
+  };
+}

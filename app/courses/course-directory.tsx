@@ -9,27 +9,20 @@ import {
   tableRowClasses,
 } from "@/components/ui/data-table";
 import type { Course } from "@/lib/catalogue";
+import { cn } from "@/lib/cn";
 import { CourseRowActions } from "./course-row-actions";
 
-function formatAvailability(sessions: string[]) {
-  if (sessions.length === 0) return "Not listed";
-
-  const numbers = sessions
-    .map((session) => session.match(/Semester\s+(\d+)/i)?.[1])
-    .filter((value): value is string => Boolean(value))
-    .sort((left, right) => Number(left) - Number(right));
-
-  if (numbers.length !== sessions.length) return sessions.join(" & ");
-  if (numbers.length === 1) return `Sem ${numbers[0]}`;
-  return `Sem ${numbers.join(" & ")}`;
+function sessionLabels(sessions: string[]) {
+  return sessions
+    .map((session) => {
+      const number = session.match(/Semester\s+(\d+)/i)?.[1];
+      return number ? `Sem ${number}` : session;
+    })
+    .sort();
 }
 
-function formatPrerequisites(course: Course) {
-  const count = course.prerequisiteCodes.length;
-  if (count === 0) return "No prerequisites";
-  if (count === 1) return `1 prerequisite`;
-  return `${count} prerequisites`;
-}
+const chipClasses =
+  "rounded-md bg-zinc-50 px-1.5 py-0.5 text-[11px] font-medium text-zinc-600 ring-1 ring-zinc-200 ring-inset";
 
 export function CourseDirectory({ courses }: { courses: Course[] }) {
   return (
@@ -46,8 +39,8 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
         <colgroup>
           <col />
           <col className="w-[11rem]" />
+          <col className="w-[12rem]" />
           <col className="w-[9rem]" />
-          <col className="w-[8rem]" />
           <col className="w-[4rem]" />
         </colgroup>
         <thead className={tableHeadClasses()}>
@@ -126,19 +119,42 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
                   </Link>
                 </td>
                 <td className={tableCellClasses("p-0")}>
-                  <Link
-                    href={href}
-                    className="flex min-h-12 items-center px-4 py-2.5 text-[13px] text-zinc-600 focus:outline-none"
-                  >
-                    {formatPrerequisites(course)}
-                  </Link>
+                  <div className="flex min-h-12 flex-wrap items-center gap-1 px-4 py-2.5">
+                    {course.prerequisiteCodes.length === 0 ? (
+                      <span className="text-[13px] text-zinc-400">None</span>
+                    ) : (
+                      course.prerequisiteCodes.map((prerequisite) => (
+                        <Link
+                          key={prerequisite}
+                          href={`/courses/${prerequisite}`}
+                          aria-label={`View prerequisite ${prerequisite}`}
+                          className={cn(
+                            chipClasses,
+                            "font-mono transition-colors hover:bg-white hover:text-brand-700 hover:ring-brand-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-400 motion-reduce:transition-none",
+                          )}
+                        >
+                          {prerequisite}
+                        </Link>
+                      ))
+                    )}
+                  </div>
                 </td>
                 <td className={tableCellClasses("p-0")}>
                   <Link
                     href={href}
-                    className="flex min-h-12 items-center px-4 py-2.5 text-[13px] text-zinc-600 focus:outline-none"
+                    className="flex min-h-12 flex-wrap items-center gap-1 px-4 py-2.5 focus:outline-none"
                   >
-                    {formatAvailability(course.sessions)}
+                    {course.sessions.length === 0 ? (
+                      <span className="text-[13px] text-zinc-400">
+                        Not listed
+                      </span>
+                    ) : (
+                      sessionLabels(course.sessions).map((label) => (
+                        <span key={label} className={chipClasses}>
+                          {label}
+                        </span>
+                      ))
+                    )}
                   </Link>
                 </td>
                 <td className={tableCellClasses("p-0")}>

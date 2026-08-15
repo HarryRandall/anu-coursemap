@@ -4,6 +4,7 @@ import {
   parseCatalogueManifest,
   type CatalogueAcademicPeriod,
   type CatalogueCourseDocument,
+  type CatalogueCourseRichDetails,
   type CatalogueDiagnostic,
   type CatalogueManifest,
   type CatalogueManifestSource,
@@ -197,6 +198,112 @@ function summaryValues($: CheerioAPI, heading: string) {
   });
 
   return values;
+}
+
+function sectionText($: CheerioAPI, id: string) {
+  const heading = $(`#${id}`).first();
+  if (!heading.length) return null;
+  const text = heading.nextUntil("h2").text();
+  return nullableText(text);
+}
+
+function elementText($: CheerioAPI, element: Parameters<CheerioAPI>[0]) {
+  return nullableText(
+    $(element)
+      .contents()
+      .map((_, child) =>
+        child.type === "text"
+          ? normaliseText(child.data ?? "")
+          : normaliseText($(child).text()),
+      )
+      .get()
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
+function richCourseDetails($: CheerioAPI): CatalogueCourseRichDetails {
+  const introduction = nullableText(
+    $("#introduction")
+      .first()
+      .children()
+      .map((_, element) => normaliseText($(element).text()))
+      .get()
+      .filter(Boolean)
+      .join(" ") || $("#introduction").first().text(),
+  );
+  const learningOutcomes = $("#learning-outcomes")
+    .first()
+    .nextUntil("h2")
+    .find("li")
+    .map((_, element) => nullableText($(element).text()))
+    .get()
+    .filter((item): item is string => Boolean(item));
+  const assessment = $("#indicative-assessment")
+    .first()
+    .nextUntil("h2")
+    .find("li")
+    .map((_, element) => {
+      const text = elementText($, element);
+      if (!text) return null;
+      const outcomes = (
+        /\[LO\s*([^\]]+)\]/i.exec(text)?.[1].match(/\d+/g) ?? []
+      ).map(Number);
+      const weight = /\((\d+(?:\.\d+)?)\)/.exec(text)?.[1];
+      const title = nullableText(
+        text
+          .replace(/\s*\([^)]*\)/g, "")
+          .replace(/\s*\[LO[^\]]*\]/gi, "")
+          .replace(/([a-z])([A-Z][a-z])/g, "$1 $2"),
+      );
+      return title
+        ? { title, weight: weight ? Number(weight) : null, outcomes }
+        : null;
+    })
+    .get()
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  const workload = sectionText($, "workload");
+  const workloadHours = Number(
+    /\b(\d{1,4})\s+hours?\b/i.exec(workload ?? "")?.[1],
+  );
+  const feesText = $("#fees").first().parent().text();
+  const feeBand = Number(
+    /Student Contribution Band:\s*(\d+)/i.exec(feesText)?.[1],
+  );
+  const domesticFee = Number(
+    /\$([\d,]+(?:\.\d{2})?)/
+      .exec($("#indicative-fees__domestic").first().text())?.[1]
+      ?.replace(/,/g, ""),
+  );
+  const internationalFee = Number(
+    /\$([\d,]+(?:\.\d{2})?)/
+      .exec($("#indicative-fees__international").first().text())?.[1]
+      ?.replace(/,/g, ""),
+  );
+
+  return {
+    ...(introduction ? { introduction } : {}),
+    ...(summaryValues($, "ANU College")[0]
+      ? { college: summaryValues($, "ANU College")[0] }
+      : {}),
+    ...(summaryValues($, "Areas of interest").length > 0
+      ? {
+          areasOfInterest: summaryValues($, "Areas of interest").flatMap(
+            (value) => value.split(",").map(normaliseText).filter(Boolean),
+          ),
+        }
+      : {}),
+    ...(summaryValues($, "Co-taught course").length > 0
+      ? { coTaughtCourses: summaryValues($, "Co-taught course") }
+      : {}),
+    ...(learningOutcomes.length > 0 ? { learningOutcomes } : {}),
+    ...(assessment.length > 0 ? { indicativeAssessment: assessment } : {}),
+    ...(workload ? { workload } : {}),
+    ...(Number.isFinite(workloadHours) ? { workloadHours } : {}),
+    ...(Number.isFinite(feeBand) ? { feeBand } : {}),
+    ...(Number.isFinite(domesticFee) ? { domesticFee } : {}),
+    ...(Number.isFinite(internationalFee) ? { internationalFee } : {}),
+  };
 }
 
 function addMissingFieldDiagnostic(
@@ -756,6 +863,7 @@ export function parseAnuCourseDocument({
       ...(summaryValues($, "Mode of delivery")[0]
         ? { deliverySummary: summaryValues($, "Mode of delivery")[0] }
         : {}),
+      rich: richCourseDetails($),
       requisites,
     },
     offeringObserved,
