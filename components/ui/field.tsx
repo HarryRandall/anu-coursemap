@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 const controlClasses =
@@ -30,11 +30,24 @@ export function Field({
   );
 }
 
-export function Input({
+export function Input({ className, ...rest }: ComponentPropsWithRef<"input">) {
+  return <input className={cn(controlClasses, className)} {...rest} />;
+}
+
+export function Textarea({
   className,
   ...rest
-}: ComponentPropsWithoutRef<"input">) {
-  return <input className={cn(controlClasses, className)} {...rest} />;
+}: ComponentPropsWithRef<"textarea">) {
+  return (
+    <textarea
+      className={cn(
+        controlClasses,
+        "h-auto min-h-28 resize-y py-2.5",
+        className,
+      )}
+      {...rest}
+    />
+  );
 }
 
 export { Select, type SelectOption } from "./select";
