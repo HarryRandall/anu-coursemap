@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
-  CalendarDays,
   CheckCircle2,
   CircleAlert,
   GraduationCap,
@@ -13,20 +12,16 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
+import { StudyCalendarPreview } from "@/components/dashboard/study-calendar-preview";
+import { RequirementGlance } from "@/components/dashboard/requirement-glance";
+import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
+import { FixIssueButton } from "@/components/plan/fix-issue-button";
 import { AppShell } from "@/components/shell";
-import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { CourseToken } from "@/components/ui/course-token";
-import {
-  courseByCode,
-  degreeByCode,
-  majorByCode,
-  terms,
-} from "@/lib/catalogue";
-import { earnedUnits, mappedUnits, statusLabel } from "@/lib/planner";
+import { degreeByCode, majorByCode } from "@/lib/catalogue";
+import { degreeUnitProgress } from "@/lib/planner";
 import { planIssues } from "@/lib/student-progress";
-import { statusTone } from "@/lib/ui";
 
 const quickActions = [
   {
@@ -53,28 +48,10 @@ export default function DashboardPage() {
   const { state } = useCoursemap();
   const degree = degreeByCode(state.profile.degreeCode);
   const major = majorByCode(state.profile.majorCode);
-  const completed = earnedUnits(state.attempts);
-  const mapped = mappedUnits(state.attempts);
-  const planned = Math.max(0, mapped - completed);
-  const remaining = Math.max(0, degree.units - mapped);
+  const progress = degreeUnitProgress(state.attempts, degree.units);
   const issues = planIssues(state.attempts);
   const firstName = state.profile.name.trim().split(/\s+/)[0] || "there";
-
-  const nextTerm = terms.find(
-    (term) =>
-      term.id !== "unscheduled" &&
-      state.attempts.some(
-        (attempt) =>
-          attempt.termId === term.id &&
-          (attempt.status === "planned" || attempt.status === "enrolled"),
-      ),
-  );
-  const nextAttempts = nextTerm
-    ? state.attempts.filter(
-        (attempt) =>
-          attempt.termId === nextTerm.id && attempt.status !== "failed",
-      )
-    : [];
+  const empty = progress.mapped === 0;
 
   return (
     <AppShell title="Home" subtitle="Your degree at a glance">
@@ -87,7 +64,9 @@ export default function DashboardPage() {
                 Welcome back, {firstName}
               </div>
               <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-                Your degree is taking shape
+                {empty
+                  ? "Start mapping your degree"
+                  : "Your degree is taking shape"}
               </h1>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-300">
                 {degree.name} · {major.name} · {state.profile.catalogueYear}{" "}
@@ -99,115 +78,25 @@ export default function DashboardPage() {
               variant="secondary"
               className="border-0 bg-white text-zinc-900 hover:bg-zinc-100"
             >
-              Open your plan <ArrowRight size={15} />
+              {empty ? "Add your first course" : "Open your plan"}{" "}
+              <ArrowRight size={15} />
             </ButtonLink>
           </div>
 
           <div className="mt-7">
-            <div
-              className="flex h-2.5 overflow-hidden rounded-full bg-white/15"
-              aria-label={`${completed} units completed, ${planned} units planned and ${remaining} units still to plan`}
-            >
-              <span
-                className="bg-brand-400"
-                style={{ width: `${(completed / degree.units) * 100}%` }}
-              />
-              <span
-                className="bg-brand-200"
-                style={{ width: `${(planned / degree.units) * 100}%` }}
-              />
-            </div>
-            <dl className="mt-4 grid grid-cols-3 gap-3">
-              {[
-                ["Completed", completed],
-                ["In your plan", planned],
-                ["Still to plan", remaining],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dd className="text-lg font-bold sm:text-xl">{value}</dd>
-                  <dt className="text-[10px] text-zinc-400 sm:text-xs">
-                    {label} units
-                  </dt>
-                </div>
-              ))}
-            </dl>
+            <DegreeProgressBar progress={progress} tone="dark" />
           </div>
         </section>
 
-        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
-          <Card className="overflow-hidden">
-            <CardHeader
-              title={
-                nextTerm
-                  ? `${nextTerm.name} ${nextTerm.year}`
-                  : "Your next semester"
-              }
-              description={
-                nextTerm
-                  ? `${nextAttempts.length} courses · ${nextTerm.dates}`
-                  : "Nothing is scheduled yet."
-              }
-              icon={
-                <span className="grid size-9 place-items-center rounded-lg bg-sky-50 text-sky-600">
-                  <CalendarDays size={17} />
-                </span>
-              }
-              action={
-                <Link
-                  href="/calendar"
-                  className="text-xs font-semibold text-brand-600 hover:text-brand-700"
-                >
-                  Calendar
-                </Link>
-              }
-            />
+        <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]">
+          <StudyCalendarPreview attempts={state.attempts} />
+          <RequirementGlance
+            attempts={state.attempts}
+            majorCodes={major.courseCodes}
+          />
+        </div>
 
-            {nextAttempts.length > 0 ? (
-              <div className="divide-y divide-zinc-100 border-t border-zinc-100">
-                {nextAttempts.map((attempt) => {
-                  const course = courseByCode(attempt.courseCode);
-                  if (!course) return null;
-                  return (
-                    <Link
-                      key={attempt.id}
-                      href={`/courses/${course.code}`}
-                      className="flex min-h-16 items-center gap-3 px-5 py-3 transition hover:bg-zinc-50"
-                    >
-                      <CourseToken
-                        code={course.code}
-                        accent={course.accent}
-                        size="sm"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-[13px] font-semibold text-zinc-900">
-                          {course.code}
-                        </span>
-                        <span className="block truncate text-[11px] text-zinc-500">
-                          {course.name}
-                        </span>
-                      </span>
-                      <Badge tone={statusTone[attempt.status]}>
-                        {statusLabel(attempt.status)}
-                      </Badge>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="border-t border-zinc-100 px-5 py-10 text-center">
-                <p className="text-sm font-medium text-zinc-700">
-                  Start with the courses you already know
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  You can leave uncertain choices in Later.
-                </p>
-                <ButtonLink href="/courses" size="sm" className="mt-4">
-                  Browse courses
-                </ButtonLink>
-              </div>
-            )}
-          </Card>
-
+        <div className="mt-4">
           <Card className="overflow-hidden">
             <CardHeader
               title="Plan health"
@@ -225,9 +114,9 @@ export default function DashboardPage() {
                   }`}
                 >
                   {issues.length > 0 ? (
-                    <CircleAlert size={17} />
+                    <CircleAlert size={17} aria-hidden="true" />
                   ) : (
-                    <CheckCircle2 size={17} />
+                    <CheckCircle2 size={17} aria-hidden="true" />
                   )}
                 </span>
               }
@@ -235,38 +124,51 @@ export default function DashboardPage() {
             <div className="border-t border-zinc-100 px-5 py-4">
               {issues.length > 0 ? (
                 <ul className="space-y-3">
-                  {issues.slice(0, 3).map(({ attempt, status }) => (
-                    <li key={attempt.id} className="flex items-start gap-2.5">
-                      <CircleAlert
-                        size={15}
-                        className="mt-0.5 shrink-0 text-amber-500"
-                      />
-                      <div>
-                        <p className="text-xs font-semibold text-zinc-800">
-                          {attempt.courseCode}
-                        </p>
-                        <p className="text-[11px] text-zinc-500">
-                          {status === "blocked"
-                            ? "A prerequisite is missing or scheduled too late."
-                            : "Convener approval still needs to be recorded."}
-                        </p>
+                  {issues.slice(0, 4).map(({ attempt, status }) => (
+                    <li
+                      key={attempt.id}
+                      className="flex flex-wrap items-start justify-between gap-3"
+                    >
+                      <div className="flex min-w-0 items-start gap-2.5">
+                        <CircleAlert
+                          size={15}
+                          className="mt-0.5 shrink-0 text-amber-500"
+                          aria-hidden="true"
+                        />
+                        <div>
+                          <p className="text-xs font-semibold text-zinc-800">
+                            {attempt.courseCode}
+                          </p>
+                          <p className="text-[11px] text-zinc-500">
+                            {status === "blocked"
+                              ? "A prerequisite is missing or scheduled too late."
+                              : "Convener approval still needs to be recorded."}
+                          </p>
+                        </div>
                       </div>
+                      {status === "blocked" && (
+                        <FixIssueButton attempt={attempt} />
+                      )}
                     </li>
                   ))}
                 </ul>
               ) : (
                 <p className="text-xs leading-relaxed text-zinc-500">
-                  Coursemap has not found any sequencing or approval issues in
-                  the courses currently in your plan.
+                  {empty
+                    ? "Once courses are in your plan, Coursemap will flag sequencing and approval issues here."
+                    : "Coursemap has not found any sequencing or approval issues in the courses currently in your plan."}
                 </p>
               )}
               <ButtonLink
-                href="/requirements"
+                href={issues.length > 0 ? "/plan" : "/requirements"}
                 variant="ghost"
                 size="sm"
                 className="mt-3 -ml-2"
               >
-                Review degree progress <ArrowRight size={14} />
+                {issues.length > 0
+                  ? "Review them on the plan"
+                  : "Review degree progress"}{" "}
+                <ArrowRight size={14} />
               </ButtonLink>
             </div>
           </Card>
@@ -274,7 +176,11 @@ export default function DashboardPage() {
 
         <section className="mt-4">
           <div className="mb-3 flex items-center gap-2">
-            <GraduationCap size={16} className="text-zinc-500" />
+            <GraduationCap
+              size={16}
+              className="text-zinc-500"
+              aria-hidden="true"
+            />
             <h2 className="text-sm font-semibold text-zinc-900">
               Quick actions
             </h2>
@@ -289,7 +195,7 @@ export default function DashboardPage() {
                   className="group rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200/70 transition hover:-translate-y-0.5 hover:shadow-md hover:ring-zinc-300 motion-reduce:transform-none"
                 >
                   <span className="grid size-9 place-items-center rounded-lg bg-brand-50 text-brand-600">
-                    <Icon size={17} />
+                    <Icon size={17} aria-hidden="true" />
                   </span>
                   <p className="mt-3 text-[13px] font-semibold text-zinc-900">
                     {action.label}
