@@ -85,8 +85,10 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(homeHtml, />Prerequisites<\/button>/i);
   assert.match(homeHtml, /Start with a course, then build the rest/i);
   assert.match(homeHtml, /Explore courses/i);
-  assert.match(coursesHtml, /1(?:<!-- -->)? results/i);
+  assert.match(coursesHtml, /Viewing 1(?:<!-- -->)? course/i);
   assert.match(coursesHtml, /Computing Project/i);
+  assert.match(coursesHtml, /Search code, course name, school or convener/i);
+  assert.doesNotMatch(coursesHtml, /Open entry|6 units/i);
   assert.match(signInHtml, /Sign in to your plan/i);
   assert.match(signInHtml, /name="next" value="\/dashboard"/i);
   assert.match(signInHtml, /name="email"/i);
