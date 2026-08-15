@@ -295,7 +295,17 @@ export const roadmapStages: Array<{
   },
 ];
 
-export function parseRoadmapStage(value?: string | string[]) {
-  const stage = Array.isArray(value) ? value[0] : value;
-  return roadmapStages.find((item) => item.id === stage)?.id ?? "now";
+export function parseRoadmapArea(value?: string | string[]) {
+  const area = Array.isArray(value) ? value[0] : value;
+  return roadmapAreas.find((item) => item === area);
+}
+
+export function filterRoadmapItems(area?: RoadmapArea) {
+  if (!area) return roadmapItems;
+  return {
+    shipped: roadmapItems.shipped.filter((item) => item.area === area),
+    now: roadmapItems.now.filter((item) => item.area === area),
+    next: roadmapItems.next.filter((item) => item.area === area),
+    later: roadmapItems.later.filter((item) => item.area === area),
+  };
 }
