@@ -13,6 +13,8 @@ import {
   Import,
   Keyboard,
   LayoutDashboard,
+  Lightbulb,
+  ListChecks,
   Lock,
   Map,
   MapPin,
@@ -22,7 +24,6 @@ import {
   Smartphone,
   Sparkles,
   Split,
-  ListChecks,
   type LucideIcon,
 } from "lucide-react";
 import { GeneratedAvatar } from "@/components/ui/generated-avatar";
@@ -32,6 +33,7 @@ import {
   filterRoadmapItems,
   roadmapAreaLabels,
   roadmapAreas,
+  roadmapHref,
   roadmapStages,
   type RoadmapArea,
   type RoadmapIconName,
@@ -101,7 +103,13 @@ const stageStyle: Record<
   },
 };
 
-export function RoadmapBoard({ area }: { area?: RoadmapArea }) {
+export function RoadmapBoard({
+  area,
+  year,
+}: {
+  area?: RoadmapArea;
+  year: number;
+}) {
   const items = filterRoadmapItems(area);
   const counts = {
     shipped: items.shipped.length,
@@ -117,32 +125,40 @@ export function RoadmapBoard({ area }: { area?: RoadmapArea }) {
           aria-label="Filter roadmap by area"
           className="flex flex-wrap gap-2"
         >
-          <FilterChip href="/roadmap" active={!area} label="All" />
+          <FilterChip href={roadmapHref({ year })} active={!area} label="All" />
           {roadmapAreas.map((item) => (
             <FilterChip
               key={item}
-              href={`/roadmap?area=${item}`}
+              href={roadmapHref({ area: item, year })}
               active={area === item}
               label={roadmapAreaLabels[item]}
             />
           ))}
         </nav>
-        <p className="text-xs font-medium text-zinc-500">
-          <span className="text-zinc-800 tabular-nums">{counts.shipped}</span>{" "}
-          shipped
-          <span aria-hidden="true" className="mx-2 text-zinc-300">
-            ·
-          </span>
-          <span className="text-zinc-800 tabular-nums">{counts.now}</span> in
-          flight
-          <span aria-hidden="true" className="mx-2 text-zinc-300">
-            ·
-          </span>
-          <span className="text-zinc-800 tabular-nums">
-            {counts.next + counts.later}
-          </span>{" "}
-          queued
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-xs font-medium text-zinc-500">
+            <span className="text-zinc-800 tabular-nums">{counts.shipped}</span>{" "}
+            shipped
+            <span aria-hidden="true" className="mx-2 text-zinc-300">
+              ·
+            </span>
+            <span className="text-zinc-800 tabular-nums">{counts.now}</span> in
+            flight
+            <span aria-hidden="true" className="mx-2 text-zinc-300">
+              ·
+            </span>
+            <span className="text-zinc-800 tabular-nums">
+              {counts.next + counts.later}
+            </span>{" "}
+            queued
+          </p>
+          <Link
+            href="mailto:support@coursemap.app?subject=Coursemap%20feature%20request"
+            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-zinc-600 hover:text-zinc-900"
+          >
+            Suggest a feature <Lightbulb size={15} aria-hidden="true" />
+          </Link>
+        </div>
       </div>
 
       <div className="mt-5 overflow-x-auto pb-1">
@@ -151,13 +167,40 @@ export function RoadmapBoard({ area }: { area?: RoadmapArea }) {
             <RoadmapColumn
               key={stage.id}
               stage={stage.id}
+              year={stage.year}
               title={stage.title}
               description={stage.description}
               items={items[stage.id]}
+              active={stage.year === year}
             />
           ))}
         </div>
       </div>
+
+      <nav
+        aria-label="Roadmap years"
+        className="mt-6 flex flex-wrap items-center justify-center gap-1"
+      >
+        {roadmapStages.map((stage) => {
+          const active = stage.year === year;
+          return (
+            <Link
+              key={stage.year}
+              href={roadmapHref({ area, year: stage.year })}
+              scroll={false}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "inline-flex min-h-11 min-w-16 items-center justify-center rounded-lg px-3 text-sm font-semibold tabular-nums transition",
+                active
+                  ? "bg-zinc-900 text-white"
+                  : "text-zinc-500 hover:bg-white hover:text-zinc-900",
+              )}
+            >
+              {stage.year}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
@@ -190,14 +233,18 @@ function FilterChip({
 
 function RoadmapColumn({
   stage,
+  year,
   title,
   description,
   items,
+  active,
 }: {
   stage: RoadmapStage;
+  year: number;
   title: string;
   description: string;
   items: RoadmapItem[];
+  active: boolean;
 }) {
   const style = stageStyle[stage];
   const Icon = style.icon;
@@ -205,12 +252,16 @@ function RoadmapColumn({
   return (
     <section
       aria-labelledby={`roadmap-${stage}`}
-      className="flex w-[18.5rem] shrink-0 snap-start flex-col lg:w-auto"
+      className={cn(
+        "flex w-[18.5rem] shrink-0 snap-start flex-col transition-opacity lg:w-auto",
+        active ? "opacity-100" : "opacity-60",
+      )}
     >
       <div
         className={cn(
           "overflow-hidden rounded-2xl ring-1 ring-zinc-200/80",
           style.tint,
+          active && "ring-2 ring-zinc-900/10",
         )}
       >
         <div className={cn("h-1 w-full", style.rail)} />
@@ -222,12 +273,12 @@ function RoadmapColumn({
               </span>
               <h2
                 id={`roadmap-${stage}`}
-                className="text-sm font-semibold tracking-tight text-zinc-900"
+                className="text-lg font-semibold tracking-tight text-zinc-900 tabular-nums"
               >
-                {title}
+                {year}
               </h2>
-              {stage === "now" ? (
-                <Badge tone="brand" className="gap-1">
+              <Badge tone={style.badge} className="gap-1">
+                {stage === "now" ? (
                   <span
                     className={cn(
                       "size-1.5 rounded-full",
@@ -235,9 +286,9 @@ function RoadmapColumn({
                       "animate-roadmap-pulse",
                     )}
                   />
-                  In flight
-                </Badge>
-              ) : null}
+                ) : null}
+                {stage === "now" ? "In flight" : title}
+              </Badge>
             </div>
             <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
               {description}

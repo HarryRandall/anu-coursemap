@@ -270,26 +270,31 @@ export const roadmapItems: Record<RoadmapStage, RoadmapItem[]> = {
 
 export const roadmapStages: Array<{
   id: RoadmapStage;
+  year: number;
   title: string;
   description: string;
 }> = [
   {
     id: "shipped",
+    year: 2025,
     title: "Shipped",
     description: "Live in Coursemap now",
   },
   {
     id: "now",
+    year: 2026,
     title: "Now",
     description: "The current product focus",
   },
   {
     id: "next",
+    year: 2027,
     title: "Next",
     description: "Useful additions we want to explore",
   },
   {
     id: "later",
+    year: 2028,
     title: "Later",
     description: "Ideas without a committed date",
   },
@@ -298,6 +303,26 @@ export const roadmapStages: Array<{
 export function parseRoadmapArea(value?: string | string[]) {
   const area = Array.isArray(value) ? value[0] : value;
   return roadmapAreas.find((item) => item === area);
+}
+
+export function parseRoadmapYear(value?: string | string[]) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const year = Number(raw);
+  return roadmapStages.find((item) => item.year === year)?.year ?? 2026;
+}
+
+export function roadmapHref({
+  area,
+  year,
+}: {
+  area?: RoadmapArea;
+  year?: number;
+}) {
+  const params = new URLSearchParams();
+  if (area) params.set("area", area);
+  if (year && year !== 2026) params.set("year", String(year));
+  const query = params.toString();
+  return query ? `/roadmap?${query}` : "/roadmap";
 }
 
 export function filterRoadmapItems(area?: RoadmapArea) {
