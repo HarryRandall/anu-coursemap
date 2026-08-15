@@ -284,10 +284,6 @@ export function formatWeekRange(weekStart: Date) {
   return `${startDay} ${startMonth} to ${endDay} ${endMonth} ${year}`;
 }
 
-export function formatDayHeading(date: Date) {
-  return `${WEEKDAYS[weekdayIndex(date)]} ${date.getDate()}`;
-}
-
 export function formatClock(minutes: number) {
   const hour = Math.floor(minutes / 60);
   const minute = minutes % 60;
