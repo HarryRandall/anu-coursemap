@@ -5,10 +5,14 @@ export default function AdminUsersLoading() {
   return (
     <AppShell admin>
       <h1 className="sr-only">Loading users and access</h1>
-      <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <div
+        className="mx-auto w-full max-w-[1600px] space-y-8"
+        aria-busy="true"
+        aria-live="polite"
+      >
         <span className="sr-only">Loading user access settings</span>
-        <Card className="h-40 animate-pulse bg-zinc-100" />
-        <Card className="h-72 animate-pulse bg-zinc-100" />
+        <div className="h-11 animate-pulse rounded-lg bg-zinc-200" />
+        <Card className="h-96 animate-pulse rounded-lg bg-zinc-100" />
       </div>
     </AppShell>
   );
