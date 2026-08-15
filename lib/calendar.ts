@@ -221,13 +221,13 @@ export function termIdFromParts(year: number, shortName: string) {
 export function termWindow(term: Term) {
   if (term.shortName === "S2") {
     return {
-      start: new Date(term.year, 6, 20),
-      end: new Date(term.year, 10, 6),
+      start: new Date(term.year, 6, 20, 12),
+      end: new Date(term.year, 10, 6, 12),
     };
   }
   return {
-    start: new Date(term.year, 1, 16),
-    end: new Date(term.year, 5, 5),
+    start: new Date(term.year, 1, 16, 12),
+    end: new Date(term.year, 5, 5, 12),
   };
 }
 
@@ -391,5 +391,18 @@ function generatedTemplates(courseCode: string): SessionTemplate[] {
 }
 
 function shortMonth(date: Date) {
-  return date.toLocaleString("en-GB", { month: "short" });
+  return [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ][date.getMonth()];
 }

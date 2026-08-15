@@ -39,6 +39,8 @@ export function StudyCalendar({
   requestedTermId?: string;
 }) {
   const { state } = useCoursemap();
+  const router = useRouter();
+  const pathname = usePathname();
   const plannedTermIds = useMemo(
     () =>
       scheduledTerms
@@ -51,17 +53,31 @@ export function StudyCalendar({
         .map((term) => term.id),
     [state.attempts],
   );
-  const termId = resolveTermId(requestedTermId, plannedTermIds);
-  return <StudyCalendarBoard key={termId} termId={termId} />;
+  const [termId, setTermId] = useState(() =>
+    resolveTermId(requestedTermId, plannedTermIds),
+  );
+
+  const setTerm = (nextTermId: string) => {
+    setTermId(nextTermId);
+    router.replace(`${pathname}?term=${nextTermId}`, { scroll: false });
+  };
+
+  return (
+    <StudyCalendarBoard key={termId} termId={termId} onTermChange={setTerm} />
+  );
 }
 
-function StudyCalendarBoard({ termId }: { termId: string }) {
+function StudyCalendarBoard({
+  termId,
+  onTermChange,
+}: {
+  termId: string;
+  onTermChange: (termId: string) => void;
+}) {
   const { state } = useCoursemap();
-  const router = useRouter();
-  const pathname = usePathname();
   const selectedTerm = termById(termId);
   const [weekStart, setWeekStart] = useState(() =>
-    defaultWeekStart(selectedTerm),
+    startOfWeek(termWindow(selectedTerm).start),
   );
   const [coursesOpen, setCoursesOpen] = useState(true);
   const [hiddenCodes, setHiddenCodes] = useState<Set<string>>(new Set());
@@ -91,10 +107,6 @@ function StudyCalendarBoard({ termId }: { termId: string }) {
   const nextWeek = addDays(weekStart, 7);
   const clampedNext = clampWeekToTerm(nextWeek, selectedTerm);
   const canGoForward = clampedNext.getTime() !== weekStart.getTime();
-
-  const setTerm = (nextTermId: string) => {
-    router.replace(`${pathname}?term=${nextTermId}`, { scroll: false });
-  };
 
   const selectSession = (sessionId: string) => {
     const session = allSessions.find((item) => item.id === sessionId);
@@ -145,7 +157,7 @@ function StudyCalendarBoard({ termId }: { termId: string }) {
               aria-label="Calendar year"
               value={selectedTerm.year}
               onChange={(year) =>
-                setTerm(termIdFromParts(year, selectedTerm.shortName))
+                onTermChange(termIdFromParts(year, selectedTerm.shortName))
               }
               options={uniqueTermYears().map((year) => ({
                 value: year,
@@ -158,7 +170,7 @@ function StudyCalendarBoard({ termId }: { termId: string }) {
               aria-label="Semester"
               value={selectedTerm.shortName}
               onChange={(shortName) =>
-                setTerm(termIdFromParts(selectedTerm.year, shortName))
+                onTermChange(termIdFromParts(selectedTerm.year, shortName))
               }
               options={[
                 { value: "S1", label: "Semester 1" },

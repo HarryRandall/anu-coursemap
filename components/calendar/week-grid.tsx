@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
@@ -25,6 +26,14 @@ const hours = Array.from(
   (_, index) => DAY_START_HOUR + index,
 );
 
+function useClientNow() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => Date.now(),
+    () => null,
+  );
+}
+
 export function WeekGrid({
   weekStart,
   sessions,
@@ -38,14 +47,17 @@ export function WeekGrid({
   highlightedCourseCode: string | null;
   onSelect: (sessionId: string) => void;
 }) {
-  const today = new Date();
-  const todayInWeek =
+  const nowMs = useClientNow();
+  const today = nowMs === null ? null : new Date(nowMs);
+  const todayInWeek = Boolean(
+    today &&
     today.getDay() >= 1 &&
     today.getDay() <= 5 &&
     today >= weekStart &&
-    today < addDays(weekStart, 5);
-  const todayColumn = todayInWeek ? weekdayIndex(today) : null;
-  const nowOffset = todayInWeek ? nowLinePx(today) : null;
+    today < addDays(weekStart, 5),
+  );
+  const todayColumn = todayInWeek && today ? weekdayIndex(today) : null;
+  const nowOffset = todayInWeek && today ? nowLinePx(today) : null;
 
   return (
     <section aria-label="Weekly timetable" className="min-w-[48rem]">
@@ -53,7 +65,7 @@ export function WeekGrid({
         <div className="sticky top-0 z-20 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm" />
         {WEEKDAYS.map((day, index) => {
           const date = addDays(weekStart, index);
-          const isToday = isSameDay(date, today);
+          const isToday = today ? isSameDay(date, today) : false;
           return (
             <div
               key={day}
