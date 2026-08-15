@@ -202,6 +202,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     sidebar,
     topbar,
     layout,
+    adminLayout,
     proxy,
     logoutRoute,
     packageJson,
@@ -240,6 +241,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
       "utf8",
     ),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/admin/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../proxy.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/auth/logout/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
@@ -314,6 +316,9 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(providers, /top-4/);
   assert.match(layout, /Coursemap/);
   assert.match(layout, /og\.png/);
+  assert.match(adminLayout, /if \(!viewer\)[\s\S]*redirect\(/);
+  assert.match(adminLayout, /if \(!canAccessAdmin\)[\s\S]*notFound\(\)/);
+  assert.doesNotMatch(adminLayout, /admin-access-required/);
   assert.match(proxy, /request:\s*\{ headers: request\.headers \}/);
   assert.match(
     proxy,
