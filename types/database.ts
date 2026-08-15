@@ -1222,6 +1222,7 @@ export type Database = {
         Row: {
           created_at: string
           display_name: string
+          email: string | null
           id: string
           student_number: string | null
           updated_at: string
@@ -1229,6 +1230,7 @@ export type Database = {
         Insert: {
           created_at?: string
           display_name: string
+          email?: string | null
           id: string
           student_number?: string | null
           updated_at?: string
@@ -1236,6 +1238,7 @@ export type Database = {
         Update: {
           created_at?: string
           display_name?: string
+          email?: string | null
           id?: string
           student_number?: string | null
           updated_at?: string
@@ -1396,7 +1399,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_roles: {
+        Row: {
+          permission_keys: string[] | null
+          role_key: string | null
+          role_name: string | null
+        }
+        Relationships: []
+      }
+      admin_user_roles: {
+        Row: {
+          granted_at: string | null
+          granted_by: string | null
+          role_key: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          email: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          email?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_current_user_plan_item: {
@@ -1443,6 +1486,10 @@ export type Database = {
           p_study_load: string
         }
         Returns: string
+      }
+      set_user_role: {
+        Args: { p_assigned: boolean; p_role_key: string; p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

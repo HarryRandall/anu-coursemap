@@ -55,6 +55,10 @@ hosted Supabase project before enabling password-only sign-up there. Exact
 `COURSEMAP_DEMO_MODE=true` is reserved for the isolated prototype fixture and
 rendered CI tests.
 
+The first catalogue administrator is granted once through the reviewed SQL in
+`supabase/README.md`. That administrator can then manage user role assignments
+at `/admin/users`; effective permissions remain migration-owned and read-only.
+
 The Sydney hosted development project has the complete migration history,
 Row Level Security policies and the reviewed 2026 BCOMP and SOFT-MAJ structure
 seed. Its Auth redirect configuration accepts the trusted local callback. The

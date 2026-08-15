@@ -33,12 +33,11 @@ approval and is a separate step.
 catalogue data must be imported with source URLs, retrieval metadata and
 content hashes.
 
-## Local administrator access
+## Administrator access
 
 Application roles live in the private schema and are never inferred from an
-email address or editable user metadata. After signing in locally, a developer
-can grant the seeded catalogue administrator role from Supabase Studio's SQL
-editor, replacing the example address:
+email address or editable user metadata. The first administrator must be
+bootstrapped from Supabase Studio's SQL editor, replacing the example address:
 
 ```sql
 insert into private.user_roles (user_id, role_id, granted_by)
@@ -50,5 +49,8 @@ where users.email = 'developer@example.test'
 on conflict (user_id, role_id) do nothing;
 ```
 
-This is a privileged local operation. Coursemap's browser client cannot grant
-roles, and hosted role assignments require a separate reviewed process.
+This is the only bootstrap operation. Afterwards, a catalogue administrator can
+open `/admin/users` to assign database-managed roles to other Coursemap users.
+Effective permissions are attached to roles in reviewed migrations and remain
+read-only in the browser. The database prevents administrators from removing
+their own administrator role or removing the final administrator.

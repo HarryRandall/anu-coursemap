@@ -16,6 +16,7 @@ import {
   Search as SearchIcon,
   Table2,
   UserRound,
+  UsersRound,
   Wrench,
   X,
   type LucideIcon,
@@ -38,6 +39,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/courses", label: "Courses", icon: Table2 },
   { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
   { href: "/admin/relations", label: "Relations", icon: GitBranch },
+  { href: "/admin/users", label: "Users", icon: UsersRound },
   { href: "/admin/sync", label: "Sync", icon: RefreshCw },
 ];
 

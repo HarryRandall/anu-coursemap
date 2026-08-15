@@ -102,6 +102,7 @@ test("redirects protected routes to the canonical sign-in page", async () => {
     "/history",
     "/timetable",
     "/admin/courses",
+    "/admin/users",
   ]) {
     const response = await request(path, { redirect: "manual" });
 
