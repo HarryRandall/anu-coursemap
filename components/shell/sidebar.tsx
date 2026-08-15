@@ -7,12 +7,14 @@ import {
   CalendarDays,
   GitBranch,
   GraduationCap,
-  History,
+  House,
   LayoutDashboard,
   LifeBuoy,
   ListChecks,
   Map,
+  MapPin,
   RefreshCw,
+  Route,
   Search as SearchIcon,
   Table2,
   UserRound,
@@ -24,14 +26,45 @@ import {
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: string;
+};
 
-const studentNav: NavItem[] = [
-  { href: "/plan", label: "Plan", icon: Map },
-  { href: "/requirements", label: "Requirements", icon: ListChecks },
-  { href: "/courses", label: "Courses", icon: BookOpen },
-  { href: "/timetable", label: "Timetable", icon: CalendarDays },
-  { href: "/history", label: "History", icon: History },
+const studentNavGroups: Array<{ label: string; items: NavItem[] }> = [
+  {
+    label: "Overview",
+    items: [{ href: "/dashboard", label: "Home", icon: House }],
+  },
+  {
+    label: "Planning",
+    items: [
+      { href: "/plan", label: "Plan", icon: Map },
+      { href: "/courses", label: "Courses", icon: BookOpen },
+      { href: "/requirements", label: "Requirements", icon: ListChecks },
+    ],
+  },
+  {
+    label: "Your study",
+    items: [
+      { href: "/academic", label: "Academic", icon: GraduationCap },
+      { href: "/calendar", label: "Calendar", icon: CalendarDays },
+    ],
+  },
+  {
+    label: "More",
+    items: [
+      { href: "/roadmap", label: "Roadmap", icon: Route },
+      {
+        href: "/rooms",
+        label: "Room finder",
+        icon: MapPin,
+        badge: "Soon",
+      },
+    ],
+  },
 ];
 
 const adminNav: NavItem[] = [
@@ -46,7 +79,7 @@ const adminNav: NavItem[] = [
 function Brand() {
   return (
     <Link
-      href="/plan"
+      href="/dashboard"
       aria-label="Coursemap home"
       className="flex items-center gap-2.5 px-1.5"
     >
@@ -96,7 +129,17 @@ function NavLink({
       )}
     >
       <Icon size={17} strokeWidth={1.9} />
-      <span>{item.label}</span>
+      <span className="flex-1">{item.label}</span>
+      {item.badge && (
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase",
+            isActive ? "bg-white/15 text-white" : "bg-brand-50 text-brand-600",
+          )}
+        >
+          {item.badge}
+        </span>
+      )}
     </Link>
   );
 }
@@ -113,7 +156,6 @@ export function Sidebar({
   onOpenSearch: () => void;
 }) {
   const { state, canAccessAdmin } = useCoursemap();
-  const nav = admin ? adminNav : studentNav;
   const initials =
     (state.profile.name || state.profile.email)
       .split(" ")
@@ -167,19 +209,41 @@ export function Sidebar({
 
         <nav
           aria-label={admin ? "Admin navigation" : "Student navigation"}
-          className="mt-6 flex flex-col gap-1"
+          className="mt-5 min-h-0 flex-1 overflow-y-auto pr-0.5"
         >
-          <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-            {admin ? "Catalogue" : "Your degree"}
-          </p>
-          {nav.map((item) => (
-            <NavLink
-              key={item.href}
-              item={item}
-              admin={admin}
-              onNavigate={onClose}
-            />
-          ))}
+          {admin ? (
+            <div className="flex flex-col gap-1">
+              <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                Catalogue
+              </p>
+              {adminNav.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  admin
+                  onNavigate={onClose}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {studentNavGroups.map((group) => (
+                <div key={group.label} className="flex flex-col gap-1">
+                  <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                    {group.label}
+                  </p>
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.href}
+                      item={item}
+                      admin={false}
+                      onNavigate={onClose}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
 
           {!admin && canAccessAdmin && (
             <>
@@ -196,30 +260,29 @@ export function Sidebar({
           )}
         </nav>
 
-        <div className="flex-1" />
-
         {admin && (
           <>
             <div className="-mx-3 mb-1.5 border-t border-zinc-200/80" />
             <Link
-              href="/plan"
+              href="/dashboard"
               onClick={onClose}
               className="flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >
               <Map size={17} strokeWidth={1.9} />
-              <span>Back to student plan</span>
+              <span>Back to student home</span>
             </Link>
           </>
         )}
 
         {!admin && (
-          <a
-            href="mailto:support@coursemap.app"
+          <Link
+            href="/help"
+            onClick={onClose}
             className="mt-1 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
           >
             <LifeBuoy size={17} strokeWidth={1.9} />
             <span>Help &amp; support</span>
-          </a>
+          </Link>
         )}
 
         <Link
