@@ -1,340 +1,206 @@
 import Link from "next/link";
-import {
-  Award,
-  Bell,
-  CalendarDays,
-  CheckCircle2,
-  ChevronsUp,
-  Circle,
-  Clock3,
-  Database,
-  Gauge,
-  GitCompare,
-  Import,
-  Keyboard,
-  LayoutDashboard,
-  Lock,
-  Map,
-  MapPin,
-  Search,
-  Share2,
-  Shield,
-  Smartphone,
-  Sparkles,
-  Split,
-  ListChecks,
-  type LucideIcon,
-} from "lucide-react";
-import { GeneratedAvatar } from "@/components/ui/generated-avatar";
-import { Badge } from "@/components/ui/badge";
+import { Check } from "lucide-react";
+import { RoadmapCarousel } from "@/components/roadmap/roadmap-carousel";
 import { cn } from "@/lib/cn";
-import {
-  filterRoadmapItems,
-  roadmapAreaLabels,
-  roadmapAreas,
-  roadmapStages,
-  type RoadmapArea,
-  type RoadmapIconName,
-  type RoadmapItem,
-  type RoadmapStage,
-} from "@/lib/roadmap";
+import { roadmapItems, roadmapStages, type RoadmapStage } from "@/lib/roadmap";
 
-const icons: Record<RoadmapIconName, LucideIcon> = {
-  map: Map,
-  search: Search,
-  layout: LayoutDashboard,
-  lock: Lock,
-  keyboard: Keyboard,
-  database: Database,
-  list: ListChecks,
-  shield: Shield,
-  import: Import,
-  calendar: CalendarDays,
-  award: Award,
-  pin: MapPin,
-  clock: Clock3,
-  gauge: Gauge,
-  git: GitCompare,
-  share: Share2,
-  bell: Bell,
-  split: Split,
-  smartphone: Smartphone,
-};
+const wavePath =
+  "M0 150 C80 150 90 72 150 72 S220 150 300 150 S390 72 450 72 S520 150 600 150 S690 72 750 72 S820 150 900 150 S990 72 1050 72 S1120 150 1200 150";
 
-const stageStyle: Record<
-  RoadmapStage,
-  {
-    icon: LucideIcon;
-    rail: string;
-    tint: string;
-    dot: string;
-    badge: "success" | "brand" | "info" | "neutral";
-  }
-> = {
-  shipped: {
-    icon: CheckCircle2,
-    rail: "bg-emerald-400",
-    tint: "bg-emerald-50/80",
-    dot: "bg-emerald-500",
-    badge: "success",
-  },
-  now: {
-    icon: Sparkles,
-    rail: "bg-brand-500",
-    tint: "bg-brand-50/80",
-    dot: "bg-brand-500",
-    badge: "brand",
-  },
-  next: {
-    icon: Clock3,
-    rail: "bg-sky-400",
-    tint: "bg-sky-50/80",
-    dot: "bg-sky-500",
-    badge: "info",
-  },
-  later: {
-    icon: Circle,
-    rail: "bg-zinc-300",
-    tint: "bg-zinc-100/80",
-    dot: "bg-zinc-400",
-    badge: "neutral",
-  },
-};
-
-export function RoadmapBoard({ area }: { area?: RoadmapArea }) {
-  const items = filterRoadmapItems(area);
-  const counts = {
-    shipped: items.shipped.length,
-    now: items.now.length,
-    next: items.next.length,
-    later: items.later.length,
-  };
-
-  return (
-    <div className="roadmap-surface -mx-4 rounded-none px-4 py-5 sm:-mx-6 sm:rounded-3xl sm:px-6 sm:ring-1 sm:ring-zinc-200/70">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <nav
-          aria-label="Filter roadmap by area"
-          className="flex flex-wrap gap-2"
-        >
-          <FilterChip href="/roadmap" active={!area} label="All" />
-          {roadmapAreas.map((item) => (
-            <FilterChip
-              key={item}
-              href={`/roadmap?area=${item}`}
-              active={area === item}
-              label={roadmapAreaLabels[item]}
-            />
-          ))}
-        </nav>
-        <p className="text-xs font-medium text-zinc-500">
-          <span className="text-zinc-800 tabular-nums">{counts.shipped}</span>{" "}
-          shipped
-          <span aria-hidden="true" className="mx-2 text-zinc-300">
-            ·
-          </span>
-          <span className="text-zinc-800 tabular-nums">{counts.now}</span> in
-          flight
-          <span aria-hidden="true" className="mx-2 text-zinc-300">
-            ·
-          </span>
-          <span className="text-zinc-800 tabular-nums">
-            {counts.next + counts.later}
-          </span>{" "}
-          queued
-        </p>
-      </div>
-
-      <div className="mt-5 overflow-x-auto pb-1">
-        <div className="flex min-w-max snap-x snap-mandatory gap-4 lg:grid lg:min-w-0 lg:grid-cols-4">
-          {roadmapStages.map((stage) => (
-            <RoadmapColumn
-              key={stage.id}
-              stage={stage.id}
-              title={stage.title}
-              description={stage.description}
-              items={items[stage.id]}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FilterChip({
-  href,
-  active,
-  label,
-}: {
-  href: string;
-  active: boolean;
-  label: string;
-}) {
-  return (
-    <Link
-      href={href}
-      scroll={false}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "inline-flex min-h-11 items-center rounded-full px-3.5 text-sm font-semibold transition",
-        active
-          ? "bg-zinc-900 text-white shadow-sm"
-          : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:bg-zinc-50 hover:text-zinc-900",
-      )}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function RoadmapColumn({
-  stage,
-  title,
-  description,
-  items,
-}: {
-  stage: RoadmapStage;
-  title: string;
-  description: string;
-  items: RoadmapItem[];
-}) {
-  const style = stageStyle[stage];
-  const Icon = style.icon;
-
+export function RoadmapBoard({ stage }: { stage: RoadmapStage }) {
   return (
     <section
-      aria-labelledby={`roadmap-${stage}`}
-      className="flex w-[18.5rem] shrink-0 snap-start flex-col lg:w-auto"
+      aria-label="Product roadmap"
+      className="roadmap-panel relative overflow-hidden rounded-[28px] text-white shadow-[0_24px_80px_rgb(76_29_149_/_0.28)] ring-1 ring-[#f0c14b]/25"
     >
-      <div
-        className={cn(
-          "overflow-hidden rounded-2xl ring-1 ring-zinc-200/80",
-          style.tint,
-        )}
-      >
-        <div className={cn("h-1 w-full", style.rail)} />
-        <div className="flex items-start justify-between gap-3 p-4">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="grid size-8 place-items-center rounded-lg bg-white text-zinc-700 shadow-xs ring-1 ring-zinc-200/80">
-                <Icon size={16} aria-hidden="true" />
-              </span>
-              <h2
-                id={`roadmap-${stage}`}
-                className="text-sm font-semibold tracking-tight text-zinc-900"
-              >
-                {title}
-              </h2>
-              {stage === "now" ? (
-                <Badge tone="brand" className="gap-1">
+      <RoadmapDecor />
+      <RoadmapCarousel>
+        <div className="relative z-10 min-w-[64rem] px-8 pt-10 pb-6 sm:px-12 lg:min-w-0">
+          <ol className="grid grid-cols-4">
+            {roadmapStages.map((item) => {
+              const active = item.id === stage;
+              return (
+                <li
+                  key={item.id}
+                  id={`roadmap-${item.id}`}
+                  className="px-3 sm:px-4"
+                >
+                  <h2 className="font-semibold tracking-tight text-[#f0c14b] sm:text-lg">
+                    {item.title}
+                  </h2>
+                  <p className="mt-1 text-[11px] text-white/50">
+                    {item.description}
+                  </p>
+                  <ul
+                    className={cn(
+                      "mt-4 space-y-2.5 text-[13px] leading-relaxed",
+                      active ? "text-white/90" : "text-white/45",
+                    )}
+                  >
+                    {roadmapItems[item.id].map((entry) => (
+                      <li key={entry.id} className="flex gap-2">
+                        <span
+                          aria-hidden="true"
+                          className="mt-2 size-1 shrink-0 rounded-full bg-[#f0c14b]"
+                        />
+                        <span>
+                          <span className="font-medium">{entry.title}</span>
+                          {entry.progress != null ? (
+                            <span className="text-white/55">
+                              {" "}
+                              · {entry.progress}%
+                            </span>
+                          ) : null}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              );
+            })}
+          </ol>
+          <div className="relative mt-6 h-36">
+            <RoadmapWave />
+            {roadmapStages.map((item, index) => {
+              const active = item.id === stage;
+              const shipped = item.id === "shipped";
+              return (
+                <div
+                  key={item.id}
+                  className="absolute top-0 flex h-[33%] -translate-x-1/2 flex-col items-center"
+                  style={{ left: `${12.5 + index * 25}%` }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="w-px flex-1 bg-linear-to-b from-[#f0c14b]/0 to-[#f0c14b]"
+                  />
                   <span
                     className={cn(
-                      "size-1.5 rounded-full",
-                      style.dot,
-                      "animate-roadmap-pulse",
+                      "relative z-10 grid size-5 place-items-center rounded-full bg-white",
+                      active && "size-6 shadow-[0_0_22px_rgb(244_63_94_/_0.9)]",
                     )}
-                  />
-                  In flight
-                </Badge>
-              ) : null}
-            </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-              {description}
-            </p>
+                  >
+                    {shipped ? (
+                      <Check
+                        size={11}
+                        strokeWidth={3}
+                        className="text-rose-600"
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <span className="sr-only">
+                      {item.title}
+                      {shipped ? ", completed" : ""}
+                      {active ? ", current focus" : ""}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
-          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white text-xs font-semibold text-zinc-700 ring-1 ring-zinc-200">
-            {items.length}
-            <span className="sr-only"> items</span>
-          </span>
         </div>
-      </div>
-
-      <ol className="mt-3 flex flex-col gap-3">
-        {items.length === 0 ? (
-          <li className="rounded-2xl border border-dashed border-zinc-200 bg-white/70 px-3 py-10 text-center text-xs text-zinc-400">
-            Nothing in this lane
-          </li>
-        ) : (
-          items.map((item, index) => (
-            <li key={item.id}>
-              <RoadmapCard item={item} stage={stage} index={index} />
-            </li>
-          ))
-        )}
-      </ol>
+      </RoadmapCarousel>
+      <nav
+        aria-label="Roadmap stages"
+        className="relative z-10 flex justify-center gap-6 px-4 pt-1 pb-6"
+      >
+        {roadmapStages.map((item) => {
+          const active = item.id === stage;
+          return (
+            <Link
+              key={item.id}
+              href={`/roadmap?stage=${item.id}`}
+              scroll={false}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "min-h-11 px-1 text-sm tracking-wide transition",
+                active
+                  ? "border-b-2 border-white font-semibold text-white"
+                  : "border-b-2 border-transparent text-white/45 hover:text-white/80",
+              )}
+            >
+              {item.title}
+            </Link>
+          );
+        })}
+      </nav>
     </section>
   );
 }
 
-function RoadmapCard({
-  item,
-  stage,
-  index,
-}: {
-  item: RoadmapItem;
-  stage: RoadmapStage;
-  index: number;
-}) {
-  const Icon = icons[item.icon];
-  const style = stageStyle[stage];
-
+function RoadmapWave() {
   return (
-    <article
-      className="animate-roadmap-card rounded-2xl bg-white p-4 shadow-sm ring-1 ring-zinc-200/80 transition hover:-translate-y-0.5 hover:shadow-md"
-      style={{ animationDelay: `${index * 55}ms` }}
+    <svg
+      viewBox="0 0 1200 220"
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      aria-hidden="true"
+      preserveAspectRatio="none"
     >
-      <div className="flex items-start justify-between gap-3">
-        <span
-          className={cn(
-            "grid size-9 place-items-center rounded-xl text-zinc-700",
-            style.tint,
-          )}
-        >
-          <Icon size={16} aria-hidden="true" />
-        </span>
-        {item.version ? (
-          <Badge tone="success">{item.version}</Badge>
-        ) : item.quarter ? (
-          <Badge tone={style.badge}>{item.quarter}</Badge>
-        ) : null}
-      </div>
-      <h3 className="mt-3 text-sm font-semibold tracking-tight text-zinc-900">
-        {item.title}
-      </h3>
-      <p className="mt-1 text-[12px] leading-relaxed text-zinc-500">
-        {item.description}
-      </p>
-      {item.progress != null ? (
-        <div className="mt-3">
-          <div className="mb-1.5 flex items-center justify-between text-[11px] font-medium text-zinc-500">
-            <span>Progress</span>
-            <span className="tabular-nums">{item.progress}%</span>
-          </div>
-          <div
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={item.progress}
-            aria-label={`${item.title} progress`}
-            className="h-1.5 overflow-hidden rounded-full bg-zinc-100"
-          >
-            <div
-              className="h-full rounded-full bg-brand-500"
-              style={{ width: `${item.progress}%` }}
-            />
-          </div>
-        </div>
-      ) : null}
-      <div className="mt-3 flex items-center gap-2">
-        <Badge>{roadmapAreaLabels[item.area]}</Badge>
-        <span className="ml-auto inline-flex items-center gap-0.5 text-[11px] font-semibold text-zinc-500">
-          <ChevronsUp size={14} aria-hidden="true" />
-          <span className="tabular-nums">{item.votes}</span>
-          <span className="sr-only"> people interested</span>
-        </span>
-        <GeneratedAvatar name={item.owner} className="size-6 text-[9px]" />
-      </div>
-    </article>
+      <defs>
+        <linearGradient id="roadmap-wave" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="#7c3aed" />
+          <stop offset="42%" stopColor="#db2777" />
+          <stop offset="100%" stopColor="#fb923c" />
+        </linearGradient>
+        <linearGradient id="roadmap-wave-soft" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="#6d28d9" />
+          <stop offset="50%" stopColor="#f472b6" />
+          <stop offset="100%" stopColor="#fdba74" />
+        </linearGradient>
+      </defs>
+      <path
+        d={`${wavePath} L1200 220 L0 220 Z`}
+        fill="url(#roadmap-wave-soft)"
+        opacity="0.22"
+      />
+      <path
+        d={wavePath}
+        fill="none"
+        stroke="url(#roadmap-wave)"
+        strokeLinecap="round"
+        strokeWidth="34"
+        opacity="0.38"
+      />
+      <path
+        d={wavePath}
+        fill="none"
+        stroke="url(#roadmap-wave)"
+        strokeLinecap="round"
+        strokeWidth="20"
+      />
+      <path
+        d={wavePath}
+        fill="none"
+        stroke="#f0c14b"
+        strokeLinecap="round"
+        strokeWidth="3"
+        opacity="0.7"
+        transform="translate(0 -11)"
+      />
+    </svg>
+  );
+}
+
+function RoadmapDecor() {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-0 h-full w-full"
+      aria-hidden="true"
+      viewBox="0 0 1200 640"
+      preserveAspectRatio="xMidYMid slice"
+    >
+      <polygon points="90,40 170,110 40,150" fill="#9f1239" opacity="0.18" />
+      <polygon
+        points="1080,80 1180,40 1160,180"
+        fill="#9f1239"
+        opacity="0.16"
+      />
+      <polygon
+        points="980,520 1120,470 1100,610"
+        fill="#6b21a8"
+        opacity="0.2"
+      />
+      <polygon points="80,480 180,430 140,580" fill="#9f1239" opacity="0.12" />
+    </svg>
   );
 }
