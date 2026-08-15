@@ -1,10 +1,10 @@
 "use client";
 
 import { Check, ExternalLink, Plus, Search, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/shell";
-import { Button, ButtonLink, IconButton } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button, IconButton } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 
@@ -36,8 +36,8 @@ export default function AdminSyncPage() {
   >([]);
   const [searchState, setSearchState] = useState<SearchState>("idle");
   const [searchMessage, setSearchMessage] = useState("");
-  const [showPreview, setShowPreview] = useState(false);
   const searchRequest = useRef(0);
+  const router = useRouter();
 
   const selectedCodes = useMemo(
     () => new Set(selectedProgrammes.map((programme) => programme.code)),
@@ -53,13 +53,10 @@ export default function AdminSyncPage() {
     setSearchState("idle");
     setSearchMessage("");
     searchRequest.current += 1;
-    setShowPreview(false);
   }
 
   function searchProgrammes(value: string) {
     setQuery(value);
-    setShowPreview(false);
-
     const requestId = searchRequest.current + 1;
     searchRequest.current = requestId;
     const trimmedQuery = value.trim();
@@ -108,45 +105,40 @@ export default function AdminSyncPage() {
     setQuery("");
     setResults([]);
     setSearchState("idle");
-    setShowPreview(false);
   }
 
   function removeProgramme(code: string) {
     setSelectedProgrammes((current) =>
       current.filter((programme) => programme.code !== code),
     );
-    setShowPreview(false);
+  }
+
+  function openPreview() {
+    const params = new URLSearchParams({ year: String(year), target });
+    if (target === "selected") {
+      params.set(
+        "programmes",
+        selectedProgrammes.map((programme) => programme.code).join(","),
+      );
+    }
+    router.push(`/admin/sync/preview?${params}`);
   }
 
   return (
-    <AppShell
-      admin
-      actions={
-        <ButtonLink href="/admin/programmes" size="sm" variant="secondary">
-          Imported programmes
-        </ButtonLink>
-      }
-    >
-      <div className="mx-auto w-full max-w-5xl">
+    <AppShell admin>
+      <div className="w-full">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
           Sync programmes
         </h1>
 
-        <Card className="mt-7 overflow-hidden">
-          <div className="border-b border-zinc-100 px-5 py-5 sm:px-7">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-950">
-              Programme scope
-            </h2>
-          </div>
-
-          <div className="space-y-7 p-5 sm:p-7">
+        <section className="mt-8 border-t border-zinc-200 pt-8">
+          <div className="space-y-7">
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 aria-pressed={target === "selected"}
                 onClick={() => {
                   setTarget("selected");
-                  setShowPreview(false);
                 }}
                 className={cn(
                   "min-h-24 rounded-xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
@@ -167,7 +159,6 @@ export default function AdminSyncPage() {
                 aria-pressed={target === "all"}
                 onClick={() => {
                   setTarget("all");
-                  setShowPreview(false);
                 }}
                 className={cn(
                   "min-h-24 rounded-xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
@@ -327,45 +318,34 @@ export default function AdminSyncPage() {
               </div>
             )}
 
-            <div className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-200">
-              Includes courses, elective lists, study options, requirements and
-              prerequisite pages.
+            <div className="grid gap-3 border-y border-zinc-200 py-5 sm:grid-cols-2">
+              <div>
+                <p className="text-sm font-semibold text-zinc-900">
+                  Programmes
+                </p>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Requirements, study options and elective rules.
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-zinc-900">Courses</p>
+                <p className="mt-1 text-sm text-zinc-500">
+                  Compulsory, elective and prerequisite course pages.
+                </p>
+              </div>
             </div>
 
-            <div className="flex justify-end border-t border-zinc-100 pt-5">
+            <div className="flex justify-end">
               <Button
                 variant="primary"
                 disabled={!canPreview}
-                onClick={() => setShowPreview(true)}
+                onClick={openPreview}
               >
                 Preview sync
               </Button>
             </div>
           </div>
-        </Card>
-
-        {showPreview && (
-          <Card className="mt-5" aria-live="polite">
-            <div className="flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center sm:px-7">
-              <div>
-                <h2 className="text-base font-semibold text-zinc-950">
-                  {target === "all"
-                    ? `All programmes from ${year}`
-                    : `${selectedProgrammes.length} programme${selectedProgrammes.length === 1 ? "" : "s"} from ${year}`}
-                </h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  All programme content
-                </p>
-              </div>
-              <Button
-                disabled
-                title="The programme importer has not been connected yet."
-              >
-                Sync programmes
-              </Button>
-            </div>
-          </Card>
-        )}
+        </section>
       </div>
     </AppShell>
   );
