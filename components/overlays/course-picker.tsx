@@ -1,10 +1,24 @@
 "use client";
 
-import { ArrowRight, BookMarked, Plus, Search, X } from "lucide-react";
+import {
+  ArrowRight,
+  BookMarked,
+  Plus,
+  Search,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
-import { Course, courseOccurrenceLimit, courses, terms } from "@/lib/catalogue";
+import {
+  Course,
+  courseOccurrenceLimit,
+  courses,
+  majorByCode,
+  terms,
+} from "@/lib/catalogue";
+import { recommendedCoursesForTerm } from "@/lib/planner";
 import { Modal } from "@/components/ui/overlay";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/field";
@@ -12,9 +26,11 @@ import { CourseToken } from "@/components/ui/course-token";
 
 export function CoursePicker({
   termId,
+  intent = "all",
   onClose,
 }: {
   termId: string;
+  intent?: "all" | "recommended";
   onClose: () => void;
 }) {
   const { state, addCourse, notify } = useCoursemap();
@@ -39,6 +55,14 @@ export function CoursePicker({
     });
     return counts;
   }, [state.attempts]);
+  const recommendedCodes = useMemo(() => {
+    const major = majorByCode(state.profile.majorCode);
+    return new Set(
+      recommendedCoursesForTerm(term, state.attempts, major.courseCodes).map(
+        (course) => course.code,
+      ),
+    );
+  }, [state.attempts, state.profile.majorCode, term]);
   const filtered = useMemo(
     () =>
       courses.filter((course) => {
@@ -46,6 +70,9 @@ export function CoursePicker({
           (courseCounts.get(course.code) ?? 0) >=
           courseOccurrenceLimit(course.code)
         ) {
+          return false;
+        }
+        if (intent === "recommended" && !recommendedCodes.has(course.code)) {
           return false;
         }
         const matchesQuery = `${course.code} ${course.name}`
@@ -61,7 +88,7 @@ export function CoursePicker({
           matchesQuery && matchesSubject && matchesLevel && matchesConvener
         );
       }),
-    [query, subject, level, convener, courseCounts],
+    [query, subject, level, convener, courseCounts, intent, recommendedCodes],
   );
 
   const choose = async (course: Course) => {
@@ -91,13 +118,16 @@ export function CoursePicker({
       <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4">
         <div>
           <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-            Add to {term.name} {term.year < 2029 ? term.year : ""}
+            {intent === "recommended" ? "Recommended for" : "Add to"}{" "}
+            {term.name} {term.year < 2029 ? term.year : ""}
           </p>
           <h2
             id="course-picker-title"
             className="mt-0.5 text-xl font-bold tracking-tight text-zinc-900"
           >
-            Find a course
+            {intent === "recommended"
+              ? "Add a recommended course"
+              : "Find a course"}
           </h2>
         </div>
         <IconButton label="Close" onClick={onClose}>
@@ -168,7 +198,9 @@ export function CoursePicker({
             <div className="flex h-full flex-col items-center justify-center gap-1 p-8 text-center">
               <Search size={22} className="text-zinc-300" />
               <p className="mt-2 text-sm font-medium text-zinc-700">
-                No courses match those filters
+                {intent === "recommended"
+                  ? "No recommended courses fit this study period"
+                  : "No courses match those filters"}
               </p>
               <Button
                 variant="secondary"
@@ -208,6 +240,12 @@ export function CoursePicker({
                       {course.code} · {course.school}
                     </span>
                   </span>
+                  {recommendedCodes.has(course.code) && (
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700 ring-1 ring-brand-200 ring-inset">
+                      <Sparkles size={10} aria-hidden="true" />
+                      Recommended
+                    </span>
+                  )}
                   <span
                     className={cn(
                       "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",

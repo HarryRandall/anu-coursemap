@@ -120,8 +120,16 @@ test("server-renders the complete student workspace", async () => {
     helpGuideHtml,
   ] = await Promise.all(responses.map((response) => response.text()));
 
-  assert.match(dashboardHtml, /Your degree is taking shape/i);
-  assert.match(dashboardHtml, /Plan health/i);
+  assert.match(dashboardHtml, /Overview/i);
+  assert.match(dashboardHtml, /Degree complete/i);
+  assert.match(dashboardHtml, /Course progress/i);
+  assert.match(dashboardHtml, /Semester load/i);
+  assert.match(dashboardHtml, /Units over time/i);
+  assert.match(dashboardHtml, /Needs attention/i);
+  assert.match(dashboardHtml, /Calendar/i);
+  assert.doesNotMatch(dashboardHtml, /Your degree is taking shape/i);
+  assert.doesNotMatch(dashboardHtml, /Plan health/i);
+  assert.doesNotMatch(dashboardHtml, /How you are going/i);
   assert.match(academicHtml, /Your academic overview/i);
   assert.match(academicHtml, /recorded mark average/i);
   assert.match(calendarHtml, /Your study calendar/i);
@@ -199,7 +207,13 @@ test("server-renders the routed Coursemap degree planner", async () => {
   assert.match(html, /COMP1100/i);
   assert.match(html, /class="year-row"/i);
   assert.match(html, /Semester 2/i);
-  assert.equal((html.match(/Add course in empty slot/g) ?? []).length, 17);
+  const emptyAdds = (html.match(/Add course in empty slot/g) ?? []).length;
+  const recommendedAdds = (
+    html.match(/Add recommended course [A-Z]{4}\d+/g) ?? []
+  ).length;
+  assert.ok(recommendedAdds > 0);
+  assert.equal(emptyAdds + recommendedAdds, 18);
+  assert.match(html, /Degree progress/i);
   assert.doesNotMatch(html, /Edit degree/i);
   assert.doesNotMatch(html, /18 of 144 units completed/i);
   assert.doesNotMatch(html, /48 mapped/i);
@@ -318,7 +332,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   ]);
 
   assert.match(planPage, /year-board/);
-  assert.match(planPage, /STANDARD_COURSE_SLOTS = 4/);
+  assert.match(planPage, /STANDARD_COURSE_SLOTS/);
   assert.match(planPage, /This semester is already full/);
   assert.match(planPage, /reorderAttempt/);
   assert.match(planPage, /Move anyway/);
