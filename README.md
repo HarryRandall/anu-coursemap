@@ -61,10 +61,7 @@ at `/admin/users`; effective permissions remain migration-owned and read-only.
 
 The Sydney hosted development project has the complete migration history,
 Row Level Security policies and the reviewed 2026 BCOMP and SOFT-MAJ structure
-seed. Its Auth redirect configuration accepts the trusted local callback. The
-catalogue importer remains deliberately local-only, so hosted course versions
-must be promoted through a reviewed migration rather than an unrestricted
-database connection. Vercel deployment is intentionally outside this setup.
+seed. Its Auth redirect configuration accepts the trusted local callback.
 
 ## Commands
 
@@ -116,6 +113,20 @@ through natural keys in one transaction. Re-running the same manifest preserves
 domain rows and content-hash snapshots while recording a new import run.
 Ambiguous prerequisite text and conflicting source facts remain attached to
 open review items rather than being treated as verified catalogue rules.
+
+### Selected-course web sync
+
+An administrator with `imports.manage` can run a selected set of up to 20
+course pages from **Admin > Imports > Course pages**. The runner fetches the
+official ANU pages, validates the manifest and uses the same idempotent
+transaction as the local CLI.
+
+Local demo mode targets the local Supabase database. For a Vercel production
+deployment, set `COURSEMAP_IMPORT_DATABASE_URL` only in the Production
+environment to a hosted Supabase PostgreSQL connection URL. It is server-only
+and must never use an `NEXT_PUBLIC_` name. The Vercel route is a Node function
+with a 60-second limit, so programme structures and all-course imports remain
+separate bulk jobs until their parsers and queueing are implemented.
 
 The 2026 BCOMP and SOFT-MAJ structures are also stored as forward-migrated,
 normalised facts with official source hashes. Supported course, structure,

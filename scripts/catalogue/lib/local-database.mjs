@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import postgres from "postgres";
 
 const DEFAULT_CONFIG_PATH = resolve("supabase/config.toml");
-const verifiedLocalClients = new WeakSet();
+const verifiedImportClients = new WeakSet();
 const DEFAULT_LOCAL_DATABASE = {
   database: "postgres",
   hostname: "127.0.0.1",
@@ -162,14 +162,55 @@ export async function createLocalDatabaseClient(options = {}) {
     prepare: false,
     ssl: false,
   });
-  verifiedLocalClients.add(sql);
+  verifiedImportClients.add(sql);
   return sql;
 }
 
-export function assertVerifiedLocalDatabaseClient(sql) {
-  if (!verifiedLocalClients.has(sql)) {
+function isHostedSupabaseDatabaseHost(hostname) {
+  const candidate = normaliseHostname(hostname).toLowerCase();
+  return (
+    candidate.endsWith(".supabase.co") ||
+    candidate.endsWith(".pooler.supabase.com")
+  );
+}
+
+export function assertHostedSupabaseDatabaseUrl(connectionString) {
+  const databaseUrl = parseDatabaseUrl(connectionString);
+  if (!isHostedSupabaseDatabaseHost(databaseUrl.hostname)) {
     throw new Error(
-      "Catalogue imports require a client created by createLocalDatabaseClient().",
+      "The hosted catalogue importer only accepts a Supabase database connection URL.",
     );
   }
+  return databaseUrl;
+}
+
+/**
+ * Create an explicitly configured hosted database client for an authenticated
+ * import runner. This is intentionally separate from the local-only client so
+ * routine CLI imports cannot accidentally target production.
+ */
+export function createHostedCatalogueDatabaseClient(connectionString) {
+  const databaseUrl = assertHostedSupabaseDatabaseUrl(connectionString);
+  const sql = postgres(databaseUrl.toString(), {
+    application_name: "coursemap_catalogue_import",
+    connect_timeout: 10,
+    idle_timeout: 5,
+    max: 1,
+    prepare: false,
+    ssl: "require",
+  });
+  verifiedImportClients.add(sql);
+  return sql;
+}
+
+export function assertVerifiedCatalogueImportClient(sql) {
+  if (!verifiedImportClients.has(sql)) {
+    throw new Error(
+      "Catalogue imports require a client created by createLocalDatabaseClient() or createHostedCatalogueDatabaseClient().",
+    );
+  }
+}
+
+export function assertVerifiedLocalDatabaseClient(sql) {
+  assertVerifiedCatalogueImportClient(sql);
 }
