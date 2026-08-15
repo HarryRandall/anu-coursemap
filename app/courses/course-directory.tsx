@@ -9,9 +9,22 @@ import {
   tableRowClasses,
 } from "@/components/ui/data-table";
 import type { Course } from "@/lib/catalogue";
+import { CourseRowActions } from "./course-row-actions";
 
 function formatAvailability(sessions: string[]) {
-  return sessions.length > 0 ? sessions.join(" · ") : "Availability not listed";
+  if (sessions.length === 0) return "Not listed";
+
+  const numbers = sessions
+    .map((session) => session.match(/Semester\s+(\d+)/i)?.[1])
+    .filter((value): value is string => Boolean(value))
+    .sort((left, right) => Number(left) - Number(right));
+
+  if (numbers.length === sessions.length) {
+    if (numbers.length === 1) return `Sem ${numbers[0]}`;
+    return `Sem ${numbers[0]} & ${numbers.slice(1).join(" & ")}`;
+  }
+
+  return sessions.join(" & ");
 }
 
 export function CourseDirectory({ courses }: { courses: Course[] }) {
@@ -28,19 +41,23 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
       <table className={tableClasses("table-fixed")}>
         <colgroup>
           <col />
-          <col className="w-[14rem]" />
+          <col className="w-[7.5rem]" />
+          <col className="w-[3.75rem]" />
         </colgroup>
         <thead className={tableHeadClasses()}>
           <tr>
             <th className={tableHeaderCellClasses()}>Course</th>
             <th className={tableHeaderCellClasses()}>Available</th>
+            <th className={tableHeaderCellClasses()}>
+              <span className="sr-only">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {courses.length === 0 ? (
             <tr className={tableRowClasses()}>
               <td
-                colSpan={2}
+                colSpan={3}
                 className={tableCellClasses(
                   "py-12 text-center font-normal whitespace-normal text-zinc-500",
                 )}
@@ -93,6 +110,9 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
                   >
                     {availability}
                   </Link>
+                </td>
+                <td className={tableCellClasses("p-0")}>
+                  <CourseRowActions course={course} />
                 </td>
               </tr>
             );
