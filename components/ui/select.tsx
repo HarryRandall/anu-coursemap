@@ -72,7 +72,9 @@ export function Select<T extends string | number>({
 
   useEffect(() => {
     if (!open) return;
-    const onScroll = () => close();
+    const onScroll = (event: Event) => {
+      if (!menuRef.current?.contains(event.target as Node)) close();
+    };
     const onResize = () => close();
     const onPointer = (event: MouseEvent) => {
       if (
