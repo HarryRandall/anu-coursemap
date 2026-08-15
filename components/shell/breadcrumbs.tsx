@@ -21,6 +21,8 @@ const labels: Record<string, string> = {
   "understand-a-course": "Understand a course",
   "read-requirements": "Read requirements",
   "account-and-degree": "Account and degree",
+  "study-calendar": "Use the study calendar",
+  "academic-record": "Read your academic record",
   timetable: "Timetable",
   history: "History",
   profile: "Profile",

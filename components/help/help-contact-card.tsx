@@ -21,9 +21,6 @@ export function HelpContactCard() {
     <>
       <Card className="flex h-full flex-col p-6 sm:p-7">
         <Badge tone="brand">Contact us</Badge>
-        <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-          Report a bug, flag catalogue data or ask for a planning improvement.
-        </p>
         <div className="mt-4 flex flex-1 flex-col justify-evenly gap-1">
           {helpContactReasons.map((contact) => {
             const Icon =

@@ -33,41 +33,36 @@ export default function HelpPage() {
         </section>
 
         <div className="grid min-h-0 flex-1 items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_26rem]">
-          <section className="flex min-h-0 flex-col">
-            <h2 className="text-lg font-semibold tracking-tight text-zinc-900">
-              Help topics
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              Short guides for the parts of Coursemap students use most.
-            </p>
-            <div className="mt-4 grid flex-1 gap-4 sm:grid-cols-2">
-              {helpArticles.map((topic) => {
-                const Icon = helpTopicIcons[topic.slug] ?? BookOpen;
-                return (
-                  <ButtonLink
-                    key={topic.slug}
-                    href={`/help/${topic.slug}`}
-                    variant="secondary"
-                    className="!h-full min-h-44 !items-stretch justify-start p-5 text-left !whitespace-normal sm:min-h-0 sm:p-6"
-                  >
-                    <span className="flex h-full w-full min-w-0 flex-col items-start">
-                      <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-600">
-                        <Icon size={20} />
-                      </span>
-                      <span className="mt-4 text-base font-semibold tracking-tight text-zinc-900">
-                        {topic.title}
-                      </span>
-                      <span className="mt-1.5 block w-full text-sm leading-relaxed font-normal !whitespace-normal text-zinc-500">
-                        {topic.description}
-                      </span>
-                      <span className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-brand-700">
-                        Read guide <ArrowRight size={14} />
-                      </span>
+          <section
+            aria-label="Help guides"
+            className="grid min-h-0 flex-1 gap-4 sm:grid-cols-2"
+          >
+            {helpArticles.map((topic) => {
+              const Icon = helpTopicIcons[topic.slug] ?? BookOpen;
+              return (
+                <ButtonLink
+                  key={topic.slug}
+                  href={`/help/${topic.slug}`}
+                  variant="secondary"
+                  className="!h-full min-h-44 !items-stretch justify-start p-5 text-left !whitespace-normal sm:min-h-0 sm:p-6"
+                >
+                  <span className="flex h-full w-full min-w-0 flex-col items-start">
+                    <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-600">
+                      <Icon size={20} />
                     </span>
-                  </ButtonLink>
-                );
-              })}
-            </div>
+                    <span className="mt-4 text-base font-semibold tracking-tight text-zinc-900">
+                      {topic.title}
+                    </span>
+                    <span className="mt-1.5 block w-full text-sm leading-relaxed font-normal !whitespace-normal text-zinc-500">
+                      {topic.description}
+                    </span>
+                    <span className="mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold text-brand-700">
+                      Read guide <ArrowRight size={14} />
+                    </span>
+                  </span>
+                </ButtonLink>
+              );
+            })}
           </section>
 
           <HelpContactCard />

@@ -137,6 +137,12 @@ test("server-renders the complete student workspace", async () => {
   assert.match(helpHtml, /How can we help/i);
   assert.match(helpHtml, /Read guide/i);
   assert.match(helpHtml, /Email support/i);
+  assert.match(helpHtml, /Use the study calendar/i);
+  assert.match(helpHtml, /Read your academic record/i);
+  assert.doesNotMatch(
+    helpHtml,
+    /Help topics|Short guides for the parts of Coursemap|Report a bug, flag catalogue data/i,
+  );
   assert.doesNotMatch(helpHtml, /Common questions|Need official advice/i);
   assert.match(helpGuideHtml, /Build your plan/i);
   assert.match(helpGuideHtml, /Where are class times and rooms/i);

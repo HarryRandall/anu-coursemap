@@ -97,6 +97,48 @@ export const helpArticles: HelpArticle[] = [
       },
     ],
   },
+  {
+    slug: "study-calendar",
+    title: "Use the study calendar",
+    description: "See planned courses by study period, without class times.",
+    productHref: "/calendar",
+    productLabel: "Open calendar",
+    sections: [
+      {
+        heading: "What the calendar shows",
+        body: "Calendar lists the study periods in your plan and the courses sitting in each one. It is a view of your plan over time, not a live timetable.",
+      },
+      {
+        heading: "Class times and rooms",
+        body: "Coursemap does not generate class times or room bookings. Use official ANU timetable sources when you need when and where to attend. Room finder is a separate, still-limited view.",
+      },
+      {
+        heading: "Change what appears",
+        body: "Add, move or remove courses on the plan. Calendar updates from that plan, so keep the plan current if you want the calendar to stay useful.",
+      },
+    ],
+  },
+  {
+    slug: "academic-record",
+    title: "Read your academic record",
+    description: "Review completed work, marks and units earned.",
+    productHref: "/academic",
+    productLabel: "Open academic record",
+    sections: [
+      {
+        heading: "What the overview covers",
+        body: "Academic shows completed courses, recorded mark average, units earned and failed attempts for the catalogue year on your profile. Open a course from the list to see how it sits in your plan.",
+      },
+      {
+        heading: "Keep the record aligned",
+        body: "Completed and planned work is recorded from your plan and profile. If a mark or status looks wrong, update it there or flag the data from Help rather than treating the overview as an official transcript.",
+      },
+      {
+        heading: "Degree settings still live on profile",
+        body: "Programme, major and catalogue year are edited on your profile. Academic reads those settings; it does not replace the official academic statement from ANU.",
+      },
+    ],
+  },
 ];
 
 export type HelpContactReason = {
