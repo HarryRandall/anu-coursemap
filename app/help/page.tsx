@@ -16,33 +16,14 @@ import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { helpArticles } from "@/lib/help";
 
-const topics = [
-  {
-    href: "/plan",
-    icon: Map,
-    title: "Build your plan",
-    description: "Add, move and record courses across study periods.",
-  },
-  {
-    href: "/courses",
-    icon: BookOpen,
-    title: "Understand a course",
-    description: "Search details, prerequisites and catalogue information.",
-  },
-  {
-    href: "/requirements",
-    icon: ListChecks,
-    title: "Read requirements",
-    description: "Understand completed, planned and still-needed units.",
-  },
-  {
-    href: "/profile",
-    icon: CircleUserRound,
-    title: "Account and degree",
-    description: "Update your profile, programme, major and rules year.",
-  },
-];
+const topicIcons = {
+  "build-your-plan": Map,
+  "understand-a-course": BookOpen,
+  "read-requirements": ListChecks,
+  "account-and-degree": CircleUserRound,
+} as const;
 
 const contacts = [
   {
@@ -122,12 +103,12 @@ export default function HelpPage() {
             Browse help topics
           </h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {topics.map((topic) => {
-              const Icon = topic.icon;
+            {helpArticles.map((topic) => {
+              const Icon = topicIcons[topic.slug];
               return (
                 <ButtonLink
-                  key={topic.href}
-                  href={topic.href}
+                  key={topic.slug}
+                  href={`/help/${topic.slug}`}
                   variant="secondary"
                   className="h-auto min-h-32 items-start justify-start p-4 text-left !whitespace-normal"
                 >
