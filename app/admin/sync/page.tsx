@@ -1,58 +1,120 @@
 "use client";
 
-import { ExternalLink, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Check, ExternalLink, Plus, Search, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/shell";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink, IconButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
-import { degrees } from "@/lib/catalogue";
 
-const years = [2026, 2027] as const;
+const years = Array.from({ length: 13 }, (_, index) => 2026 - index);
 
-const programmeSuggestions = [
-  ...degrees.map(({ code, name }) => ({ code, name })),
-  { code: "ALLB", name: "Bachelor of Laws (Honours)" },
-];
+type ImportTarget = "selected" | "all";
 
-type ImportTarget = "programme" | "all";
+type ProgrammeSearchResult = {
+  code: string;
+  name: string;
+  year: number;
+  career: string | null;
+  duration: number | null;
+};
 
-function normaliseProgrammeCode(value: string) {
-  const code = value.trim().toUpperCase();
-  return /^[A-Z][A-Z0-9-]{1,24}$/.test(code) ? code : null;
+type SearchState = "idle" | "loading" | "ready" | "error";
+
+function programmeSourceUrl(year: number, code: string) {
+  return `https://programsandcourses.anu.edu.au/${year}/program/${code}`;
 }
 
 export default function AdminSyncPage() {
-  const [target, setTarget] = useState<ImportTarget>("programme");
-  const [programmeQuery, setProgrammeQuery] = useState("");
-  const [year, setYear] = useState<(typeof years)[number]>(2026);
-  const [includeOptions, setIncludeOptions] = useState(true);
-  const [includePrerequisites, setIncludePrerequisites] = useState(true);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [target, setTarget] = useState<ImportTarget>("selected");
+  const [year, setYear] = useState(2026);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ProgrammeSearchResult[]>([]);
+  const [selectedProgrammes, setSelectedProgrammes] = useState<
+    ProgrammeSearchResult[]
+  >([]);
+  const [searchState, setSearchState] = useState<SearchState>("idle");
+  const [searchMessage, setSearchMessage] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const searchRequest = useRef(0);
 
-  const programmeCode = normaliseProgrammeCode(programmeQuery);
-  const selectedProgramme = programmeSuggestions.find(
-    (programme) => programme.code === programmeCode,
+  const selectedCodes = useMemo(
+    () => new Set(selectedProgrammes.map((programme) => programme.code)),
+    [selectedProgrammes],
   );
-  const matches = useMemo(() => {
-    const query = programmeQuery.trim().toLowerCase();
-    if (!query) return [];
-    return programmeSuggestions.filter(
-      ({ code, name }) =>
-        code.toLowerCase().includes(query) ||
-        name.toLowerCase().includes(query),
-    );
-  }, [programmeQuery]);
-  const canPreview = target === "all" || Boolean(programmeCode);
-  const sourceUrl = programmeCode
-    ? `https://programsandcourses.anu.edu.au/${year}/program/${programmeCode}`
-    : null;
+  const canPreview = target === "all" || selectedProgrammes.length > 0;
 
-  function chooseProgramme(code: string) {
-    setProgrammeQuery(code);
-    setIsSearchOpen(false);
+  function setCatalogueYear(value: number) {
+    setYear(value);
+    setSelectedProgrammes([]);
+    setQuery("");
+    setResults([]);
+    setSearchState("idle");
+    setSearchMessage("");
+    searchRequest.current += 1;
+    setShowPreview(false);
+  }
+
+  function searchProgrammes(value: string) {
+    setQuery(value);
+    setShowPreview(false);
+
+    const requestId = searchRequest.current + 1;
+    searchRequest.current = requestId;
+    const trimmedQuery = value.trim();
+
+    if (!trimmedQuery) {
+      setResults([]);
+      setSearchState("idle");
+      setSearchMessage("");
+      return;
+    }
+
+    setSearchState("loading");
+    setSearchMessage("");
+
+    window.setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/admin/catalogue/programmes?q=${encodeURIComponent(trimmedQuery)}&year=${year}`,
+        );
+        const payload = (await response.json()) as {
+          results?: ProgrammeSearchResult[];
+          error?: string;
+        };
+
+        if (!response.ok)
+          throw new Error(payload.error ?? "Search unavailable.");
+        if (searchRequest.current !== requestId) return;
+
+        setResults(payload.results ?? []);
+        setSearchState("ready");
+      } catch (error) {
+        if (searchRequest.current !== requestId) return;
+        setResults([]);
+        setSearchState("error");
+        setSearchMessage(
+          error instanceof Error ? error.message : "Search unavailable.",
+        );
+      }
+    }, 220);
+  }
+
+  function addProgramme(programme: ProgrammeSearchResult) {
+    if (selectedCodes.has(programme.code)) return;
+    setSelectedProgrammes((current) => [...current, programme]);
+    searchRequest.current += 1;
+    setQuery("");
+    setResults([]);
+    setSearchState("idle");
+    setShowPreview(false);
+  }
+
+  function removeProgramme(code: string) {
+    setSelectedProgrammes((current) =>
+      current.filter((programme) => programme.code !== code),
+    );
     setShowPreview(false);
   }
 
@@ -65,15 +127,15 @@ export default function AdminSyncPage() {
         </ButtonLink>
       }
     >
-      <div className="mx-auto w-full max-w-4xl">
+      <div className="mx-auto w-full max-w-5xl">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
-          Import programmes
+          Sync programmes
         </h1>
 
         <Card className="mt-7 overflow-hidden">
           <div className="border-b border-zinc-100 px-5 py-5 sm:px-7">
             <h2 className="text-lg font-semibold tracking-tight text-zinc-950">
-              Choose what to import
+              Programme scope
             </h2>
           </div>
 
@@ -81,23 +143,23 @@ export default function AdminSyncPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                aria-pressed={target === "programme"}
+                aria-pressed={target === "selected"}
                 onClick={() => {
-                  setTarget("programme");
+                  setTarget("selected");
                   setShowPreview(false);
                 }}
                 className={cn(
                   "min-h-24 rounded-xl border p-4 text-left transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
-                  target === "programme"
+                  target === "selected"
                     ? "border-brand-500 bg-brand-50/50 ring-1 ring-brand-500"
                     : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50",
                 )}
               >
                 <span className="block text-sm font-semibold text-zinc-900">
-                  One programme
+                  Select programmes
                 </span>
                 <span className="mt-1 block text-xs text-zinc-500">
-                  Search by programme code or name.
+                  Add one or more programmes from ANU.
                 </span>
               </button>
               <button
@@ -118,15 +180,15 @@ export default function AdminSyncPage() {
                   All programmes
                 </span>
                 <span className="mt-1 block text-xs text-zinc-500">
-                  Import the full ANU catalogue year.
+                  Everything published for this year.
                 </span>
               </button>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_10rem]">
-              {target === "programme" ? (
+            <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_11rem]">
+              {target === "selected" ? (
                 <div className="relative">
-                  <Field label="Programme">
+                  <Field label="Find programmes">
                     <div className="relative">
                       <Search
                         aria-hidden="true"
@@ -134,48 +196,82 @@ export default function AdminSyncPage() {
                         className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400"
                       />
                       <Input
-                        aria-label="Programme to import"
+                        aria-label="Find programmes"
                         className="pl-9"
-                        placeholder="ALLB or Bachelor of Laws"
-                        value={programmeQuery}
-                        onFocus={() => setIsSearchOpen(true)}
-                        onChange={(event) => {
-                          setProgrammeQuery(event.target.value);
-                          setIsSearchOpen(true);
-                          setShowPreview(false);
-                        }}
+                        placeholder="Search ANU programmes"
+                        value={query}
+                        onChange={(event) =>
+                          searchProgrammes(event.target.value)
+                        }
                       />
                     </div>
                   </Field>
-                  {isSearchOpen && matches.length > 0 && (
-                    <div
-                      role="listbox"
-                      aria-label="Matching programmes"
-                      className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white p-1 shadow-lg"
-                    >
-                      {matches.map((programme) => (
-                        <button
-                          key={programme.code}
-                          type="button"
-                          role="option"
-                          aria-selected={programme.code === programmeCode}
-                          onClick={() => chooseProgramme(programme.code)}
-                          className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-zinc-50 focus-visible:bg-zinc-50 focus-visible:outline-none"
+
+                  {query && (
+                    <div className="absolute z-10 mt-1 max-h-96 w-full overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-lg">
+                      {searchState === "loading" && (
+                        <p className="px-3 py-3 text-sm text-zinc-500">
+                          Searching ANU...
+                        </p>
+                      )}
+                      {searchState === "error" && (
+                        <p className="px-3 py-3 text-sm text-rose-600">
+                          {searchMessage}
+                        </p>
+                      )}
+                      {searchState === "ready" && results.length === 0 && (
+                        <p className="px-3 py-3 text-sm text-zinc-500">
+                          No programmes found.
+                        </p>
+                      )}
+                      {searchState === "ready" && results.length > 0 && (
+                        <ul
+                          aria-label="ANU programme search results"
+                          className="p-1"
                         >
-                          <span className="min-w-0 truncate text-sm text-zinc-800">
-                            {programme.name}
-                          </span>
-                          <span className="font-mono text-xs font-semibold text-zinc-500">
-                            {programme.code}
-                          </span>
-                        </button>
-                      ))}
+                          {results.map((programme) => {
+                            const isSelected = selectedCodes.has(
+                              programme.code,
+                            );
+                            return (
+                              <li key={programme.code}>
+                                <button
+                                  type="button"
+                                  disabled={isSelected}
+                                  onClick={() => addProgramme(programme)}
+                                  className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-zinc-50 focus-visible:bg-zinc-50 focus-visible:outline-none disabled:cursor-default disabled:opacity-55"
+                                >
+                                  <span className="min-w-0">
+                                    <span className="block truncate text-sm font-medium text-zinc-900">
+                                      {programme.name}
+                                    </span>
+                                    <span className="mt-0.5 block font-mono text-xs text-zinc-500">
+                                      {programme.code}
+                                    </span>
+                                  </span>
+                                  {isSelected ? (
+                                    <Check
+                                      size={16}
+                                      className="shrink-0 text-emerald-600"
+                                    />
+                                  ) : (
+                                    <Plus
+                                      size={16}
+                                      className="shrink-0 text-brand-700"
+                                    />
+                                  )}
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="flex h-10 items-center rounded-lg bg-zinc-50 px-3 text-sm text-zinc-600 ring-1 ring-zinc-200">
-                  Every ANU programme in {year}
+                <div className="flex h-10 items-center rounded-lg bg-zinc-50 px-3 text-sm text-zinc-700 ring-1 ring-zinc-200">
+                  Every ANU programme published in {year}
                 </div>
               )}
 
@@ -183,10 +279,7 @@ export default function AdminSyncPage() {
                 <Select
                   aria-label="Catalogue year"
                   value={year}
-                  onChange={(value) => {
-                    setYear(value as (typeof years)[number]);
-                    setShowPreview(false);
-                  }}
+                  onChange={(value) => setCatalogueYear(Number(value))}
                   options={years.map((item) => ({
                     value: item,
                     label: String(item),
@@ -195,60 +288,49 @@ export default function AdminSyncPage() {
               </Field>
             </div>
 
-            {target === "programme" && programmeCode && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-l-2 border-brand-500 pl-3 text-sm">
-                <span className="font-mono font-semibold text-zinc-900">
-                  {programmeCode}
-                </span>
-                <span className="text-zinc-600">
-                  {selectedProgramme?.name ?? "Programme source to verify"}
-                </span>
-                {sourceUrl && (
-                  <a
-                    href={sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800 hover:underline"
-                  >
-                    View source <ExternalLink size={13} />
-                  </a>
-                )}
+            {target === "selected" && selectedProgrammes.length > 0 && (
+              <div>
+                <p className="text-sm font-medium text-zinc-800">
+                  Selected programmes ({selectedProgrammes.length})
+                </p>
+                <ul className="mt-3 divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200">
+                  {selectedProgrammes.map((programme) => (
+                    <li
+                      key={programme.code}
+                      className="flex min-h-12 items-center gap-3 px-3"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-zinc-900">
+                          {programme.name}
+                        </span>
+                        <span className="font-mono text-xs text-zinc-500">
+                          {programme.code}
+                        </span>
+                      </span>
+                      <a
+                        href={programmeSourceUrl(year, programme.code)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hidden items-center gap-1 text-xs font-medium text-brand-700 hover:underline sm:inline-flex"
+                      >
+                        Source <ExternalLink size={13} />
+                      </a>
+                      <IconButton
+                        label={`Remove ${programme.code}`}
+                        onClick={() => removeProgramme(programme.code)}
+                      >
+                        <X size={15} />
+                      </IconButton>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            <fieldset>
-              <legend className="text-sm font-medium text-zinc-800">
-                Include
-              </legend>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 px-3 hover:bg-zinc-50">
-                  <input
-                    type="checkbox"
-                    checked={includeOptions}
-                    onChange={(event) => {
-                      setIncludeOptions(event.target.checked);
-                      setShowPreview(false);
-                    }}
-                    className="size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
-                  />
-                  <span className="text-sm text-zinc-800">Study options</span>
-                </label>
-                <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 px-3 hover:bg-zinc-50">
-                  <input
-                    type="checkbox"
-                    checked={includePrerequisites}
-                    onChange={(event) => {
-                      setIncludePrerequisites(event.target.checked);
-                      setShowPreview(false);
-                    }}
-                    className="size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
-                  />
-                  <span className="text-sm text-zinc-800">
-                    Prerequisite courses
-                  </span>
-                </label>
-              </div>
-            </fieldset>
+            <div className="rounded-xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-200">
+              Includes courses, elective lists, study options, requirements and
+              prerequisite pages.
+            </div>
 
             <div className="flex justify-end border-t border-zinc-100 pt-5">
               <Button
@@ -256,7 +338,7 @@ export default function AdminSyncPage() {
                 disabled={!canPreview}
                 onClick={() => setShowPreview(true)}
               >
-                Preview import
+                Preview sync
               </Button>
             </div>
           </div>
@@ -268,24 +350,18 @@ export default function AdminSyncPage() {
               <div>
                 <h2 className="text-base font-semibold text-zinc-950">
                   {target === "all"
-                    ? `All programmes for ${year}`
-                    : `${programmeCode} for ${year}`}
+                    ? `All programmes from ${year}`
+                    : `${selectedProgrammes.length} programme${selectedProgrammes.length === 1 ? "" : "s"} from ${year}`}
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
-                  {[
-                    "Programme requirements",
-                    includeOptions && "study options",
-                    includePrerequisites && "prerequisite courses",
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
+                  All programme content
                 </p>
               </div>
               <Button
                 disabled
                 title="The programme importer has not been connected yet."
               >
-                Import
+                Sync programmes
               </Button>
             </div>
           </Card>
