@@ -37,8 +37,29 @@ export type CatalogueCourse = {
   academicCareer?: string;
   convener?: string;
   deliverySummary?: string;
+  rich?: CatalogueCourseRichDetails;
   sourceUpdatedAt?: string;
   requisites: CatalogueCourseRequisites;
+};
+
+export type CatalogueCourseAssessment = {
+  title: string;
+  weight: number | null;
+  outcomes: number[];
+};
+
+export type CatalogueCourseRichDetails = {
+  introduction?: string;
+  college?: string;
+  areasOfInterest?: string[];
+  coTaughtCourses?: string[];
+  learningOutcomes?: string[];
+  indicativeAssessment?: CatalogueCourseAssessment[];
+  workload?: string;
+  workloadHours?: number;
+  feeBand?: number;
+  domesticFee?: number;
+  internationalFee?: number;
 };
 
 export type CatalogueAcademicPeriod = {

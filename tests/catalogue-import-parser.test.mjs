@@ -178,6 +178,47 @@ test("parses official course metadata, provenance and raw requisite facts", () =
   );
 });
 
+test("extracts official course detail sections without inventing missing fields", () => {
+  const document = parseFixture(
+    `<!doctype html>
+      <meta name="course-code" content="COMP1100">
+      <meta name="course-year" content="2026">
+      <meta name="course-name" content="Programming as Problem Solving">
+      <meta name="course-description" content="A short official description.">
+      <link rel="canonical" href="/2026/course/COMP1100">
+      <div class="degree-summary hide-mobile">
+        <span class="degree-summary__requirements-units">6 units</span>
+        <li class="degree-summary__code"><span class="degree-summary__code-heading">Offered by</span><span class="degree-summary__code-text">School of Computing</span></li>
+        <li class="degree-summary__code"><span class="degree-summary__code-heading">ANU College</span><span class="degree-summary__code-text">ANU College of Systems and Society</span></li>
+        <li class="degree-summary__code"><span class="degree-summary__code-heading">Areas of interest</span><span class="degree-summary__code-text">Computer Science, Software Engineering</span></li>
+      </div>
+      <div id="introduction"><p>First paragraph.</p><p>Second paragraph.</p></div>
+      <h2 id="learning-outcomes">Learning Outcomes</h2><ol><li>Build correct programs.</li></ol>
+      <h2 id="indicative-assessment">Indicative Assessment</h2><ol><li>Assignments (40) [LO 1,2]</li></ol>
+      <h2 id="workload">Workload</h2><p>Students should allow 130 hours.</p>
+      <h2 id="fees">Fees</h2><dl><dt>Student Contribution Band:</dt><dd>2</dd></dl>
+      <div id="indicative-fees__domestic"><td>$5520</td></div>
+      <div id="indicative-fees__international"><td>$7020</td></div>`,
+    "https://programsandcourses.anu.edu.au/2026/course/COMP1100",
+    "COMP1100",
+  );
+
+  assert.deepEqual(document.course.rich, {
+    introduction: "First paragraph. Second paragraph.",
+    college: "ANU College of Systems and Society",
+    areasOfInterest: ["Computer Science", "Software Engineering"],
+    learningOutcomes: ["Build correct programs."],
+    indicativeAssessment: [
+      { title: "Assignments", weight: 40, outcomes: [1, 2] },
+    ],
+    workload: "Students should allow 130 hours.",
+    workloadHours: 130,
+    feeBand: 2,
+    domesticFee: 5520,
+    internationalFee: 7020,
+  });
+});
+
 test("scopes offering tables to 2026 and never imports future-year rows", () => {
   const document = parseFixture(comp2100Html, comp2100Url, "COMP2100");
 

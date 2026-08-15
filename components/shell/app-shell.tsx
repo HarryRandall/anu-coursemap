@@ -12,6 +12,8 @@ export type AppShellProps = {
   title?: string;
   subtitle?: string;
   actions?: ReactNode;
+  /** Section tab links rendered in a full-width bar below the breadcrumbs. */
+  tabs?: ReactNode;
   admin?: boolean;
   /** Removes the default page padding + max width (used by the plan board). */
   fullBleed?: boolean;
@@ -20,6 +22,7 @@ export type AppShellProps = {
 export function AppShell({
   children,
   actions,
+  tabs,
   admin = false,
   fullBleed = false,
 }: AppShellProps) {
@@ -49,6 +52,13 @@ export function AppShell({
 
       <div className="min-w-0 lg:pl-64">
         <Topbar actions={actions} onOpenNav={() => setMobileOpen(true)} />
+        {tabs && (
+          <div className="border-b border-zinc-200 bg-white px-4 sm:px-6">
+            <nav aria-label="Page sections" className="flex items-center gap-1">
+              {tabs}
+            </nav>
+          </div>
+        )}
         <main
           className={cn(
             "min-h-[calc(100dvh-4rem)] w-full max-w-none min-w-0 bg-zinc-50/60",
