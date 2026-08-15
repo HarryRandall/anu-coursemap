@@ -98,7 +98,8 @@ export default function AdminSyncPage() {
   const [includeOptions, setIncludeOptions] = useState(true);
   const [includePrerequisites, setIncludePrerequisites] = useState(true);
 
-  const programme = degrees.find((item) => item.code === programmeCode) ?? degrees[0];
+  const programme =
+    degrees.find((item) => item.code === programmeCode) ?? degrees[0];
   const selectedMajors = includeOptions ? majors : [];
   const directCourses = courses.filter((course) =>
     directCourseCodes.includes(course.code),
@@ -134,13 +135,15 @@ export default function AdminSyncPage() {
       <div className="mx-auto w-full max-w-6xl">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm font-medium text-brand-700">Catalogue imports</p>
+            <p className="text-sm font-medium text-brand-700">
+              Catalogue imports
+            </p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
               Bring in a programme
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-              Start with one ANU programme, inspect exactly what it brings with it,
-              then send only the reviewed scope to the importer.
+              Start with one ANU programme, inspect exactly what it brings with
+              it, then send only the reviewed scope to the importer.
             </p>
           </div>
           <Badge tone="neutral">Importer connection in progress</Badge>
@@ -238,7 +241,8 @@ export default function AdminSyncPage() {
                           Programme and compulsory courses
                         </span>
                         <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
-                          The degree page, its requirement tree and explicitly listed courses.
+                          The degree page, its requirement tree and explicitly
+                          listed courses.
                         </span>
                       </span>
                     </label>
@@ -246,7 +250,9 @@ export default function AdminSyncPage() {
                       <input
                         type="checkbox"
                         checked={includeOptions}
-                        onChange={(event) => setIncludeOptions(event.target.checked)}
+                        onChange={(event) =>
+                          setIncludeOptions(event.target.checked)
+                        }
                         className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
                       />
                       <span>
@@ -254,7 +260,8 @@ export default function AdminSyncPage() {
                           Listed majors, minors and specialisations
                         </span>
                         <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
-                          Keep the programme's study options connected to this year.
+                          Keep the programme&apos;s study options connected to
+                          this year.
                         </span>
                       </span>
                     </label>
@@ -262,7 +269,9 @@ export default function AdminSyncPage() {
                       <input
                         type="checkbox"
                         checked={includePrerequisites}
-                        onChange={(event) => setIncludePrerequisites(event.target.checked)}
+                        onChange={(event) =>
+                          setIncludePrerequisites(event.target.checked)
+                        }
                         className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
                       />
                       <span>
@@ -270,17 +279,21 @@ export default function AdminSyncPage() {
                           Prerequisite course pages
                         </span>
                         <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
-                          Include the available prerequisite closure so the rules can be explained.
+                          Include the available prerequisite closure so the
+                          rules can be explained.
                         </span>
                       </span>
                     </label>
                   </div>
                 </div>
                 <aside className="rounded-xl bg-brand-50/70 p-4 ring-1 ring-brand-100">
-                  <p className="text-xs font-semibold text-brand-800">Why this is explicit</p>
+                  <p className="text-xs font-semibold text-brand-800">
+                    Why this is explicit
+                  </p>
                   <p className="mt-1.5 text-xs leading-5 text-brand-800/75">
-                    Subject, level and elective requirements are rules, not a fixed list of courses.
-                    They remain attached to the programme for review instead of inflating the import.
+                    Subject, level and elective requirements are rules, not a
+                    fixed list of courses. They remain attached to the programme
+                    for review instead of inflating the import.
                   </p>
                 </aside>
               </div>
@@ -294,7 +307,9 @@ export default function AdminSyncPage() {
                       <p className="font-mono text-xs font-semibold text-zinc-900">
                         {programme.code} · {year}
                       </p>
-                      <p className="mt-1 text-sm text-zinc-600">{programme.name}</p>
+                      <p className="mt-1 text-sm text-zinc-600">
+                        {programme.name}
+                      </p>
                     </div>
                     <Badge tone="neutral">Draft scope</Badge>
                   </div>
@@ -302,10 +317,16 @@ export default function AdminSyncPage() {
                     {[
                       ["Programme source", "1 official page"],
                       ["Study options", `${selectedMajors.length} structures`],
-                      ["Course pages", `${selectedCourseCodes.size} in this local preview`],
+                      [
+                        "Course pages",
+                        `${selectedCourseCodes.size} in this local preview`,
+                      ],
                       ["Rule-only requirements", "3 preserved for review"],
                     ].map(([label, value]) => (
-                      <div key={label} className="flex items-center justify-between gap-4 px-4 py-3">
+                      <div
+                        key={label}
+                        className="flex items-center justify-between gap-4 px-4 py-3"
+                      >
                         <dt className="text-zinc-500">{label}</dt>
                         <dd className="font-medium text-zinc-800">{value}</dd>
                       </div>
@@ -318,9 +339,10 @@ export default function AdminSyncPage() {
                     <p className="text-xs font-semibold">Not live yet</p>
                   </div>
                   <p className="mt-2 text-xs leading-5 text-amber-900/75">
-                    This confirms the new import contract. The server-side programme parser and
-                    executor are the next implementation slice, so no source or database write
-                    can occur from this screen yet.
+                    This confirms the new import contract. The server-side
+                    programme parser and executor are the next implementation
+                    slice, so no source or database write can occur from this
+                    screen yet.
                   </p>
                 </aside>
               </div>
@@ -376,7 +398,11 @@ export default function AdminSyncPage() {
                   <BookOpen size={16} />
                 </span>
               }
-              action={<Badge tone="neutral">{directCourses.length} direct courses</Badge>}
+              action={
+                <Badge tone="neutral">
+                  {directCourses.length} direct courses
+                </Badge>
+              }
             />
             <div className="border-t border-zinc-100 px-5 py-4">
               <div className="flex flex-wrap gap-2">
@@ -419,8 +445,9 @@ export default function AdminSyncPage() {
                 <ExternalLink size={15} className="shrink-0 text-zinc-400" />
               </a>
               <p className="mt-3 text-xs leading-5 text-zinc-500">
-                Content hashes, raw source text and unsupported rules are recorded for review,
-                rather than silently treated as verified data.
+                Content hashes, raw source text and unsupported rules are
+                recorded for review, rather than silently treated as verified
+                data.
               </p>
             </div>
           </Card>
