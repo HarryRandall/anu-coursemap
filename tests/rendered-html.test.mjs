@@ -88,11 +88,64 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(coursesHtml, /1(?:<!-- -->)? results/i);
   assert.match(coursesHtml, /Computing Project/i);
   assert.match(signInHtml, /Sign in to your plan/i);
-  assert.match(signInHtml, /name="next" value="\/plan"/i);
+  assert.match(signInHtml, /name="next" value="\/dashboard"/i);
   assert.match(signInHtml, /name="email"/i);
   assert.match(signInHtml, /name="password"/i);
   assert.match(signInHtml, /Create an account/i);
   assert.doesNotMatch(signInHtml, /magic link|Mailpit|one-time email link/i);
+});
+
+test("server-renders the complete student workspace", async () => {
+  const paths = [
+    "/dashboard",
+    "/academic",
+    "/calendar",
+    "/requirements",
+    "/roadmap",
+    "/rooms",
+    "/help",
+  ];
+  const responses = await Promise.all(paths.map((path) => render(path)));
+  responses.forEach((response) => assert.equal(response.status, 200));
+
+  const [
+    dashboardHtml,
+    academicHtml,
+    calendarHtml,
+    requirementsHtml,
+    roadmapHtml,
+    roomsHtml,
+    helpHtml,
+  ] = await Promise.all(responses.map((response) => response.text()));
+
+  assert.match(dashboardHtml, /Your degree is taking shape/i);
+  assert.match(dashboardHtml, /Plan health/i);
+  assert.match(academicHtml, /Your academic overview/i);
+  assert.match(academicHtml, /recorded mark average/i);
+  assert.match(calendarHtml, /Your study calendar/i);
+  assert.match(calendarHtml, /without inventing class times/i);
+  assert.doesNotMatch(
+    calendarHtml,
+    /Hancock Lab|Copland G31|Marie Reay|Kambri T1|Birch 1\.14/i,
+  );
+  assert.match(requirementsHtml, /Rule group coverage/i);
+  assert.match(requirementsHtml, /possible matches, not a final allocation/i);
+  assert.match(roadmapHtml, /Build the useful things first/i);
+  assert.match(roomsHtml, /Find the right room/i);
+  assert.match(helpHtml, /How can we help/i);
+  assert.match(helpHtml, /Need official advice/i);
+});
+
+test("redirects legacy student routes to their replacements", async () => {
+  const [historyResponse, timetableResponse] = await Promise.all([
+    fetch(`${origin}/history`, { redirect: "manual" }),
+    fetch(`${origin}/timetable`, { redirect: "manual" }),
+  ]);
+
+  assert.equal(historyResponse.status, 307);
+  assert.equal(historyResponse.headers.get("location"), "/academic");
+  assert.equal(timetableResponse.status, 307);
+  assert.equal(timetableResponse.headers.get("location"), "/calendar");
 });
 
 test("fails closed for malformed auth handlers and cross-origin logout", async () => {
