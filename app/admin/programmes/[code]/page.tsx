@@ -5,7 +5,6 @@ import {
   BookOpen,
   ExternalLink,
   FileText,
-  GraduationCap,
   Layers3,
   ListTree,
 } from "lucide-react";

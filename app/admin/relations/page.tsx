@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ArrowRight,
   GitBranch,
@@ -47,8 +46,8 @@ function groupSummary(group: string) {
 export default function AdminRelationsPage() {
   const [query, setQuery] = useState("");
   const [relationType, setRelationType] = useState("All rules");
-  const [reviewState, setReviewState] = useState("Review");
-  const [selected, setSelected] = useState<Relation | null>(relations[7]);
+  const [reviewState, setReviewState] = useState("All states");
+  const [selected, setSelected] = useState<Relation | null>(relations[1]);
   const [graphCourse, setGraphCourse] = useState<string | null>(null);
 
   const types = [...new Set(relations.map((item) => item.relation))];
@@ -125,8 +124,8 @@ export default function AdminRelationsPage() {
                 value={reviewState}
                 onChange={setReviewState}
                 options={[
-                  { value: "Review", label: "Needs review" },
                   { value: "All states", label: "All states" },
+                  { value: "Review", label: "Needs review" },
                   { value: "Automatic", label: "Automatic" },
                   { value: "Verified", label: "Verified" },
                 ]}
@@ -268,6 +267,7 @@ export default function AdminRelationsPage() {
                         </ButtonLink>
                         <Button
                           size="sm"
+                          aria-label={`Open prerequisite graph for ${selected.source}`}
                           onClick={() => setGraphCourse(selected.source)}
                         >
                           <Network size={14} /> Graph
