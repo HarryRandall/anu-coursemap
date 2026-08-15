@@ -196,10 +196,6 @@ export function termById(termId: string): Term {
   return scheduledTerms.find((term) => term.id === termId) ?? scheduledTerms[0];
 }
 
-export function uniqueTermYears() {
-  return [...new Set(scheduledTerms.map((term) => term.year))];
-}
-
 export function resolveTermId(
   requested: string | null | undefined,
   plannedTermIds: string[],
@@ -208,13 +204,6 @@ export function resolveTermId(
     return requested;
   }
   return plannedTermIds[0] ?? scheduledTerms[0].id;
-}
-
-export function termIdFromParts(year: number, shortName: string) {
-  const match = scheduledTerms.find(
-    (term) => term.year === year && term.shortName === shortName,
-  );
-  return match?.id ?? scheduledTerms[0].id;
 }
 
 /** Approximate teaching window used to page the weekly view. */

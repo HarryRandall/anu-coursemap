@@ -16,7 +16,7 @@ import { WeekGrid } from "@/components/calendar/week-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Select } from "@/components/ui/field";
+import { Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 import {
   addDays,
@@ -28,9 +28,7 @@ import {
   sessionsForAttempts,
   startOfWeek,
   termById,
-  termIdFromParts,
   termWindow,
-  uniqueTermYears,
 } from "@/lib/calendar";
 
 export function StudyCalendar({
@@ -132,53 +130,22 @@ function StudyCalendarBoard({
 
   return (
     <div className="mx-auto max-w-[92rem]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold text-brand-600">
-            Weekly study timetable
-          </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-900">
-            Your study calendar
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-zinc-500">
-            Filter by year and semester, then select a class to inspect its
-            illustrative lecture, tutorial or laboratory time.
-          </p>
-        </div>
-        <ButtonLink href="/plan" variant="secondary" size="sm">
-          Edit plan
-        </ButtonLink>
-      </div>
-
-      <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-wrap items-end gap-3">
-          <Field label="Year" className="w-[8.5rem]">
+      <h1 className="sr-only">Calendar</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="w-[14.5rem]">
             <Select
-              aria-label="Calendar year"
-              value={selectedTerm.year}
-              onChange={(year) =>
-                onTermChange(termIdFromParts(year, selectedTerm.shortName))
-              }
-              options={uniqueTermYears().map((year) => ({
-                value: year,
-                label: String(year),
+              aria-label="Study period"
+              value={selectedTerm.id}
+              onChange={onTermChange}
+              className="font-semibold"
+              options={scheduledTerms.map((term) => ({
+                value: term.id,
+                label: `${term.name} ${term.year}`,
               }))}
             />
-          </Field>
-          <Field label="Semester" className="w-[12.5rem]">
-            <Select
-              aria-label="Semester"
-              value={selectedTerm.shortName}
-              onChange={(shortName) =>
-                onTermChange(termIdFromParts(selectedTerm.year, shortName))
-              }
-              options={[
-                { value: "S1", label: "Semester 1" },
-                { value: "S2", label: "Semester 2" },
-              ]}
-            />
-          </Field>
-          <Badge tone="brand" className="mb-1.5">
+          </div>
+          <Badge tone="brand">
             {termAttempts.length}{" "}
             {termAttempts.length === 1 ? "course" : "courses"}
           </Badge>

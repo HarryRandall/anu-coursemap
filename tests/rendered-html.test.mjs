@@ -122,8 +122,8 @@ test("server-renders the complete student workspace", async () => {
   assert.match(dashboardHtml, /Plan health/i);
   assert.match(academicHtml, /Your academic overview/i);
   assert.match(academicHtml, /recorded mark average/i);
-  assert.match(calendarHtml, /Your study calendar/i);
-  assert.match(calendarHtml, /illustrative lecture, tutorial or laboratory/i);
+  assert.match(calendarHtml, /Study period/i);
+  assert.match(calendarHtml, /Semester 1 2026/i);
   assert.match(calendarHtml, /Weekly timetable/i);
   assert.match(calendarHtml, /COMP1100/i);
   assert.match(calendarHtml, /Lecture/i);

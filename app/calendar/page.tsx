@@ -12,7 +12,7 @@ export default async function CalendarPage({
     : params.term;
 
   return (
-    <AppShell title="Calendar" subtitle="Your weekly study timetable">
+    <AppShell title="Calendar">
       <StudyCalendar requestedTermId={requestedTermId} />
     </AppShell>
   );
