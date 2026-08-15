@@ -41,15 +41,13 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
       <table className={tableClasses("table-fixed")}>
         <colgroup>
           <col />
-          <col className="w-[7.5rem]" />
-          <col className="w-[3.75rem]" />
+          <col className="w-[18rem]" />
         </colgroup>
         <thead className={tableHeadClasses()}>
           <tr>
             <th className={tableHeaderCellClasses()}>Course</th>
-            <th className={tableHeaderCellClasses()}>Available</th>
             <th className={tableHeaderCellClasses()}>
-              <span className="sr-only">Actions</span>
+              <span className="block text-right">Available</span>
             </th>
           </tr>
         </thead>
@@ -57,7 +55,7 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
           {courses.length === 0 ? (
             <tr className={tableRowClasses()}>
               <td
-                colSpan={3}
+                colSpan={2}
                 className={tableCellClasses(
                   "py-12 text-center font-normal whitespace-normal text-zinc-500",
                 )}
@@ -78,13 +76,15 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
                   <div className="flex items-center gap-2.5 px-4 py-2.5">
                     <Link
                       href={href}
-                      className="shrink-0 rounded-lg focus-visible:ring-2 focus-visible:ring-brand-400"
+                      className="shrink-0 rounded-md focus-visible:ring-2 focus-visible:ring-brand-400"
                       aria-label={`View ${course.code}`}
                     >
                       <CourseToken
                         code={course.code}
                         accent={course.accent}
                         size="sm"
+                        shape="square"
+                        className="ring-1 ring-black/5 ring-inset"
                       />
                     </Link>
                     <span className="min-w-0 flex-1">
@@ -104,15 +104,15 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
                   </div>
                 </td>
                 <td className={tableCellClasses("p-0")}>
-                  <Link
-                    href={href}
-                    className="flex min-h-12 items-center px-4 py-2.5 text-[13px] text-zinc-700"
-                  >
-                    {availability}
-                  </Link>
-                </td>
-                <td className={tableCellClasses("p-0")}>
-                  <CourseRowActions course={course} />
+                  <div className="flex min-h-12 items-center justify-end gap-2 pr-3 pl-4">
+                    <Link
+                      href={href}
+                      className="text-[13px] text-zinc-500 hover:text-zinc-800"
+                    >
+                      {availability}
+                    </Link>
+                    <CourseRowActions course={course} />
+                  </div>
                 </td>
               </tr>
             );
