@@ -73,10 +73,10 @@ const adminNav: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/courses", label: "Courses", icon: Table2 },
   { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
-  { href: "/admin/relations", label: "Relations", icon: GitBranch },
+  { href: "/admin/relations", label: "Rule review", icon: GitBranch },
   { href: "/admin/users", label: "Users", icon: UsersRound },
   { href: "/admin/roles", label: "Roles", icon: KeyRound },
-  { href: "/admin/sync", label: "Sync", icon: RefreshCw },
+  { href: "/admin/sync", label: "Imports", icon: RefreshCw },
 ];
 
 function Brand() {

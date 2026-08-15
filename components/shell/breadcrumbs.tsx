@@ -22,10 +22,10 @@ const labels: Record<string, string> = {
   profile: "Profile",
   admin: "Admin",
   programmes: "Programmes",
-  relations: "Relations",
+  relations: "Rule review",
   users: "Users",
   roles: "Roles",
-  sync: "Sync",
+  sync: "Imports",
 };
 
 function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
