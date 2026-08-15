@@ -10,59 +10,73 @@ export function TermLoadChart({
   terms: TermUnits[];
   currentTermId?: string;
 }) {
+  const yMax = Math.max(
+    STANDARD_TERM_UNITS * 1.25,
+    ...terms.map((term) => term.units * 1.1),
+  );
+  const standardPct = (STANDARD_TERM_UNITS / yMax) * 100;
+
   return (
     <Card className="flex h-full flex-col p-5">
       <div>
         <h2 className="text-sm font-semibold text-zinc-900">Semester load</h2>
         <p className="mt-0.5 text-[11px] text-zinc-500">
-          A full bar is the standard {STANDARD_TERM_UNITS} unit load
+          Dashed line marks the standard {STANDARD_TERM_UNITS}u load
         </p>
       </div>
-      <ul className="mt-4 space-y-3">
-        {terms.map((term) => {
-          const overloaded = term.units > STANDARD_TERM_UNITS;
-          const current = term.id === currentTermId;
-          return (
-            <li
-              key={term.id}
-              className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.5rem] items-center gap-3"
-            >
-              <span
-                className={cn(
-                  "text-[11px] font-medium",
-                  current ? "text-zinc-900" : "text-zinc-500",
-                )}
+      <div className="relative mt-4 flex-1">
+        <div
+          aria-hidden="true"
+          className="absolute right-0 left-0 border-t border-dashed border-zinc-300"
+          style={{ bottom: `${standardPct}%` }}
+        >
+          <span className="absolute -top-2 right-0 bg-white pl-1 text-[9px] font-medium text-zinc-400">
+            {STANDARD_TERM_UNITS}u
+          </span>
+        </div>
+        <div className="flex h-full min-h-32 items-end gap-2">
+          {terms.map((term) => {
+            const overloaded = term.units > STANDARD_TERM_UNITS;
+            const current = term.id === currentTermId;
+            return (
+              <div
+                key={term.id}
+                title={`${term.label}: ${term.units} units`}
+                className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
               >
-                {term.label}
-              </span>
-              <span
-                aria-hidden="true"
-                className="flex h-2 overflow-hidden rounded-full bg-zinc-100"
-              >
+                <p className="text-[10px] font-semibold text-zinc-600 tabular-nums">
+                  {term.units}
+                </p>
                 <span
                   className={cn(
-                    "rounded-full",
+                    "w-full max-w-8 rounded-t-md",
                     overloaded && "bg-amber-500",
                     !overloaded && current && "bg-brand-600",
-                    !overloaded && !current && "bg-brand-400",
+                    !overloaded && !current && "bg-brand-300",
                   )}
                   style={{
-                    width: `${Math.min(100, (term.units / STANDARD_TERM_UNITS) * 100)}%`,
+                    height: `${Math.max((term.units / yMax) * 100, term.units > 0 ? 4 : 0)}%`,
                   }}
+                  aria-label={`${term.label}: ${term.units} units`}
                 />
-              </span>
-              <span className="text-right text-[11px] text-zinc-600 tabular-nums">
-                {term.units}u
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      {terms.some((term) => term.units > STANDARD_TERM_UNITS) && (
-        <p className="mt-auto pt-4 text-[11px] text-amber-700">
-          Amber marks a study period above the standard load.
-        </p>
-      )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mt-1 flex gap-2">
+        {terms.map((term) => (
+          <p
+            key={term.id}
+            className={cn(
+              "min-w-0 flex-1 truncate text-center text-[10px] font-medium",
+              term.id === currentTermId ? "text-zinc-700" : "text-zinc-400",
+            )}
+          >
+            {term.label}
+          </p>
+        ))}
+      </div>
     </Card>
   );
 }

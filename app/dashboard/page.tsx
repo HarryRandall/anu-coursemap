@@ -2,27 +2,41 @@
 
 import { CircleAlert } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
-import { CourseMixChart } from "@/components/dashboard/course-mix-chart";
+import { AttentionCard } from "@/components/dashboard/attention-card";
 import { CourseProgressChart } from "@/components/dashboard/course-progress-chart";
-import { MetricCards } from "@/components/dashboard/metric-cards";
 import { MonthCalendar } from "@/components/dashboard/month-calendar";
+import { StatCards } from "@/components/dashboard/stat-cards";
 import { TermLoadChart } from "@/components/dashboard/term-load-chart";
+import { UnitsTrendChart } from "@/components/dashboard/units-trend-chart";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
-import { degreeByCode, majorByCode } from "@/lib/catalogue";
+import { degreeByCode, majorByCode, terms } from "@/lib/catalogue";
+import { cumulativeUnitsByTerm, unitsByTerm } from "@/lib/dashboard-series";
 import {
-  coursesByLevel,
-  cumulativeUnitsByTerm,
-  markSeries,
-  unitsByTerm,
-} from "@/lib/dashboard-series";
-import { STANDARD_TERM_UNITS, degreeUnitProgress } from "@/lib/planner";
+  STANDARD_TERM_UNITS,
+  degreeUnitProgress,
+  missingPrereqs,
+} from "@/lib/planner";
 import { currentTermLoad } from "@/lib/study-calendar";
 import {
   planIssues,
   recordedAverage,
   requirementProgress,
 } from "@/lib/student-progress";
+import type { Tone } from "@/lib/ui";
+
+function gradeBand(average: number): { label: string; tone: Tone } {
+  if (average >= 80) return { label: "High Distinction", tone: "success" };
+  if (average >= 70) return { label: "Distinction", tone: "success" };
+  if (average >= 60) return { label: "Credit", tone: "brand" };
+  if (average >= 50) return { label: "Pass", tone: "neutral" };
+  return { label: "Below pass", tone: "danger" };
+}
+
+function termShortLabel(termId: string) {
+  const term = terms.find((item) => item.id === termId);
+  return term ? `${term.shortName} ${term.year}` : "Unscheduled";
+}
 
 export default function DashboardPage() {
   const { state } = useCoursemap();
@@ -31,16 +45,24 @@ export default function DashboardPage() {
   const progress = degreeUnitProgress(state.attempts, degree.units);
   const load = currentTermLoad(state.attempts);
   const average = recordedAverage(state.attempts);
-  const issues = planIssues(state.attempts);
   const cumulative = cumulativeUnitsByTerm(state.attempts);
   const perTerm = unitsByTerm(state.attempts);
-  const marks = markSeries(state.attempts);
-  const mix = coursesByLevel(state.attempts);
   const groups = requirementProgress(state.attempts, major.courseCodes);
+  const issues = planIssues(state.attempts).map((issue) => ({
+    id: issue.attempt.id,
+    code: issue.course.code,
+    name: issue.course.name,
+    termLabel: termShortLabel(issue.attempt.termId),
+    status: issue.status,
+    note:
+      issue.status === "blocked"
+        ? `Needs ${missingPrereqs(issue.attempt, state.attempts).join(" + ")} completed or scheduled earlier`
+        : "Convener permission is required",
+  }));
 
   return (
     <AppShell title="Home" subtitle="Your degree at a glance">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-zinc-900">
@@ -63,31 +85,23 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <MetricCards
-          metrics={[
+        <StatCards
+          stats={[
             {
               id: "complete",
               label: "Degree complete",
               value: `${progress.percent}%`,
-              hint: `${progress.completed} of ${progress.total} units earned`,
-              bars: cumulative.map((term) => ({
-                key: term.id,
-                value: term.completed,
-                planned: term.planned,
-                caption: `${term.label} · ${term.completed}u earned, ${term.units}u mapped`,
-              })),
+              sub: `${progress.completed} of ${progress.total} units earned`,
+              bar: {
+                completedPct: (progress.completed / progress.total) * 100,
+                plannedPct: (progress.planned / progress.total) * 100,
+              },
             },
             {
               id: "earned",
               label: "Units earned",
               value: String(progress.completed),
-              hint: `${progress.planned} more mapped in the plan`,
-              bars: perTerm.map((term) => ({
-                key: term.id,
-                value: term.completed,
-                planned: term.planned,
-                caption: `${term.label} · ${term.completed}u earned, ${term.planned}u planned`,
-              })),
+              sub: `${progress.planned}u planned · ${progress.remaining}u not yet mapped`,
             },
             {
               id: "load",
@@ -95,42 +109,30 @@ export default function DashboardPage() {
                 ? `${load.term.shortName} ${load.term.year} load`
                 : "Current load",
               value: `${load.units}u`,
-              hint: `${load.courses} ${load.courses === 1 ? "course" : "courses"} this study period`,
-              max: STANDARD_TERM_UNITS,
-              bars: perTerm.map((term) => ({
-                key: term.id,
-                value: term.units,
-                muted: term.id !== load.term?.id,
-                caption: `${term.label} · ${term.units}u`,
-              })),
+              sub: `${load.courses} ${load.courses === 1 ? "course" : "courses"} · standard is ${STANDARD_TERM_UNITS}u`,
             },
             {
               id: "average",
-              label: "Recorded average",
+              label: "Average mark",
               value: average ? String(average) : "Not set",
-              hint: average
-                ? "Weighted by units in Coursemap"
-                : "No marks recorded yet",
-              max: 100,
-              bars: marks.map((point) => ({
-                key: point.label,
-                value: point.value,
-                caption: `${point.label} · ${point.value}`,
-              })),
-              emptyLabel: "Add marks to see your results",
+              sub: average
+                ? "Weighted by units, from your marks"
+                : "Add marks to see your average",
+              badge: average ? gradeBand(average) : undefined,
             },
           ]}
         />
 
-        <section className="grid items-stretch gap-4 lg:grid-cols-2">
+        <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <UnitsTrendChart points={cumulative} degreeUnits={progress.total} />
+          <MonthCalendar attempts={state.attempts} />
+        </div>
+
+        <div className="grid items-stretch gap-4 lg:grid-cols-3">
           <CourseProgressChart progressByGroup={groups} />
           <TermLoadChart terms={perTerm} currentTermId={load.term?.id} />
-        </section>
-
-        <section className="grid items-stretch gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-          <MonthCalendar attempts={state.attempts} />
-          <CourseMixChart levels={mix} />
-        </section>
+          <AttentionCard items={issues} />
+        </div>
       </div>
     </AppShell>
   );

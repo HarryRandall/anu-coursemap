@@ -2,8 +2,6 @@ import { courseByCode, terms, type Attempt } from "@/lib/catalogue";
 
 const scheduledTerms = terms.filter((term) => term.id !== "unscheduled");
 
-export type SeriesPoint = { label: string; value: number };
-
 function termLabel(year: number, shortName: string) {
   return `${shortName} ${String(year).slice(2)}`;
 }
@@ -65,40 +63,4 @@ export function cumulativeUnitsByTerm(attempts: Attempt[]): TermUnits[] {
       units: completed + planned,
     };
   });
-}
-
-export function markSeries(attempts: Attempt[]): SeriesPoint[] {
-  return scheduledTerms.flatMap((term) =>
-    attempts
-      .filter(
-        (attempt) => attempt.termId === term.id && attempt.mark !== undefined,
-      )
-      .map((attempt) => ({
-        label: `${attempt.courseCode} · ${termLabel(term.year, term.shortName)}`,
-        value: attempt.mark ?? 0,
-      })),
-  );
-}
-
-export function coursesByLevel(attempts: Attempt[]) {
-  const levels = [1000, 2000, 3000] as const;
-  const counts = { 1000: 0, 2000: 0, 3000: 0 };
-  attempts
-    .filter((attempt) => attempt.status !== "failed")
-    .forEach((attempt) => {
-      const course = courseByCode(attempt.courseCode);
-      if (!course) return;
-      if (
-        course.level === 1000 ||
-        course.level === 2000 ||
-        course.level === 3000
-      ) {
-        counts[course.level] += 1;
-      }
-    });
-  return levels.map((level) => ({
-    level,
-    label: `Level ${level / 1000}`,
-    count: counts[level],
-  }));
 }

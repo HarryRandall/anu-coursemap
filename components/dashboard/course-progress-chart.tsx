@@ -1,7 +1,17 @@
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { requirementGroups } from "@/lib/catalogue";
 import type { RequirementProgress } from "@/lib/student-progress";
+import type { Tone } from "@/lib/ui";
+
+function groupTag(progress: RequirementProgress, total: number) {
+  const covered = progress.completedUnits + progress.plannedUnits;
+  if (progress.completedUnits >= total)
+    return { label: "Done", tone: "success" as Tone };
+  if (covered >= total) return { label: "Planned", tone: "brand" as Tone };
+  return { label: `${total - covered}u to plan`, tone: "warning" as Tone };
+}
 
 export function CourseProgressChart({
   progressByGroup,
@@ -26,19 +36,23 @@ export function CourseProgressChart({
           Rules
         </Link>
       </div>
-      <ul className="mt-4 space-y-3">
+      <ul className="mt-4 space-y-3.5">
         {requirementGroups.map((group) => {
           const progress = progressByGroup[group.id];
           const covered = progress.completedUnits + progress.plannedUnits;
+          const tag = groupTag(progress, group.total);
           return (
             <li key={group.id}>
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="truncate text-xs font-medium text-zinc-700">
+              <div className="flex items-center justify-between gap-3">
+                <span className="min-w-0 truncate text-xs font-medium text-zinc-700">
                   {group.name}
+                  <span className="ml-1.5 text-[11px] font-normal text-zinc-400 tabular-nums">
+                    {covered}/{group.total}u
+                  </span>
                 </span>
-                <span className="shrink-0 text-[11px] text-zinc-500 tabular-nums">
-                  {covered} of {group.total}u
-                </span>
+                <Badge tone={tag.tone} className="shrink-0 px-2 py-0.5">
+                  {tag.label}
+                </Badge>
               </div>
               <span
                 aria-hidden="true"
