@@ -1548,8 +1548,8 @@ export type Database = {
         Returns: boolean
       }
       set_user_role: {
-        Args: { p_assigned: boolean; p_role_key: string; p_user_id: string }
-        Returns: boolean
+        Args: { p_role_key: string; p_user_id: string }
+        Returns: string
       }
     }
     Enums: {

@@ -45,12 +45,16 @@ select users.id, roles.id, users.id
 from auth.users as users
 cross join private.app_roles as roles
 where users.email = 'developer@example.test'
-  and roles.key = 'catalogue_admin'
-on conflict (user_id, role_id) do nothing;
+  and roles.key = 'admin'
+on conflict (user_id) do update
+set
+  role_id = excluded.role_id,
+  granted_by = excluded.granted_by,
+  granted_at = now();
 ```
 
-This is the only bootstrap operation. Afterwards, a catalogue administrator can
-open `/admin/users` to assign database-managed roles to other Coursemap users.
-Effective permissions are attached to roles in reviewed migrations and remain
-read-only in the browser. The database prevents administrators from removing
-their own administrator role or removing the final administrator.
+Every new account receives the `User` role. This is the only bootstrap
+operation. Afterwards, an admin can open `/admin/users` and switch an account
+between `User` and `Admin`. Role permissions are database-managed and editable
+from `/admin/roles`. The database prevents admins from changing their own role
+or removing the final admin.

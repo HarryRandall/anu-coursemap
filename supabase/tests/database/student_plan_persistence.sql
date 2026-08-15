@@ -37,13 +37,6 @@ insert into auth.users (
     now(), now()
   );
 
-insert into private.user_roles (user_id, role_id, granted_by)
-select
-  '60000000-0000-4000-8000-000000000001', roles.id,
-  '60000000-0000-4000-8000-000000000001'
-from private.app_roles as roles
-where roles.key = 'catalogue_previewer';
-
 insert into public.catalogue_sources (name, kind, base_url)
 values ('Plan RPC test source', 'test', 'https://plan-rpc.example.test');
 

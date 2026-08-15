@@ -93,7 +93,7 @@ export function FilterBar({
             type="search"
             value={query}
             placeholder={searchPlaceholder}
-            className="h-11 pl-9"
+            className="h-10 pl-9"
             onChange={(event) => {
               const value = event.target.value;
               setQuery(value);
@@ -106,7 +106,7 @@ export function FilterBar({
           <Button
             size="md"
             variant="secondary"
-            className="h-11"
+            className="h-10"
             aria-expanded={filterOpen}
             onClick={() => setFilterOpen((open) => !open)}
           >
