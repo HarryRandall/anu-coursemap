@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import type { Attempt } from "@/lib/catalogue";
 import { courseByCode } from "@/lib/catalogue";
 import { cn } from "@/lib/cn";
@@ -39,7 +39,7 @@ export function CourseSidebar({
 }) {
   if (collapsed) {
     return (
-      <ul className="flex flex-col items-center gap-2 px-2 py-3">
+      <ul className="flex flex-col items-center gap-1.5 px-3 pt-16 pb-4">
         {attempts.map((attempt) => {
           const course = courseByCode(attempt.courseCode);
           if (!course) return null;
@@ -50,11 +50,12 @@ export function CourseSidebar({
               <button
                 type="button"
                 aria-pressed={active}
+                title={course.code}
                 aria-label={`${course.code}${hidden ? ", hidden on calendar" : ""}`}
                 onClick={() => onHighlightCourse(course.code)}
                 className={cn(
-                  "rounded-xl p-0.5 ring-1 ring-transparent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
-                  active && "ring-zinc-900",
+                  "grid size-11 place-items-center rounded-xl ring-1 ring-transparent transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500",
+                  active && "bg-zinc-100 ring-zinc-300",
                   hidden && "opacity-40",
                 )}
               >
@@ -72,91 +73,85 @@ export function CourseSidebar({
   }
 
   return (
-    <ul className="flex flex-col gap-2 p-3">
-      {attempts.map((attempt) => {
-        const course = courseByCode(attempt.courseCode);
-        if (!course) return null;
-        const courseSessions = sessions.filter(
-          (session) => session.courseCode === course.code,
-        );
-        const hidden = hiddenCodes.has(course.code);
-        const active = highlightedCourseCode === course.code;
-        const status = effectiveStatus(attempt, allAttempts);
-        const forceOpen =
-          active ||
-          courseSessions.some((session) => session.id === selectedSessionId);
+    <div className="flex h-full flex-col">
+      <div className="flex h-14 items-center gap-2 border-b border-zinc-200/70 px-4">
+        <h2 className="text-[11px] font-semibold tracking-[0.08em] text-zinc-400 uppercase">
+          Courses
+        </h2>
+        <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[11px] font-semibold text-zinc-600 tabular-nums">
+          {attempts.length}
+        </span>
+      </div>
 
-        return (
-          <li key={attempt.id}>
-            <article
-              className={cn(
-                "overflow-hidden rounded-2xl ring-1 ring-zinc-200/80 transition",
-                active && "ring-2 ring-zinc-900",
-                hidden && "opacity-60",
-              )}
-            >
-              <div className="flex items-start gap-2 p-3">
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => onHighlightCourse(course.code)}
-                  className="flex min-h-11 min-w-0 flex-1 items-start gap-2.5 rounded-xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
-                >
-                  <CourseToken
-                    code={course.code}
-                    accent={course.accent}
-                    size="sm"
-                  />
-                  <span className="min-w-0">
-                    <span className="block font-mono text-[12px] font-bold text-zinc-900">
-                      {course.code}
-                    </span>
-                    <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
-                      {course.name}
-                    </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <span
-                        className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
-                          toneClasses[statusTone[status]],
-                        )}
-                      >
-                        {statusLabel(status)}
-                      </span>
-                      <span className="text-[10px] text-zinc-400">
-                        {courseSessions.length}{" "}
-                        {courseSessions.length === 1 ? "class" : "classes"}
-                      </span>
-                    </span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={!hidden}
-                  aria-label={
-                    hidden
-                      ? `Show ${course.code} on the calendar`
-                      : `Hide ${course.code} on the calendar`
-                  }
-                  onClick={() => onToggleVisibility(course.code)}
-                  className="grid size-11 shrink-0 place-items-center rounded-xl text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
-                >
-                  {hidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+      <ul className="flex-1 space-y-1 p-2">
+        {attempts.map((attempt) => {
+          const course = courseByCode(attempt.courseCode);
+          if (!course) return null;
+          const courseSessions = sessions.filter(
+            (session) => session.courseCode === course.code,
+          );
+          const hidden = hiddenCodes.has(course.code);
+          const active = highlightedCourseCode === course.code;
+          const status = effectiveStatus(attempt, allAttempts);
 
-              <details
-                className="group border-t border-zinc-100"
-                {...(forceOpen ? { open: true } : {})}
+          return (
+            <li key={attempt.id}>
+              <div
+                className={cn(
+                  "rounded-xl ring-1 transition",
+                  active
+                    ? "bg-zinc-50 ring-zinc-300"
+                    : "ring-transparent hover:bg-zinc-50/70",
+                  hidden && "opacity-55",
+                )}
               >
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-[11px] font-semibold text-zinc-500 select-none [&::-webkit-details-marker]:hidden">
-                  Classes this week
-                  <ChevronDown
-                    size={14}
-                    className="transition group-open:rotate-180"
-                  />
-                </summary>
-                <ul className="space-y-1 px-2 pb-2">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onHighlightCourse(course.code)}
+                    className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 rounded-xl px-2 py-2 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500"
+                  >
+                    <CourseToken
+                      code={course.code}
+                      accent={course.accent}
+                      size="sm"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-[12px] font-semibold text-zinc-900">
+                          {course.code}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium ring-1 ring-inset",
+                            toneClasses[statusTone[status]],
+                          )}
+                        >
+                          {statusLabel(status)}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
+                        {course.name}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={!hidden}
+                    aria-label={
+                      hidden
+                        ? `Show ${course.code} on the calendar`
+                        : `Hide ${course.code} on the calendar`
+                    }
+                    onClick={() => onToggleVisibility(course.code)}
+                    className="mr-1 grid size-9 shrink-0 place-items-center rounded-lg text-zinc-400 transition hover:bg-white hover:text-zinc-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500"
+                  >
+                    {hidden ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+
+                <ul className="space-y-px px-2 pb-2">
                   {courseSessions.map((session) => {
                     const selected = session.id === selectedSessionId;
                     const surface = sessionSurface[session.accent];
@@ -167,39 +162,33 @@ export function CourseSidebar({
                           aria-pressed={selected}
                           onClick={() => onSelectSession(session.id)}
                           className={cn(
-                            "flex min-h-11 w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
-                            selected && "bg-zinc-100 ring-1 ring-zinc-900/10",
+                            "flex w-full items-center gap-2 rounded-lg py-1.5 pr-2 pl-1 text-left transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500",
+                            selected && "bg-white ring-1 ring-zinc-300",
                           )}
                         >
                           <span
                             className={cn(
-                              "h-8 w-1 shrink-0 rounded-full",
+                              "h-6 w-[3px] shrink-0 rounded-full",
                               surface.bar,
+                              !selected && "opacity-60",
                             )}
                           />
-                          <span className="min-w-0 flex-1">
-                            <span className="block text-[12px] font-semibold text-zinc-800">
-                              {sessionKindLabel[session.kind]}
-                            </span>
-                            <span className="block text-[11px] text-zinc-500">
-                              {formatSessionTime(session)}
-                            </span>
+                          <span className="w-16 shrink-0 text-[11px] font-medium text-zinc-700">
+                            {sessionKindLabel[session.kind]}
                           </span>
-                          {selected && (
-                            <span className="text-[10px] font-semibold text-zinc-700">
-                              Selected
-                            </span>
-                          )}
+                          <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-500">
+                            {formatSessionTime(session)}
+                          </span>
                         </button>
                       </li>
                     );
                   })}
                 </ul>
-              </details>
-            </article>
-          </li>
-        );
-      })}
-    </ul>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
