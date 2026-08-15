@@ -13,7 +13,6 @@ import { useCoursemap } from "@/app/providers";
 import { CourseSidebar } from "@/components/calendar/course-sidebar";
 import { SessionDrawer } from "@/components/calendar/session-drawer";
 import { WeekGrid } from "@/components/calendar/week-grid";
-import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/field";
@@ -77,7 +76,7 @@ function StudyCalendarBoard({
   const [weekStart, setWeekStart] = useState(() =>
     startOfWeek(termWindow(selectedTerm).start),
   );
-  const [coursesOpen, setCoursesOpen] = useState(true);
+  const [coursesOpen, setCoursesOpen] = useState(false);
   const [hiddenCodes, setHiddenCodes] = useState<Set<string>>(new Set());
   const [highlightedCourseCode, setHighlightedCourseCode] = useState<
     string | null
@@ -131,59 +130,17 @@ function StudyCalendarBoard({
   return (
     <div className="mx-auto max-w-[92rem]">
       <h1 className="sr-only">Calendar</h1>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="w-[14.5rem]">
-            <Select
-              aria-label="Study period"
-              value={selectedTerm.id}
-              onChange={onTermChange}
-              className="font-semibold"
-              options={scheduledTerms.map((term) => ({
-                value: term.id,
-                label: `${term.name} ${term.year}`,
-              }))}
-            />
-          </div>
-          <Badge tone="brand">
-            {termAttempts.length}{" "}
-            {termAttempts.length === 1 ? "course" : "courses"}
-          </Badge>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <IconButton
-            label="Previous week"
-            className="size-11"
-            disabled={!canGoBack}
-            onClick={() =>
-              setWeekStart(
-                clampWeekToTerm(addDays(weekStart, -7), selectedTerm),
-              )
-            }
-          >
-            <ChevronLeft size={18} />
-          </IconButton>
-          <p className="min-w-[10.5rem] text-center text-sm font-semibold text-zinc-800">
-            {formatWeekRange(weekStart)}
-          </p>
-          <IconButton
-            label="Next week"
-            className="size-11"
-            disabled={!canGoForward}
-            onClick={() => setWeekStart(clampedNext)}
-          >
-            <ChevronRight size={18} />
-          </IconButton>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="min-h-11"
-            onClick={() => setWeekStart(defaultWeekStart(selectedTerm))}
-          >
-            This week
-          </Button>
-        </div>
+      <div className="w-[14.5rem]">
+        <Select
+          aria-label="Study period"
+          value={selectedTerm.id}
+          onChange={onTermChange}
+          className="font-semibold"
+          options={scheduledTerms.map((term) => ({
+            value: term.id,
+            label: `${term.name} ${term.year}`,
+          }))}
+        />
       </div>
 
       <div
@@ -258,7 +215,7 @@ function StudyCalendarBoard({
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3">
+          <div className="flex flex-col gap-3 border-b border-zinc-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-sm font-semibold text-zinc-900">
                 {selectedTerm.name} {selectedTerm.year}
@@ -267,7 +224,39 @@ function StudyCalendarBoard({
                 {selectedTerm.dates} · select a class to view details
               </p>
             </div>
-            <Badge tone="neutral">Illustrative times</Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <IconButton
+                label="Previous week"
+                className="size-11"
+                disabled={!canGoBack}
+                onClick={() =>
+                  setWeekStart(
+                    clampWeekToTerm(addDays(weekStart, -7), selectedTerm),
+                  )
+                }
+              >
+                <ChevronLeft size={18} />
+              </IconButton>
+              <p className="min-w-[10.5rem] text-center text-sm font-semibold text-zinc-800">
+                {formatWeekRange(weekStart)}
+              </p>
+              <IconButton
+                label="Next week"
+                className="size-11"
+                disabled={!canGoForward}
+                onClick={() => setWeekStart(clampedNext)}
+              >
+                <ChevronRight size={18} />
+              </IconButton>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-11"
+                onClick={() => setWeekStart(defaultWeekStart(selectedTerm))}
+              >
+                This week
+              </Button>
+            </div>
           </div>
           <div className="overflow-x-auto bg-[linear-gradient(180deg,#fafafa,white_48px)]">
             {termAttempts.length === 0 ? (
@@ -292,12 +281,6 @@ function StudyCalendarBoard({
           </div>
         </Card>
       </div>
-
-      <p className="mt-4 text-[11px] leading-relaxed text-zinc-400">
-        Class times and rooms are illustrative samples for planning, not the
-        official ANU timetable. Confirm teaching dates, class times and
-        locations with ANU before relying on them.
-      </p>
 
       {selectedSession && (
         <SessionDrawer
