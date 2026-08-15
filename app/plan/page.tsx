@@ -6,6 +6,7 @@ import {
   Circle,
   GripVertical,
   Plus,
+  Sparkles,
   XCircle,
 } from "lucide-react";
 import {
@@ -19,18 +20,25 @@ import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { CourseDrawer, CoursePicker } from "@/components/overlays";
+import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
+import { FixIssueButton } from "@/components/plan/fix-issue-button";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/overlay";
 import {
   courseByCode,
+  degreeByCode,
+  majorByCode,
   terms,
   type Attempt,
   type Course,
   type Term,
 } from "@/lib/catalogue";
 import {
+  STANDARD_COURSE_SLOTS,
+  degreeUnitProgress,
   effectiveStatus,
   missingPrereqs,
+  recommendedCoursesForTerm,
   type EffectiveStatus,
 } from "@/lib/planner";
 
@@ -48,7 +56,7 @@ type DragPointer = {
   width: number;
   rowHeight: number;
 };
-const STANDARD_COURSE_SLOTS = 4;
+type PickerState = { termId: string; intent: "all" | "recommended" };
 
 /** Single muted status mark - the only colour on the board. */
 function StatusMark({
@@ -68,8 +76,8 @@ function StatusMark({
 }
 
 export default function PlanPage() {
-  const { state, reorderAttempt, notify } = useCoursemap();
-  const [pickerTerm, setPickerTerm] = useState<string | null>(null);
+  const { state, addCourse, reorderAttempt, notify } = useCoursemap();
+  const [picker, setPicker] = useState<PickerState | null>(null);
   const [overloadTerm, setOverloadTerm] = useState<string | null>(null);
   const [pendingDrop, setPendingDrop] = useState<PendingDrop | null>(null);
   const [selectedAttempt, setSelectedAttempt] = useState<string | null>(null);
@@ -97,6 +105,9 @@ export default function PlanPage() {
     [],
   );
   const unscheduled = terms.find((term) => term.id === "unscheduled");
+  const degree = degreeByCode(state.profile.degreeCode);
+  const major = majorByCode(state.profile.majorCode);
+  const progress = degreeUnitProgress(state.attempts, degree.units);
 
   useEffect(
     () => () => {
@@ -188,7 +199,10 @@ export default function PlanPage() {
     applyDrop(drop);
   };
 
-  const requestAddCourse = (term: Term) => {
+  const requestAddCourse = (
+    term: Term,
+    intent: "all" | "recommended" = "all",
+  ) => {
     const entries = entriesFor(term.id);
     if (
       term.id !== "unscheduled" &&
@@ -198,7 +212,26 @@ export default function PlanPage() {
       setOverloadTerm(term.id);
       return;
     }
-    setPickerTerm(term.id);
+    setPicker({ termId: term.id, intent });
+  };
+
+  const addRecommendedCourse = async (term: Term, course: Course) => {
+    const entries = entriesFor(term.id);
+    if (
+      term.id !== "unscheduled" &&
+      (entries.length >= STANDARD_COURSE_SLOTS || unitsOf(entries) >= 24)
+    ) {
+      setPendingDrop(null);
+      setOverloadTerm(term.id);
+      return;
+    }
+    const result = await addCourse(course.code, term.id);
+    notify(
+      result.ok
+        ? `${course.code} added to ${term.name} ${term.year}`
+        : result.message,
+      result.ok ? "success" : "warning",
+    );
   };
 
   const previewDrop = (drop: PendingDrop) => {
@@ -338,6 +371,13 @@ export default function PlanPage() {
               entries.length -
               Number(previewUsesEmptySlot),
           );
+    const recommended = recommendedCoursesForTerm(
+      term,
+      state.attempts,
+      major.courseCodes,
+    );
+    const suggested = emptySlots > 0 ? recommended[0] : undefined;
+    const remainingEmpty = suggested ? emptySlots - 1 : emptySlots;
 
     const dropPreview = previewEntry ? (
       <div
@@ -388,11 +428,21 @@ export default function PlanPage() {
                 : `${units} / 24 units`}
               {units > 24 && " · Overload"}
             </span>
+            {recommended.length > 0 && (
+              <button
+                type="button"
+                onClick={() => requestAddCourse(term, "recommended")}
+                aria-label={`Add a recommended course to ${term.name} ${term.year}`}
+                className="grid size-8 place-items-center rounded-md text-brand-600 transition hover:bg-brand-50"
+              >
+                <Sparkles size={14} aria-hidden="true" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => requestAddCourse(term)}
               aria-label={`Add a course to ${term.name} ${term.year}`}
-              className="grid size-6 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="grid size-8 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
             >
               <Plus size={14} />
             </button>
@@ -454,6 +504,11 @@ export default function PlanPage() {
                     </span>
                   </span>
                 </button>
+                {entry.status === "blocked" && (
+                  <div className="col-span-2 flex justify-end px-2 pb-2">
+                    <FixIssueButton attempt={entry.attempt} />
+                  </div>
+                )}
                 {note && (
                   <span
                     id={`course-issue-${entry.attempt.id}`}
@@ -467,7 +522,28 @@ export default function PlanPage() {
             );
           })}
           {previewUsesEmptySlot && dropPreview}
-          {Array.from({ length: emptySlots }, (_, index) => (
+          {suggested && (
+            <button
+              type="button"
+              onClick={() => void addRecommendedCourse(term, suggested)}
+              aria-label={`Add recommended course ${suggested.code} to ${term.name} ${term.year}`}
+              className="group flex min-h-[52px] items-center gap-2 rounded-lg border border-dashed border-brand-200 bg-brand-50/50 px-2 text-left text-[11px] font-medium text-brand-800 transition hover:border-brand-300 hover:bg-brand-50"
+            >
+              <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-brand-200 bg-white text-brand-600">
+                <Sparkles size={10} aria-hidden="true" />
+              </span>
+              <span className="w-[4.75rem] shrink-0 font-mono">
+                {suggested.code}
+              </span>
+              <span className="min-w-0 flex-1 truncate font-medium text-zinc-800">
+                {suggested.name}
+              </span>
+              <span className="shrink-0 text-[10px] font-semibold tracking-wide text-brand-600 uppercase">
+                Recommended
+              </span>
+            </button>
+          )}
+          {Array.from({ length: remainingEmpty }, (_, index) => (
             <button
               key={`${term.id}-empty-${index}`}
               type="button"
@@ -475,7 +551,7 @@ export default function PlanPage() {
               aria-label={
                 term.id === "unscheduled"
                   ? "Add an unscheduled course"
-                  : `Add course in empty slot ${entries.length + index + 1} of ${STANDARD_COURSE_SLOTS} for ${term.name} ${term.year}`
+                  : `Add course in empty slot ${entries.length + index + 1 + Number(Boolean(suggested))} of ${STANDARD_COURSE_SLOTS} for ${term.name} ${term.year}`
               }
               className="group flex min-h-[52px] items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-600"
             >
@@ -506,22 +582,34 @@ export default function PlanPage() {
   return (
     <AppShell>
       <section aria-label="Course plan" className="year-board">
-        <div className="mb-2.5 flex justify-end px-1">
-          <div
-            className="flex gap-4 text-[11px] text-zinc-500"
-            aria-label="Course statuses"
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <CheckCircle2 size={12} className="text-emerald-500" /> Completed
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Circle size={12} className="text-zinc-300" /> Planned
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <AlertTriangle size={12} className="text-amber-500" /> Needs
-              attention
-            </span>
+        <div className="mb-4 rounded-2xl bg-white px-4 py-3.5 shadow-sm ring-1 ring-zinc-200/70 sm:px-5">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                Degree progress
+              </p>
+              <p className="mt-0.5 text-sm font-semibold text-zinc-900">
+                {progress.percent}% of units completed
+              </p>
+            </div>
+            <div
+              className="flex gap-4 text-[11px] text-zinc-500"
+              aria-label="Course statuses"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <CheckCircle2 size={12} className="text-emerald-500" />{" "}
+                Completed
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Circle size={12} className="text-zinc-300" /> Planned
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <AlertTriangle size={12} className="text-amber-500" /> Needs
+                attention
+              </span>
+            </div>
           </div>
+          <DegreeProgressBar progress={progress} compact />
         </div>
 
         <div data-testid="roadmap-board" className="flex flex-col gap-5">
@@ -588,8 +676,12 @@ export default function PlanPage() {
         </div>
       )}
 
-      {pickerTerm && (
-        <CoursePicker termId={pickerTerm} onClose={() => setPickerTerm(null)} />
+      {picker && (
+        <CoursePicker
+          termId={picker.termId}
+          intent={picker.intent}
+          onClose={() => setPicker(null)}
+        />
       )}
       {overloadTarget && (
         <Modal
@@ -629,7 +721,7 @@ export default function PlanPage() {
                 if (pendingDrop) {
                   applyDrop(pendingDrop);
                 } else {
-                  setPickerTerm(overloadTarget.id);
+                  setPicker({ termId: overloadTarget.id, intent: "all" });
                 }
                 setOverloadTerm(null);
                 setPendingDrop(null);
