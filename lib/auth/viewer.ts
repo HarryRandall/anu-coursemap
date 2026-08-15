@@ -50,3 +50,23 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
 export async function getAuthViewer(): Promise<AuthViewer | null> {
   return (await getAuthContext()).viewer;
 }
+
+/** Check the narrower permission required to execute catalogue writes. */
+export async function canManageCatalogueImports() {
+  if (isDemoMode()) return true;
+  if (!getSupabaseConfig()) return false;
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getClaims();
+    if (error || typeof data?.claims.sub !== "string") return false;
+
+    const { data: allowed, error: permissionError } = await supabase.rpc(
+      "current_user_has_permission",
+      { required_permission: "imports.manage" },
+    );
+    return !permissionError && allowed === true;
+  } catch {
+    return false;
+  }
+}

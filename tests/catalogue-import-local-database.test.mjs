@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  assertHostedSupabaseDatabaseUrl,
   assertLoopbackDatabaseUrl,
   discoverLocalDatabaseUrl,
 } from "../scripts/catalogue/lib/local-database.mjs";
@@ -91,6 +92,23 @@ test("database URL errors never expose credentials", async () => {
   assert.ok(result instanceof Error);
   assert.doesNotMatch(result.message, new RegExp(username, "u"));
   assert.doesNotMatch(result.message, new RegExp(password, "u"));
+});
+
+test("accepts only hosted Supabase database URLs for web imports", () => {
+  const databaseUrl = assertHostedSupabaseDatabaseUrl(
+    "postgresql://postgres:secret@db.example.supabase.co:5432/postgres",
+  );
+  assert.equal(databaseUrl.hostname, "db.example.supabase.co");
+
+  for (const connectionString of [
+    "postgresql://postgres:secret@database.example.test:5432/postgres",
+    "postgresql://postgres:secret@127.0.0.1:5432/postgres",
+  ]) {
+    assert.throws(
+      () => assertHostedSupabaseDatabaseUrl(connectionString),
+      /only accepts a Supabase database connection URL/u,
+    );
+  }
 });
 
 test("COURSEMAP_DATABASE_URL takes precedence and localhost is pinned", async () => {

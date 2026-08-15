@@ -1,5 +1,5 @@
 import { parseCatalogueManifest } from "../../../lib/catalogue-import/manifest.ts";
-import { assertVerifiedLocalDatabaseClient } from "./local-database.mjs";
+import { assertVerifiedCatalogueImportClient } from "./local-database.mjs";
 
 const COURSE_CODE_PATTERN = /^[A-Z]{4}[0-9]{4}$/u;
 const SUBJECT_PATTERN = /^[A-Z]{4}$/u;
@@ -1971,7 +1971,7 @@ async function importPreparedCatalogueManifest(tx, prepared) {
 
 export async function importCatalogueManifest(sql, value) {
   const prepared = prepareManifest(value);
-  assertVerifiedLocalDatabaseClient(sql);
+  assertVerifiedCatalogueImportClient(sql);
   return sql.begin("read write", async (tx) => {
     await tx`set local statement_timeout = '30s'`;
     await tx`set local lock_timeout = '5s'`;
@@ -1980,7 +1980,7 @@ export async function importCatalogueManifest(sql, value) {
 }
 
 export async function withLocalCatalogueImportTransaction(sql, callback) {
-  assertVerifiedLocalDatabaseClient(sql);
+  assertVerifiedCatalogueImportClient(sql);
   if (typeof callback !== "function") {
     throw new TypeError(
       "A local catalogue import transaction callback is required.",

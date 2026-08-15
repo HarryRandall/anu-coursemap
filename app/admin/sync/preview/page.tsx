@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, CircleAlert, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CircleAlert,
+  LoaderCircle,
+  RefreshCw,
+} from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AppShell } from "@/components/shell";
@@ -16,6 +22,20 @@ type Preview = {
   isLowerBound: boolean;
   comparison: "database" | "demo";
 };
+
+type ImportResult = {
+  status: "succeeded" | "failed";
+  runId: string;
+  counts: {
+    added: number;
+    changed: number;
+    checked: number;
+    failed: number;
+    unchanged: number;
+  };
+};
+
+const MAX_WEB_COURSE_IMPORTS = 20;
 
 export default function AdminSyncPreviewPage() {
   return (
@@ -41,12 +61,24 @@ function SyncPreview() {
     : "selected";
   const programmes = searchParams.get("programmes") ?? "";
   const courses = searchParams.get("courses") ?? "";
+  const selectedCourseCodes = courses
+    .split(",")
+    .map((code) => code.trim().toUpperCase())
+    .filter((code) => /^[A-Z]{4}\d{4}$/.test(code));
   const editHref =
     target === "courses" || target === "all-courses"
       ? "/admin/sync/courses"
       : "/admin/sync";
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const canRunSelectedCourses =
+    target === "courses" &&
+    selectedCourseCodes.length > 0 &&
+    selectedCourseCodes.length <= MAX_WEB_COURSE_IMPORTS &&
+    !importing;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,6 +108,38 @@ function SyncPreview() {
 
     return () => controller.abort();
   }, [courses, programmes, target, year]);
+
+  async function runImport() {
+    if (!canRunSelectedCourses) return;
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+
+    try {
+      const response = await fetch("/api/admin/catalogue/imports/courses", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          catalogueYear: Number(year),
+          courseCodes: selectedCourseCodes,
+        }),
+      });
+      const payload = (await response.json()) as ImportResult & {
+        error?: string;
+      };
+      if (!response.ok)
+        throw new Error(payload.error ?? "Course import failed.");
+      setImportResult(payload);
+    } catch (caughtError) {
+      setImportError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Course import failed.",
+      );
+    } finally {
+      setImporting(false);
+    }
+  }
 
   return (
     <AppShell admin>
@@ -138,6 +202,24 @@ function SyncPreview() {
             <CircleAlert size={16} /> {error}
           </div>
         )}
+        {importError && (
+          <div
+            role="alert"
+            className="mt-6 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700"
+          >
+            <CircleAlert size={16} /> {importError}
+          </div>
+        )}
+        {importResult && (
+          <div
+            role="status"
+            className="mt-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          >
+            Import {importResult.status}. {importResult.counts.added} added,{" "}
+            {importResult.counts.changed} changed and{" "}
+            {importResult.counts.unchanged} unchanged.
+          </div>
+        )}
 
         <section className="mt-10 border-t border-zinc-200 pt-6">
           <h2 className="text-lg font-semibold text-zinc-950">
@@ -168,12 +250,34 @@ function SyncPreview() {
           </div>
         </section>
 
-        <div className="mt-10 flex justify-end">
+        <div className="mt-10 flex flex-col items-end gap-3">
+          {target === "courses" &&
+            selectedCourseCodes.length > MAX_WEB_COURSE_IMPORTS && (
+              <p className="text-sm text-zinc-500">
+                Run selected course pages in batches of {MAX_WEB_COURSE_IMPORTS}
+                .
+              </p>
+            )}
+          {target !== "courses" && (
+            <p className="text-sm text-zinc-500">
+              This scope needs the programme or bulk-course runner.
+            </p>
+          )}
           <Button
-            disabled
-            title="The programme importer has not been connected yet."
+            disabled={!canRunSelectedCourses}
+            onClick={runImport}
+            title={
+              canRunSelectedCourses
+                ? "Fetch, validate and import the selected course pages."
+                : undefined
+            }
           >
-            <RefreshCw size={16} /> Sync now
+            {importing ? (
+              <LoaderCircle size={16} className="animate-spin" />
+            ) : (
+              <RefreshCw size={16} />
+            )}
+            {importing ? "Syncing" : "Sync now"}
           </Button>
         </div>
       </div>
