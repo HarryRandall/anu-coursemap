@@ -27,18 +27,9 @@ export default async function SignInPage({
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200 sm:p-8">
         <Link
           href="/courses"
-          className="inline-flex items-center gap-2.5 text-zinc-900"
+          className="inline-flex items-center text-zinc-900"
           aria-label="Browse Coursemap courses"
         >
-          <span
-            className="grid size-7 -rotate-3 grid-cols-2 gap-0.5"
-            aria-hidden="true"
-          >
-            <i className="rounded-[3px] bg-zinc-900" />
-            <i className="rounded-[3px] bg-zinc-400" />
-            <i className="rounded-[3px] bg-zinc-400" />
-            <i className="rounded-[3px] bg-zinc-900" />
-          </span>
           <strong className="text-lg tracking-tight">coursemap</strong>
         </Link>
 

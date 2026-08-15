@@ -48,17 +48,8 @@ function Brand() {
     <Link
       href="/plan"
       aria-label="Coursemap home"
-      className="flex items-center gap-2.5 px-1.5"
+      className="flex items-center px-1.5"
     >
-      <span
-        className="grid size-6 -rotate-3 grid-cols-2 gap-0.5"
-        aria-hidden="true"
-      >
-        <i className="rounded-[3px] bg-zinc-900" />
-        <i className="rounded-[3px] bg-zinc-400" />
-        <i className="rounded-[3px] bg-zinc-400" />
-        <i className="rounded-[3px] bg-zinc-900" />
-      </span>
       <strong className="text-[17px] font-bold tracking-tight">
         coursemap
       </strong>
@@ -91,7 +82,7 @@ function NavLink({
         isActive
           ? admin
             ? "bg-brand-50 text-brand-700"
-            : "bg-zinc-900 text-white"
+            : "bg-brand-700 text-white"
           : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
       )}
     >
