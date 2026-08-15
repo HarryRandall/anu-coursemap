@@ -103,78 +103,49 @@ const stageStyle: Record<
 
 export function RoadmapBoard({ area }: { area?: RoadmapArea }) {
   const items = filterRoadmapItems(area);
-  const counts = roadmapStages.map((stage) => items[stage.id].length);
-  const shippedRatio =
-    counts.reduce((sum, count) => sum + count, 0) === 0
-      ? 0
-      : counts[0] / counts.reduce((sum, count) => sum + count, 0);
+  const counts = {
+    shipped: items.shipped.length,
+    now: items.now.length,
+    next: items.next.length,
+    later: items.later.length,
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      <nav aria-label="Filter roadmap by area" className="flex flex-wrap gap-2">
-        <FilterChip href="/roadmap" active={!area} label="All" />
-        {roadmapAreas.map((item) => (
-          <FilterChip
-            key={item}
-            href={`/roadmap?area=${item}`}
-            active={area === item}
-            label={roadmapAreaLabels[item]}
-          />
-        ))}
-      </nav>
+    <div className="roadmap-surface -mx-4 rounded-none px-4 py-5 sm:-mx-6 sm:rounded-3xl sm:px-6 sm:ring-1 sm:ring-zinc-200/70">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <nav
+          aria-label="Filter roadmap by area"
+          className="flex flex-wrap gap-2"
+        >
+          <FilterChip href="/roadmap" active={!area} label="All" />
+          {roadmapAreas.map((item) => (
+            <FilterChip
+              key={item}
+              href={`/roadmap?area=${item}`}
+              active={area === item}
+              label={roadmapAreaLabels[item]}
+            />
+          ))}
+        </nav>
+        <p className="text-xs font-medium text-zinc-500">
+          <span className="text-zinc-800 tabular-nums">{counts.shipped}</span>{" "}
+          shipped
+          <span aria-hidden="true" className="mx-2 text-zinc-300">
+            ·
+          </span>
+          <span className="text-zinc-800 tabular-nums">{counts.now}</span> in
+          flight
+          <span aria-hidden="true" className="mx-2 text-zinc-300">
+            ·
+          </span>
+          <span className="text-zinc-800 tabular-nums">
+            {counts.next + counts.later}
+          </span>{" "}
+          queued
+        </p>
+      </div>
 
-      <section
-        aria-label="Roadmap timeline"
-        className="rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-zinc-200/70 sm:p-5"
-      >
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-            Product timeline
-          </p>
-          <p className="text-xs text-zinc-500">
-            {Math.round(shippedRatio * 100)}% of the board has already shipped
-          </p>
-        </div>
-        <div className="relative">
-          <span
-            aria-hidden="true"
-            className="absolute top-[7px] right-3 left-3 hidden h-px bg-zinc-200 lg:block"
-          />
-          <span
-            aria-hidden="true"
-            className="absolute top-[7px] left-3 hidden h-px bg-linear-to-r from-emerald-400 via-brand-400 to-brand-300 lg:block"
-            style={{ width: `${Math.max(18, shippedRatio * 100)}%` }}
-          />
-          <ol className="relative grid grid-cols-2 gap-x-4 gap-y-5 lg:grid-cols-4">
-            {roadmapStages.map((stage, index) => {
-              const style = stageStyle[stage.id];
-              const count = counts[index];
-              return (
-                <li key={stage.id} className="min-w-0">
-                  <span
-                    className={cn(
-                      "relative z-10 mb-3 block size-3.5 rounded-full ring-4 ring-white",
-                      style.dot,
-                      stage.id === "now" && "animate-roadmap-pulse",
-                    )}
-                  >
-                    <span className="sr-only">{stage.title} marker</span>
-                  </span>
-                  <p className="text-sm font-semibold text-zinc-900">
-                    {stage.title}
-                  </p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-zinc-500">
-                    {count} {count === 1 ? "item" : "items"} ·{" "}
-                    {stage.description}
-                  </p>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      </section>
-
-      <div className="roadmap-surface -mx-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6">
+      <div className="mt-5 overflow-x-auto pb-1">
         <div className="flex min-w-max snap-x snap-mandatory gap-4 lg:grid lg:min-w-0 lg:grid-cols-4">
           {roadmapStages.map((stage) => (
             <RoadmapColumn
@@ -245,7 +216,7 @@ function RoadmapColumn({
         <div className={cn("h-1 w-full", style.rail)} />
         <div className="flex items-start justify-between gap-3 p-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="grid size-8 place-items-center rounded-lg bg-white text-zinc-700 shadow-xs ring-1 ring-zinc-200/80">
                 <Icon size={16} aria-hidden="true" />
               </span>
@@ -257,7 +228,13 @@ function RoadmapColumn({
               </h2>
               {stage === "now" ? (
                 <Badge tone="brand" className="gap-1">
-                  <span className="size-1.5 rounded-full bg-brand-500" />
+                  <span
+                    className={cn(
+                      "size-1.5 rounded-full",
+                      style.dot,
+                      "animate-roadmap-pulse",
+                    )}
+                  />
                   In flight
                 </Badge>
               ) : null}
