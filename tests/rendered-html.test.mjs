@@ -104,6 +104,7 @@ test("server-renders the complete student workspace", async () => {
     "/roadmap",
     "/rooms",
     "/help",
+    "/help/build-your-plan",
   ];
   const responses = await Promise.all(paths.map((path) => render(path)));
   responses.forEach((response) => assert.equal(response.status, 200));
@@ -116,6 +117,7 @@ test("server-renders the complete student workspace", async () => {
     roadmapHtml,
     roomsHtml,
     helpHtml,
+    helpGuideHtml,
   ] = await Promise.all(responses.map((response) => response.text()));
 
   assert.match(dashboardHtml, /Your degree is taking shape/i);
@@ -133,7 +135,11 @@ test("server-renders the complete student workspace", async () => {
   assert.match(roadmapHtml, /Build the useful things first/i);
   assert.match(roomsHtml, /Find the right room/i);
   assert.match(helpHtml, /How can we help/i);
-  assert.match(helpHtml, /Need official advice/i);
+  assert.match(helpHtml, /Read guide/i);
+  assert.match(helpHtml, /Email support/i);
+  assert.doesNotMatch(helpHtml, /Common questions|Need official advice/i);
+  assert.match(helpGuideHtml, /Build your plan/i);
+  assert.match(helpGuideHtml, /Where are class times and rooms/i);
 });
 
 test("redirects legacy student routes to their replacements", async () => {

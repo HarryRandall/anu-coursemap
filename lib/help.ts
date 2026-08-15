@@ -125,6 +125,15 @@ export const helpContactReasons: HelpContactReason[] = [
   },
 ];
 
+export const helpEmailReasons: HelpContactReason[] = [
+  ...helpContactReasons,
+  {
+    id: "other",
+    label: "Something else",
+    description: "Ask a question that does not fit the options above.",
+  },
+];
+
 export function helpArticleBySlug(slug: string): HelpArticle | undefined {
   return helpArticles.find((article) => article.slug === slug);
 }

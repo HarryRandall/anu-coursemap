@@ -1,28 +1,10 @@
 import { notFound } from "next/navigation";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  CircleUserRound,
-  ListChecks,
-  Map,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
+import { helpTopicIcons } from "@/components/help/topic-icons";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  helpArticleBySlug,
-  helpArticles,
-  otherHelpArticles,
-} from "@/lib/help";
-
-const topicIcons: Record<string, LucideIcon> = {
-  "build-your-plan": Map,
-  "understand-a-course": BookOpen,
-  "read-requirements": ListChecks,
-  "account-and-degree": CircleUserRound,
-};
+import { helpArticleBySlug, helpArticles, otherHelpArticles } from "@/lib/help";
 
 type HelpArticlePageProps = {
   params: Promise<{ slug: string }>;
@@ -40,7 +22,7 @@ export default async function HelpArticlePage({
 
   if (!article) notFound();
 
-  const Icon = topicIcons[article.slug] ?? BookOpen;
+  const Icon = helpTopicIcons[article.slug] ?? BookOpen;
   const related = otherHelpArticles(article.slug);
 
   return (
@@ -94,7 +76,7 @@ export default async function HelpArticlePage({
           </h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             {related.map((item) => {
-              const RelatedIcon = topicIcons[item.slug] ?? BookOpen;
+              const RelatedIcon = helpTopicIcons[item.slug] ?? BookOpen;
               return (
                 <ButtonLink
                   key={item.slug}
