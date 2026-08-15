@@ -1,593 +1,431 @@
 "use client";
 
+import Link from "next/link";
 import {
-  AlertCircle,
-  CheckCircle2,
-  ChevronDown,
-  Clock3,
-  Play,
-  RefreshCw,
+  ArrowRight,
+  BookOpen,
+  Check,
+  ChevronRight,
+  CircleAlert,
+  ExternalLink,
+  FileCheck2,
+  GraduationCap,
+  Layers3,
+  ListTree,
   RotateCcw,
-  Settings2,
-  Zap,
+  Sparkles,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { cn } from "@/lib/cn";
+import { useMemo, useState } from "react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Field, Select } from "@/components/ui/field";
+import { cn } from "@/lib/cn";
+import { courses, degrees, majors } from "@/lib/catalogue";
 
-type Run = {
-  id: string;
-  scope: string;
-  trigger: string;
-  started: string;
-  duration: string;
-  checked: number;
-  added: number;
-  changed: number;
-  unchanged: number;
-  failed: number;
-  status: "Complete" | "Failed";
+type Step = "select" | "scope" | "review";
+
+const years = [2026, 2027] as const;
+
+const programmeSources: Record<string, string> = {
+  BCOMP: "https://programsandcourses.anu.edu.au/2026/program/BCOMP",
+  BACOMPH: "https://programsandcourses.anu.edu.au/2026/program/BACOMPH",
+  BIT: "https://programsandcourses.anu.edu.au/2026/program/BIT",
 };
 
-const initialRuns: Run[] = [
-  {
-    id: "run_8f3c12",
-    scope: "2026 courses",
-    trigger: "Schedule",
-    started: "12 Aug, 2:15 am",
-    duration: "9m 14s",
-    checked: 3012,
-    added: 0,
-    changed: 3,
-    unchanged: 3009,
-    failed: 0,
-    status: "Complete",
-  },
-  {
-    id: "run_5da910",
-    scope: "2026 programmes",
-    trigger: "Schedule",
-    started: "12 Aug, 2:05 am",
-    duration: "4m 32s",
-    checked: 516,
-    added: 0,
-    changed: 0,
-    unchanged: 516,
-    failed: 0,
-    status: "Complete",
-  },
-  {
-    id: "run_29ac44",
-    scope: "2025 failed items",
-    trigger: "Harry",
-    started: "11 Aug, 4:42 pm",
-    duration: "1m 08s",
-    checked: 9,
-    added: 0,
-    changed: 2,
-    unchanged: 6,
-    failed: 1,
-    status: "Failed",
-  },
-  {
-    id: "run_11b7e0",
-    scope: "2026 courses",
-    trigger: "Schedule",
-    started: "11 Aug, 2:15 am",
-    duration: "8m 58s",
-    checked: 3012,
-    added: 0,
-    changed: 0,
-    unchanged: 3012,
-    failed: 0,
-    status: "Complete",
-  },
+const directCourseCodes = [
+  "COMP1100",
+  "MATH1005",
+  "COMP1110",
+  "COMP1600",
+  "COMP2100",
+  "COMP2300",
+  "COMP2400",
 ];
 
-const stages = ["Discover", "Compare hashes", "Parse changes", "Validate"];
+function titleForStep(step: Step) {
+  return {
+    select: "Choose a programme",
+    scope: "Confirm the scope",
+    review: "Review the import plan",
+  }[step];
+}
+
+function StepItem({
+  number,
+  label,
+  current,
+  complete,
+}: {
+  number: number;
+  label: string;
+  current: boolean;
+  complete: boolean;
+}) {
+  return (
+    <li className="flex min-w-0 items-center gap-2.5">
+      <span
+        className={cn(
+          "grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ring-1 ring-inset",
+          complete
+            ? "bg-emerald-500 text-white ring-emerald-500"
+            : current
+              ? "bg-brand-700 text-white ring-brand-700"
+              : "bg-white text-zinc-400 ring-zinc-200",
+        )}
+      >
+        {complete ? <Check size={14} strokeWidth={3} /> : number}
+      </span>
+      <span
+        className={cn(
+          "truncate text-xs font-medium",
+          current || complete ? "text-zinc-800" : "text-zinc-400",
+        )}
+      >
+        {label}
+      </span>
+    </li>
+  );
+}
 
 export default function AdminSyncPage() {
   const { notify } = useCoursemap();
-  const [scope, setScope] = useState("2026 courses and programmes");
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [runs, setRuns] = useState(initialRuns);
-  const [advanced, setAdvanced] = useState(false);
-  const [requestGap, setRequestGap] = useState(5);
-  const [detection, setDetection] = useState("Content hash + HTTP validators");
-  const [schedules, setSchedules] = useState({
-    current: true,
-    next: true,
-    previous: true,
-  });
+  const [step, setStep] = useState<Step>("select");
+  const [year, setYear] = useState<(typeof years)[number]>(2026);
+  const [programmeCode, setProgrammeCode] = useState("BCOMP");
+  const [includeOptions, setIncludeOptions] = useState(true);
+  const [includePrerequisites, setIncludePrerequisites] = useState(true);
 
-  useEffect(() => {
-    if (!running) return;
-    let current = 2;
-    const timer = window.setInterval(() => {
-      current = Math.min(100, current + 8);
-      setProgress(current);
-      if (current >= 100) {
-        window.clearInterval(timer);
-        setRunning(false);
-        setRuns((existing) => [
-          {
-            id: "run_demo_new",
-            scope,
-            trigger: "Harry",
-            started: "Just now",
-            duration: "3s demo",
-            checked: 3012,
-            added: 0,
-            changed: 3,
-            unchanged: 3009,
-            failed: 0,
-            status: "Complete",
-          },
-          ...existing,
-        ]);
-        notify("Incremental sync simulation completed");
+  const programme = degrees.find((item) => item.code === programmeCode) ?? degrees[0];
+  const selectedMajors = includeOptions ? majors : [];
+  const directCourses = courses.filter((course) =>
+    directCourseCodes.includes(course.code),
+  );
+  const selectedCourseCodes = useMemo(() => {
+    const selected = new Set(directCourseCodes);
+    for (const major of selectedMajors) {
+      major.courseCodes.forEach((code) => selected.add(code));
+    }
+    if (includePrerequisites) {
+      for (const course of courses) {
+        if (selected.has(course.code)) {
+          course.prerequisiteCodes.forEach((code) => selected.add(code));
+        }
       }
-    }, 220);
-    return () => window.clearInterval(timer);
-  }, [notify, running, scope]);
+    }
+    return selected;
+  }, [includePrerequisites, selectedMajors]);
+  const sourceUrl = programmeSources[programme.code] ?? programmeSources.BCOMP;
 
-  const stage =
-    !running && progress >= 100
-      ? "Complete"
-      : progress < 22
-        ? "Discovering entity pages"
-        : progress < 60
-          ? "Comparing content hashes"
-          : progress < 88
-            ? "Parsing changed pages"
-            : "Validating relations";
-
-  const stageIndex =
-    progress >= 100
-      ? 4
-      : progress >= 85
-        ? 3
-        : progress >= 55
-          ? 2
-          : progress >= 20
-            ? 1
-            : 0;
-
-  const start = (full = false) => {
-    if (
-      full &&
-      !window.confirm(
-        "Run a full historical sync? This would inspect about 56,846 pages when a backend is connected.",
-      )
-    )
-      return;
-    setProgress(2);
-    setRunning(true);
-    notify(
-      full
-        ? "Historical sync simulation started"
-        : "Incremental sync simulation started",
-    );
-  };
-
-  const toggleSchedule = (key: keyof typeof schedules, label: string) => {
-    setSchedules((current) => {
-      const next = { ...current, [key]: !current[key] };
-      notify(
-        next[key] ? `${label} schedule enabled` : `${label} schedule paused`,
-      );
-      return next;
-    });
-  };
+  const goToScope = () => setStep("scope");
+  const goToReview = () => setStep("review");
 
   return (
     <AppShell
-      title="Sync"
-      subtitle="Schedules, runs and changed-page checks"
       admin
+      actions={
+        <ButtonLink href="/admin/programmes" size="sm" variant="secondary">
+          Browse programmes <ArrowRight size={14} />
+        </ButtonLink>
+      }
     >
-      <h1 className="sr-only">Sync</h1>
-      {/* Launch card */}
-      <Card className="overflow-hidden">
-        <div className="grid grid-cols-1 items-center gap-4 p-5 md:grid-cols-[auto_1fr_auto_auto]">
-          <span
-            className={cn(
-              "grid size-11 place-items-center rounded-xl",
-              running
-                ? "bg-brand-100 text-brand-600"
-                : "bg-brand-600 text-white",
-            )}
-          >
-            {running ? (
-              <RefreshCw size={20} className="animate-spin-slow" />
-            ) : (
-              <Zap size={20} />
-            )}
-          </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-              Incremental sync
-            </p>
-            <h2 className="mt-0.5 text-lg font-bold tracking-tight text-zinc-900">
-              {running ? stage : "Ready to check the catalogue"}
-            </h2>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              {running
-                ? `${progress}% complete · mock run`
-                : "Unchanged content skips parsing and database writes."}
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-sm font-medium text-brand-700">Catalogue imports</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
+              Bring in a programme
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+              Start with one ANU programme, inspect exactly what it brings with it,
+              then send only the reviewed scope to the importer.
             </p>
           </div>
-          <Field label="Scope" className="w-full md:w-60">
-            <Select
-              aria-label="Sync scope"
-              value={scope}
-              onChange={setScope}
-              disabled={running}
-              options={[
-                "2026 courses and programmes",
-                "2026 courses only",
-                "2026 programmes only",
-                "2025 failed items",
-              ].map((item) => ({ value: item, label: item }))}
+          <Badge tone="neutral">Importer connection in progress</Badge>
+        </div>
+
+        <Card className="mt-7 overflow-hidden">
+          <ol className="grid gap-3 border-b border-zinc-100 px-5 py-4 sm:grid-cols-3 sm:gap-6 sm:px-6">
+            <StepItem
+              number={1}
+              label="Choose programme"
+              current={step === "select"}
+              complete={step !== "select"}
             />
-          </Field>
-          <Button
-            variant="primary"
-            disabled={running}
-            onClick={() => start(false)}
-          >
-            {running ? (
-              <RefreshCw size={16} className="animate-spin-slow" />
-            ) : (
-              <Play size={16} />
-            )}
-            {running ? "Running" : "Run incremental sync"}
-          </Button>
-        </div>
+            <StepItem
+              number={2}
+              label="Confirm scope"
+              current={step === "scope"}
+              complete={step === "review"}
+            />
+            <StepItem
+              number={3}
+              label="Review and run"
+              current={step === "review"}
+              complete={false}
+            />
+          </ol>
 
-        <div className="h-1.5 bg-brand-100/60">
-          <div
-            className="h-full rounded-r-full bg-gradient-to-r from-brand-500 to-brand-400 transition-[width] duration-200"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 border-t border-brand-100/60 sm:grid-cols-4">
-          {stages.map((label, index) => {
-            const done = stageIndex > index;
-            const active = stageIndex === index && running;
-            return (
-              <div key={label} className="flex items-center gap-2 px-4 py-3">
-                <span
-                  className={cn(
-                    "size-2 rounded-full ring-1",
-                    done
-                      ? "bg-emerald-500 ring-emerald-500"
-                      : active
-                        ? "bg-brand-500 ring-brand-500 ring-offset-2"
-                        : "bg-white ring-zinc-300",
-                  )}
-                />
-                <span
-                  className={cn(
-                    "text-[11px]",
-                    done
-                      ? "text-emerald-600"
-                      : active
-                        ? "font-medium text-brand-600"
-                        : "text-zinc-400",
-                  )}
-                >
-                  {label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Schedule + economics */}
-      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <Card className="overflow-hidden">
-          <div className="flex items-start justify-between border-b border-zinc-100 px-5 py-4">
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-900">Schedule</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Cheap checks for active years, fewer for stable history.
-              </p>
-            </div>
-            <Clock3 size={18} className="text-zinc-400" />
-          </div>
-          <div className="divide-y divide-zinc-100">
-            {[
-              [
-                "current",
-                "Current catalogue year",
-                "2026 · daily at 2:15 am",
-              ] as const,
-              [
-                "next",
-                "Next catalogue year",
-                "2027 · daily once published",
-              ] as const,
-              [
-                "previous",
-                "Previous catalogue year",
-                "2025 · weekly on Sunday",
-              ] as const,
-            ].map(([key, title, note]) => (
-              <label
-                key={key}
-                className="flex cursor-pointer items-center justify-between gap-3 px-5 py-3.5"
-              >
-                <span>
-                  <span className="block text-[13px] font-semibold text-zinc-800">
-                    {title}
-                  </span>
-                  <span className="block text-[11px] text-zinc-400">
-                    {note}
-                  </span>
-                </span>
-                <input
-                  type="checkbox"
-                  aria-label={`Enable ${title} schedule`}
-                  checked={schedules[key]}
-                  onChange={() => toggleSchedule(key, title)}
-                  className="size-4 accent-brand-500"
-                />
-              </label>
-            ))}
-            <div className="flex items-center justify-between gap-3 px-5 py-3.5">
-              <span>
-                <span className="block text-[13px] font-semibold text-zinc-800">
-                  Older historical years
-                </span>
-                <span className="block text-[11px] text-zinc-400">
-                  Frozen · manual recheck only
-                </span>
-              </span>
-              <Badge tone="neutral">Manual</Badge>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="overflow-hidden">
-          <div className="border-b border-zinc-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-zinc-900">
-              Why this stays cheap
-            </h2>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              Typical daily run with very low catalogue churn.
-            </p>
-          </div>
-          <div className="p-5">
-            <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
-              {[
-                ["3,012", "pages checked"],
-                null,
-                ["3", "hashes changed"],
-                null,
-                ["3", "rows reparsed"],
-              ].map((item, index) =>
-                item ? (
-                  <div
-                    key={index}
-                    className="rounded-xl bg-zinc-50/80 px-2 py-4 text-center ring-1 ring-zinc-200"
-                  >
-                    <p className="text-lg font-bold tracking-tight text-zinc-900">
-                      {item[0]}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-zinc-400">
-                      {item[1]}
-                    </p>
-                  </div>
+          <div className="p-5 sm:p-7">
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700">
+                {step === "select" ? (
+                  <GraduationCap size={20} />
+                ) : step === "scope" ? (
+                  <Layers3 size={20} />
                 ) : (
-                  <span key={index} className="text-center text-zinc-300">
-                    →
-                  </span>
-                ),
+                  <FileCheck2 size={20} />
+                )}
+              </span>
+              <div>
+                <p className="text-xs font-semibold tracking-wide text-brand-700 uppercase">
+                  Step {step === "select" ? 1 : step === "scope" ? 2 : 3} of 3
+                </p>
+                <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-950">
+                  {titleForStep(step)}
+                </h2>
+              </div>
+            </div>
+
+            {step === "select" && (
+              <div className="mt-7 grid max-w-3xl gap-5 sm:grid-cols-[minmax(0,1fr)_11rem]">
+                <Field
+                  label="Programme"
+                  hint="A programme is the top-level degree record from ANU Programs and Courses."
+                >
+                  <Select
+                    aria-label="Programme to import"
+                    value={programmeCode}
+                    onChange={setProgrammeCode}
+                    options={degrees.map((degree) => ({
+                      value: degree.code,
+                      label: `${degree.code} · ${degree.name}`,
+                    }))}
+                  />
+                </Field>
+                <Field label="Catalogue year">
+                  <Select
+                    aria-label="Catalogue year"
+                    value={year}
+                    onChange={setYear}
+                    options={years.map((item) => ({
+                      value: item,
+                      label: String(item),
+                    }))}
+                  />
+                </Field>
+              </div>
+            )}
+
+            {step === "scope" && (
+              <div className="mt-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+                <div>
+                  <p className="text-sm font-medium text-zinc-800">
+                    What should be included?
+                  </p>
+                  <div className="mt-3 overflow-hidden rounded-xl border border-zinc-200">
+                    <label className="flex cursor-pointer items-start gap-3 border-b border-zinc-100 p-4 hover:bg-zinc-50/70">
+                      <input
+                        type="checkbox"
+                        checked
+                        readOnly
+                        className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-zinc-900">
+                          Programme and compulsory courses
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
+                          The degree page, its requirement tree and explicitly listed courses.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-3 border-b border-zinc-100 p-4 hover:bg-zinc-50/70">
+                      <input
+                        type="checkbox"
+                        checked={includeOptions}
+                        onChange={(event) => setIncludeOptions(event.target.checked)}
+                        className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-zinc-900">
+                          Listed majors, minors and specialisations
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
+                          Keep the programme's study options connected to this year.
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-start gap-3 p-4 hover:bg-zinc-50/70">
+                      <input
+                        type="checkbox"
+                        checked={includePrerequisites}
+                        onChange={(event) => setIncludePrerequisites(event.target.checked)}
+                        className="mt-0.5 size-4 rounded border-zinc-300 text-brand-700 focus:ring-brand-500"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-zinc-900">
+                          Prerequisite course pages
+                        </span>
+                        <span className="mt-0.5 block text-xs leading-5 text-zinc-500">
+                          Include the available prerequisite closure so the rules can be explained.
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <aside className="rounded-xl bg-brand-50/70 p-4 ring-1 ring-brand-100">
+                  <p className="text-xs font-semibold text-brand-800">Why this is explicit</p>
+                  <p className="mt-1.5 text-xs leading-5 text-brand-800/75">
+                    Subject, level and elective requirements are rules, not a fixed list of courses.
+                    They remain attached to the programme for review instead of inflating the import.
+                  </p>
+                </aside>
+              </div>
+            )}
+
+            {step === "review" && (
+              <div className="mt-7 grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+                <div className="overflow-hidden rounded-xl border border-zinc-200">
+                  <div className="flex items-start justify-between gap-4 border-b border-zinc-100 p-4">
+                    <div>
+                      <p className="font-mono text-xs font-semibold text-zinc-900">
+                        {programme.code} · {year}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-600">{programme.name}</p>
+                    </div>
+                    <Badge tone="neutral">Draft scope</Badge>
+                  </div>
+                  <dl className="divide-y divide-zinc-100 text-sm">
+                    {[
+                      ["Programme source", "1 official page"],
+                      ["Study options", `${selectedMajors.length} structures`],
+                      ["Course pages", `${selectedCourseCodes.size} in this local preview`],
+                      ["Rule-only requirements", "3 preserved for review"],
+                    ].map(([label, value]) => (
+                      <div key={label} className="flex items-center justify-between gap-4 px-4 py-3">
+                        <dt className="text-zinc-500">{label}</dt>
+                        <dd className="font-medium text-zinc-800">{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+                <aside className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                  <div className="flex items-center gap-2 text-amber-800">
+                    <CircleAlert size={16} />
+                    <p className="text-xs font-semibold">Not live yet</p>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-amber-900/75">
+                    This confirms the new import contract. The server-side programme parser and
+                    executor are the next implementation slice, so no source or database write
+                    can occur from this screen yet.
+                  </p>
+                </aside>
+              </div>
+            )}
+
+            <div className="mt-7 flex flex-col-reverse justify-between gap-3 border-t border-zinc-100 pt-5 sm:flex-row sm:items-center">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  if (step === "review") setStep("scope");
+                  else if (step === "scope") setStep("select");
+                  else {
+                    setProgrammeCode("BCOMP");
+                    setYear(2026);
+                    setIncludeOptions(true);
+                    setIncludePrerequisites(true);
+                  }
+                }}
+              >
+                <RotateCcw size={15} /> {step === "select" ? "Reset" : "Back"}
+              </Button>
+              {step === "select" ? (
+                <Button variant="primary" onClick={goToScope}>
+                  Continue <ChevronRight size={16} />
+                </Button>
+              ) : step === "scope" ? (
+                <Button variant="primary" onClick={goToReview}>
+                  Review import plan <ChevronRight size={16} />
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    notify(
+                      "The import plan is ready. The executor will be connected in the next slice.",
+                    )
+                  }
+                >
+                  <Sparkles size={16} /> Mark plan ready
+                </Button>
               )}
             </div>
-            <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-emerald-50/70 p-3 ring-1 ring-emerald-100">
-              <CheckCircle2
-                size={16}
-                className="mt-0.5 shrink-0 text-emerald-600"
-              />
-              <div>
-                <p className="text-[12px] font-semibold text-emerald-800">
-                  3,009 database writes avoided
-                </p>
-                <p className="mt-0.5 text-[11px] leading-snug text-emerald-700/80">
-                  Source snapshots remain versioned and unchanged history stays
-                  frozen.
-                </p>
-              </div>
-            </div>
           </div>
         </Card>
-      </div>
 
-      {/* Advanced */}
-      <Card className="mt-4 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setAdvanced((current) => !current)}
-          className="flex w-full items-center gap-3 px-5 py-4 text-left"
-        >
-          <Settings2 size={17} className="text-brand-500" />
-          <span className="flex-1">
-            <span className="block text-[13px] font-semibold text-zinc-800">
-              Advanced sync settings
-            </span>
-            <span className="block text-[11px] text-zinc-400">
-              Request gap, hash strategy and historical scope
-            </span>
-          </span>
-          <ChevronDown
-            size={17}
-            className={cn("text-zinc-400 transition", advanced && "rotate-180")}
-          />
-        </button>
-        {advanced && (
-          <div className="grid grid-cols-1 gap-4 border-t border-zinc-100 bg-zinc-50/70 p-5 sm:grid-cols-2">
-            <Field
-              label="Request gap"
-              hint="Minimum 5 ms in this prototype. Production should follow live site policy and observed rate limits."
-            >
-              <div className="grid grid-cols-[1fr_auto]">
-                <Input
-                  type="number"
-                  min={5}
-                  max={1000}
-                  value={requestGap}
-                  onChange={(event) =>
-                    setRequestGap(Math.max(5, Number(event.target.value)))
-                  }
-                  className="rounded-r-none"
-                />
-                <span className="grid place-items-center rounded-r-lg bg-zinc-100 px-3 text-xs text-zinc-500 ring-1 ring-zinc-200 ring-inset">
-                  ms
+        <div className="mt-5 grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+          <Card>
+            <CardHeader
+              title="Preview from the selected programme"
+              description="The course set is deliberately small and inspectable before a run."
+              icon={
+                <span className="grid size-8 place-items-center rounded-lg bg-violet-50 text-violet-700">
+                  <BookOpen size={16} />
                 </span>
-              </div>
-            </Field>
-            <Field
-              label="Change detection"
-              hint="ETag and Last-Modified avoid unnecessary response bodies where supported."
-            >
-              <Select
-                aria-label="Change detection"
-                value={detection}
-                onChange={setDetection}
-                options={[
-                  "Content hash + HTTP validators",
-                  "Content hash only",
-                ].map((item) => ({ value: item, label: item }))}
-              />
-            </Field>
-            <div className="flex flex-col gap-3 border-t border-zinc-200 pt-4 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-[12px] font-semibold text-zinc-800">
-                  Full historical sync
-                </p>
-                <p className="text-[11px] text-zinc-400">
-                  About 56,846 course pages. Use only for initial backfill or
-                  parser migration.
-                </p>
-              </div>
-              <Button
-                variant="danger"
-                disabled={running}
-                onClick={() => start(true)}
-              >
-                Run full history
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Run history */}
-      <Card className="mt-4 overflow-hidden">
-        <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
-          <div>
-            <h2 className="text-sm font-semibold text-zinc-900">Run history</h2>
-            <p className="mt-0.5 text-xs text-zinc-500">
-              Discovery, changes, failures and trigger details.
-            </p>
-          </div>
-          <Badge tone="neutral">{runs.length} runs</Badge>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[960px] text-left text-[12px]">
-            <thead>
-              <tr className="border-b border-zinc-100 bg-zinc-50/60 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                {[
-                  "Run",
-                  "Scope",
-                  "Trigger",
-                  "Started",
-                  "Duration",
-                  "Checked",
-                  "Added",
-                  "Changed",
-                  "Unchanged",
-                  "Failed",
-                  "Status",
-                  "",
-                ].map((head, index) => (
-                  <th
-                    key={index}
-                    className="px-3 py-2.5 whitespace-nowrap first:pl-4"
+              }
+              action={<Badge tone="neutral">{directCourses.length} direct courses</Badge>}
+            />
+            <div className="border-t border-zinc-100 px-5 py-4">
+              <div className="flex flex-wrap gap-2">
+                {directCourses.map((course) => (
+                  <Link
+                    key={course.code}
+                    href={`/admin/courses/${course.code}`}
+                    className="group rounded-lg bg-zinc-50 px-2.5 py-2 text-left ring-1 ring-zinc-200 transition hover:bg-white hover:ring-brand-200"
                   >
-                    {head}
-                  </th>
+                    <span className="block font-mono text-[11px] font-semibold text-zinc-800 group-hover:text-brand-700">
+                      {course.code}
+                    </span>
+                    <span className="mt-0.5 block max-w-40 truncate text-[10px] text-zinc-500">
+                      {course.name}
+                    </span>
+                  </Link>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {runs.map((run) => (
-                <tr key={run.id} className="transition hover:bg-zinc-50/70">
-                  <td className="px-3 py-3 pl-4">
-                    <code className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] text-zinc-600">
-                      {run.id}
-                    </code>
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap text-zinc-600">
-                    {run.scope}
-                  </td>
-                  <td className="px-3 py-3 text-zinc-600">{run.trigger}</td>
-                  <td className="px-3 py-3 whitespace-nowrap text-zinc-500">
-                    {run.started}
-                  </td>
-                  <td className="px-3 py-3 text-zinc-600">{run.duration}</td>
-                  <td className="px-3 py-3 text-zinc-600">
-                    {run.checked.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-3 text-zinc-600">{run.added}</td>
-                  <td className="px-3 py-3 text-zinc-600">{run.changed}</td>
-                  <td className="px-3 py-3 text-zinc-600">
-                    {run.unchanged.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-3 text-zinc-600">{run.failed}</td>
-                  <td className="px-3 py-3">
-                    <Badge
-                      tone={run.status === "Complete" ? "success" : "danger"}
-                    >
-                      {run.status === "Complete" ? (
-                        <CheckCircle2 size={11} />
-                      ) : (
-                        <AlertCircle size={11} />
-                      )}
-                      {run.status}
-                    </Badge>
-                  </td>
-                  <td className="px-3 py-3">
-                    {run.failed > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setScope("2025 failed items");
-                          start(false);
-                        }}
-                        aria-label={`Retry failures from ${run.id}`}
-                        className="grid size-8 place-items-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-                      >
-                        <RotateCcw size={14} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </div>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Source and rules"
+              description="Every import remains tied to its catalogue-year page."
+              icon={
+                <span className="grid size-8 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
+                  <ListTree size={16} />
+                </span>
+              }
+            />
+            <div className="border-t border-zinc-100 p-5">
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-3 rounded-lg bg-zinc-50 p-3 text-sm font-medium text-zinc-700 ring-1 ring-zinc-200 transition hover:bg-white hover:ring-brand-200"
+              >
+                Open the ANU source
+                <ExternalLink size={15} className="shrink-0 text-zinc-400" />
+              </a>
+              <p className="mt-3 text-xs leading-5 text-zinc-500">
+                Content hashes, raw source text and unsupported rules are recorded for review,
+                rather than silently treated as verified data.
+              </p>
+            </div>
+          </Card>
         </div>
-      </Card>
+      </div>
     </AppShell>
   );
 }
