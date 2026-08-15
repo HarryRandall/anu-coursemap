@@ -1,7 +1,15 @@
 import Link from "next/link";
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { requirementGroups } from "@/lib/catalogue";
 import type { RequirementProgress } from "@/lib/student-progress";
+
+const shortNames: Record<string, string> = {
+  core: "Core",
+  math: "Maths",
+  major: "Major",
+  advanced: "Advanced",
+  electives: "Electives",
+};
 
 export function CourseProgressChart({
   progressByGroup,
@@ -9,72 +17,57 @@ export function CourseProgressChart({
   progressByGroup: Record<string, RequirementProgress>;
 }) {
   return (
-    <Card className="overflow-hidden">
-      <CardHeader
-        title="Course progress"
-        description="Coverage against current degree rules"
-        action={
-          <Link
-            href="/requirements"
-            className="text-xs font-semibold text-brand-600 hover:text-brand-700"
-          >
-            Rules
-          </Link>
-        }
-      />
-      <div className="border-t border-zinc-100 px-5 py-5">
-        <div className="flex h-36 items-end gap-3">
-          {requirementGroups.map((group) => {
-            const progress = progressByGroup[group.id];
-            const completedPct = (progress.completedUnits / group.total) * 100;
-            const plannedPct = (progress.plannedUnits / group.total) * 100;
-            const covered = progress.completedUnits + progress.plannedUnits;
-            return (
+    <Card className="p-4">
+      <div className="mb-4 flex items-baseline justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-900">
+            Course progress
+          </h2>
+          <p className="mt-0.5 text-[11px] text-zinc-500">
+            Coverage against degree rules
+          </p>
+        </div>
+        <Link
+          href="/requirements"
+          className="inline-flex min-h-11 items-center text-xs font-semibold text-brand-600 hover:text-brand-700"
+        >
+          Rules
+        </Link>
+      </div>
+      <div className="flex h-32 items-end gap-3">
+        {requirementGroups.map((group) => {
+          const progress = progressByGroup[group.id];
+          const completedPct = (progress.completedUnits / group.total) * 100;
+          const plannedPct = (progress.plannedUnits / group.total) * 100;
+          const covered = progress.completedUnits + progress.plannedUnits;
+          return (
+            <div
+              key={group.id}
+              title={`${group.name}: ${progress.completedUnits} completed, ${progress.plannedUnits} planned`}
+              className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
+            >
               <div
-                key={group.id}
-                className="flex min-w-0 flex-1 flex-col items-center gap-2"
+                className="flex h-20 w-full max-w-9 flex-col justify-end overflow-hidden rounded-md bg-zinc-100"
+                aria-label={`${group.name}: ${covered} of ${group.total} units`}
               >
-                <div
-                  className="flex h-24 w-full max-w-10 flex-col justify-end overflow-hidden rounded-md bg-zinc-100"
-                  aria-label={`${group.name}: ${progress.completedUnits} completed, ${progress.plannedUnits} planned, ${progress.stillNeeded} still needed`}
-                >
-                  <span
-                    className="w-full bg-brand-300"
-                    style={{ height: `${plannedPct}%` }}
-                  />
-                  <span
-                    className="w-full bg-brand-600"
-                    style={{ height: `${completedPct}%` }}
-                  />
-                </div>
-                <p className="w-full truncate text-center text-[10px] font-medium text-zinc-500">
-                  {group.name
-                    .replace(" requirement", "")
-                    .replace("University ", "")}
-                </p>
-                <p className="text-[10px] font-semibold text-zinc-700 tabular-nums">
-                  {covered}/{group.total}
-                </p>
+                <span
+                  className="w-full bg-brand-300"
+                  style={{ height: `${plannedPct}%` }}
+                />
+                <span
+                  className="w-full bg-brand-600"
+                  style={{ height: `${completedPct}%` }}
+                />
               </div>
-            );
-          })}
-        </div>
-        <div className="mt-4 flex gap-4 text-[10px] text-zinc-500">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="size-2 rounded-full bg-brand-600"
-              aria-hidden="true"
-            />
-            Completed
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="size-2 rounded-full bg-brand-300"
-              aria-hidden="true"
-            />
-            Planned
-          </span>
-        </div>
+              <p className="text-[11px] font-medium text-zinc-600">
+                {shortNames[group.id] ?? group.name}
+              </p>
+              <p className="text-[10px] font-semibold text-zinc-700 tabular-nums">
+                {covered}/{group.total}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </Card>
   );

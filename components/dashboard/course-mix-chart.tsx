@@ -1,4 +1,4 @@
-import { Card, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 const colours = ["#6d28d9", "#8b5cf6", "#c4b5fd"];
 
@@ -28,16 +28,16 @@ export function CourseMixChart({
   }, []);
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader
-        title="Course mix"
-        description={
-          total === 0
+    <Card className="p-4">
+      <div className="mb-4">
+        <h2 className="text-sm font-semibold text-zinc-900">Course mix</h2>
+        <p className="mt-0.5 text-[11px] text-zinc-500">
+          {total === 0
             ? "No courses in the plan yet"
-            : `${total} courses in your plan`
-        }
-      />
-      <div className="flex items-center gap-5 border-t border-zinc-100 px-5 py-5">
+            : `${total} courses in your plan`}
+        </p>
+      </div>
+      <div className="flex items-center gap-5">
         <div className="relative size-24 shrink-0">
           <svg viewBox="0 0 96 96" className="-rotate-90" aria-hidden="true">
             <circle

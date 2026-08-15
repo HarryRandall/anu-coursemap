@@ -4,12 +4,12 @@ import { CircleAlert } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
 import { CourseMixChart } from "@/components/dashboard/course-mix-chart";
 import { CourseProgressChart } from "@/components/dashboard/course-progress-chart";
-import { DegreeCharts } from "@/components/dashboard/degree-charts";
-import { KpiCard } from "@/components/dashboard/kpi-card";
+import { MetricsPanel } from "@/components/dashboard/metrics-panel";
 import { MonthCalendar } from "@/components/dashboard/month-calendar";
 import { TermLoadChart } from "@/components/dashboard/term-load-chart";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { degreeByCode, majorByCode } from "@/lib/catalogue";
 import {
   coursesByLevel,
@@ -17,11 +17,7 @@ import {
   loadByTerm,
   markSeries,
 } from "@/lib/dashboard-series";
-import {
-  STANDARD_TERM_UNITS,
-  degreeUnitProgress,
-  unitsByCalendarYear,
-} from "@/lib/planner";
+import { STANDARD_TERM_UNITS, degreeUnitProgress } from "@/lib/planner";
 import { currentTermLoad } from "@/lib/study-calendar";
 import {
   planIssues,
@@ -34,19 +30,18 @@ export default function DashboardPage() {
   const degree = degreeByCode(state.profile.degreeCode);
   const major = majorByCode(state.profile.majorCode);
   const progress = degreeUnitProgress(state.attempts, degree.units);
-  const years = unitsByCalendarYear(state.attempts);
   const load = currentTermLoad(state.attempts);
   const average = recordedAverage(state.attempts);
   const issues = planIssues(state.attempts);
-  const completedSeries = cumulativeCompletedByTerm(state.attempts);
-  const loadSeries = loadByTerm(state.attempts);
+  const completed = cumulativeCompletedByTerm(state.attempts);
+  const loads = loadByTerm(state.attempts);
   const marks = markSeries(state.attempts);
   const mix = coursesByLevel(state.attempts);
   const groups = requirementProgress(state.attempts, major.courseCodes);
 
   return (
     <AppShell title="Home" subtitle="Your degree at a glance">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto flex max-w-6xl flex-col gap-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-zinc-900">
@@ -69,56 +64,79 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <section
-          aria-label="Key figures"
-          className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4"
-        >
-          <KpiCard
-            label="Degree complete"
-            value={`${progress.percent}%`}
-            hint={`${progress.completed} of ${progress.total} units`}
-            series={completedSeries.map(
-              (units) => (units / progress.total) * 100,
-            )}
-            seriesLabel="Degree completion across study periods"
-          />
-          <KpiCard
-            label="Units earned"
-            value={progress.completed}
-            hint={`${progress.planned} still in the plan`}
-            series={completedSeries}
-            seriesLabel="Units earned across study periods"
-          />
-          <KpiCard
-            label={
-              load.term
-                ? `${load.term.shortName} ${load.term.year}`
-                : "This period"
-            }
-            value={load.units}
-            hint={`${load.courses} ${load.courses === 1 ? "course" : "courses"} · ${STANDARD_TERM_UNITS}u load`}
-            series={loadSeries.map((item) => item.units)}
-            seriesLabel="Units planned in each study period"
-          />
-          <KpiCard
-            label="Recorded average"
-            value={average ?? "Not set"}
-            hint={average ? "From marks in Coursemap" : "No marks recorded"}
-            series={marks}
-            seriesLabel="Recorded marks over time"
-          />
+        <section className="space-y-2">
+          <h2 className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+            Performance
+          </h2>
+          <Card className="overflow-hidden">
+            <MetricsPanel
+              metrics={[
+                {
+                  id: "complete",
+                  label: "Degree complete",
+                  value: `${progress.percent}%`,
+                  hint: `${progress.completed} of ${progress.total} units`,
+                  points: completed.map((point) => ({
+                    label: point.label,
+                    value: (point.value / progress.total) * 100,
+                  })),
+                  format: (value) => `${Math.round(value)}%`,
+                },
+                {
+                  id: "earned",
+                  label: "Units earned",
+                  value: String(progress.completed),
+                  hint: `${progress.planned} still in the plan`,
+                  points: completed,
+                  format: (value) => `${value} units`,
+                },
+                {
+                  id: "load",
+                  label: load.term
+                    ? `${load.term.shortName} ${load.term.year}`
+                    : "This period",
+                  value: String(load.units),
+                  hint: `${load.courses} ${load.courses === 1 ? "course" : "courses"} · ${STANDARD_TERM_UNITS}u load`,
+                  points: loads.map((item) => ({
+                    label: item.label,
+                    value: item.units,
+                  })),
+                  format: (value) => `${value} units`,
+                },
+                {
+                  id: "average",
+                  label: "Recorded average",
+                  value: average ? String(average) : "Not set",
+                  hint: average
+                    ? "From marks in Coursemap"
+                    : "No marks recorded",
+                  points: marks,
+                  format: (value) => String(Math.round(value)),
+                },
+              ]}
+            />
+          </Card>
         </section>
 
-        <div className="mt-4 grid items-start gap-4 xl:grid-cols-3">
-          <CourseProgressChart progressByGroup={groups} />
-          <DegreeCharts progress={progress} years={years} />
-          <MonthCalendar attempts={state.attempts} />
-        </div>
+        <section className="space-y-2">
+          <h2 className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+            Progress
+          </h2>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <CourseProgressChart progressByGroup={groups} />
+            <TermLoadChart terms={loads} />
+          </div>
+        </section>
 
-        <div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(16rem,0.8fr)]">
-          <TermLoadChart terms={loadSeries} />
-          <CourseMixChart levels={mix} />
-        </div>
+        <section className="space-y-2">
+          <h2 className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+            This month
+          </h2>
+          <div className="grid items-start gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+            <MonthCalendar attempts={state.attempts} />
+            <CourseMixChart levels={mix} />
+          </div>
+        </section>
       </div>
     </AppShell>
   );

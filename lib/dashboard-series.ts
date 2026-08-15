@@ -2,17 +2,16 @@ import { courseByCode, terms, type Attempt } from "@/lib/catalogue";
 
 const scheduledTerms = terms.filter((term) => term.id !== "unscheduled");
 
-function unitsInTerm(
-  attempts: Attempt[],
-  termId: string,
-  statuses?: Attempt["status"][],
-) {
+export type SeriesPoint = { label: string; value: number };
+
+function termLabel(year: number, shortName: string) {
+  return `${shortName} ${String(year).slice(2)}`;
+}
+
+function unitsInTerm(attempts: Attempt[], termId: string) {
   return attempts
     .filter(
-      (attempt) =>
-        attempt.termId === termId &&
-        attempt.status !== "failed" &&
-        (!statuses || statuses.includes(attempt.status)),
+      (attempt) => attempt.termId === termId && attempt.status !== "failed",
     )
     .reduce(
       (total, attempt) =>
@@ -21,7 +20,7 @@ function unitsInTerm(
     );
 }
 
-export function cumulativeCompletedByTerm(attempts: Attempt[]) {
+export function cumulativeCompletedByTerm(attempts: Attempt[]): SeriesPoint[] {
   let running = 0;
   const seen = new Set<string>();
   return scheduledTerms.map((term) => {
@@ -35,42 +34,28 @@ export function cumulativeCompletedByTerm(attempts: Attempt[]) {
         seen.add(attempt.courseCode);
         running += courseByCode(attempt.courseCode)?.units ?? 0;
       });
-    return running;
-  });
-}
-
-export function cumulativeMappedByTerm(attempts: Attempt[]) {
-  let running = 0;
-  const seen = new Set<string>();
-  return scheduledTerms.map((term) => {
-    attempts
-      .filter(
-        (attempt) => attempt.termId === term.id && attempt.status !== "failed",
-      )
-      .forEach((attempt) => {
-        if (seen.has(attempt.courseCode)) return;
-        seen.add(attempt.courseCode);
-        running += courseByCode(attempt.courseCode)?.units ?? 0;
-      });
-    return running;
+    return { label: termLabel(term.year, term.shortName), value: running };
   });
 }
 
 export function loadByTerm(attempts: Attempt[]) {
   return scheduledTerms.map((term) => ({
     id: term.id,
-    label: `${term.shortName} ${String(term.year).slice(2)}`,
+    label: termLabel(term.year, term.shortName),
     units: unitsInTerm(attempts, term.id),
   }));
 }
 
-export function markSeries(attempts: Attempt[]) {
+export function markSeries(attempts: Attempt[]): SeriesPoint[] {
   return scheduledTerms.flatMap((term) =>
     attempts
       .filter(
         (attempt) => attempt.termId === term.id && attempt.mark !== undefined,
       )
-      .map((attempt) => attempt.mark ?? 0),
+      .map((attempt) => ({
+        label: `${attempt.courseCode} · ${termLabel(term.year, term.shortName)}`,
+        value: attempt.mark ?? 0,
+      })),
   );
 }
 

@@ -242,8 +242,9 @@ test("builds cumulative earned units after each study period", () => {
     attempt("a2", "MATH1005", "2026-s1", "completed"),
     attempt("a3", "COMP1600", "2026-s2"),
   ]);
-  assert.equal(values[0], 12);
-  assert.equal(values[1], 12);
+  assert.equal(values[0].value, 12);
+  assert.equal(values[1].value, 12);
+  assert.equal(values[0].label, "S1 26");
 });
 
 test("reports study-period load without counting failed attempts", () => {
