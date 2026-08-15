@@ -18,6 +18,8 @@ import {
   type YearMonth,
 } from "@/lib/study-calendar";
 
+const gridCells = 42;
+
 export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
   const today = useMemo(() => new Date(), []);
   const initial = useMemo(
@@ -25,10 +27,15 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
     [attempts, today],
   );
   const [focus, setFocus] = useState<YearMonth>(initial);
+  const cells = monthCells(focus);
+  const padded: Array<Date | null> = [
+    ...cells,
+    ...Array.from({ length: gridCells - cells.length }, () => null),
+  ];
 
   return (
-    <Card className="w-full p-4">
-      <div className="mb-1 flex items-center justify-between gap-2">
+    <Card className="flex h-[21.5rem] w-full flex-col p-4 lg:w-72">
+      <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-zinc-900">
           {monthLabel(focus)}
         </p>
@@ -55,12 +62,12 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
         {weekdayLabels.map((label) => (
           <div
             key={label}
-            className="py-1 text-center text-[10px] font-semibold tracking-wide text-zinc-400 uppercase"
+            className="pb-1 text-center text-[10px] font-semibold tracking-wide text-zinc-400 uppercase"
           >
             {label}
           </div>
         ))}
-        {monthCells(focus).map((cell, index) => {
+        {padded.map((cell, index) => {
           if (!cell) {
             return <div key={`empty-${index}`} className="h-9" />;
           }
@@ -72,16 +79,6 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
             !isToday && events.length > 0 && "text-zinc-900",
             !isToday && events.length === 0 && "text-zinc-500",
           );
-          const mark =
-            events.length > 0 ? (
-              <span
-                className={cn(
-                  "mt-px size-1 rounded-full",
-                  isToday ? "bg-white" : accent[events[0].course.accent].dot,
-                )}
-                aria-hidden="true"
-              />
-            ) : null;
 
           if (events.length === 0) {
             return (
@@ -102,37 +99,27 @@ export function MonthCalendar({ attempts }: { attempts: Attempt[] }) {
                 className={cn(dayClass, !isToday && "hover:bg-zinc-100")}
               >
                 {cell.getDate()}
-                {mark}
+                <span
+                  className={cn(
+                    "mt-px size-1 rounded-full",
+                    isToday ? "bg-white" : accent[events[0].course.accent].dot,
+                  )}
+                  aria-hidden="true"
+                />
               </button>
-              <div
+              <span
                 aria-hidden="true"
-                className="pointer-events-none absolute top-full left-1/2 z-20 hidden w-40 -translate-x-1/2 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-white shadow-md group-focus-within:block group-hover:block"
+                className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 rounded-lg bg-zinc-900 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white shadow-md group-focus-within:block group-hover:block"
               >
-                <p className="text-[10px] text-zinc-400">
-                  {cell.toLocaleDateString("en-AU", {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </p>
-                <ul className="mt-1 space-y-0.5">
-                  {events.map((event) => (
-                    <li
-                      key={event.attempt.id}
-                      className="font-mono text-[11px] font-semibold"
-                    >
-                      {event.course.code}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {events.map((event) => event.course.code).join(", ")}
+              </span>
             </div>
           );
         })}
       </div>
       <Link
         href="/calendar"
-        className="mt-2 inline-flex min-h-11 items-center text-xs font-semibold text-brand-600 hover:text-brand-700"
+        className="mt-auto text-xs font-semibold text-brand-600 hover:text-brand-700"
       >
         Open calendar
       </Link>

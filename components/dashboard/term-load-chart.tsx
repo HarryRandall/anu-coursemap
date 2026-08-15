@@ -1,54 +1,68 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import type { TermUnits } from "@/lib/dashboard-series";
 import { STANDARD_TERM_UNITS } from "@/lib/planner";
 
 export function TermLoadChart({
   terms,
+  currentTermId,
 }: {
-  terms: Array<{ id: string; label: string; units: number }>;
+  terms: TermUnits[];
+  currentTermId?: string;
 }) {
-  const max = Math.max(STANDARD_TERM_UNITS, ...terms.map((term) => term.units));
-
   return (
-    <Card className="p-4">
-      <div className="mb-4">
+    <Card className="flex h-full flex-col p-5">
+      <div>
         <h2 className="text-sm font-semibold text-zinc-900">Semester load</h2>
         <p className="mt-0.5 text-[11px] text-zinc-500">
-          Standard load is {STANDARD_TERM_UNITS} units
+          A full bar is the standard {STANDARD_TERM_UNITS} unit load
         </p>
       </div>
-      <div className="flex h-32 items-end gap-2">
+      <ul className="mt-4 space-y-3">
         {terms.map((term) => {
-          const height = (term.units / max) * 100;
           const overloaded = term.units > STANDARD_TERM_UNITS;
+          const current = term.id === currentTermId;
           return (
-            <div
+            <li
               key={term.id}
-              title={`${term.label}: ${term.units} units`}
-              className="flex min-w-0 flex-1 flex-col items-center gap-1.5"
+              className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.5rem] items-center gap-3"
             >
-              <p className="text-[10px] font-semibold text-zinc-700 tabular-nums">
-                {term.units}
-              </p>
-              <div className="flex h-20 w-full max-w-10 items-end">
+              <span
+                className={cn(
+                  "text-[11px] font-medium",
+                  current ? "text-zinc-900" : "text-zinc-500",
+                )}
+              >
+                {term.label}
+              </span>
+              <span
+                aria-hidden="true"
+                className="flex h-2 overflow-hidden rounded-full bg-zinc-100"
+              >
                 <span
                   className={cn(
-                    "block w-full rounded-t-md",
-                    overloaded ? "bg-amber-500" : "bg-brand-500",
+                    "rounded-full",
+                    overloaded && "bg-amber-500",
+                    !overloaded && current && "bg-brand-600",
+                    !overloaded && !current && "bg-brand-400",
                   )}
                   style={{
-                    height: `${Math.max(height, term.units > 0 ? 8 : 0)}%`,
+                    width: `${Math.min(100, (term.units / STANDARD_TERM_UNITS) * 100)}%`,
                   }}
-                  aria-label={`${term.label}: ${term.units} units`}
                 />
-              </div>
-              <p className="w-full truncate text-center text-[10px] font-medium text-zinc-400">
-                {term.label}
-              </p>
-            </div>
+              </span>
+              <span className="text-right text-[11px] text-zinc-600 tabular-nums">
+                {term.units}u
+              </span>
+            </li>
           );
         })}
-      </div>
+      </ul>
+      {terms.some((term) => term.units > STANDARD_TERM_UNITS) && (
+        <p className="mt-auto pt-4 text-[11px] text-amber-700">
+          Amber marks a study period above the standard load.
+        </p>
+      )}
     </Card>
   );
 }

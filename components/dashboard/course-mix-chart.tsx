@@ -28,8 +28,8 @@ export function CourseMixChart({
   }, []);
 
   return (
-    <Card className="p-4">
-      <div className="mb-4">
+    <Card className="flex h-full flex-col p-5">
+      <div>
         <h2 className="text-sm font-semibold text-zinc-900">Course mix</h2>
         <p className="mt-0.5 text-[11px] text-zinc-500">
           {total === 0
@@ -37,7 +37,7 @@ export function CourseMixChart({
             : `${total} courses in your plan`}
         </p>
       </div>
-      <div className="flex items-center gap-5">
+      <div className="flex flex-1 items-center gap-6">
         <div className="relative size-24 shrink-0">
           <svg viewBox="0 0 96 96" className="-rotate-90" aria-hidden="true">
             <circle
@@ -68,22 +68,33 @@ export function CourseMixChart({
             </p>
           </div>
         </div>
-        <ul className="min-w-0 flex-1 space-y-2">
+        <ul className="min-w-0 flex-1 space-y-3">
           {levels.map((item, index) => (
-            <li
-              key={item.level}
-              className="flex items-center justify-between gap-3 text-[12px]"
-            >
-              <span className="flex items-center gap-2 text-zinc-500">
+            <li key={item.level} className="text-[12px]">
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2 text-zinc-500">
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: colours[index] }}
+                    aria-hidden="true"
+                  />
+                  {item.label}
+                </span>
+                <span className="font-semibold text-zinc-800 tabular-nums">
+                  {item.count}
+                </span>
+              </div>
+              <span
+                aria-hidden="true"
+                className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-zinc-100"
+              >
                 <span
-                  className="size-2 rounded-full"
-                  style={{ backgroundColor: colours[index] }}
-                  aria-hidden="true"
+                  className="rounded-full"
+                  style={{
+                    width: total === 0 ? 0 : `${(item.count / total) * 100}%`,
+                    backgroundColor: colours[index],
+                  }}
                 />
-                {item.label}
-              </span>
-              <span className="font-semibold text-zinc-800 tabular-nums">
-                {item.count}
               </span>
             </li>
           ))}

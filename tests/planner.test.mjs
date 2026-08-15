@@ -236,23 +236,28 @@ test("builds a Monday-first month grid", () => {
 
 const series = await compileLib("dashboard-series");
 
-test("builds cumulative earned units after each study period", () => {
-  const values = series.cumulativeCompletedByTerm([
+test("builds cumulative earned and planned units after each study period", () => {
+  const values = series.cumulativeUnitsByTerm([
     attempt("a1", "COMP1100", "2026-s1", "completed"),
     attempt("a2", "MATH1005", "2026-s1", "completed"),
     attempt("a3", "COMP1600", "2026-s2"),
   ]);
-  assert.equal(values[0].value, 12);
-  assert.equal(values[1].value, 12);
   assert.equal(values[0].label, "S1 26");
+  assert.equal(values[0].completed, 12);
+  assert.equal(values[0].planned, 0);
+  assert.equal(values[1].completed, 12);
+  assert.equal(values[1].planned, 6);
+  assert.equal(values[1].units, 18);
 });
 
 test("reports study-period load without counting failed attempts", () => {
-  const loads = series.loadByTerm([
+  const loads = series.unitsByTerm([
     attempt("a1", "COMP1100", "2026-s1", "completed"),
     attempt("a2", "COMP1110", "2026-s2", "failed"),
     attempt("a3", "COMP1600", "2026-s2"),
   ]);
   assert.equal(loads[0].units, 6);
+  assert.equal(loads[0].completed, 6);
   assert.equal(loads[1].units, 6);
+  assert.equal(loads[1].planned, 6);
 });
