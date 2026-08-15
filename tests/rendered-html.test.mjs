@@ -193,7 +193,8 @@ test("server-renders the routed Coursemap degree planner", async () => {
   const recommendedAdds = (
     html.match(/Add recommended course [A-Z]{4}\d+/g) ?? []
   ).length;
-  assert.equal(emptyAdds + recommendedAdds, 17);
+  assert.ok(recommendedAdds > 0);
+  assert.equal(emptyAdds + recommendedAdds, 18);
   assert.match(html, /Degree progress/i);
   assert.doesNotMatch(html, /Edit degree/i);
   assert.doesNotMatch(html, /18 of 144 units completed/i);
