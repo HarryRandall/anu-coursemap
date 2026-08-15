@@ -19,15 +19,16 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
     <DataTableShell
       footer={
         <p className="text-xs text-zinc-500">
-          Viewing {courses.length.toLocaleString("en-AU")}{" "}
-          {courses.length === 1 ? "course" : "courses"}
+          {`Viewing ${courses.length.toLocaleString("en-AU")} ${
+            courses.length === 1 ? "course" : "courses"
+          }`}
         </p>
       }
     >
       <table className={tableClasses("table-fixed")}>
         <colgroup>
-          <col className="w-[62%]" />
-          <col className="w-[38%]" />
+          <col />
+          <col className="w-[14rem]" />
         </colgroup>
         <thead className={tableHeadClasses()}>
           <tr>

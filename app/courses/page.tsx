@@ -79,3 +79,5 @@ export default async function CoursesPage({
     </AppShell>
   );
 }
+
+export const dynamic = "force-dynamic";
