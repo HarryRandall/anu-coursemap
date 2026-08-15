@@ -31,8 +31,8 @@ export default async function SignInPage({
           className="inline-flex items-center gap-2.5 text-zinc-900"
           aria-label="Browse Coursemap courses"
         >
-          <BrandMark className="size-9" />
-          <strong className="text-lg tracking-tight">coursemap</strong>
+          <BrandMark className="size-10" />
+          <strong className="brand-wordmark text-lg">coursemap</strong>
         </Link>
 
         <div className="mt-7">
