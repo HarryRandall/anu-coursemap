@@ -82,6 +82,18 @@ test("keeps anonymous public routes available without demo data", async () => {
   assert.doesNotMatch(html, /Admin console/i);
 });
 
+test("renders password authentication without magic-link instructions", async () => {
+  const response = await request("/auth/sign-in?next=%2Fplan");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /name="email"/i);
+  assert.match(html, /name="password"/i);
+  assert.match(html, /autocomplete="current-password"/i);
+  assert.match(html, /Create an account/i);
+  assert.doesNotMatch(html, /magic link|Mailpit|one-time email link/i);
+});
+
 test("redirects protected routes to the canonical sign-in page", async () => {
   for (const path of [
     "/plan?year=2026",

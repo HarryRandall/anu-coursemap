@@ -2,10 +2,7 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
 import { safeInternalRedirect } from "@/lib/auth/redirect";
-import {
-  getCanonicalSiteOrigin,
-  getSupabaseConfig,
-} from "@/lib/supabase/config";
+import { getSupabaseConfig } from "@/lib/supabase/config";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -21,8 +18,7 @@ export default async function SignInPage({
   const params = await searchParams;
   const next = safeInternalRedirect(first(params.next));
 
-  const callbackOrigin = getCanonicalSiteOrigin();
-  const configured = Boolean(getSupabaseConfig() && callbackOrigin);
+  const configured = Boolean(getSupabaseConfig());
   const signedOut = first(params.signedOut) === "true";
   const configurationMissing = first(params.reason) === "configuration";
 
@@ -51,7 +47,7 @@ export default async function SignInPage({
             Sign in to your plan
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-            Use a secure, one-time email link. No password is required.
+            Use your email address and Coursemap password.
           </p>
         </div>
 
@@ -72,18 +68,14 @@ export default async function SignInPage({
         )}
 
         <div className="mt-6">
-          <SignInForm
-            next={next}
-            configured={configured}
-            callbackOrigin={callbackOrigin}
-          />
+          <SignInForm next={next} configured={configured} />
         </div>
 
         <div className="mt-6 flex items-start gap-2 border-t border-zinc-100 pt-5 text-[11px] leading-relaxed text-zinc-400">
           <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
           <p>
-            Authentication is handled by Supabase. Coursemap never asks for or
-            stores an ANU password.
+            Passwords are handled securely by Supabase. Use a unique password,
+            not your ANU password.
           </p>
         </div>
       </section>

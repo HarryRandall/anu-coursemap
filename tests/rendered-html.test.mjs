@@ -89,6 +89,10 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(coursesHtml, /Computing Project/i);
   assert.match(signInHtml, /Sign in to your plan/i);
   assert.match(signInHtml, /name="next" value="\/plan"/i);
+  assert.match(signInHtml, /name="email"/i);
+  assert.match(signInHtml, /name="password"/i);
+  assert.match(signInHtml, /Create an account/i);
+  assert.doesNotMatch(signInHtml, /magic link|Mailpit|one-time email link/i);
 });
 
 test("fails closed for malformed auth handlers and cross-origin logout", async () => {

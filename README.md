@@ -47,12 +47,13 @@ open [http://localhost:3000](http://localhost:3000). Do not commit `.env.local`
 or any Supabase secret key.
 
 Student and admin routes require an account in the configured Supabase project
-when `COURSEMAP_DEMO_MODE=false`. Request a magic link at `/auth/sign-in`. The
-local stack delivers it through the Mailpit interface reported by
-`supabase status`; the hosted project delivers it to the supplied address.
-Keep `NEXT_PUBLIC_SITE_URL=http://localhost:3000` so PKCE begins and completes
-on the same trusted origin. Exact `COURSEMAP_DEMO_MODE=true` is reserved for
-the isolated prototype fixture and rendered CI tests.
+when `COURSEMAP_DEMO_MODE=false`. Create an email-and-password account at
+`/auth/sign-in`. Local email confirmations are disabled in
+`supabase/config.toml` so the account receives a session immediately. Disable
+**Confirm email** under **Authentication > Sign In / Providers > Email** in a
+hosted Supabase project before enabling password-only sign-up there. Exact
+`COURSEMAP_DEMO_MODE=true` is reserved for the isolated prototype fixture and
+rendered CI tests.
 
 The Sydney hosted development project has the complete migration history,
 Row Level Security policies and the reviewed 2026 BCOMP and SOFT-MAJ structure
