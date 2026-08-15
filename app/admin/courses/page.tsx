@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ExternalLink, FilterX, Pencil, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/shell";
@@ -118,13 +119,15 @@ export default function AdminCoursesPage() {
               {filtered.map((course) => (
                 <tr
                   key={course.code}
-                  onClick={() => setEditing(course)}
-                  className="cursor-pointer transition hover:bg-zinc-50/70"
+                  className="transition hover:bg-zinc-50/70"
                 >
                   <td className="px-4 py-3">
-                    <span className="block font-mono text-[12px] font-semibold text-zinc-900">
+                    <Link
+                      href={`/admin/courses/${course.code}`}
+                      className="block rounded font-mono text-[12px] font-semibold text-zinc-900 outline-none hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-400"
+                    >
                       {course.code}
-                    </span>
+                    </Link>
                     <span className="block max-w-56 truncate text-[11px] text-zinc-400">
                       {course.name}
                     </span>
@@ -164,6 +167,13 @@ export default function AdminCoursesPage() {
                     onClick={(event) => event.stopPropagation()}
                   >
                     <div className="flex items-center gap-1">
+                      <Link
+                        href={`/admin/courses/${course.code}`}
+                        aria-label={`Open ${course.code} details`}
+                        className="grid size-8 place-items-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+                      >
+                        <Search size={14} />
+                      </Link>
                       <button
                         type="button"
                         onClick={() => setEditing(course)}
