@@ -25,11 +25,34 @@ const hours = Array.from(
   (_, index) => DAY_START_HOUR + index,
 );
 
-/** Today is resolved on the client only so the grid hydrates deterministically. */
+let nowMs = Date.now();
+const nowListeners = new Set<() => void>();
+let nowTimer: ReturnType<typeof setInterval> | null = null;
+
+function subscribeToNow(listener: () => void) {
+  nowListeners.add(listener);
+  nowTimer ??= setInterval(() => {
+    nowMs = Date.now();
+    for (const notify of nowListeners) notify();
+  }, 60_000);
+  return () => {
+    nowListeners.delete(listener);
+    if (nowListeners.size === 0 && nowTimer) {
+      clearInterval(nowTimer);
+      nowTimer = null;
+    }
+  };
+}
+
+/**
+ * Today is resolved on the client only so the grid hydrates deterministically.
+ * The snapshot has to stay referentially stable between renders, so it is held
+ * in a module store and refreshed on a timer rather than read per render.
+ */
 function useClientNow() {
   return useSyncExternalStore(
-    () => () => {},
-    () => Date.now(),
+    subscribeToNow,
+    () => nowMs,
     () => null,
   );
 }
