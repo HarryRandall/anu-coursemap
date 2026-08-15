@@ -9,13 +9,11 @@ import {
   CheckCircle2,
   Clock3,
   GitBranch,
-  UsersRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/shell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
 
 const changes = [0, 2, 1, 0, 4, 0, 3];
 const days = ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue"];
@@ -73,29 +71,10 @@ const reviewQueue = [
 
 export default function AdminOverviewPage() {
   return (
-    <AppShell
-      title="Catalogue overview"
-      subtitle="Mock admin data · Supabase ready"
-      admin
-      actions={
-        <ButtonLink href="/admin/users" size="sm" variant="secondary">
-          <UsersRound size={14} aria-hidden="true" />
-          Users
-        </ButtonLink>
-      }
-    >
+    <AppShell admin>
       <h1 className="sr-only">Catalogue health at a glance</h1>
 
       <div className="mx-auto w-full max-w-[1400px]">
-        <div className="mb-6">
-          <p className="text-xl font-semibold tracking-tight text-zinc-950">
-            Catalogue overview
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">
-            Catalogue health, parser quality and recent import activity.
-          </p>
-        </div>
-
         {/* ShowCrafter-style unified KPI strip, using Coursemap tokens. */}
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200/70">
           <div className="grid divide-y divide-zinc-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">

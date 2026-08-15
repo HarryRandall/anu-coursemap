@@ -2,11 +2,16 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(18);
+select extensions.plan(30);
 
 select extensions.ok(
   to_regprocedure('public.set_user_role(uuid,text,boolean)') is not null,
   'the role-assignment RPC exists'
+);
+
+select extensions.ok(
+  to_regprocedure('public.set_role_permission(bigint,bigint,boolean)') is not null,
+  'the role-permission RPC exists'
 );
 
 select extensions.ok(
@@ -20,6 +25,19 @@ select extensions.ok(
       and functions.proconfig @> array['search_path=""']::text[]
   ),
   'the role-assignment RPC is volatile security invoker with a fixed search path'
+);
+
+select extensions.ok(
+  exists (
+    select 1
+    from pg_proc as functions
+    where functions.oid =
+      'public.set_role_permission(bigint,bigint,boolean)'::regprocedure
+      and not functions.prosecdef
+      and functions.provolatile = 'v'
+      and functions.proconfig @> array['search_path=""']::text[]
+  ),
+  'the role-permission RPC is volatile security invoker with a fixed search path'
 );
 
 select extensions.ok(
@@ -42,6 +60,25 @@ select extensions.ok(
 );
 
 select extensions.ok(
+  has_function_privilege(
+    'authenticated',
+    'public.set_role_permission(bigint,bigint,boolean)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.set_role_permission(bigint,bigint,boolean)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'public.set_role_permission(bigint,bigint,boolean)',
+    'execute'
+  ),
+  'only authenticated API users can execute the role-permission RPC'
+);
+
+select extensions.ok(
   exists (
     select 1
     from pg_class as relations
@@ -53,6 +90,20 @@ select extensions.ok(
     select 1
     from pg_class as relations
     where relations.oid = 'public.admin_roles'::regclass
+      and relations.reloptions @> array['security_invoker=true']::text[]
+  )
+  and exists (
+    select 1
+    from pg_class as relations
+    where relations.oid = 'public.admin_permissions'::regclass
+      and relations.relkind = 'v'
+      and relations.reloptions @> array['security_invoker=true']::text[]
+  )
+  and exists (
+    select 1
+    from pg_class as relations
+    where relations.oid = 'public.admin_role_permissions'::regclass
+      and relations.relkind = 'v'
       and relations.reloptions @> array['security_invoker=true']::text[]
   )
   and exists (
@@ -163,6 +214,15 @@ select extensions.is(
   'a student cannot read the admin role catalogue'
 );
 
+select extensions.is(
+  (
+    (select count(*) from public.admin_permissions)
+    + (select count(*) from public.admin_role_permissions)
+  ),
+  0::bigint,
+  'a student cannot read permission definitions or role grants'
+);
+
 select extensions.throws_ok(
   $$
     select public.set_user_role(
@@ -174,6 +234,15 @@ select extensions.throws_ok(
   '42501',
   'Administrator access is required.',
   'a student cannot assign roles'
+);
+
+select extensions.throws_ok(
+  $$
+    select public.set_role_permission(1, 1, true)
+  $$,
+  '42501',
+  'Administrator access is required.',
+  'a student cannot change role permissions'
 );
 
 select extensions.throws_ok(
@@ -222,6 +291,104 @@ select extensions.ok(
       and permission_keys @> array['admin.access', 'catalogue.write']::text[]
   ),
   'the role catalogue includes effective permissions'
+);
+
+select extensions.ok(
+  exists (
+    select 1
+    from public.admin_roles
+    where role_key = 'catalogue_admin'
+      and role_description is not null
+  )
+  and exists (
+    select 1
+    from public.admin_permissions
+    where permission_key = 'catalogue.read_drafts'
+      and permission_name = 'Read drafts'
+      and permission_category = 'catalogue'
+      and permission_description is not null
+  ),
+  'the editable role catalogue includes display metadata'
+);
+
+select extensions.is(
+  public.set_role_permission(
+    (select role_id from public.admin_roles where role_key = 'catalogue_previewer'),
+    (
+      select permission_id
+      from public.admin_permissions
+      where permission_key = 'imports.manage'
+    ),
+    true
+  ),
+  true,
+  'an administrator can enable a role permission'
+);
+
+select extensions.ok(
+  exists (
+    select 1
+    from public.admin_role_permissions as grants
+    join public.admin_roles as roles on roles.role_id = grants.role_id
+    join public.admin_permissions as permissions
+      on permissions.permission_id = grants.permission_id
+    where roles.role_key = 'catalogue_previewer'
+      and permissions.permission_key = 'imports.manage'
+  ),
+  'an enabled role permission appears in the admin projection'
+);
+
+select extensions.is(
+  public.set_role_permission(
+    (select role_id from public.admin_roles where role_key = 'catalogue_previewer'),
+    (
+      select permission_id
+      from public.admin_permissions
+      where permission_key = 'imports.manage'
+    ),
+    false
+  ),
+  false,
+  'an administrator can disable a role permission'
+);
+
+select extensions.ok(
+  not exists (
+    select 1
+    from public.admin_role_permissions as grants
+    join public.admin_roles as roles on roles.role_id = grants.role_id
+    join public.admin_permissions as permissions
+      on permissions.permission_id = grants.permission_id
+    where roles.role_key = 'catalogue_previewer'
+      and permissions.permission_key = 'imports.manage'
+  ),
+  'a disabled role permission is removed from the admin projection'
+);
+
+select extensions.throws_ok(
+  $$
+    select public.set_role_permission(
+      (select role_id from public.admin_roles where role_key = 'catalogue_admin'),
+      (
+        select permission_id
+        from public.admin_permissions
+        where permission_key = 'admin.access'
+      ),
+      false
+    )
+  $$,
+  '22023',
+  'Administrator access is required for the catalogue administrator role.',
+  'the catalogue administrator role keeps its required access permission'
+);
+
+select extensions.throws_ok(
+  $$
+    select public.set_role_permission(999999, 999999, true)
+  $$,
+  '22023',
+  'The selected role or permission does not exist.',
+  'unknown role and permission identifiers are rejected'
 );
 
 select extensions.is(
