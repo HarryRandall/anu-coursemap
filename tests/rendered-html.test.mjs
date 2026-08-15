@@ -143,7 +143,10 @@ test("server-renders the complete student workspace", async () => {
   assert.doesNotMatch(calendarHtml, /Class timetable|Assessments and dates/i);
   assert.match(requirementsHtml, /Rule group coverage/i);
   assert.match(requirementsHtml, /possible matches, not a final allocation/i);
-  assert.match(roadmapHtml, /Build the useful things first/i);
+  assert.match(roadmapHtml, /Visual degree planning/i);
+  assert.match(roadmapHtml, /The current product focus/i);
+  assert.doesNotMatch(roadmapHtml, /Build the useful things first/i);
+  assert.doesNotMatch(roadmapHtml, /Something important missing/i);
   assert.match(roomsHtml, /Find the right room/i);
   assert.match(helpHtml, /How can we help/i);
   assert.match(helpHtml, /Read guide/i);
