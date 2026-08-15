@@ -22,6 +22,13 @@ function parseProgrammeCodes(value: string | null) {
     .slice(0, 20);
 }
 
+function parseCourseCodes(value: string | null) {
+  if (!value) return [];
+  return [...new Set(value.split(",").map((code) => code.trim().toUpperCase()))]
+    .filter((code) => /^[A-Z]{4}\d{4}$/.test(code))
+    .slice(0, 100);
+}
+
 async function getImportedCourseCodes(
   year: number,
 ): Promise<ImportedCourseCodes> {
@@ -93,7 +100,7 @@ export async function GET(request: Request) {
     );
   }
 
-  if (target === "all") {
+  if (target === "all" || target === "all-courses") {
     const params = new URLSearchParams({
       SearchText: "",
       SelectedYear: String(year),
@@ -132,6 +139,28 @@ export async function GET(request: Request) {
       existingCourses,
       newCourses: discoveredCodes.size - existingCourses,
       isLowerBound: true,
+      comparison: imported.comparison,
+    });
+  }
+
+  if (target === "courses") {
+    const courseCodes = parseCourseCodes(searchParams.get("courses"));
+    if (courseCodes.length === 0) {
+      return NextResponse.json(
+        { error: "Choose at least one course." },
+        { status: 400 },
+      );
+    }
+
+    const existingCourses = courseCodes.filter((code) =>
+      imported.codes.has(code),
+    ).length;
+    return NextResponse.json({
+      programmes: null,
+      coursePages: courseCodes.length,
+      existingCourses,
+      newCourses: courseCodes.length - existingCourses,
+      isLowerBound: false,
       comparison: imported.comparison,
     });
   }

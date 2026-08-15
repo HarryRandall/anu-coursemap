@@ -34,14 +34,23 @@ export default function AdminSyncPreviewPage() {
 function SyncPreview() {
   const searchParams = useSearchParams();
   const year = searchParams.get("year") ?? "2026";
-  const target = searchParams.get("target") === "all" ? "all" : "selected";
+  const target = ["all", "all-courses", "courses"].includes(
+    searchParams.get("target") ?? "",
+  )
+    ? (searchParams.get("target") as "all" | "all-courses" | "courses")
+    : "selected";
   const programmes = searchParams.get("programmes") ?? "";
+  const courses = searchParams.get("courses") ?? "";
+  const editHref =
+    target === "courses" || target === "all-courses"
+      ? "/admin/sync/courses"
+      : "/admin/sync";
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    const params = new URLSearchParams({ year, target, programmes });
+    const params = new URLSearchParams({ year, target, programmes, courses });
 
     fetch(`/api/admin/catalogue/preview?${params}`, {
       signal: controller.signal,
@@ -66,13 +75,13 @@ function SyncPreview() {
       });
 
     return () => controller.abort();
-  }, [programmes, target, year]);
+  }, [courses, programmes, target, year]);
 
   return (
     <AppShell admin>
       <div className="w-full">
         <Link
-          href="/admin/sync"
+          href={editHref}
           className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-950"
         >
           <ArrowLeft size={16} /> Edit sync
@@ -83,7 +92,11 @@ function SyncPreview() {
         <p className="mt-2 text-sm text-zinc-500">
           {target === "all"
             ? `All programmes from ${year}`
-            : `${programmes.split(",").length} selected programme${programmes.includes(",") ? "s" : ""} from ${year}`}
+            : target === "all-courses"
+              ? `All course pages from ${year}`
+              : target === "courses"
+                ? `${courses.split(",").length} selected course${courses.includes(",") ? "s" : ""} from ${year}`
+                : `${programmes.split(",").length} selected programme${programmes.includes(",") ? "s" : ""} from ${year}`}
         </p>
 
         <div className="mt-10 grid gap-5 lg:grid-cols-3">
@@ -131,17 +144,23 @@ function SyncPreview() {
             What will sync
           </h2>
           <div className="mt-4 grid gap-3 text-sm text-zinc-700 sm:grid-cols-2">
+            {target !== "courses" && target !== "all-courses" && (
+              <p className="flex items-center gap-2">
+                <Check size={16} className="text-emerald-600" /> Programme
+                structures and rules
+              </p>
+            )}
             <p className="flex items-center gap-2">
-              <Check size={16} className="text-emerald-600" /> Programme
-              structures and rules
+              <Check size={16} className="text-emerald-600" />
+              {target === "courses" || target === "all-courses"
+                ? "Course details and offerings"
+                : "Required and elective course pages"}
             </p>
-            <p className="flex items-center gap-2">
-              <Check size={16} className="text-emerald-600" /> Required and
-              elective course pages
-            </p>
-            <p className="flex items-center gap-2">
-              <Check size={16} className="text-emerald-600" /> Study options
-            </p>
+            {target !== "courses" && target !== "all-courses" && (
+              <p className="flex items-center gap-2">
+                <Check size={16} className="text-emerald-600" /> Study options
+              </p>
+            )}
             <p className="flex items-center gap-2">
               <Check size={16} className="text-emerald-600" /> Prerequisite
               relationships
