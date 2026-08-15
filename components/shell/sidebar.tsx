@@ -87,9 +87,7 @@ function Brand() {
       className="flex items-center gap-2.5 px-1.5"
     >
       <BrandMark className="size-9" />
-      <strong className="brand-wordmark text-[17px]">
-        coursemap
-      </strong>
+      <strong className="brand-wordmark text-[17px]">coursemap</strong>
     </Link>
   );
 }
