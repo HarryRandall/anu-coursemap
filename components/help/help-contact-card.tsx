@@ -19,9 +19,12 @@ export function HelpContactCard() {
 
   return (
     <>
-      <Card className="p-5">
+      <Card className="flex h-full flex-col p-6 sm:p-7">
         <Badge tone="brand">Contact us</Badge>
-        <div className="mt-3 space-y-2">
+        <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+          Report a bug, flag catalogue data or ask for a planning improvement.
+        </p>
+        <div className="mt-4 flex flex-1 flex-col justify-evenly gap-1">
           {helpContactReasons.map((contact) => {
             const Icon =
               reasonIcons[contact.id as keyof typeof reasonIcons] ?? Mail;
@@ -29,17 +32,17 @@ export function HelpContactCard() {
               <Button
                 key={contact.id}
                 variant="ghost"
-                className="h-auto min-h-16 w-full justify-start px-2 py-2 text-left !whitespace-normal"
+                className="h-auto min-h-16 w-full justify-start px-2 py-3 text-left !whitespace-normal"
                 aria-haspopup="dialog"
                 aria-expanded={reasonId === contact.id}
                 onClick={() => setReasonId(contact.id)}
               >
-                <Icon size={17} className="shrink-0 text-brand-600" />
+                <Icon size={20} className="shrink-0 text-brand-600" />
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-semibold text-zinc-800">
+                  <span className="block text-sm font-semibold text-zinc-800">
                     {contact.label}
                   </span>
-                  <span className="mt-0.5 block text-[10px] leading-relaxed font-normal !whitespace-normal text-zinc-500">
+                  <span className="mt-1 block text-xs leading-relaxed font-normal !whitespace-normal text-zinc-500">
                     {contact.description}
                   </span>
                 </span>
@@ -49,15 +52,16 @@ export function HelpContactCard() {
         </div>
         <Button
           variant="secondary"
+          size="lg"
           fullWidth
-          className="mt-3"
+          className="mt-5"
           aria-haspopup="dialog"
           aria-expanded={reasonId === "other"}
           onClick={() => setReasonId("other")}
         >
-          <Mail size={14} /> Email support
+          <Mail size={16} /> Email support
         </Button>
-        <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
+        <p className="mt-4 text-xs leading-relaxed text-zinc-500">
           Coursemap is a planning aid and does not replace official ANU academic
           advice.
         </p>
