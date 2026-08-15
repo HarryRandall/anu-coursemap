@@ -217,25 +217,52 @@ export default function CoursePage() {
             </Card>
 
             <div className="grid items-start gap-4 lg:grid-cols-2">
-              <Card>
-                <div className="border-b border-zinc-100 px-5 py-4">
-                  <h2 className="text-[15px] font-semibold text-zinc-900">
-                    Course essentials
-                  </h2>
-                </div>
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-4 p-5">
-                  {essentials.map(([label, value]) => (
-                    <div key={label} className="min-w-0">
-                      <dt className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
-                        {label}
-                      </dt>
-                      <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-zinc-700">
-                        {value}
-                      </dd>
+              <div className="flex flex-col gap-4">
+                <Card>
+                  <div className="border-b border-zinc-100 px-5 py-4">
+                    <h2 className="text-[15px] font-semibold text-zinc-900">
+                      Course essentials
+                    </h2>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-6 gap-y-4 p-5">
+                    {essentials.map(([label, value]) => (
+                      <div key={label} className="min-w-0">
+                        <dt className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
+                          {label}
+                        </dt>
+                        <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-zinc-700">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </Card>
+
+                {detail.learningOutcomes.length > 0 && (
+                  <Card>
+                    <div className="border-b border-zinc-100 px-5 py-4">
+                      <h2 className="text-[15px] font-semibold text-zinc-900">
+                        What you will learn
+                      </h2>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        Learning outcomes on successful completion.
+                      </p>
                     </div>
-                  ))}
-                </dl>
-              </Card>
+                    <ol className="space-y-2.5 p-5">
+                      {detail.learningOutcomes.map((outcome, index) => (
+                        <li key={outcome} className="flex items-start gap-3">
+                          <span className="grid size-6 shrink-0 place-items-center rounded-md bg-brand-50 font-mono text-[11px] font-semibold text-brand-700">
+                            {index + 1}
+                          </span>
+                          <p className="pt-0.5 text-[13px] leading-relaxed text-zinc-700">
+                            {outcome}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  </Card>
+                )}
+              </div>
 
               <Card>
                 <div className="border-b border-zinc-100 px-5 py-4">
@@ -267,31 +294,6 @@ export default function CoursePage() {
                 </div>
               </Card>
             </div>
-
-            {detail.learningOutcomes.length > 0 && (
-              <Card>
-                <div className="border-b border-zinc-100 px-5 py-4">
-                  <h2 className="text-[15px] font-semibold text-zinc-900">
-                    What you will learn
-                  </h2>
-                  <p className="mt-0.5 text-xs text-zinc-500">
-                    Learning outcomes on successful completion.
-                  </p>
-                </div>
-                <ol className="space-y-2.5 p-5">
-                  {detail.learningOutcomes.map((outcome, index) => (
-                    <li key={outcome} className="flex items-start gap-3">
-                      <span className="grid size-6 shrink-0 place-items-center rounded-md bg-brand-50 font-mono text-[11px] font-semibold text-brand-700">
-                        {index + 1}
-                      </span>
-                      <p className="pt-0.5 text-[13px] leading-relaxed text-zinc-700">
-                        {outcome}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
-              </Card>
-            )}
           </section>
 
           {/* Requisites: graph plus rules */}
