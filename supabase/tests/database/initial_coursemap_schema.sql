@@ -143,9 +143,9 @@ select extensions.ok(
   exists (
     select 1
     from private.app_roles
-    where key = 'catalogue_admin'
+    where key = 'admin'
   ),
-  'the catalogue administrator role is seeded'
+  'the admin role is seeded'
 );
 
 select extensions.ok(

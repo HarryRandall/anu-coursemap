@@ -20,10 +20,8 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function roleTone(role: AdminRole): "brand" | "info" | "neutral" {
-  if (role.permissionKeys.includes("admin.access")) return "brand";
-  if (role.permissionKeys.length > 0) return "info";
-  return "neutral";
+function roleTone(role: AdminRole): "brand" | "neutral" {
+  return role.key === "admin" ? "brand" : "neutral";
 }
 
 export function UserDirectory({
@@ -38,25 +36,28 @@ export function UserDirectory({
   currentUserId: string;
 }) {
   const rolesByKey = new Map(roles.map((role) => [role.key, role]));
-  const rolesByUser = new Map<string, AdminRole[]>();
+  const rolesByUser = new Map<string, AdminRole>();
   for (const assignment of assignments) {
     const role = rolesByKey.get(assignment.roleKey);
     if (!role) continue;
-    rolesByUser.set(assignment.userId, [
-      ...(rolesByUser.get(assignment.userId) ?? []),
-      role,
-    ]);
+    rolesByUser.set(assignment.userId, role);
   }
 
   return (
     <DataTableShell
       footer={
-        <p className="text-sm text-zinc-500">
+        <p className="text-xs text-zinc-500">
           Viewing {users.length.toLocaleString("en-AU")} Coursemap users
         </p>
       }
     >
-      <table className={tableClasses()}>
+      <table className={tableClasses("table-fixed")}>
+        <colgroup>
+          <col className="w-[42%]" />
+          <col className="w-[28%]" />
+          <col className="w-[15%]" />
+          <col className="w-[15%]" />
+        </colgroup>
         <thead className={tableHeadClasses()}>
           <tr>
             <th className={tableHeaderCellClasses()}>User</th>
@@ -80,14 +81,14 @@ export function UserDirectory({
           ) : null}
           {users.map((user) => {
             const href = `/admin/users/${user.userId}`;
-            const userRoles = rolesByUser.get(user.userId) ?? [];
+            const userRole = rolesByUser.get(user.userId);
             return (
               <tr
                 key={user.userId}
-                className={tableRowClasses("group hover:bg-zinc-50/70")}
+                className={tableRowClasses("group hover:bg-zinc-50/60")}
               >
                 <td className={tableCellClasses("p-0")}>
-                  <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex items-center gap-2.5 px-4 py-2.5">
                     <Link
                       href={href}
                       className="shrink-0 rounded-full focus-visible:ring-2 focus-visible:ring-brand-400"
@@ -96,14 +97,14 @@ export function UserDirectory({
                       <GeneratedAvatar
                         name={user.displayName}
                         email={user.email}
-                        className="size-[31px]"
+                        className="size-7 text-[10px]"
                       />
                     </Link>
                     <span className="min-w-0 flex-1">
                       <span className="flex min-w-0 items-center gap-2">
                         <Link
                           href={href}
-                          className="truncate text-sm font-medium text-zinc-900 hover:underline focus:underline focus:outline-none"
+                          className="truncate text-[13px] font-medium text-zinc-900 hover:text-brand-700 focus:text-brand-700 focus:outline-none"
                         >
                           {user.displayName}
                         </Link>
@@ -115,7 +116,7 @@ export function UserDirectory({
                       </span>
                       <Link
                         href={href}
-                        className="mt-0.5 block truncate text-xs text-zinc-500 hover:underline focus:underline focus:outline-none"
+                        className="mt-0.5 block truncate text-[11px] text-zinc-500 hover:text-zinc-700 focus:text-zinc-700 focus:outline-none"
                       >
                         {user.email ?? "No email"}
                       </Link>
@@ -125,16 +126,12 @@ export function UserDirectory({
                 <td className={tableCellClasses("p-0")}>
                   <Link
                     href={href}
-                    className="flex min-h-14 items-center gap-1.5 px-4 py-3"
+                    className="flex min-h-12 items-center gap-1.5 px-4 py-2.5"
                   >
-                    {userRoles.length > 0 ? (
-                      userRoles.map((role) => (
-                        <Badge key={role.id} tone={roleTone(role)}>
-                          {role.name}
-                        </Badge>
-                      ))
+                    {userRole ? (
+                      <Badge tone={roleTone(userRole)}>{userRole.name}</Badge>
                     ) : (
-                      <span className="text-xs text-zinc-400">No role</span>
+                      <Badge tone="neutral">User</Badge>
                     )}
                   </Link>
                 </td>
@@ -143,7 +140,7 @@ export function UserDirectory({
                     "p-0 font-mono text-xs text-zinc-500 tabular-nums",
                   )}
                 >
-                  <Link href={href} className="block px-4 py-3">
+                  <Link href={href} className="block px-4 py-2.5">
                     {formatDate(user.createdAt)}
                   </Link>
                 </td>
@@ -152,7 +149,7 @@ export function UserDirectory({
                     "p-0 font-mono text-xs text-zinc-500 tabular-nums",
                   )}
                 >
-                  <Link href={href} className="block px-4 py-3">
+                  <Link href={href} className="block px-4 py-2.5">
                     {formatDate(user.updatedAt)}
                   </Link>
                 </td>

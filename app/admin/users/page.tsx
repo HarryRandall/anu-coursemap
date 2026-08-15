@@ -111,7 +111,7 @@ export default async function AdminUsersPage({
   return (
     <AppShell admin>
       <h1 className="sr-only">Users and access</h1>
-      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1280px] flex-1 flex-col gap-5">
         <FilterBar
           searchPlaceholder="Search name, email or role…"
           filters={[

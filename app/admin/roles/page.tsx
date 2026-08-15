@@ -55,7 +55,7 @@ export default async function AdminRolesPage({
   return (
     <AppShell admin>
       <h1 className="sr-only">Roles and permissions</h1>
-      <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1280px] flex-1 flex-col gap-5">
         {isDemoMode() ? (
           <Card>
             <CardHeader

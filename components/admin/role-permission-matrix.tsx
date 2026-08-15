@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import { Badge } from "@/components/ui/badge";
 import {
   DataTableShell,
   tableCellClasses,
@@ -55,24 +54,15 @@ export function RolePermissionMatrix({
   const grantKeys = new Set(
     grants.map((grant) => `${grant.roleId}:${grant.permissionId}`),
   );
-  const roleColumnWidth = 172;
-  const permissionColumnWidth = 380;
+  const roleColumnWidth = 150;
+  const permissionColumnWidth = 500;
   const tableMinWidth = Math.max(
-    760,
+    800,
     permissionColumnWidth + roles.length * roleColumnWidth,
   );
 
   return (
-    <DataTableShell
-      viewport
-      className="min-h-[420px] flex-1 lg:max-h-[calc(100dvh-12rem)]"
-      footer={
-        <p className="text-sm text-zinc-500">
-          Viewing {permissions.length.toLocaleString("en-AU")} permissions
-          across {roles.length.toLocaleString("en-AU")} roles
-        </p>
-      }
-    >
+    <DataTableShell>
       <table
         className={tableClasses()}
         style={{ minWidth: `${tableMinWidth}px` } as CSSProperties}
@@ -89,12 +79,12 @@ export function RolePermissionMatrix({
             {roles.map((role) => (
               <th
                 key={role.id}
-                className={tableHeaderCellClasses("text-center")}
+                className={tableHeaderCellClasses(
+                  "text-center tracking-normal whitespace-normal text-zinc-700 normal-case",
+                )}
                 title={role.description}
               >
-                <span className="inline-block max-w-36 truncate align-middle">
-                  {role.name}
-                </span>
+                <span className="text-xs font-semibold">{role.name}</span>
               </th>
             ))}
           </tr>
@@ -110,24 +100,16 @@ export function RolePermissionMatrix({
                   scope="rowgroup"
                   colSpan={roles.length + 1}
                   className={tableCellClasses(
-                    "py-2 text-left font-medium whitespace-normal text-zinc-500",
+                    "py-1.5 text-left text-[10px] font-semibold tracking-[0.08em] whitespace-normal text-zinc-500 uppercase",
                   )}
                 >
-                  <span className="flex items-center gap-2">
-                    {permissionArea(category)}
-                    <Badge
-                      tone="neutral"
-                      className="rounded-sm bg-white px-2 py-0.5"
-                    >
-                      {categoryPermissions.length.toLocaleString("en-AU")}
-                    </Badge>
-                  </span>
+                  {permissionArea(category)}
                 </th>
               </tr>,
               ...categoryPermissions.map((permission) => (
                 <tr
                   key={permission.id}
-                  className={tableRowClasses("hover:bg-zinc-50/70")}
+                  className={tableRowClasses("hover:bg-zinc-50/60")}
                 >
                   <th
                     scope="row"
@@ -136,11 +118,11 @@ export function RolePermissionMatrix({
                       "align-middle font-normal",
                     )}
                   >
-                    <div className="max-w-md min-w-0">
-                      <span className="text-sm font-medium text-zinc-900">
+                    <div className="max-w-lg min-w-0 py-0.5">
+                      <span className="text-[13px] font-medium text-zinc-900">
                         {permission.name}
                       </span>
-                      <p className="mt-1 text-xs leading-5 text-zinc-500">
+                      <p className="mt-0.5 text-[11px] leading-4 text-zinc-500">
                         {permission.description}
                       </p>
                     </div>

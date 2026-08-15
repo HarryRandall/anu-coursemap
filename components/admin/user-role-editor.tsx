@@ -2,170 +2,158 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LoaderCircle, LockKeyhole, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check, LoaderCircle, ShieldCheck, UserRound } from "lucide-react";
+import { Select } from "@/components/ui/select";
 import { setAdminUserRole } from "@/lib/admin/actions";
-import type { AdminRole, AdminUser, AdminUserRole } from "@/lib/admin/users";
-import { cn } from "@/lib/cn";
-
-function assignmentKey(userId: string, roleKey: string) {
-  return `${userId}:${roleKey}`;
-}
+import type {
+  AdminPermission,
+  AdminRole,
+  AdminUser,
+  AdminUserRole,
+} from "@/lib/admin/users";
 
 export function UserRoleEditor({
   user,
   roles,
+  permissions,
   assignments,
   currentUserId,
 }: {
   user: AdminUser;
   roles: AdminRole[];
+  permissions: AdminPermission[];
   assignments: AdminUserRole[];
   currentUserId: string;
 }) {
   const router = useRouter();
-  const [assigned, setAssigned] = useState(
-    () =>
-      new Set(
-        assignments.map((assignment) =>
-          assignmentKey(assignment.userId, assignment.roleKey),
-        ),
-      ),
-  );
-  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const initialRoleKey = assignments[0]?.roleKey ?? "user";
+  const [roleKey, setRoleKey] = useState(initialRoleKey);
   const [feedback, setFeedback] = useState("");
+  const [isError, setIsError] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const effectivePermissions = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          roles
-            .filter((role) =>
-              assigned.has(assignmentKey(user.userId, role.key)),
-            )
-            .flatMap((role) => role.permissionKeys),
-        ),
-      ).sort(),
-    [assigned, roles, user.userId],
-  );
+  const selectedRole = roles.find((role) => role.key === roleKey);
+  const effectivePermissions = useMemo(() => {
+    const keys = new Set(selectedRole?.permissionKeys ?? []);
+    return permissions.filter((permission) => keys.has(permission.key));
+  }, [permissions, selectedRole]);
+  const isOwnAdmin = user.userId === currentUserId && roleKey === "admin";
 
-  const toggleRole = (role: AdminRole) => {
-    const key = assignmentKey(user.userId, role.key);
-    const nextAssigned = !assigned.has(key);
-    setPendingKey(key);
+  const changeRole = (nextRoleKey: string) => {
+    if (nextRoleKey === roleKey) return;
+    const previousRoleKey = roleKey;
+    setRoleKey(nextRoleKey);
     setFeedback("");
+    setIsError(false);
+
     startTransition(async () => {
-      const result = await setAdminUserRole(
-        user.userId,
-        role.key,
-        nextAssigned,
-      );
-      if (result.ok) {
-        setAssigned((current) => {
-          const next = new Set(current);
-          if (result.assigned) next.add(key);
-          else next.delete(key);
-          return next;
-        });
-        router.refresh();
+      const result = await setAdminUserRole(user.userId, nextRoleKey);
+      if (!result.ok) {
+        setRoleKey(previousRoleKey);
+        setIsError(true);
       }
       setFeedback(result.message);
-      setPendingKey(null);
+      if (result.ok) router.refresh();
     });
   };
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-xs">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-sm font-medium text-zinc-900">Roles</h2>
+    <section className="min-w-0 overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-zinc-900">Account role</h2>
           <p className="mt-0.5 text-xs text-zinc-500">
-            Changes save automatically.
+            Choose the level of access for this account.
           </p>
         </div>
-        <div className="flex flex-wrap justify-end gap-2">
-          {roles.map((role) => {
-            const key = assignmentKey(user.userId, role.key);
-            const enabled = assigned.has(key);
-            const locked =
-              user.userId === currentUserId &&
-              enabled &&
-              role.permissionKeys.includes("admin.access");
-            const pending = isPending && pendingKey === key;
 
-            return (
-              <button
-                key={role.id}
-                type="button"
-                role="switch"
-                aria-checked={enabled}
-                aria-busy={pending}
-                disabled={isPending || locked}
-                title={
-                  locked
-                    ? "Another administrator must remove this role."
-                    : role.description
-                }
-                onClick={() => toggleRole(role)}
-                className={cn(
-                  "inline-flex min-h-10 items-center gap-2 rounded-md border px-3 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-65",
-                  enabled
-                    ? "border-brand-200 bg-brand-50 text-brand-700"
-                    : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
-                )}
-              >
-                {pending ? (
-                  <LoaderCircle
-                    size={14}
-                    className="animate-spin"
-                    aria-hidden="true"
-                  />
-                ) : locked ? (
-                  <LockKeyhole size={14} aria-hidden="true" />
-                ) : enabled ? (
-                  <Check size={14} aria-hidden="true" />
-                ) : (
-                  <X size={14} aria-hidden="true" />
-                )}
-                {role.name}
-              </button>
-            );
-          })}
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          {isPending ? (
+            <LoaderCircle
+              size={16}
+              className="shrink-0 animate-spin text-zinc-400 motion-reduce:animate-none"
+              aria-label="Saving role"
+            />
+          ) : null}
+          <Select
+            value={roleKey}
+            onChange={changeRole}
+            disabled={isPending || isOwnAdmin}
+            aria-label={`Role for ${user.displayName}`}
+            className="h-9 min-w-44 font-medium"
+            options={roles
+              .toSorted((a, b) => {
+                if (a.key === "user") return -1;
+                if (b.key === "user") return 1;
+                return a.name.localeCompare(b.name);
+              })
+              .map((role) => ({ value: role.key, label: role.name }))}
+          />
         </div>
       </div>
 
-      <div className="mt-5 border-t border-zinc-200 pt-4">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <h3 className="text-xs font-medium text-zinc-500">
-            Effective permissions
+      <div className="border-t border-zinc-200/80 px-4 py-4 sm:px-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+            Permissions
           </h3>
           <span className="text-xs text-zinc-400 tabular-nums">
             {effectivePermissions.length}
           </span>
         </div>
-        {effectivePermissions.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {effectivePermissions.map((permission) => (
-              <Badge key={permission} tone="neutral" className="font-mono">
-                {permission}
-              </Badge>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-zinc-500">
-            This account has no application permissions.
-          </p>
-        )}
-      </div>
 
-      <p
-        role={feedback.startsWith("Coursemap could not") ? "alert" : "status"}
-        aria-live="polite"
-        className="mt-3 min-h-5 text-xs text-zinc-500"
-      >
-        {feedback}
-      </p>
+        {effectivePermissions.length > 0 ? (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {effectivePermissions.map((permission) => (
+              <li
+                key={permission.id}
+                className="flex min-w-0 gap-2.5 rounded-lg bg-zinc-50/80 px-3 py-2.5 ring-1 ring-zinc-200/70 ring-inset"
+              >
+                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset">
+                  <Check size={12} strokeWidth={2.5} aria-hidden="true" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-medium text-zinc-900">
+                    {permission.name}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] leading-4 text-zinc-500">
+                    {permission.description}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg bg-zinc-50/80 px-3 py-3 ring-1 ring-zinc-200/70 ring-inset">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-zinc-500 shadow-xs ring-1 ring-zinc-200 ring-inset">
+              <UserRound size={16} aria-hidden="true" />
+            </span>
+            <span>
+              <span className="block text-xs font-medium text-zinc-900">
+                Standard Coursemap access
+              </span>
+              <span className="mt-0.5 block text-[11px] text-zinc-500">
+                This account can use the student planning experience.
+              </span>
+            </span>
+          </div>
+        )}
+
+        {isOwnAdmin ? (
+          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <ShieldCheck size={13} aria-hidden="true" />
+            Another admin must change your role.
+          </p>
+        ) : null}
+
+        <p
+          role={isError ? "alert" : "status"}
+          aria-live="polite"
+          className={isError ? "mt-3 text-xs text-rose-700" : "sr-only"}
+        >
+          {feedback}
+        </p>
+      </div>
     </section>
   );
 }

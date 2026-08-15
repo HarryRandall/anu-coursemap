@@ -43,6 +43,7 @@ export type AdminUserManagementData = {
 export type AdminUserDetailData = {
   user: AdminUser;
   roles: AdminRole[];
+  permissions: AdminPermission[];
   assignments: AdminUserRole[];
 };
 
@@ -175,24 +176,35 @@ export async function loadAdminUserDetail(
   userId: string,
 ): Promise<AdminUserDetailData | null> {
   const supabase = await createClient();
-  const [userResult, rolesResult, assignmentsResult] = await Promise.all([
-    supabase
-      .from("admin_users")
-      .select("user_id,email,display_name,created_at,updated_at")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    supabase
-      .from("admin_roles")
-      .select("role_id,role_key,role_name,role_description,permission_keys")
-      .order("role_name"),
-    supabase
-      .from("admin_user_roles")
-      .select("user_id,role_key")
-      .eq("user_id", userId),
-  ]);
+  const [userResult, rolesResult, permissionsResult, assignmentsResult] =
+    await Promise.all([
+      supabase
+        .from("admin_users")
+        .select("user_id,email,display_name,created_at,updated_at")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("admin_roles")
+        .select("role_id,role_key,role_name,role_description,permission_keys")
+        .order("role_name"),
+      supabase
+        .from("admin_permissions")
+        .select(
+          "permission_id,permission_key,permission_name,permission_description,permission_category",
+        )
+        .order("permission_category")
+        .order("permission_name"),
+      supabase
+        .from("admin_user_roles")
+        .select("user_id,role_key")
+        .eq("user_id", userId),
+    ]);
 
   const error =
-    userResult.error ?? rolesResult.error ?? assignmentsResult.error;
+    userResult.error ??
+    rolesResult.error ??
+    permissionsResult.error ??
+    assignmentsResult.error;
   if (error) throw new Error("Coursemap could not load that user.");
 
   const user = userResult.data ? mapUser(userResult.data) : null;
@@ -202,6 +214,10 @@ export async function loadAdminUserDetail(
     user,
     roles: (rolesResult.data ?? []).flatMap((role) => {
       const mapped = mapRole(role);
+      return mapped ? [mapped] : [];
+    }),
+    permissions: (permissionsResult.data ?? []).flatMap((permission) => {
+      const mapped = mapPermission(permission);
       return mapped ? [mapped] : [];
     }),
     assignments: (assignmentsResult.data ?? []).flatMap((assignment) => {

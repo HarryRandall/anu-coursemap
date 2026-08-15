@@ -212,7 +212,12 @@ select
   roles.id,
   '30000000-0000-4000-8000-000000000002'
 from private.app_roles as roles
-where roles.key = 'catalogue_admin';
+where roles.key = 'admin'
+on conflict (user_id) do update
+set
+  role_id = excluded.role_id,
+  granted_by = excluded.granted_by,
+  granted_at = now();
 
 select set_config(
   'request.jwt.claims',

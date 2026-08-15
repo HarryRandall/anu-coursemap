@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LockKeyhole, X } from "lucide-react";
+import { Check, LoaderCircle, Minus } from "lucide-react";
 import { setAdminRolePermission } from "@/lib/admin/actions";
 import { cn } from "@/lib/cn";
 
@@ -27,14 +27,28 @@ export function RolePermissionToggle({
   const [enabled, setEnabled] = useState(initialEnabled);
   const [feedback, setFeedback] = useState("");
   const [isPending, startTransition] = useTransition();
-  const locked =
-    roleKey === "catalogue_admin" && permissionKey === "admin.access";
+  const required = roleKey === "admin" && permissionKey === "admin.access";
+  const unavailable = roleKey === "user" && permissionKey === "admin.access";
 
-  if (locked) {
+  if (required || unavailable) {
     return (
-      <span className="inline-flex h-8 min-w-24 items-center justify-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-3 text-xs font-medium text-zinc-700">
-        <LockKeyhole size={13} aria-hidden="true" />
-        Required
+      <span
+        className={cn(
+          "grid size-7 place-items-center rounded-md ring-1 ring-inset",
+          required
+            ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+            : "bg-zinc-50 text-zinc-400 ring-zinc-200",
+        )}
+        title={required ? "Required for Admin" : "Not available for User"}
+      >
+        {required ? (
+          <Check size={14} strokeWidth={2.5} aria-hidden="true" />
+        ) : (
+          <Minus size={14} aria-hidden="true" />
+        )}
+        <span className="sr-only">
+          {required ? "Required" : "Not available"}
+        </span>
       </span>
     );
   }
@@ -57,35 +71,29 @@ export function RolePermissionToggle({
     <span>
       <button
         type="button"
-        role="switch"
+        role="checkbox"
         aria-checked={enabled}
         aria-busy={isPending}
-        aria-label={`${enabled ? "Disable" : "Enable"} ${permissionName} for ${roleName}`}
+        aria-label={`${enabled ? "Remove" : "Grant"} ${permissionName} ${enabled ? "from" : "to"} ${roleName}`}
+        title={`${enabled ? "Granted to" : "Not granted to"} ${roleName}`}
         disabled={isPending}
         onClick={onToggle}
         className={cn(
-          "group relative inline-flex h-8 min-w-24 cursor-pointer items-center justify-center overflow-hidden rounded-md border px-3 text-xs font-medium transition-[background-color,border-color,color,box-shadow,opacity] duration-150 disabled:cursor-wait disabled:opacity-70",
+          "grid size-7 cursor-pointer place-items-center rounded-md border transition-[background-color,border-color,color,box-shadow] duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 disabled:cursor-wait motion-reduce:transition-none",
           enabled
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-            : "border-rose-200 bg-rose-50 text-rose-700 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700",
+            ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100"
+            : "border-zinc-300 bg-white text-transparent hover:border-brand-300 hover:bg-brand-50",
         )}
       >
-        <span className="flex items-center gap-1.5 transition-[transform,opacity] duration-150 group-hover:-translate-y-3 group-hover:opacity-0 group-focus-visible:-translate-y-3 group-focus-visible:opacity-0">
-          {enabled ? (
-            <Check size={13} aria-hidden="true" />
-          ) : (
-            <X size={13} aria-hidden="true" />
-          )}
-          {enabled ? "Enabled" : "Disabled"}
-        </span>
-        <span className="absolute inset-0 flex translate-y-3 items-center justify-center gap-1.5 opacity-0 transition-[transform,opacity] duration-150 group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100">
-          {enabled ? (
-            <X size={13} aria-hidden="true" />
-          ) : (
-            <Check size={13} aria-hidden="true" />
-          )}
-          {enabled ? "Disable" : "Enable"}
-        </span>
+        {isPending ? (
+          <LoaderCircle
+            size={14}
+            className="animate-spin text-zinc-500 motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+        ) : (
+          <Check size={14} strokeWidth={2.5} aria-hidden="true" />
+        )}
       </button>
       <span className="sr-only" role="status" aria-live="polite">
         {feedback}
