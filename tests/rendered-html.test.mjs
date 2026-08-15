@@ -146,29 +146,34 @@ test("server-renders admin and course-detail routes", async () => {
   const [
     adminResponse,
     adminCoursesResponse,
+    adminUsersResponse,
     relationsResponse,
     courseResponse,
     chainResponse,
   ] = await Promise.all([
     render("/admin/dashboard"),
     render("/admin/courses"),
+    render("/admin/users"),
     render("/admin/relations"),
     render("/courses/COMP2100"),
     render("/courses/COMP3670"),
   ]);
   assert.equal(adminResponse.status, 200);
   assert.equal(adminCoursesResponse.status, 200);
+  assert.equal(adminUsersResponse.status, 200);
   assert.equal(relationsResponse.status, 200);
   assert.equal(courseResponse.status, 200);
   assert.equal(chainResponse.status, 200);
   const adminHtml = await adminResponse.text();
   const adminCoursesHtml = await adminCoursesResponse.text();
+  const adminUsersHtml = await adminUsersResponse.text();
   const relationsHtml = await relationsResponse.text();
   assert.match(adminHtml, /Catalogue health at a glance/i);
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
   assert.doesNotMatch(adminHtml, /Search courses|Help &amp; support/i);
   assert.doesNotMatch(adminCoursesHtml, /Export CSV|Reparse selected/i);
+  assert.match(adminUsersHtml, /User management is unavailable in demo mode/i);
   assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);
   assert.match(relationsHtml, /Open prerequisite graph for COMP2100/i);
   const courseHtml = await courseResponse.text();
@@ -301,6 +306,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(appShell, /max-w-none/);
   assert.match(appShell, /!fullBleed && "px-4/);
   assert.match(sidebar, /\/admin\/dashboard/);
+  assert.match(sidebar, /\/admin\/users/);
   assert.match(sidebar, /!admin &&/);
   assert.match(topbar, /after:inset-x-0/);
   assert.match(providers, /fixed/);
