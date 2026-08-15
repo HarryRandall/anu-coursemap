@@ -1,23 +1,25 @@
 "use client";
 
-import { CheckCircle2, Mail } from "lucide-react";
+import { LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { createClient } from "@/lib/supabase/browser";
 
+type AuthMode = "sign-in" | "sign-up";
+
 export function SignInForm({
   next,
   configured,
-  callbackOrigin,
 }: {
   next: string;
   configured: boolean;
-  callbackOrigin: string | null;
 }) {
+  const [mode, setMode] = useState<AuthMode>("sign-in");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [sent, setSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -28,63 +30,78 @@ export function SignInForm({
     setErrorMessage(null);
 
     try {
-      if (!callbackOrigin) throw new Error("Missing callback origin");
-      const callbackUrl = new URL("/auth/callback", callbackOrigin);
-      callbackUrl.searchParams.set("next", next);
-
       const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOtp({
+
+      if (mode === "sign-in") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (error) {
+          setErrorMessage(
+            error.message.toLowerCase().includes("invalid login credentials")
+              ? "Email or password is incorrect."
+              : "Coursemap could not sign you in. Wait a moment and try again.",
+          );
+          return;
+        }
+
+        window.location.assign(next);
+        return;
+      }
+
+      if (password !== passwordConfirmation) {
+        setErrorMessage("Passwords do not match.");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
-        options: {
-          emailRedirectTo: callbackUrl.toString(),
-          shouldCreateUser: true,
-        },
+        password,
       });
 
       if (error) {
+        const message = error.message.toLowerCase();
         setErrorMessage(
-          "Coursemap could not request a sign-in link. Wait a moment and try again.",
+          message.includes("already registered") ||
+            message.includes("already been registered")
+            ? "An account may already exist for this email. Try signing in instead."
+            : message.includes("password")
+              ? "Use a stronger password with at least 8 characters."
+              : "Coursemap could not create your account. Wait a moment and try again.",
         );
         return;
       }
 
-      setSent(true);
+      if (!data.session) {
+        setErrorMessage(
+          "Your account was created, but email confirmation is still enabled. Contact the Coursemap administrator before trying again.",
+        );
+        return;
+      }
+
+      window.location.assign(next);
     } catch {
       setErrorMessage(
-        "Coursemap could not request a sign-in link. Check the local Supabase service and try again.",
+        `Coursemap could not ${mode === "sign-in" ? "sign you in" : "create your account"}. Check the Supabase service and try again.`,
       );
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (sent) {
-    return (
-      <div
-        role="status"
-        className="rounded-xl bg-emerald-50 p-4 text-emerald-900 ring-1 ring-emerald-200"
-      >
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-          <div>
-            <h2 className="text-sm font-semibold">Check your email</h2>
-            <p className="mt-1 text-xs leading-relaxed text-emerald-800">
-              We sent a one-time sign-in link to {email}. Open it in this
-              browser to continue.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    setPassword("");
+    setPasswordConfirmation("");
+    setErrorMessage(null);
+  };
 
   return (
     <form onSubmit={submit} className="space-y-4">
       <input type="hidden" name="next" value={next} />
-      <Field
-        label="Email address"
-        hint="For local development, the email appears in Mailpit."
-      >
+      <Field label="Email address">
         <span className="relative block">
           <Mail
             className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
@@ -105,6 +122,59 @@ export function SignInForm({
         </span>
       </Field>
 
+      <Field
+        label="Password"
+        hint={
+          mode === "sign-up"
+            ? "Use at least 8 characters and do not reuse your ANU password."
+            : undefined
+        }
+      >
+        <span className="relative block">
+          <LockKeyhole
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+            aria-hidden="true"
+          />
+          <Input
+            type="password"
+            name="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete={
+              mode === "sign-in" ? "current-password" : "new-password"
+            }
+            minLength={8}
+            maxLength={128}
+            required
+            disabled={!configured || submitting}
+            className="pl-10"
+          />
+        </span>
+      </Field>
+
+      {mode === "sign-up" && (
+        <Field label="Confirm password">
+          <span className="relative block">
+            <LockKeyhole
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden="true"
+            />
+            <Input
+              type="password"
+              name="passwordConfirmation"
+              value={passwordConfirmation}
+              onChange={(event) => setPasswordConfirmation(event.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
+              required
+              disabled={!configured || submitting}
+              className="pl-10"
+            />
+          </span>
+        </Field>
+      )}
+
       {errorMessage && (
         <p
           role="alert"
@@ -120,7 +190,29 @@ export function SignInForm({
         fullWidth
         disabled={!configured || submitting}
       >
-        {submitting ? "Sending link..." : "Email me a sign-in link"}
+        {submitting
+          ? mode === "sign-in"
+            ? "Signing in..."
+            : "Creating account..."
+          : mode === "sign-in"
+            ? "Sign in"
+            : "Create account"}
+      </Button>
+
+      <div className="flex items-center gap-3" aria-hidden="true">
+        <span className="h-px flex-1 bg-zinc-200" />
+        <span className="text-[11px] text-zinc-400">or</span>
+        <span className="h-px flex-1 bg-zinc-200" />
+      </div>
+
+      <Button
+        type="button"
+        variant="secondary"
+        fullWidth
+        disabled={!configured || submitting}
+        onClick={() => switchMode(mode === "sign-in" ? "sign-up" : "sign-in")}
+      >
+        {mode === "sign-in" ? "Create an account" : "Back to sign in"}
       </Button>
     </form>
   );
