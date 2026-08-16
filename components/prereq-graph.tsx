@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/cn";
-import { courseByCode, courses } from "@/lib/catalogue";
 
 const NODE_H = 38;
 const GAP = 12;
@@ -19,29 +18,32 @@ type Layout = {
 };
 
 /**
- * Layered prerequisite graph for one course: the full upstream chain on the
- * left, the course itself, then everything it unlocks on the right.
+ * Layered prerequisite graph for a catalogue course. All nodes come from the
+ * imported rule records supplied by the server.
  */
-function buildLayout(code: string): Layout {
-  // Walk upstream — level 0 is the course, prerequisites go negative.
+function buildLayout(
+  code: string,
+  prerequisiteEdges: readonly { from: string; to: string }[],
+): Layout {
   const level = new Map<string, number>([[code, 0]]);
-  const visit = (current: string) => {
-    const course = courseByCode(current);
-    if (!course) return;
-    for (const prereq of course.prerequisiteCodes) {
-      const proposed = (level.get(current) ?? 0) - 1;
-      if (!level.has(prereq) || proposed < (level.get(prereq) as number)) {
-        level.set(prereq, proposed);
-        visit(prereq);
+  const prerequisitesByCourse = new Map<string, string[]>();
+  for (const edge of prerequisiteEdges) {
+    const existing = prerequisitesByCourse.get(edge.to) ?? [];
+    existing.push(edge.from);
+    prerequisitesByCourse.set(edge.to, existing);
+  }
+
+  const visit = (courseCode: string, depth: number, path: Set<string>) => {
+    for (const prerequisite of prerequisitesByCourse.get(courseCode) ?? []) {
+      if (path.has(prerequisite)) continue;
+      const existing = level.get(prerequisite);
+      if (existing === undefined || depth - 1 < existing) {
+        level.set(prerequisite, depth - 1);
       }
+      visit(prerequisite, depth - 1, new Set([...path, prerequisite]));
     }
   };
-  visit(code);
-
-  const unlocks = courses
-    .filter((course) => course.prerequisiteCodes.includes(code))
-    .map((course) => course.code);
-  unlocks.forEach((unlock) => level.set(unlock, 1));
+  visit(code, 0, new Set([code]));
 
   const minLevel = Math.min(-1, ...level.values());
   const maxLevel = Math.max(...level.values());
@@ -51,13 +53,7 @@ function buildLayout(code: string): Layout {
     const lvl = index + minLevel;
     return {
       label:
-        lvl === 0
-          ? "This course"
-          : lvl === 1
-            ? "Unlocks"
-            : lvl === -1
-              ? "Requires"
-              : "Then requires",
+        lvl === 0 ? "This course" : lvl === -1 ? "Requires" : "Then requires",
       codes: [...level.entries()]
         .filter(([, value]) => value === lvl)
         .map(([key]) => key)
@@ -70,15 +66,9 @@ function buildLayout(code: string): Layout {
     column.codes.forEach((item, row) => position.set(item, { col, row })),
   );
 
-  const inGraph = new Set(level.keys());
-  const edges: { from: string; to: string }[] = [];
-  for (const item of inGraph) {
-    const course = courseByCode(item);
-    if (!course) continue;
-    for (const prereq of course.prerequisiteCodes) {
-      if (inGraph.has(prereq)) edges.push({ from: prereq, to: item });
-    }
-  }
+  const edges = prerequisiteEdges.filter(
+    (edge) => level.has(edge.from) && level.has(edge.to),
+  );
 
   const rows = Math.max(...columns.map((column) => column.codes.length));
   return { columns, position, edges, rows };
@@ -86,15 +76,20 @@ function buildLayout(code: string): Layout {
 
 export function PrereqGraph({
   code,
+  prerequisiteEdges,
   completedCodes,
   plannedCodes,
 }: {
   code: string;
+  prerequisiteEdges: readonly { from: string; to: string }[];
   completedCodes: ReadonlySet<string>;
   plannedCodes: ReadonlySet<string>;
 }) {
   const router = useRouter();
-  const layout = useMemo(() => buildLayout(code), [code]);
+  const layout = useMemo(
+    () => buildLayout(code, prerequisiteEdges),
+    [code, prerequisiteEdges],
+  );
   const { columns, position, edges, rows } = layout;
   const height = rows * STEP - GAP;
   const columnCount = columns.length;
@@ -102,8 +97,7 @@ export function PrereqGraph({
   if (columnCount === 1) {
     return (
       <p className="px-5 py-8 text-center text-[12px] text-zinc-400">
-        No prerequisites, and nothing in the catalogue depends on this course
-        yet.
+        No structured prerequisites are recorded for this course.
       </p>
     );
   }
@@ -230,7 +224,7 @@ export function PrereqGraph({
                       type="button"
                       disabled={isCurrent}
                       onClick={() => router.push(`/courses/${item}`)}
-                      title={courseByCode(item)?.name}
+                      title={item}
                       style={{ top: offset + row * STEP, height: NODE_H }}
                       className={cn(
                         "absolute inset-x-0 mx-auto flex w-full max-w-32 items-center justify-center gap-1.5 rounded-lg font-mono text-[11px] font-medium transition",

@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/shell";
 import { FilterBar } from "@/components/ui/filter-bar";
-import { courses, type Course } from "@/lib/catalogue";
+import { loadPublishedCourses } from "@/lib/coursemap/published-catalogue";
+import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { CourseDirectory } from "./course-directory";
 
 type CoursesSearchParams = {
@@ -14,7 +15,10 @@ function firstParam(value?: string | string[]) {
   return (Array.isArray(value) ? value[0] : value)?.trim() ?? "";
 }
 
-function filterCourses(params: CoursesSearchParams): Course[] {
+function filterCourses(
+  courses: readonly CatalogueCourse[],
+  params: CoursesSearchParams,
+): CatalogueCourse[] {
   const query = firstParam(params.q).slice(0, 120).toLowerCase();
   const subject = firstParam(params.subject);
   const level = firstParam(params.level);
@@ -38,7 +42,13 @@ export default async function CoursesPage({
   searchParams: Promise<CoursesSearchParams>;
 }) {
   const params = await searchParams;
-  const filtered = filterCourses(params);
+  let courses: CatalogueCourse[] = [];
+  try {
+    courses = await loadPublishedCourses();
+  } catch {
+    // Keep this public route usable while the catalogue service recovers.
+  }
+  const filtered = filterCourses(courses, params);
   const subjects = [...new Set(courses.map((course) => course.subject))].sort();
   const levels = [
     ...new Set(courses.map((course) => String(course.level / 1000))),

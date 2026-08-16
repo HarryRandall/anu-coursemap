@@ -8,7 +8,7 @@ import {
   tableHeaderCellClasses,
   tableRowClasses,
 } from "@/components/ui/data-table";
-import type { Course } from "@/lib/catalogue";
+import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { cn } from "@/lib/cn";
 import { CourseRowActions } from "./course-row-actions";
 
@@ -24,7 +24,7 @@ function sessionLabels(sessions: string[]) {
 const chipClasses =
   "rounded-md bg-zinc-50 px-1.5 py-0.5 text-[11px] font-medium text-zinc-600 ring-1 ring-zinc-200 ring-inset";
 
-export function CourseDirectory({ courses }: { courses: Course[] }) {
+export function CourseDirectory({ courses }: { courses: CatalogueCourse[] }) {
   return (
     <DataTableShell
       footer={
@@ -101,6 +101,9 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
                         className="mt-0.5 block truncate font-mono text-[11px] text-zinc-500 hover:text-zinc-700 focus:text-zinc-700 focus:outline-none"
                       >
                         {course.code}
+                        {course.publicationStatus === "draft"
+                          ? " · Review needed"
+                          : ""}
                       </Link>
                     </span>
                   </div>
@@ -159,7 +162,14 @@ export function CourseDirectory({ courses }: { courses: Course[] }) {
                 </td>
                 <td className={tableCellClasses("p-0")}>
                   <div className="flex min-h-12 items-center justify-end pr-3">
-                    <CourseRowActions code={course.code} />
+                    <CourseRowActions
+                      course={{
+                        code: course.code,
+                        name: course.name,
+                        sessions: course.sessions,
+                        sourceUrl: course.sourceUrl,
+                      }}
+                    />
                   </div>
                 </td>
               </tr>
