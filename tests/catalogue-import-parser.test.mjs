@@ -280,6 +280,35 @@ test("scopes offering tables to 2026 and never imports future-year rows", () => 
   assert.doesNotMatch(JSON.stringify(document), /2027|2028|5103|6681/);
 });
 
+test("ignores descriptive rows in an ANU offering table", () => {
+  const document = parseFixture(
+    comp2100Html.replace(
+      "<tbody>",
+      '<tbody><tr><td colspan="7">SoCIETIE Initiative</td></tr>',
+    ),
+    comp2100Url,
+    "COMP2100",
+  );
+
+  assert.ok(
+    document.offering?.sessions.some(
+      ({ classNumber }) => classNumber === "3699",
+    ),
+  );
+  assert.ok(
+    document.diagnostics.some(
+      ({ code, severity }) =>
+        code === "NON_CLASS_OFFERING_ROW_IGNORED" && severity === "warning",
+    ),
+  );
+  assert.ok(
+    !document.diagnostics.some(
+      ({ code, severity }) =>
+        code === "INVALID_OFFERING_DATES" && severity === "error",
+    ),
+  );
+});
+
 test("keeps demonstrably current COMP3900 facts and reviewable rule ambiguity", () => {
   const document = parseFixture(comp3900Html, comp3900Url, "COMP3900");
 

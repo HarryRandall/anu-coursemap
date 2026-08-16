@@ -44,7 +44,8 @@ type ActivityRow = {
   sourceUrl?: string;
 };
 
-const MAX_WEB_COURSE_IMPORTS = 20;
+const MAX_WEB_COURSE_IMPORTS = 100;
+const COURSE_SYNC_CONCURRENCY = 4;
 
 export default function AdminSyncPreviewPage() {
   return (
@@ -132,27 +133,110 @@ function SyncPreview() {
     setImportError(null);
     setImportResult(null);
 
+    const totals = {
+      added: 0,
+      changed: 0,
+      checked: 0,
+      failed: 0,
+      unchanged: 0,
+    };
+    let nextIndex = 0;
+    let firstError: string | null = null;
+    setActivityRows(
+      selectedCourseCodes.map((code) => ({
+        action: "fetching",
+        code,
+        kind: "course",
+        message: "Fetching ANU source page",
+      })),
+    );
+
+    async function syncOneCourse(code: string) {
+      try {
+        const response = await fetch("/api/admin/catalogue/imports/courses", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            catalogueYear: Number(year),
+            courseCodes: [code],
+          }),
+        });
+        const payload = (await response.json()) as ImportResult & {
+          error?: string;
+        };
+        if (!response.ok)
+          throw new Error(payload.error ?? "Course import failed.");
+        for (const key of Object.keys(totals) as (keyof typeof totals)[]) {
+          totals[key] += payload.counts[key];
+        }
+        const action =
+          payload.counts.failed > 0
+            ? "failed"
+            : payload.counts.added > 0
+              ? "created"
+              : payload.counts.changed > 0
+                ? "updated"
+                : "unchanged";
+        setActivityRows((rows) =>
+          rows.map((row) =>
+            row.code === code
+              ? {
+                  ...row,
+                  action,
+                  message:
+                    payload.counts.failed > 0
+                      ? "Saved source facts for review"
+                      : "Imported and queued ambiguous facts for review",
+                }
+              : row,
+          ),
+        );
+      } catch (caughtError) {
+        const message =
+          caughtError instanceof Error
+            ? caughtError.message
+            : "Course import failed.";
+        firstError ??= message;
+        totals.failed += 1;
+        setActivityRows((rows) =>
+          rows.map((row) =>
+            row.code === code ? { ...row, action: "failed", message } : row,
+          ),
+        );
+      }
+    }
+
+    async function worker() {
+      for (;;) {
+        const code = selectedCourseCodes[nextIndex];
+        nextIndex += 1;
+        if (!code) return;
+        await syncOneCourse(code);
+      }
+    }
+
     try {
-      const response = await fetch("/api/admin/catalogue/imports/courses", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          catalogueYear: Number(year),
-          courseCodes: selectedCourseCodes,
-        }),
-      });
-      const payload = (await response.json()) as ImportResult & {
-        error?: string;
-      };
-      if (!response.ok)
-        throw new Error(payload.error ?? "Course import failed.");
-      setImportResult(payload);
-    } catch (caughtError) {
-      setImportError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : "Course import failed.",
+      await Promise.all(
+        Array.from(
+          {
+            length: Math.min(
+              COURSE_SYNC_CONCURRENCY,
+              selectedCourseCodes.length,
+            ),
+          },
+          () => worker(),
+        ),
       );
+      setImportResult({
+        status: totals.failed > 0 ? "failed" : "succeeded",
+        runId: "website-batch",
+        counts: totals,
+      });
+      if (firstError) {
+        setImportError(
+          `${totals.failed} course page${totals.failed === 1 ? "" : "s"} need attention. ${firstError}`,
+        );
+      }
     } finally {
       setImporting(false);
     }

@@ -1338,7 +1338,7 @@ test(
 );
 
 test(
-  "fails closed on conflicting sessions and academic period definitions",
+  "imports conflicting sessions and academic period definitions for review",
   { timeout: 60_000 },
   async () => {
     const sql = await createLocalDatabaseClient();
@@ -1358,14 +1358,14 @@ test(
             runIds.push(sessionConflict.runId);
             assert.deepEqual(sessionConflict, {
               counts: {
-                added: 0,
+                added: 1,
                 changed: 0,
                 checked: 1,
-                failed: 1,
+                failed: 0,
                 unchanged: 0,
               },
               runId: sessionConflict.runId,
-              status: "failed",
+              status: "succeeded",
             });
 
             const [sessionItem] = await tx`
@@ -1373,8 +1373,8 @@ test(
               from public.catalogue_import_items
               where run_id = ${sessionConflict.runId}
             `;
-            assert.equal(sessionItem.outcome, "failed");
-            assert.equal(sessionItem.diagnostics.semanticOutcome, "failed");
+            assert.equal(sessionItem.outcome, "review");
+            assert.equal(sessionItem.diagnostics.semanticOutcome, "created");
             const [sessionSnapshot] = await tx`
               select external_key, content_sha256
               from public.catalogue_source_documents
@@ -1398,25 +1398,25 @@ test(
             `;
             assert.equal(sessionConflictReviews.length, 1);
             assert.equal(sessionConflictReviews[0].status, "open");
-            assert.equal(sessionConflictReviews[0].details.severity, "error");
+            assert.equal(sessionConflictReviews[0].details.severity, "warning");
             assert.equal(
               sessionConflictReviews[0].details.field,
               "offering.sessions",
             );
-            assert.deepEqual(await conflictDomainState(tx), domainBefore);
+            assert.notDeepEqual(await conflictDomainState(tx), domainBefore);
 
             const periodConflict = await importManifest(periodConflictManifest);
             runIds.push(periodConflict.runId);
             assert.deepEqual(periodConflict, {
               counts: {
-                added: 0,
+                added: 2,
                 changed: 0,
                 checked: 2,
-                failed: 2,
+                failed: 0,
                 unchanged: 0,
               },
               runId: periodConflict.runId,
-              status: "failed",
+              status: "succeeded",
             });
             const periodItems = await tx`
               select outcome, target_key, source_document_id, diagnostics
@@ -1430,12 +1430,12 @@ test(
                 targetKey,
               })),
               periodConflictCourseCodes.map((targetKey) => ({
-                outcome: "failed",
+                outcome: "review",
                 targetKey,
               })),
             );
             for (const item of periodItems) {
-              assert.equal(item.diagnostics.semanticOutcome, "failed");
+              assert.equal(item.diagnostics.semanticOutcome, "created");
             }
             const periodSnapshots = await tx`
               select documents.external_key, documents.content_sha256
@@ -1469,14 +1469,14 @@ test(
             assert.equal(periodConflictReviews.length, 2);
             for (const review of periodConflictReviews) {
               assert.equal(review.status, "open");
-              assert.equal(review.details.severity, "error");
+              assert.equal(review.details.severity, "warning");
               assert.equal(review.details.field, "periods");
             }
             assert.deepEqual(
               periodConflictReviews.map(({ target_key: code }) => code),
               periodConflictCourseCodes,
             );
-            assert.deepEqual(await conflictDomainState(tx), domainBefore);
+            assert.notDeepEqual(await conflictDomainState(tx), domainBefore);
 
             throw conflictRollbackSignal;
           },

@@ -501,7 +501,7 @@ function extractOfferings(
   content.children("h3").each((_, headingElement) => {
     const heading = $(headingElement);
     const name = nullableText(heading.text());
-    const table = heading.nextAll("table.table-terms").first();
+    const table = heading.next("table.table-terms").first();
     if (!name || table.length === 0) return;
     recognisedTableCount += 1;
 
@@ -529,9 +529,21 @@ function extractOfferings(
         const index = column(label);
         return index >= 0 ? nullableText($(cells[index]).text()) : null;
       };
+      const classNumber = cellText("Class number") ?? undefined;
       const startsOn = parseAnuDate(cellText("Class start date"));
       const endsOn = parseAnuDate(cellText("Class end date"));
       const sourceFragment = normaliseText(row.text());
+
+      if (!classNumber || !/^\d+$/.test(classNumber)) {
+        diagnostics.push({
+          code: "NON_CLASS_OFFERING_ROW_IGNORED",
+          severity: "warning",
+          message: `A non-class row in the ${name} offering table was ignored.`,
+          field: "offering.sessions",
+          sourceFragment,
+        });
+        return;
+      }
 
       if (
         !startsOn ||
@@ -540,7 +552,7 @@ function extractOfferings(
       ) {
         diagnostics.push({
           code: "INVALID_OFFERING_DATES",
-          severity: "error",
+          severity: "warning",
           message: `The ${name} offering has missing, malformed or out-of-scope dates.`,
           field: "offering.sessions",
           sourceFragment,
@@ -565,7 +577,7 @@ function extractOfferings(
       ) {
         diagnostics.push({
           code: "CONFLICTING_ACADEMIC_PERIOD_DATES",
-          severity: "error",
+          severity: "warning",
           message: `${name} has conflicting date ranges on the same page.`,
           field: "periods",
           sourceFragment,
@@ -574,7 +586,6 @@ function extractOfferings(
         periods.set(identity.code, period);
       }
 
-      const classNumber = cellText("Class number") ?? undefined;
       const deliveryMode = cellText("Mode Of Delivery") ?? undefined;
       const location = cellText("Location") ?? undefined;
       const summaryIndex = column("Class Summary");
