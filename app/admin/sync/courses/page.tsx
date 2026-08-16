@@ -10,6 +10,7 @@ import { Field, Input, Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 
 const years = Array.from({ length: 13 }, (_, index) => 2026 - index);
+const MAX_WEB_COURSE_IMPORTS = 100;
 
 type CourseSearchResult = {
   code: string;
@@ -94,7 +95,11 @@ export default function AdminCourseSyncPage() {
   }
 
   function addCourse(course: CourseSearchResult) {
-    if (selectedCodes.has(course.code)) return;
+    if (
+      selectedCodes.has(course.code) ||
+      selectedCourses.length >= MAX_WEB_COURSE_IMPORTS
+    )
+      return;
     setSelectedCourses((current) => [...current, course]);
     searchRequest.current += 1;
     setQuery("");
@@ -155,7 +160,7 @@ export default function AdminCourseSyncPage() {
                   Select course pages
                 </span>
                 <span className="mt-1 block text-xs text-zinc-500">
-                  Add one or more ANU course pages.
+                  Add up to 100 ANU course pages.
                 </span>
               </button>
               <button
@@ -222,11 +227,13 @@ export default function AdminCourseSyncPage() {
                         >
                           {results.map((course) => {
                             const isSelected = selectedCodes.has(course.code);
+                            const selectionLimitReached =
+                              selectedCourses.length >= MAX_WEB_COURSE_IMPORTS;
                             return (
                               <li key={course.code}>
                                 <button
                                   type="button"
-                                  disabled={isSelected}
+                                  disabled={isSelected || selectionLimitReached}
                                   onClick={() => addCourse(course)}
                                   className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-zinc-50 focus-visible:bg-zinc-50 focus-visible:outline-none disabled:cursor-default disabled:opacity-55"
                                 >

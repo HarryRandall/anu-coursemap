@@ -501,31 +501,9 @@ async function upsertAcademicPeriod(tx, period) {
     return { action: "created", id: inserted[0].id };
   }
 
-  const updated = await tx`
-    update public.academic_periods
-    set
-      name = ${period.name},
-      short_name = ${period.shortName},
-      starts_on = ${period.startsOn},
-      ends_on = ${period.endsOn},
-      sort_order = ${period.sortOrder},
-      status = 'draft'
-    where calendar_year = ${period.calendarYear}
-      and code = ${period.code}
-      and (name, short_name, starts_on, ends_on, sort_order) is distinct from (
-        ${period.name},
-        ${period.shortName},
-        ${period.startsOn},
-        ${period.endsOn},
-        ${period.sortOrder}
-      )
-    returning id
-  `;
-
-  if (updated.length > 0) {
-    return { action: "updated", id: updated[0].id };
-  }
-
+  // Course pages expose class dates, not an authoritative University Calendar
+  // definition. Keep the first imported period instead of changing it whenever
+  // another course has a different class window.
   const [existing] = await tx`
     select id
     from public.academic_periods
@@ -1089,7 +1067,7 @@ function detectAcademicPeriodConflicts(documents) {
         code: "ACADEMIC_PERIOD_CONFLICT",
         field: "documents.periods",
         message: `Source documents disagree on the definition of academic period ${key}.`,
-        severity: "error",
+        severity: "warning",
       }),
     ),
   };
@@ -1125,7 +1103,7 @@ async function importPeriods(tx, document, diagnostics, conflictingPeriodKeys) {
           code: "ACADEMIC_PERIOD_CONFLICT",
           field: "periods",
           message: `Conflicting definitions of academic period ${periodKey} were not imported.`,
-          severity: "error",
+          severity: "warning",
           sourceFragment: period?.sourceFragment ?? document.sourceFragment,
         }),
       );
@@ -1280,7 +1258,7 @@ async function importOffering(
           code: "OFFERING_SESSION_CONFLICT",
           field: "offering.sessions",
           message: `Classes in ${key} disagree on delivery mode or location and were not collapsed.`,
-          severity: "error",
+          severity: "warning",
           sourceFragment:
             periodSessions
               .map((session) => session.sourceFragment)
@@ -1415,41 +1393,6 @@ function collectUnmodelledSessionFacts(document) {
     );
 }
 
-function appendOfferingSessionConflicts(document, diagnostics) {
-  const sessionsByPeriod = new Map();
-  for (const session of document.offering?.sessions ?? []) {
-    const key = `${Number(session.calendarYear)}:${cleanText(session.periodCode)}`;
-    const existing = sessionsByPeriod.get(key) ?? [];
-    existing.push(session);
-    sessionsByPeriod.set(key, existing);
-  }
-
-  for (const [key, sessions] of sessionsByPeriod) {
-    const deliveryDefinitions = new Set(
-      sessions.map((session) =>
-        JSON.stringify({
-          deliveryMode: cleanOptionalText(session.deliveryMode),
-          location: cleanOptionalText(session.location),
-        }),
-      ),
-    );
-    if (deliveryDefinitions.size > 1) {
-      appendUniqueDiagnostic(
-        diagnostics,
-        diagnostic({
-          code: "OFFERING_SESSION_CONFLICT",
-          field: "offering.sessions",
-          message: `Classes in ${key} disagree on delivery mode or location and cannot be imported safely.`,
-          severity: "error",
-          sourceFragment:
-            sessions.map((session) => session.sourceFragment).find(Boolean) ??
-            document.sourceFragment,
-        }),
-      );
-    }
-  }
-}
-
 async function insertImportItem(
   tx,
   {
@@ -1546,25 +1489,6 @@ async function importDocument(
   const diagnostics = (document.diagnostics ?? []).map((issue) =>
     serialisable(issue),
   );
-  for (const period of document.periods ?? []) {
-    const normalised = normalisePeriod(period);
-    const periodKey = normalised
-      ? `${normalised.calendarYear}:${normalised.code}`
-      : null;
-    if (periodKey && conflictingPeriodKeys.has(periodKey)) {
-      appendUniqueDiagnostic(
-        diagnostics,
-        diagnostic({
-          code: "ACADEMIC_PERIOD_CONFLICT",
-          field: "periods",
-          message: `Conflicting definitions of academic period ${periodKey} were not imported.`,
-          severity: "error",
-          sourceFragment: period?.sourceFragment ?? document.sourceFragment,
-        }),
-      );
-    }
-  }
-  appendOfferingSessionConflicts(document, diagnostics);
   const validation = validateCourseDocument(document, scopeCodes);
   validation.issues.forEach((issue) =>
     appendUniqueDiagnostic(diagnostics, issue),

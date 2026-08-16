@@ -7,7 +7,7 @@ import {
 } from "@/scripts/catalogue/lib/local-database.mjs";
 
 const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/;
-export const MAX_WEB_COURSE_IMPORTS = 20;
+export const MAX_WEB_COURSE_IMPORTS = 100;
 
 export type CourseImportResult = {
   status: "succeeded" | "failed";
@@ -55,9 +55,9 @@ function configuredImportDatabaseUrl() {
 }
 
 /**
- * Fetch, validate and import a deliberately small selected-course scope.
- * A hosted runner needs an explicit server-only database connection; local
- * demo mode remains available for end-to-end verification.
+ * Fetch, validate and import a selected-course scope. The website issues
+ * bounded one-course requests, so each serverless request stays short while
+ * a user can select up to one hundred pages in one sync.
  */
 export async function runSelectedCourseImport({
   catalogueYear,

@@ -116,32 +116,17 @@ open review items rather than being treated as verified catalogue rules.
 
 ### Selected-course web sync
 
-An administrator with `imports.manage` can run a selected set of up to 20
+An administrator with `imports.manage` can run a selected set of up to 100
 course pages from **Admin > Imports > Course pages**. The runner fetches the
 official ANU pages, validates the manifest and uses the same idempotent
-transaction as the local CLI.
+transaction as the local CLI. The browser keeps four short, server-side import
+requests in flight so a selected batch does not rely on a long-running worker.
 
 Local demo mode targets the local Supabase database. For a Vercel production
 deployment, set `COURSEMAP_IMPORT_DATABASE_URL` only in the Production
 environment to a hosted Supabase PostgreSQL connection URL. It is server-only
-and must never use an `NEXT_PUBLIC_` name. The Vercel route is a Node function
-with a 60-second limit, so broader all-course imports run through the separate
-protected worker described below.
-
-### Scheduled catalogue sync
-
-The protected GitHub Actions **Catalogue sync** workflow is the production
-worker for broader, periodic course imports. It discovers the official ANU
-course index, fetches each individual course page at no more than one request
-per second, and imports 20 courses per database transaction. It is scheduled
-weekly and can be run manually with a selected course scope or a resume offset.
-
-Create the protected `catalogue-production` GitHub environment and store
-`COURSEMAP_IMPORT_DATABASE_URL` there as an environment secret. Use the hosted
-Supabase PostgreSQL URL only; it must never be committed, exposed to the
-browser or copied into a Vercel `NEXT_PUBLIC_` variable. The worker records
-normal catalogue import runs, leaves ambiguous data in review and does not
-publish imported rows automatically.
+and must never use an `NEXT_PUBLIC_` name. It is used only by the authenticated
+server-side import route and must never be exposed to the browser.
 
 The 2026 BCOMP and SOFT-MAJ structures are also stored as forward-migrated,
 normalised facts with official source hashes. Supported course, structure,
