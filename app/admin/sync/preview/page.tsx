@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, CircleAlert, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  CircleAlert,
+  ExternalLink,
+  LoaderCircle,
+  RefreshCw,
+} from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AppShell } from "@/components/shell";
@@ -16,6 +23,28 @@ type Preview = {
   isLowerBound: boolean;
   comparison: "database" | "demo";
 };
+
+type ImportResult = {
+  status: "succeeded" | "failed";
+  runId: string;
+  counts: {
+    added: number;
+    changed: number;
+    checked: number;
+    failed: number;
+    unchanged: number;
+  };
+};
+
+type ActivityRow = {
+  action: "created" | "updated" | "unchanged" | "failed" | "fetching";
+  code: string;
+  kind: "programme" | "course";
+  message: string;
+  sourceUrl?: string;
+};
+
+const MAX_WEB_COURSE_IMPORTS = 20;
 
 export default function AdminSyncPreviewPage() {
   return (
@@ -41,12 +70,32 @@ function SyncPreview() {
     : "selected";
   const programmes = searchParams.get("programmes") ?? "";
   const courses = searchParams.get("courses") ?? "";
+  const selectedCourseCodes = courses
+    .split(",")
+    .map((code) => code.trim().toUpperCase())
+    .filter((code) => /^[A-Z]{4}\d{4}$/.test(code));
+  const selectedProgrammeCodes = programmes
+    .split(",")
+    .map((code) => code.trim().toUpperCase())
+    .filter((code) => /^[A-Z0-9-]+$/.test(code));
   const editHref =
     target === "courses" || target === "all-courses"
       ? "/admin/sync/courses"
       : "/admin/sync";
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [activityRows, setActivityRows] = useState<ActivityRow[]>([]);
+  const [programmeRunComplete, setProgrammeRunComplete] = useState(false);
+  const canRunSelectedCourses =
+    target === "courses" &&
+    selectedCourseCodes.length > 0 &&
+    selectedCourseCodes.length <= MAX_WEB_COURSE_IMPORTS &&
+    !importing;
+  const canRunSelectedProgramme =
+    target === "selected" && selectedProgrammeCodes.length === 1 && !importing;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -76,6 +125,114 @@ function SyncPreview() {
 
     return () => controller.abort();
   }, [courses, programmes, target, year]);
+
+  async function runImport() {
+    if (!canRunSelectedCourses) return;
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+
+    try {
+      const response = await fetch("/api/admin/catalogue/imports/courses", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          catalogueYear: Number(year),
+          courseCodes: selectedCourseCodes,
+        }),
+      });
+      const payload = (await response.json()) as ImportResult & {
+        error?: string;
+      };
+      if (!response.ok)
+        throw new Error(payload.error ?? "Course import failed.");
+      setImportResult(payload);
+    } catch (caughtError) {
+      setImportError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Course import failed.",
+      );
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function runProgrammeImport() {
+    if (!canRunSelectedProgramme) return;
+    setImporting(true);
+    setImportError(null);
+    setImportResult(null);
+    setProgrammeRunComplete(false);
+    setActivityRows([]);
+
+    try {
+      const response = await fetch("/api/admin/catalogue/imports/programmes", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          catalogueYear: Number(year),
+          programmeCodes: selectedProgrammeCodes,
+        }),
+      });
+      if (!response.ok || !response.body) {
+        throw new Error("Programme import could not be started.");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let pending = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        pending += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+        const events = pending.split("\n\n");
+        pending = events.pop() ?? "";
+        for (const current of events) {
+          const line = current
+            .split("\n")
+            .find((item) => item.startsWith("data: "));
+          if (!line) continue;
+          const event = JSON.parse(line.slice(6)) as
+            | {
+                type: "progress";
+                action: ActivityRow["action"];
+                code: string;
+                kind: ActivityRow["kind"];
+                message: string;
+                sourceUrl?: string;
+              }
+            | { type: "complete" }
+            | { type: "error"; message: string };
+          if (event.type === "progress") {
+            setActivityRows((rows) => {
+              const row: ActivityRow = event;
+              const index = rows.findIndex(
+                (item) => item.code === row.code && item.kind === row.kind,
+              );
+              return index < 0
+                ? [...rows, row]
+                : rows.map((item, itemIndex) =>
+                    itemIndex === index ? row : item,
+                  );
+            });
+          } else if (event.type === "complete") {
+            setProgrammeRunComplete(true);
+          } else if (event.type === "error") {
+            throw new Error(event.message);
+          }
+        }
+        if (done) break;
+      }
+    } catch (caughtError) {
+      setImportError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Programme import failed.",
+      );
+    } finally {
+      setImporting(false);
+    }
+  }
 
   return (
     <AppShell admin>
@@ -138,6 +295,83 @@ function SyncPreview() {
             <CircleAlert size={16} /> {error}
           </div>
         )}
+        {importError && (
+          <div
+            role="alert"
+            className="mt-6 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700"
+          >
+            <CircleAlert size={16} /> {importError}
+          </div>
+        )}
+        {importResult && (
+          <div
+            role="status"
+            className="mt-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          >
+            Import {importResult.status}. {importResult.counts.added} added,{" "}
+            {importResult.counts.changed} changed and{" "}
+            {importResult.counts.unchanged} unchanged.
+          </div>
+        )}
+        {activityRows.length > 0 && (
+          <section className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+            <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-4 py-3">
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-950">
+                  Import activity
+                </h2>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  {programmeRunComplete
+                    ? "Completed. Each imported page remains linked to its ANU source."
+                    : "Updates appear as each page is saved."}
+                </p>
+              </div>
+              <span className="text-xs font-medium text-zinc-500">
+                {activityRows.length} pages
+              </span>
+            </div>
+            <div className="divide-y divide-zinc-100">
+              {activityRows.map((row) => (
+                <div
+                  key={`${row.kind}-${row.code}`}
+                  className="flex items-center gap-3 px-4 py-3 text-sm"
+                >
+                  {row.action === "fetching" ? (
+                    <LoaderCircle
+                      size={15}
+                      className="shrink-0 animate-spin text-violet-600"
+                    />
+                  ) : row.action === "failed" ? (
+                    <CircleAlert size={15} className="shrink-0 text-rose-600" />
+                  ) : (
+                    <Check size={15} className="shrink-0 text-emerald-600" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-xs font-semibold text-zinc-900">
+                      {row.code}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-zinc-500">
+                      {row.message}
+                    </p>
+                  </div>
+                  <span className="hidden text-xs text-zinc-400 capitalize sm:block">
+                    {row.kind}
+                  </span>
+                  {row.sourceUrl && (
+                    <a
+                      href={row.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-violet-700 hover:text-violet-900"
+                    >
+                      Source <ExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mt-10 border-t border-zinc-200 pt-6">
           <h2 className="text-lg font-semibold text-zinc-950">
@@ -158,7 +392,8 @@ function SyncPreview() {
             </p>
             {target !== "courses" && target !== "all-courses" && (
               <p className="flex items-center gap-2">
-                <Check size={16} className="text-emerald-600" /> Study options
+                <Check size={16} className="text-emerald-600" /> Original
+                programme requirements retained for review
               </p>
             )}
             <p className="flex items-center gap-2">
@@ -168,12 +403,39 @@ function SyncPreview() {
           </div>
         </section>
 
-        <div className="mt-10 flex justify-end">
+        <div className="mt-10 flex flex-col items-end gap-3">
+          {target === "courses" &&
+            selectedCourseCodes.length > MAX_WEB_COURSE_IMPORTS && (
+              <p className="text-sm text-zinc-500">
+                Run selected course pages in batches of {MAX_WEB_COURSE_IMPORTS}
+                .
+              </p>
+            )}
+          {target === "selected" && selectedProgrammeCodes.length !== 1 && (
+            <p className="text-sm text-zinc-500">
+              Choose one programme to run it locally. Multiple programmes can
+              still be reviewed together.
+            </p>
+          )}
           <Button
-            disabled
-            title="The programme importer has not been connected yet."
+            disabled={!canRunSelectedCourses && !canRunSelectedProgramme}
+            onClick={canRunSelectedProgramme ? runProgrammeImport : runImport}
+            title={
+              canRunSelectedCourses || canRunSelectedProgramme
+                ? "Fetch, validate and import this selected catalogue scope."
+                : undefined
+            }
           >
-            <RefreshCw size={16} /> Sync now
+            {importing ? (
+              <LoaderCircle size={16} className="animate-spin" />
+            ) : (
+              <RefreshCw size={16} />
+            )}
+            {importing
+              ? "Syncing"
+              : programmeRunComplete
+                ? "Sync again"
+                : "Sync now"}
           </Button>
         </div>
       </div>

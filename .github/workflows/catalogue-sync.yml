@@ -1,0 +1,61 @@
+name: Catalogue sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Catalogue year
+        required: true
+        default: "2026"
+        type: string
+      course_codes:
+        description: Optional comma-separated course codes for a targeted run
+        required: false
+        type: string
+      start_offset:
+        description: Offset for resuming a full-catalogue run
+        required: true
+        default: "0"
+        type: string
+      max_batches:
+        description: Optional number of 20-course batches to run
+        required: false
+        type: string
+  schedule:
+    - cron: "17 17 * * 6"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-catalogue-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    environment: catalogue-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      COURSEMAP_IMPORT_DATABASE_URL: ${{ secrets.COURSEMAP_IMPORT_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Sync official ANU catalogue pages
+        env:
+          INPUT_YEAR: ${{ inputs.year || '2026' }}
+          INPUT_COURSE_CODES: ${{ inputs.course_codes }}
+          INPUT_START_OFFSET: ${{ inputs.start_offset || '0' }}
+          INPUT_MAX_BATCHES: ${{ inputs.max_batches }}
+        run: |
+          args=(--year "$INPUT_YEAR" --start-offset "$INPUT_START_OFFSET")
+          if [ -n "$INPUT_MAX_BATCHES" ]; then args+=(--max-batches "$INPUT_MAX_BATCHES"); fi
+          if [ -n "$INPUT_COURSE_CODES" ]; then
+            IFS=',' read -ra course_codes <<< "$INPUT_COURSE_CODES"
+            for course_code in "${course_codes[@]}"; do args+=(--course "$course_code"); done
+          fi
+          npm run catalogue:sync -- "${args[@]}"
