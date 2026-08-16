@@ -1393,41 +1393,6 @@ function collectUnmodelledSessionFacts(document) {
     );
 }
 
-function appendOfferingSessionConflicts(document, diagnostics) {
-  const sessionsByPeriod = new Map();
-  for (const session of document.offering?.sessions ?? []) {
-    const key = `${Number(session.calendarYear)}:${cleanText(session.periodCode)}`;
-    const existing = sessionsByPeriod.get(key) ?? [];
-    existing.push(session);
-    sessionsByPeriod.set(key, existing);
-  }
-
-  for (const [key, sessions] of sessionsByPeriod) {
-    const deliveryDefinitions = new Set(
-      sessions.map((session) =>
-        JSON.stringify({
-          deliveryMode: cleanOptionalText(session.deliveryMode),
-          location: cleanOptionalText(session.location),
-        }),
-      ),
-    );
-    if (deliveryDefinitions.size > 1) {
-      appendUniqueDiagnostic(
-        diagnostics,
-        diagnostic({
-          code: "OFFERING_SESSION_CONFLICT",
-          field: "offering.sessions",
-          message: `Classes in ${key} disagree on delivery mode or location and cannot be imported safely.`,
-          severity: "warning",
-          sourceFragment:
-            sessions.map((session) => session.sourceFragment).find(Boolean) ??
-            document.sourceFragment,
-        }),
-      );
-    }
-  }
-}
-
 async function insertImportItem(
   tx,
   {
@@ -1524,25 +1489,6 @@ async function importDocument(
   const diagnostics = (document.diagnostics ?? []).map((issue) =>
     serialisable(issue),
   );
-  for (const period of document.periods ?? []) {
-    const normalised = normalisePeriod(period);
-    const periodKey = normalised
-      ? `${normalised.calendarYear}:${normalised.code}`
-      : null;
-    if (periodKey && conflictingPeriodKeys.has(periodKey)) {
-      appendUniqueDiagnostic(
-        diagnostics,
-        diagnostic({
-          code: "ACADEMIC_PERIOD_CONFLICT",
-          field: "periods",
-          message: `Conflicting definitions of academic period ${periodKey} were not imported.`,
-          severity: "warning",
-          sourceFragment: period?.sourceFragment ?? document.sourceFragment,
-        }),
-      );
-    }
-  }
-  appendOfferingSessionConflicts(document, diagnostics);
   const validation = validateCourseDocument(document, scopeCodes);
   validation.issues.forEach((issue) =>
     appendUniqueDiagnostic(diagnostics, issue),
