@@ -5,7 +5,7 @@ import { ExternalLink, Eye, MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { TermChooser } from "@/components/overlays";
-import { courseByCode } from "@/lib/catalogue";
+import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 
 const menuItemClasses =
   "flex h-9 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] text-zinc-700 hover:bg-zinc-100 focus:bg-zinc-100 focus:outline-none";
@@ -42,10 +42,13 @@ function placementFor(anchor: HTMLElement | null) {
     : ("bottom" as const);
 }
 
-/** Only the code crosses the server boundary, so rows stay out of the payload. */
-export function CourseRowActions({ code }: { code: string }) {
+export function CourseRowActions({
+  course,
+}: {
+  course: Pick<CatalogueCourse, "code" | "name" | "sessions" | "sourceUrl">;
+}) {
   const router = useRouter();
-  const course = courseByCode(code);
+  const { code } = course;
   const [menuOpen, setMenuOpen] = useState(false);
   const [placement, setPlacement] = useState<"top" | "bottom">("bottom");
   const [planOpen, setPlanOpen] = useState(false);
@@ -71,7 +74,7 @@ export function CourseRowActions({ code }: { code: string }) {
 
   const openSource = () => {
     setMenuOpen(false);
-    if (course) window.open(course.sourceUrl, "_blank", "noopener,noreferrer");
+    window.open(course.sourceUrl, "_blank", "noopener,noreferrer");
   };
 
   useEffect(() => {
@@ -161,25 +164,23 @@ export function CourseRowActions({ code }: { code: string }) {
             Add to plan
             <Keycap>A</Keycap>
           </button>
-          {course ? (
-            <button
-              type="button"
-              role="menuitem"
-              className={menuItemClasses}
-              onClick={openSource}
-            >
-              <ExternalLink
-                size={15}
-                aria-hidden="true"
-                className="text-zinc-500"
-              />
-              Open ANU source
-              <Keycap>O</Keycap>
-            </button>
-          ) : null}
+          <button
+            type="button"
+            role="menuitem"
+            className={menuItemClasses}
+            onClick={openSource}
+          >
+            <ExternalLink
+              size={15}
+              aria-hidden="true"
+              className="text-zinc-500"
+            />
+            Open ANU source
+            <Keycap>O</Keycap>
+          </button>
         </div>
       ) : null}
-      {planOpen && course ? (
+      {planOpen ? (
         <TermChooser course={course} onClose={() => setPlanOpen(false)} />
       ) : null}
     </div>

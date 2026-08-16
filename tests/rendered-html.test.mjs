@@ -282,6 +282,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     planPage,
     adminPage,
     coursePage,
+    courseDetailClient,
     prereqGraph,
     courseDrawer,
     coursePicker,
@@ -301,6 +302,13 @@ test("removes the disposable starter and keeps product metadata", async () => {
     readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8"),
     readFile(
       new URL("../app/courses/[code]/page.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../app/courses/[code]/course-detail-client.tsx",
+        import.meta.url,
+      ),
       "utf8",
     ),
     readFile(
@@ -353,21 +361,22 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(planPage, /group-hover:visible/);
   assert.doesNotMatch(planPage, /Blocked: needs/);
   assert.match(adminPage, /Changed pages/);
-  assert.match(coursePage, /completedCodes/);
-  assert.match(coursePage, /plannedCodes/);
-  assert.match(coursePage, /prerequisiteChainCodes/);
-  assert.match(coursePage, /ring-rose-200/);
-  assert.doesNotMatch(coursePage, /> Parsed</);
+  assert.match(coursePage, /loadPublishedCourse/);
+  assert.match(courseDetailClient, /completedCodes/);
+  assert.match(courseDetailClient, /plannedCodes/);
+  assert.match(courseDetailClient, /prerequisiteEdges/);
+  assert.doesNotMatch(courseDetailClient, /> Parsed</);
   assert.match(prereqGraph, /completedCodes\.has\(item\)/);
   assert.match(prereqGraph, /bg-emerald-50 text-emerald-700/);
   assert.match(prereqGraph, /isPlanned/);
   assert.match(prereqGraph, /bg-white text-zinc-600 ring-1 ring-zinc-200/);
   assert.match(prereqGraph, /bg-rose-50 text-rose-700/);
+  assert.match(prereqGraph, /ring-rose-200/);
   assert.doesNotMatch(prereqGraph, /bg-rose-50\/40/);
   assert.match(prereqGraph, /No prerequisite courses/);
   assert.match(prereqGraph, /empty-prerequisite-edge/);
   assert.match(prereqGraph, /stroke-zinc-300/);
-  assert.doesNotMatch(coursePage, /Back to courses/);
+  assert.doesNotMatch(courseDetailClient, /Back to courses/);
   assert.doesNotMatch(courseDrawer, /Move course to|\bmoveAttempt\b/);
   assert.doesNotMatch(courseDrawer, />Undo</);
   assert.match(courseDrawer, />\s*Completed\s*</);

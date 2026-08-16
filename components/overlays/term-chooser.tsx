@@ -2,7 +2,8 @@
 
 import { ArrowRight, X } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
-import { Course, terms } from "@/lib/catalogue";
+import { terms } from "@/lib/catalogue";
+import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { Modal } from "@/components/ui/overlay";
 import { IconButton } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ export function TermChooser({
   course,
   onClose,
 }: {
-  course: Course;
+  course: Pick<CatalogueCourse, "code" | "name" | "sessions">;
   onClose: () => void;
 }) {
   const { addCourse, notify } = useCoursemap();
