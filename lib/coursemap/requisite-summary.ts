@@ -17,6 +17,31 @@ export type RequisiteExpression =
       conditions: RequisiteExpression[];
     };
 
+export type CompletedRequisiteCourse = {
+  code: string;
+  units: number;
+};
+
+export type RequisiteProgress =
+  | {
+      kind: "course";
+      code: string;
+      satisfied: boolean;
+    }
+  | {
+      completedUnits: number;
+      kind: "subject_units";
+      requiredUnits: number;
+      satisfied: boolean;
+      subject: string;
+    }
+  | {
+      conditions: RequisiteProgress[];
+      kind: "group";
+      operator: "all_of" | "any_of";
+      satisfied: boolean;
+    };
+
 type RequisiteToken =
   | { kind: "and" | "left_parenthesis" | "or" | "right_parenthesis" }
   | { kind: "condition"; condition: RequisiteCondition };
@@ -157,4 +182,52 @@ export function parseRequisiteSummary(
 
   const parsed = parseOr();
   return parsed && position === tokens.length ? parsed : null;
+}
+
+/**
+ * Evaluates only completed course attempts. Planned and enrolled courses are
+ * deliberately excluded because the ANU wording requires completed study.
+ */
+export function evaluateRequisiteExpression(
+  expression: RequisiteExpression,
+  completedCourses: readonly CompletedRequisiteCourse[],
+): RequisiteProgress {
+  if (expression.kind === "course") {
+    return {
+      kind: "course",
+      code: expression.code,
+      satisfied: completedCourses.some(
+        (course) => course.code.toUpperCase() === expression.code,
+      ),
+    };
+  }
+
+  if (expression.kind === "subject_units") {
+    const completedUnits = completedCourses.reduce((total, course) => {
+      const subject = course.code.slice(0, 4).toUpperCase();
+      return subject === expression.subject && Number.isFinite(course.units)
+        ? total + course.units
+        : total;
+    }, 0);
+    return {
+      kind: "subject_units",
+      subject: expression.subject,
+      requiredUnits: expression.units,
+      completedUnits,
+      satisfied: completedUnits >= expression.units,
+    };
+  }
+
+  const conditions = expression.conditions.map((condition) =>
+    evaluateRequisiteExpression(condition, completedCourses),
+  );
+  return {
+    kind: "group",
+    operator: expression.operator,
+    conditions,
+    satisfied:
+      expression.operator === "all_of"
+        ? conditions.every((condition) => condition.satisfied)
+        : conditions.some((condition) => condition.satisfied),
+  };
 }

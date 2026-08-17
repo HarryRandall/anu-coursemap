@@ -1,4 +1,5 @@
 import { parseCatalogueManifest } from "../../../lib/catalogue-import/manifest.ts";
+import { parseRequisiteSummary } from "../../../lib/coursemap/requisite-summary.ts";
 import { assertVerifiedCatalogueImportClient } from "./local-database.mjs";
 
 const COURSE_CODE_PATTERN = /^[A-Z]{4}[0-9]{4}$/u;
@@ -221,10 +222,12 @@ function normaliseRuleSources(requisites = {}) {
 
   const rules = [];
   if (prerequisiteSections.length > 0) {
+    const sourceText = prerequisiteSections.join("\n\n");
     rules.push({
       ruleKind: "prerequisite",
-      sourceText: prerequisiteSections.join("\n\n"),
-      referencedCourseCodes: codesIn(prerequisiteSections.join("\n\n")),
+      sourceText,
+      expression: parseRequisiteSummary(sourceText),
+      referencedCourseCodes: codesIn(sourceText),
     });
   }
 
@@ -698,6 +701,15 @@ async function upsertCourseRule(
   tx,
   { catalogueYearId, courseVersionId, rule, sourceDocumentId },
 ) {
+  if (rule.expression) {
+    return upsertStructuredCourseRule(tx, {
+      catalogueYearId,
+      courseVersionId,
+      rule,
+      sourceDocumentId,
+    });
+  }
+
   const inserted = await tx`
     insert into public.course_rules (
       course_version_id,
@@ -783,6 +795,212 @@ async function upsertCourseRule(
   };
 }
 
+function expressionSourceText(expression) {
+  if (expression.kind === "course") return expression.code;
+  if (expression.kind === "subject_units") {
+    return `${expression.units} units of ${expression.subject} coded courses`;
+  }
+  return expression.conditions.map(expressionSourceText).join(" ");
+}
+
+function isImporterOwnedStructuredRule(existing) {
+  return (
+    existing.review_state === "automatic" && Number(existing.confidence) === 1
+  );
+}
+
+async function isImporterOwnedRule(tx, existing) {
+  return (
+    isImporterOwnedStructuredRule(existing) ||
+    (await isImporterOwnedRawRule(tx, existing))
+  );
+}
+
+async function insertStructuredRuleTree(tx, courseRuleId, expression) {
+  const actions = [];
+
+  async function insertExpression(value, parentGroupId, position) {
+    if (value.kind === "group") {
+      const [group] = await tx`
+        insert into public.course_rule_groups (
+          course_rule_id,
+          parent_group_id,
+          operator,
+          minimum_count,
+          position
+        )
+        values (
+          ${courseRuleId},
+          ${parentGroupId},
+          ${value.operator},
+          null,
+          ${position}
+        )
+        returning id
+      `;
+      actions.push("created");
+      for (const [childPosition, child] of value.conditions.entries()) {
+        await insertExpression(child, group.id, childPosition);
+      }
+      return;
+    }
+
+    if (value.kind === "course") {
+      const course = await upsertCourse(tx, value.code);
+      actions.push(course.action);
+      await tx`
+        insert into public.course_rule_conditions (
+          course_rule_id,
+          group_id,
+          condition_kind,
+          required_course_id,
+          source_text,
+          confidence,
+          review_state,
+          position
+        )
+        values (
+          ${courseRuleId},
+          ${parentGroupId},
+          'course',
+          ${course.id},
+          ${expressionSourceText(value)},
+          1,
+          'automatic',
+          ${position}
+        )
+      `;
+      actions.push("created");
+      return;
+    }
+
+    await tx`
+      insert into public.course_rule_conditions (
+        course_rule_id,
+        group_id,
+        condition_kind,
+        minimum_units,
+        subject_code,
+        source_text,
+        confidence,
+        review_state,
+        position
+      )
+      values (
+        ${courseRuleId},
+        ${parentGroupId},
+        'subject_units',
+        ${value.units},
+        ${value.subject},
+        ${expressionSourceText(value)},
+        1,
+        'automatic',
+        ${position}
+      )
+    `;
+    actions.push("created");
+  }
+
+  const root =
+    expression.kind === "group"
+      ? expression
+      : { kind: "group", operator: "all_of", conditions: [expression] };
+  await insertExpression(root, null, 0);
+  return combineActions(actions);
+}
+
+async function upsertStructuredCourseRule(
+  tx,
+  { catalogueYearId, courseVersionId, rule, sourceDocumentId },
+) {
+  const inserted = await tx`
+    insert into public.course_rules (
+      course_version_id,
+      catalogue_year_id,
+      rule_kind,
+      hardness,
+      source_text,
+      review_state,
+      confidence,
+      source_document_id
+    )
+    values (
+      ${courseVersionId},
+      ${catalogueYearId},
+      ${rule.ruleKind},
+      'hard',
+      ${rule.sourceText},
+      'automatic',
+      1,
+      ${sourceDocumentId}
+    )
+    on conflict (course_version_id, rule_kind) do nothing
+    returning id
+  `;
+
+  let action = "created";
+  let ruleId = inserted[0]?.id;
+  let replaceTree = inserted.length > 0;
+
+  if (!ruleId) {
+    const [existing] = await tx`
+      select id, review_state, confidence, source_text, source_document_id
+      from public.course_rules
+      where course_version_id = ${courseVersionId}
+        and rule_kind = ${rule.ruleKind}
+    `;
+    ruleId = existing.id;
+    const importerOwned =
+      isImporterOwnedStructuredRule(existing) ||
+      (await isImporterOwnedRawRule(tx, existing));
+
+    if (!importerOwned) {
+      const sourceMismatch =
+        existing.source_text !== rule.sourceText ||
+        String(existing.source_document_id) !== String(sourceDocumentId);
+      return {
+        action: "unchanged",
+        id: ruleId,
+        preserved: sourceMismatch,
+      };
+    }
+
+    const sourceChanged =
+      existing.source_text !== rule.sourceText ||
+      String(existing.source_document_id) !== String(sourceDocumentId) ||
+      !isImporterOwnedStructuredRule(existing);
+    if (!sourceChanged) {
+      return { action: "unchanged", id: ruleId };
+    }
+
+    const updated = await tx`
+      update public.course_rules
+      set
+        source_text = ${rule.sourceText},
+        review_state = 'automatic',
+        confidence = 1,
+        source_document_id = ${sourceDocumentId}
+      where id = ${ruleId}
+      returning id
+    `;
+    action = updated.length > 0 ? "updated" : "unchanged";
+    replaceTree = updated.length > 0;
+  }
+
+  if (!replaceTree) return { action, id: ruleId };
+
+  await tx`
+    delete from public.course_rule_groups
+    where course_rule_id = ${ruleId}
+  `;
+  const treeAction = await insertStructuredRuleTree(
+    tx,
+    ruleId,
+    rule.expression,
+  );
+  return { action: combineActions([action, treeAction]), id: ruleId };
+}
+
 async function syncCourseRuleCourseReferences(
   tx,
   { courseRuleId, referencedCourseCodes },
@@ -858,7 +1076,7 @@ async function reconcileMissingCourseRules(
     `;
     let hasUnreconciledRules = false;
     for (const existing of existingRules) {
-      const importerOwned = await isImporterOwnedRawRule(tx, existing);
+      const importerOwned = await isImporterOwnedRule(tx, existing);
       hasUnreconciledRules ||=
         importerOwned ||
         String(existing.source_document_id) !== String(sourceDocumentId);
@@ -902,7 +1120,7 @@ async function reconcileMissingCourseRules(
       continue;
     }
 
-    const importerOwned = await isImporterOwnedRawRule(tx, existing);
+    const importerOwned = await isImporterOwnedRule(tx, existing);
     if (String(existing.source_id) === String(sourceId) && importerOwned) {
       await tx`delete from public.course_rules where id = ${existing.id}`;
       actions.push("updated");
@@ -1581,6 +1799,7 @@ async function importDocument(
   const rawRules = normaliseRuleSources(document.course.requisites);
   let ruleChangeRequiresParentReview = false;
   for (const rule of rawRules) {
+    if (rule.expression) continue;
     appendUniqueDiagnostic(
       diagnostics,
       diagnostic({

@@ -9,7 +9,12 @@ import type { Database, Json } from "@/types/database";
 import type {
   CatalogueCourse,
   CataloguePrerequisiteEdge,
+  CatalogueRequisiteRule,
 } from "./catalogue-types";
+import {
+  parseRequisiteSummary,
+  type RequisiteExpression,
+} from "./requisite-summary";
 
 const ANU_SOURCE_BASE_URL = "https://programsandcourses.anu.edu.au";
 
@@ -74,6 +79,7 @@ type CourseDetailPayload = {
   prerequisiteText: string;
   prerequisiteCodes: string[];
   prerequisiteEdges: CataloguePrerequisiteEdge[];
+  prerequisiteRule: CatalogueRequisiteRule | null;
   incompatibilityText: string;
   sourceUpdatedAt: string | null;
   reviewState: CatalogueCourse["reviewState"];
@@ -162,6 +168,20 @@ async function demoCatalogue(): Promise<CatalogueCourse[]> {
       prerequisiteText: course.prerequisiteText,
       prerequisiteCodes: course.prerequisiteCodes,
       prerequisiteEdges,
+      prerequisiteRule:
+        course.prerequisiteText && course.prerequisiteText !== "None"
+          ? {
+              confidence: 0,
+              expression: parseRequisiteSummary(course.prerequisiteText),
+              reviewState:
+                course.parseState === "Verified"
+                  ? "verified"
+                  : course.parseState === "Review"
+                    ? "review"
+                    : "automatic",
+              sourceText: course.prerequisiteText,
+            }
+          : null,
       availableCourseCodes: [...availableCourseCodes].sort(),
       incompatibilityText: course.incompatibilities.join(", "),
       sourceUrl: course.sourceUrl,
@@ -275,6 +295,7 @@ function asCatalogueCourse({
   offerings,
   prerequisiteText = "No prerequisite information is available.",
   prerequisiteCodes = [],
+  prerequisiteRule = null,
   prerequisiteEdges = prerequisiteCodes.map((from) => ({
     from,
     to: code,
@@ -291,6 +312,7 @@ function asCatalogueCourse({
   >;
   prerequisiteText?: string;
   prerequisiteCodes?: string[];
+  prerequisiteRule?: CatalogueRequisiteRule | null;
   prerequisiteEdges?: CataloguePrerequisiteEdge[];
   incompatibilityText?: string;
 }): CatalogueCourse {
@@ -328,6 +350,7 @@ function asCatalogueCourse({
     prerequisiteText,
     prerequisiteCodes,
     prerequisiteEdges,
+    prerequisiteRule,
     availableCourseCodes: [...availableCourseCodes].sort(),
     incompatibilityText,
     sourceUrl: sourceUrl(year, code),
@@ -342,7 +365,9 @@ function asCatalogueCourse({
   };
 }
 
-function isRecord(value: Json): value is { [key: string]: Json | undefined } {
+function isRecord(
+  value: Json | undefined,
+): value is { [key: string]: Json | undefined } {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -382,6 +407,158 @@ function readPrerequisiteEdges(
   });
 }
 
+type RequisiteGroupPayload = {
+  id: number;
+  operator: "all_of" | "any_of";
+  parentId: number | null;
+  position: number;
+};
+
+type RequisiteConditionPayload =
+  | { code: string; groupId: number; kind: "course"; position: number }
+  | {
+      groupId: number;
+      kind: "subject_units";
+      position: number;
+      subject: string;
+      units: number;
+    };
+
+function readRequisiteRule(
+  value: Json | undefined,
+): CatalogueRequisiteRule | null {
+  if (!isRecord(value)) return null;
+
+  const sourceText = readString(value.source_text);
+  if (!sourceText) return null;
+  const reviewState = readString(value.review_state);
+  const groups: RequisiteGroupPayload[] = Array.isArray(value.groups)
+    ? value.groups.flatMap((group) => {
+        if (!isRecord(group)) return [];
+        const id = readNumber(group.id, Number.NaN);
+        const parentId =
+          typeof group.parent_group_id === "number"
+            ? group.parent_group_id
+            : null;
+        const operator = readString(group.operator);
+        const position = readNumber(group.position, Number.NaN);
+        if (
+          !Number.isInteger(id) ||
+          (parentId !== null && !Number.isInteger(parentId)) ||
+          !["all_of", "any_of"].includes(operator) ||
+          !Number.isInteger(position)
+        ) {
+          return [];
+        }
+        return [
+          {
+            id,
+            parentId,
+            operator: operator as RequisiteGroupPayload["operator"],
+            position,
+          },
+        ];
+      })
+    : [];
+  const conditions: RequisiteConditionPayload[] = Array.isArray(
+    value.conditions,
+  )
+    ? value.conditions.flatMap<RequisiteConditionPayload>((condition) => {
+        if (!isRecord(condition)) return [];
+        const groupId = readNumber(condition.group_id, Number.NaN);
+        const position = readNumber(condition.position, Number.NaN);
+        const kind = readString(condition.condition_kind);
+        if (!Number.isInteger(groupId) || !Number.isInteger(position))
+          return [];
+        if (kind === "course") {
+          const code = readString(condition.course_code).toUpperCase();
+          return /^[A-Z]{4}\d{4}$/u.test(code)
+            ? [
+                {
+                  groupId,
+                  position,
+                  kind: "course" as const,
+                  code,
+                },
+              ]
+            : [];
+        }
+        if (kind === "subject_units") {
+          const subject = readString(condition.subject_code).toUpperCase();
+          const units = readNumber(condition.minimum_units, Number.NaN);
+          return /^[A-Z]{4}$/u.test(subject) && units > 0
+            ? [
+                {
+                  groupId,
+                  position,
+                  kind: "subject_units" as const,
+                  subject,
+                  units,
+                },
+              ]
+            : [];
+        }
+        return [];
+      })
+    : [];
+  const root = groups.find((group) => group.parentId === null);
+
+  function expressionForGroup(
+    groupId: number,
+    ancestors = new Set<number>(),
+  ): RequisiteExpression | null {
+    if (ancestors.has(groupId)) return null;
+    const group = groups.find((candidate) => candidate.id === groupId);
+    if (!group) return null;
+
+    const children = [
+      ...groups
+        .filter((candidate) => candidate.parentId === groupId)
+        .map((candidate) => ({ kind: "group" as const, value: candidate })),
+      ...conditions
+        .filter((condition) => condition.groupId === groupId)
+        .map((condition) => ({ kind: "condition" as const, value: condition })),
+    ].sort((left, right) => left.value.position - right.value.position);
+    if (children.length === 0) return null;
+
+    const nextAncestors = new Set(ancestors).add(groupId);
+    const expressions: RequisiteExpression[] = [];
+    for (const child of children) {
+      let expression: RequisiteExpression | null;
+      if (child.kind === "group") {
+        expression = expressionForGroup(child.value.id, nextAncestors);
+      } else if (child.value.kind === "course") {
+        expression = { kind: "course", code: child.value.code };
+      } else {
+        expression = {
+          kind: "subject_units",
+          subject: child.value.subject,
+          units: child.value.units,
+        };
+      }
+      if (!expression) return null;
+      expressions.push(expression);
+    }
+    return {
+      kind: "group",
+      operator: group.operator as "all_of" | "any_of",
+      conditions: expressions,
+    };
+  }
+
+  return {
+    confidence: readNumber(value.confidence),
+    expression: root ? expressionForGroup(root.id) : null,
+    reviewState:
+      reviewState === "verified"
+        ? "verified"
+        : reviewState === "review"
+          ? "review"
+          : "automatic",
+    sourceText,
+  };
+}
+
 function readCourseDetail(value: Json): CourseDetailPayload | null {
   if (!isRecord(value)) return null;
   const code = readString(value.code).toUpperCase();
@@ -405,6 +582,7 @@ function readCourseDetail(value: Json): CourseDetailPayload | null {
     ),
     prerequisiteCodes: readStringArray(value.prerequisite_codes),
     prerequisiteEdges: readPrerequisiteEdges(value.prerequisite_edges),
+    prerequisiteRule: readRequisiteRule(value.prerequisite_rule),
     incompatibilityText: readString(value.incompatibility_text),
     sourceUpdatedAt:
       typeof value.source_updated_at === "string"
@@ -441,6 +619,7 @@ function detailAsCatalogueCourse(detail: CourseDetailPayload): CatalogueCourse {
     prerequisiteText: detail.prerequisiteText,
     prerequisiteCodes: detail.prerequisiteCodes,
     prerequisiteEdges: detail.prerequisiteEdges,
+    prerequisiteRule: detail.prerequisiteRule,
     availableCourseCodes: [...availableCourseCodes].sort(),
     incompatibilityText: detail.incompatibilityText,
     sourceUrl: sourceUrl(detail.year, detail.code),

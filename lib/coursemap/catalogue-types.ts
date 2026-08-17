@@ -1,3 +1,12 @@
+import type { RequisiteExpression } from "./requisite-summary";
+
+export type CatalogueRequisiteRule = {
+  confidence: number;
+  expression: RequisiteExpression | null;
+  reviewState: "automatic" | "review" | "verified";
+  sourceText: string;
+};
+
 export type CatalogueCourse = {
   accent: "blue" | "violet" | "mint" | "amber" | "rose" | "cyan";
   code: string;
@@ -14,6 +23,7 @@ export type CatalogueCourse = {
   prerequisiteText: string;
   prerequisiteCodes: string[];
   prerequisiteEdges: CataloguePrerequisiteEdge[];
+  prerequisiteRule: CatalogueRequisiteRule | null;
   /** Published courses which can be opened from requisite prose. */
   availableCourseCodes: string[];
   incompatibilityText: string;
