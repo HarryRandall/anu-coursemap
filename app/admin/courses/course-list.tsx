@@ -1,38 +1,35 @@
 "use client";
 
-import { CheckCircle2, ClipboardCheck, Search, Upload } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Upload } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { publishCourseVersion } from "@/lib/coursemap/catalogue-publication-actions";
-import type { AdminCourseRecord } from "@/lib/coursemap/admin-catalogue";
+import type {
+  AdminCourseRecord,
+  PaginatedAdminResult,
+} from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { Pagination } from "@/components/ui/pagination";
 
 function statusTone(status: string) {
   return status === "published" ? "success" : "warning";
 }
 
-export function AdminCourseList({ records }: { records: AdminCourseRecord[] }) {
+export function AdminCourseList({
+  data,
+  searchParams,
+}: {
+  data: PaginatedAdminResult<AdminCourseRecord>;
+  searchParams: Record<string, string | undefined>;
+}) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const filtered = useMemo(() => {
-    const search = query.trim().toLowerCase();
-    return records.filter(
-      (record) =>
-        !search ||
-        `${record.code} ${record.title} ${record.subject}`
-          .toLowerCase()
-          .includes(search),
-    );
-  }, [query, records]);
-  const drafts = records.filter(
-    (record) => record.publicationStatus !== "published",
-  );
 
   async function publish(record: AdminCourseRecord) {
     setPendingCode(record.code);
@@ -67,17 +64,11 @@ export function AdminCourseList({ records }: { records: AdminCourseRecord[] }) {
 
         <Card className="mt-6 overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-zinc-100 bg-zinc-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex h-10 max-w-xl flex-1 items-center gap-2 rounded-lg bg-white px-3 shadow-xs ring-1 ring-zinc-200 ring-inset">
-              <Search size={16} className="text-zinc-400" />
-              <input
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search imported courses"
-                value={query}
-              />
-            </label>
+            <div className="max-w-xl flex-1">
+              <FilterBar searchPlaceholder="Search imported courses" />
+            </div>
             <span className="text-xs text-zinc-500">
-              {drafts.length} awaiting publication · {records.length} imported
+              {data.total.toLocaleString("en-AU")} imported course versions
             </span>
           </div>
 
@@ -91,7 +82,7 @@ export function AdminCourseList({ records }: { records: AdminCourseRecord[] }) {
           )}
 
           <div className="divide-y divide-zinc-100">
-            {filtered.map((record) => (
+            {data.records.map((record) => (
               <div
                 key={record.id}
                 className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4"
@@ -165,11 +156,21 @@ export function AdminCourseList({ records }: { records: AdminCourseRecord[] }) {
                 )}
               </div>
             ))}
-            {filtered.length === 0 && (
+            {data.records.length === 0 && (
               <p className="px-4 py-12 text-center text-sm text-zinc-500">
                 No imported course versions match that search.
               </p>
             )}
+          </div>
+          <div className="border-t border-zinc-100 bg-zinc-50/40 px-4 py-3">
+            <Pagination
+              pathname="/admin/courses"
+              searchParams={searchParams}
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              itemName="course versions"
+            />
           </div>
         </Card>
       </div>

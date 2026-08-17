@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/data-table";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { cn } from "@/lib/cn";
+import { Pagination } from "@/components/ui/pagination";
 import { CourseRowActions } from "./course-row-actions";
 
 function sessionLabels(sessions: string[]) {
@@ -24,15 +25,30 @@ function sessionLabels(sessions: string[]) {
 const chipClasses =
   "rounded-md bg-zinc-50 px-1.5 py-0.5 text-[11px] font-medium text-zinc-600 ring-1 ring-zinc-200 ring-inset";
 
-export function CourseDirectory({ courses }: { courses: CatalogueCourse[] }) {
+export function CourseDirectory({
+  courses,
+  page,
+  pageSize,
+  total,
+  searchParams,
+}: {
+  courses: CatalogueCourse[];
+  page: number;
+  pageSize: number;
+  total: number;
+  searchParams: Record<string, string | undefined>;
+}) {
   return (
     <DataTableShell
       footer={
-        <p className="text-xs text-zinc-500">
-          {`Viewing ${courses.length.toLocaleString("en-AU")} ${
-            courses.length === 1 ? "course" : "courses"
-          }`}
-        </p>
+        <Pagination
+          pathname="/courses"
+          searchParams={searchParams}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          itemName="courses"
+        />
       }
     >
       <table className={tableClasses("table-fixed")}>

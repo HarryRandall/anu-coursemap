@@ -1,8 +1,5 @@
 import { AlertTriangle, BookOpen, GraduationCap, Upload } from "lucide-react";
-import {
-  loadAdminCourseRecords,
-  loadAdminStructureRecords,
-} from "@/lib/coursemap/admin-catalogue";
+import { loadAdminCatalogueSummary } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,19 +7,7 @@ import { Card } from "@/components/ui/card";
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
-  const [courses, structures] = await Promise.all([
-    loadAdminCourseRecords(),
-    loadAdminStructureRecords(),
-  ]);
-  const courseDrafts = courses.filter(
-    (item) => item.publicationStatus !== "published",
-  );
-  const structureDrafts = structures.filter(
-    (item) => item.publicationStatus !== "published",
-  );
-  const reviewed = [...courses, ...structures].filter(
-    (item) => item.reviewState === "review",
-  );
+  const summary = await loadAdminCatalogueSummary();
 
   return (
     <AppShell admin>
@@ -47,7 +32,7 @@ export default async function AdminOverviewPage() {
           <Card className="p-5">
             <BookOpen className="text-brand-600" size={19} />
             <p className="mt-4 text-3xl font-bold tracking-tight text-zinc-950">
-              {courses.length}
+              {summary.courses}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               Imported course versions
@@ -64,7 +49,7 @@ export default async function AdminOverviewPage() {
           <Card className="p-5">
             <GraduationCap className="text-brand-600" size={19} />
             <p className="mt-4 text-3xl font-bold tracking-tight text-zinc-950">
-              {structures.length}
+              {summary.structures}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               Imported programme structures
@@ -81,10 +66,11 @@ export default async function AdminOverviewPage() {
           <Card className="p-5">
             <AlertTriangle className="text-amber-600" size={19} />
             <p className="mt-4 text-3xl font-bold tracking-tight text-zinc-950">
-              {courseDrafts.length + structureDrafts.length}
+              {summary.courseDrafts + summary.structureDrafts}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              Drafts awaiting publication · {reviewed.length} with source review
+              Drafts awaiting publication · {summary.reviewItems} with source
+              review
             </p>
             <ButtonLink
               className="mt-4"

@@ -1,23 +1,22 @@
 "use client";
 
-import {
-  ArrowRight,
-  BookMarked,
-  Plus,
-  Search,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { ArrowRight, BookMarked, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import type { Course } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
-import { recommendedCoursesForTerm } from "@/lib/planner";
 import { Modal } from "@/components/ui/overlay";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
-import { Field, Select } from "@/components/ui/field";
 import { CourseToken } from "@/components/ui/course-token";
+
+type CourseSearchResponse = {
+  courses: Course[];
+  page: number;
+  pageSize: number;
+  query: string;
+  total: number;
+};
 
 export function CoursePicker({
   termId,
@@ -32,22 +31,56 @@ export function CoursePicker({
 }) {
   const { state, addCourse, notify } = useCoursemap();
   const [query, setQuery] = useState("");
-  const [subject, setSubject] = useState("All subjects");
-  const [level, setLevel] = useState("All levels");
-  const [convener, setConvener] = useState("All conveners");
+  const [page, setPage] = useState(1);
+  const [response, setResponse] = useState<CourseSearchResponse | null>(null);
   const [selected, setSelected] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const term =
     catalogue.terms.find((item) => item.id === termId) ?? catalogue.terms[0];
+  const trimmedQuery = query.trim();
 
   useEffect(() => searchRef.current?.focus(), []);
 
-  const subjects = [
-    ...new Set(catalogue.courses.map((course) => course.subject)),
-  ].sort();
-  const conveners = [
-    ...new Set(catalogue.courses.map((course) => course.convener)),
-  ].sort();
+  useEffect(() => {
+    if (trimmedQuery.length < 2) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          q: trimmedQuery,
+          page: String(page),
+          pageSize: "12",
+        });
+        const result = await fetch(`/api/courses/search?${params}`, {
+          signal: controller.signal,
+        });
+        if (!result.ok) throw new Error("Course search is unavailable");
+        const next = (await result.json()) as Omit<
+          CourseSearchResponse,
+          "query"
+        >;
+        if (!controller.signal.aborted) {
+          setResponse({ ...next, query: trimmedQuery });
+        }
+      } catch {
+        if (!controller.signal.aborted) setResponse(null);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 180);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [page, trimmedQuery]);
+
+  const activeResponse =
+    response?.query === trimmedQuery && trimmedQuery.length >= 2
+      ? response
+      : null;
+
   const courseCounts = useMemo(() => {
     const counts = new Map<string, number>();
     state.attempts.forEach((attempt) => {
@@ -55,47 +88,8 @@ export function CoursePicker({
     });
     return counts;
   }, [state.attempts]);
-  const recommendedCodes = useMemo(() => {
-    return new Set(
-      recommendedCoursesForTerm(term, state.attempts, [], catalogue).map(
-        (course) => course.code,
-      ),
-    );
-  }, [catalogue, state.attempts, term]);
-  const filtered = useMemo(
-    () =>
-      catalogue.courses.filter((course) => {
-        if (
-          (courseCounts.get(course.code) ?? 0) >= (course.units === 12 ? 2 : 1)
-        ) {
-          return false;
-        }
-        if (intent === "recommended" && !recommendedCodes.has(course.code)) {
-          return false;
-        }
-        const matchesQuery = `${course.code} ${course.name}`
-          .toLowerCase()
-          .includes(query.toLowerCase());
-        const matchesSubject =
-          subject === "All subjects" || course.subject === subject;
-        const matchesLevel =
-          level === "All levels" || String(course.level / 1000) === level;
-        const matchesConvener =
-          convener === "All conveners" || course.convener === convener;
-        return (
-          matchesQuery && matchesSubject && matchesLevel && matchesConvener
-        );
-      }),
-    [
-      catalogue.courses,
-      query,
-      subject,
-      level,
-      convener,
-      courseCounts,
-      intent,
-      recommendedCodes,
-    ],
+  const courses = (activeResponse?.courses ?? []).filter(
+    (course) => (courseCounts.get(course.code) ?? 0) < 1,
   );
 
   const choose = async (course: Course) => {
@@ -109,12 +103,10 @@ export function CoursePicker({
     if (result.ok) onClose();
   };
 
-  const resetFilters = () => {
-    setQuery("");
-    setSubject("All subjects");
-    setLevel("All levels");
-    setConvener("All conveners");
-  };
+  const hasNextPage = Boolean(
+    activeResponse &&
+    activeResponse.page * activeResponse.pageSize < activeResponse.total,
+  );
 
   return (
     <Modal
@@ -125,16 +117,14 @@ export function CoursePicker({
       <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4">
         <div>
           <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-            {intent === "recommended" ? "Recommended for" : "Add to"}{" "}
-            {term.name} {term.year < 2029 ? term.year : ""}
+            {intent === "recommended" ? "Choose for" : "Add to"} {term.name}{" "}
+            {term.year < 2029 ? term.year : ""}
           </p>
           <h2
             id="course-picker-title"
             className="mt-0.5 text-xl font-bold tracking-tight text-zinc-900"
           >
-            {intent === "recommended"
-              ? "Add a recommended course"
-              : "Find a course"}
+            Find a course
           </h2>
         </div>
         <IconButton label="Close" onClick={onClose}>
@@ -147,52 +137,20 @@ export function CoursePicker({
         <input
           ref={searchRef}
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(1);
+            setSelected(null);
+          }}
           placeholder="Search by course code or name"
           aria-label="Search courses"
           className="h-13 w-full bg-transparent text-[15px] placeholder:text-zinc-400 focus:outline-none"
         />
         <span className="shrink-0 text-xs text-zinc-400">
-          {filtered.length} courses
+          {activeResponse
+            ? `${activeResponse.total} courses`
+            : "Search 2+ characters"}
         </span>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3 border-b border-zinc-100 bg-zinc-50/70 px-5 py-3">
-        <Field label="Subject">
-          <Select
-            aria-label="Subject"
-            value={subject}
-            onChange={setSubject}
-            options={[
-              { value: "All subjects", label: "All subjects" },
-              ...subjects.map((item) => ({ value: item, label: item })),
-            ]}
-          />
-        </Field>
-        <Field label="Level">
-          <Select
-            aria-label="Level"
-            value={level}
-            onChange={setLevel}
-            options={[
-              { value: "All levels", label: "All levels" },
-              { value: "1", label: "Level 1" },
-              { value: "2", label: "Level 2" },
-              { value: "3", label: "Level 3" },
-            ]}
-          />
-        </Field>
-        <Field label="Convener">
-          <Select
-            aria-label="Convener"
-            value={convener}
-            onChange={setConvener}
-            options={[
-              { value: "All conveners", label: "All conveners" },
-              ...conveners.map((item) => ({ value: item, label: item })),
-            ]}
-          />
-        </Field>
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[minmax(0,1fr)_20rem]">
@@ -201,76 +159,81 @@ export function CoursePicker({
           role="listbox"
           aria-label="Course results"
         >
-          {filtered.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-1 p-8 text-center">
-              <Search size={22} className="text-zinc-300" />
-              <p className="mt-2 text-sm font-medium text-zinc-700">
-                {intent === "recommended"
-                  ? "No recommended courses fit this study period"
-                  : "No courses match those filters"}
-              </p>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="mt-3"
-                onClick={resetFilters}
-              >
-                Clear filters
-              </Button>
-            </div>
+          {trimmedQuery.length < 2 ? (
+            <EmptyState
+              title="Search the catalogue"
+              detail="Type at least two characters to find an available course without loading the full catalogue."
+            />
+          ) : loading && !activeResponse ? (
+            <EmptyState
+              title="Searching courses"
+              detail="Finding matching courses..."
+            />
+          ) : courses.length === 0 ? (
+            <EmptyState
+              title="No courses match that search"
+              detail="Try a course code, title, subject or convener."
+            />
           ) : (
-            filtered.map((course) => {
-              const available =
-                course.sessions.includes(term.name) ||
-                term.id === "unscheduled";
-              return (
-                <button
-                  key={course.code}
-                  type="button"
-                  role="option"
-                  aria-selected={selected?.code === course.code}
-                  onClick={() => setSelected(course)}
-                  onDoubleClick={() => void choose(course)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition",
-                    selected?.code === course.code
-                      ? "bg-zinc-100 ring-1 ring-zinc-200 ring-inset"
-                      : "hover:bg-zinc-50",
-                  )}
-                >
-                  <CourseToken code={course.code} accent={course.accent} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-zinc-900">
-                      {course.name}
-                    </span>
-                    <span className="block truncate text-xs text-zinc-500">
-                      {course.code} · {course.school}
-                    </span>
-                  </span>
-                  {recommendedCodes.has(course.code) && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700 ring-1 ring-brand-200 ring-inset">
-                      <Sparkles size={10} aria-hidden="true" />
-                      Recommended
-                    </span>
-                  )}
-                  <span
+            <>
+              {courses.map((course) => {
+                const available =
+                  course.sessions.includes(term.name) ||
+                  term.id === "unscheduled";
+                return (
+                  <button
+                    key={course.code}
+                    type="button"
+                    role="option"
+                    aria-selected={selected?.code === course.code}
+                    onClick={() => setSelected(course)}
+                    onDoubleClick={() => void choose(course)}
                     className={cn(
-                      "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
-                      available
-                        ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                        : "bg-amber-50 text-amber-700 ring-amber-200",
+                      "flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition",
+                      selected?.code === course.code
+                        ? "bg-zinc-100 ring-1 ring-zinc-200 ring-inset"
+                        : "hover:bg-zinc-50",
                     )}
                   >
-                    {available ? term.shortName : "Not offered"}
-                  </span>
-                  <ArrowRight
-                    size={16}
-                    className="shrink-0 text-zinc-300"
-                    aria-hidden="true"
-                  />
-                </button>
-              );
-            })
+                    <CourseToken code={course.code} accent={course.accent} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-zinc-900">
+                        {course.name}
+                      </span>
+                      <span className="block truncate text-xs text-zinc-500">
+                        {course.code} · {course.school}
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
+                        available
+                          ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                          : "bg-amber-50 text-amber-700 ring-amber-200",
+                      )}
+                    >
+                      {available ? term.shortName : "Not offered"}
+                    </span>
+                    <ArrowRight
+                      size={16}
+                      className="shrink-0 text-zinc-300"
+                      aria-hidden="true"
+                    />
+                  </button>
+                );
+              })}
+              {hasNextPage && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mx-auto my-3 flex"
+                  onClick={() => setPage((current) => current + 1)}
+                  disabled={loading}
+                >
+                  {loading ? "Loading..." : "More results"}
+                </Button>
+              )}
+            </>
           )}
         </div>
 
@@ -294,8 +257,8 @@ export function CoursePicker({
               <dl className="my-5 divide-y divide-zinc-200 border-y border-zinc-200 text-[13px]">
                 {[
                   ["Convener", selected.convener],
-                  ["Offered", selected.sessions.join(", ")],
-                  ["Level", String(selected.level)],
+                  ["Offered", selected.sessions.join(", ") || "Not listed"],
+                  ["Level", String(selected.level / 1000)],
                   ["Requisite", selected.prerequisiteText],
                 ].map(([label, value]) => (
                   <div
@@ -310,9 +273,9 @@ export function CoursePicker({
               <Button
                 variant="primary"
                 fullWidth
-                onClick={() => choose(selected)}
+                onClick={() => void choose(selected)}
               >
-                <Plus size={16} /> Add to {selected ? term.shortName : ""}
+                <Plus size={16} /> Add to {term.shortName}
               </Button>
               <ButtonLink
                 variant="subtle"
@@ -337,5 +300,15 @@ export function CoursePicker({
         </aside>
       </div>
     </Modal>
+  );
+}
+
+function EmptyState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-1 p-8 text-center">
+      <Search size={22} className="text-zinc-300" />
+      <p className="mt-2 text-sm font-medium text-zinc-700">{title}</p>
+      <p className="max-w-sm text-xs leading-relaxed text-zinc-400">{detail}</p>
+    </div>
   );
 }

@@ -3,7 +3,8 @@ import "server-only";
 import type { Course, Degree, Major, Term } from "@/lib/coursemap/types";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
-import { loadPublishedCourses } from "@/lib/coursemap/published-catalogue";
+import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-catalogue";
+import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { getAuthViewer } from "@/lib/auth/viewer";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,9 +41,7 @@ function formatDateRange(startsOn: string, endsOn: string) {
   return `${format.format(new Date(startsOn))} to ${format.format(new Date(endsOn))}`;
 }
 
-function planCourseFromCatalogue(
-  course: Awaited<ReturnType<typeof loadPublishedCourses>>[number],
-): Course {
+function planCourseFromCatalogue(course: CatalogueCourse): Course {
   return {
     code: course.code,
     name: course.name,
@@ -77,6 +76,7 @@ function planCourseFromCatalogue(
 
 export async function loadPublishedPlanCatalogue(
   catalogueYear?: number,
+  courseCodes: readonly string[] = [],
 ): Promise<PlanCatalogue> {
   if (isDemoMode()) {
     const {
@@ -122,7 +122,7 @@ export async function loadPublishedPlanCatalogue(
   }
   const [catalogueCourses, periodsResult, structureVersionsResult] =
     await Promise.all([
-      loadPublishedCourses(catalogueYearRecord.year),
+      loadPublishedCoursesByCodes(courseCodes, catalogueYearRecord.year),
       supabase
         .from("academic_periods")
         .select("calendar_year,code,ends_on,name,short_name,starts_on")
@@ -226,7 +226,7 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
   const supabase = await createClient();
   const { data: plan, error } = await supabase
     .from("plans")
-    .select("catalogue_year_id")
+    .select("id,catalogue_year_id")
     .eq("owner_id", viewer.id)
     .eq("is_primary", true)
     .maybeSingle();
@@ -239,5 +239,18 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
     .maybeSingle();
   if (yearError || !year) return loadPublishedPlanCatalogue();
 
-  return loadPublishedPlanCatalogue(year.year);
+  const { data: items, error: itemsError } = await supabase
+    .from("plan_items")
+    .select("course_id")
+    .eq("plan_id", plan.id);
+  if (itemsError) return loadPublishedPlanCatalogue(year.year);
+  const courseIds = [...new Set((items ?? []).map((item) => item.course_id))];
+  const { data: courses, error: coursesError } = courseIds.length
+    ? await supabase.from("courses").select("code").in("id", courseIds)
+    : { data: [], error: null };
+  if (coursesError) return loadPublishedPlanCatalogue(year.year);
+  return loadPublishedPlanCatalogue(
+    year.year,
+    (courses ?? []).map((course) => course.code),
+  );
 }

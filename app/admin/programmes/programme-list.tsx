@@ -1,34 +1,30 @@
 "use client";
 
-import { CheckCircle2, GraduationCap, Search, Upload } from "lucide-react";
+import { CheckCircle2, GraduationCap, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { publishStructureVersion } from "@/lib/coursemap/catalogue-publication-actions";
-import type { AdminStructureRecord } from "@/lib/coursemap/admin-catalogue";
+import type {
+  AdminStructureRecord,
+  PaginatedAdminResult,
+} from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { Pagination } from "@/components/ui/pagination";
 
 export function ProgrammeList({
-  records,
+  data,
+  searchParams,
 }: {
-  records: AdminStructureRecord[];
+  data: PaginatedAdminResult<AdminStructureRecord>;
+  searchParams: Record<string, string | undefined>;
 }) {
   const router = useRouter();
-  const [query, setQuery] = useState("");
   const [pendingCode, setPendingCode] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const filtered = useMemo(() => {
-    const search = query.trim().toLowerCase();
-    return records.filter(
-      (record) =>
-        !search ||
-        `${record.code} ${record.name} ${record.kind}`
-          .toLowerCase()
-          .includes(search),
-    );
-  }, [query, records]);
 
   async function publish(record: AdminStructureRecord) {
     setPendingCode(record.code);
@@ -62,17 +58,11 @@ export function ProgrammeList({
 
         <Card className="mt-6 overflow-hidden">
           <div className="flex flex-col gap-3 border-b border-zinc-100 bg-zinc-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <label className="flex h-10 max-w-xl flex-1 items-center gap-2 rounded-lg bg-white px-3 shadow-xs ring-1 ring-zinc-200 ring-inset">
-              <Search size={16} className="text-zinc-400" />
-              <input
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search imported degrees and majors"
-                value={query}
-              />
-            </label>
+            <div className="max-w-xl flex-1">
+              <FilterBar searchPlaceholder="Search imported degrees and majors" />
+            </div>
             <span className="text-xs text-zinc-500">
-              {records.length} imported structures
+              {data.total.toLocaleString("en-AU")} imported structures
             </span>
           </div>
 
@@ -86,7 +76,7 @@ export function ProgrammeList({
           )}
 
           <div className="divide-y divide-zinc-100">
-            {filtered.map((record) => (
+            {data.records.map((record) => (
               <div
                 key={record.id}
                 className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4"
@@ -140,11 +130,21 @@ export function ProgrammeList({
                 )}
               </div>
             ))}
-            {filtered.length === 0 && (
+            {data.records.length === 0 && (
               <p className="px-4 py-12 text-center text-sm text-zinc-500">
                 No imported programme structures match that search.
               </p>
             )}
+          </div>
+          <div className="border-t border-zinc-100 bg-zinc-50/40 px-4 py-3">
+            <Pagination
+              pathname="/admin/programmes"
+              searchParams={searchParams}
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              itemName="programme structures"
+            />
           </div>
         </Card>
       </div>

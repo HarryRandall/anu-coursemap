@@ -14,6 +14,7 @@ export function emptyCoursemapState(viewer: AuthViewer): AppState {
       degreeCode: "",
       majorCode: "",
       studyLoad: "Full time",
+      extensionYears: 0,
     },
     attempts: [],
   };
@@ -49,7 +50,9 @@ export async function loadCoursemapState(
         .maybeSingle(),
       supabase
         .from("plans")
-        .select("id,catalogue_year_id,commencement_year,study_load")
+        .select(
+          "id,catalogue_year_id,commencement_year,study_load,extension_years",
+        )
         .eq("owner_id", viewer.id)
         .eq("is_primary", true)
         .maybeSingle(),
@@ -188,6 +191,7 @@ export async function loadCoursemapState(
         commencementYear: plan.commencement_year,
         catalogueYear: yearResult.data?.year ?? state.profile.catalogueYear,
         studyLoad: plan.study_load === "part_time" ? "Part time" : "Full time",
+        extensionYears: plan.extension_years,
         degreeCode:
           structureCodeByVersion.get(
             structures.find((item) => item.role === "programme")
