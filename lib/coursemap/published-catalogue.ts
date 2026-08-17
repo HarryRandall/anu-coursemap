@@ -513,7 +513,7 @@ export async function loadPublishedCourse(
     ["published-course-detail", normalisedCode],
     {
       revalidate: 300,
-      tags: [`published-course:${normalisedCode}`],
+      tags: ["published-course-detail", `published-course:${normalisedCode}`],
     },
   )();
 }

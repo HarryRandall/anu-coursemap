@@ -39,6 +39,7 @@ export async function publishCourseVersion(
     revalidatePath(`/courses/${code}`);
     revalidatePath("/plan");
     revalidatePath("/admin/courses");
+    revalidateTag("published-course-detail", "max");
     revalidateTag(`published-course:${code.toUpperCase()}`, "max");
     return {
       ok: true,
