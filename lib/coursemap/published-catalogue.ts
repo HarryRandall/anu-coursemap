@@ -42,6 +42,23 @@ type OfferingSessionRow = {
 };
 type AcademicPeriodRow = { id: number; name: string; short_name: string };
 
+const COURSE_VERSION_SELECT =
+  "id,course_id,title,units,level,subject,school,convener,delivery_summary,description,publication_status,review_state,source_updated_at";
+
+export type PublishedCourseFilters = {
+  query?: string;
+  subject?: string;
+  level?: string;
+  session?: string;
+};
+
+export type PublishedCoursePage = {
+  courses: CatalogueCourse[];
+  page: number;
+  pageSize: number;
+  total: number;
+};
+
 type CourseDetailPayload = {
   code: string;
   year: number;
@@ -433,27 +450,11 @@ function detailAsCatalogueCourse(detail: CourseDetailPayload): CatalogueCourse {
   };
 }
 
-export async function loadPublishedCourses(
-  catalogueYear?: number,
-): Promise<CatalogueCourse[]> {
-  if (isDemoMode()) return demoCatalogue();
-
-  const supabase = createPublicClient();
-  const year = await publishedYear(supabase, catalogueYear);
-  if (!year) return [];
-
-  const { data: versions, error: versionsError } = await supabase
-    .from("course_versions")
-    .select(
-      "id,course_id,title,units,level,subject,school,convener,delivery_summary,description,publication_status,review_state,source_updated_at",
-    )
-    .eq("catalogue_year_id", year.id)
-    .eq("publication_status", "published")
-    .order("subject")
-    .order("title");
-  if (versionsError) throw versionsError;
-
-  const versionRows = (versions ?? []) as CourseVersionRow[];
+async function materialiseCatalogueCourses(
+  supabase: SupabaseClient<Database>,
+  year: { year: number },
+  versionRows: CourseVersionRow[],
+) {
   const courseIds = [
     ...new Set(versionRows.map((version) => version.course_id)),
   ];
@@ -490,6 +491,243 @@ export async function loadPublishedCourses(
         ]
       : [];
   });
+}
+
+function firstFilterValue(value?: string) {
+  return value?.trim().slice(0, 120) ?? "";
+}
+
+function searchPattern(value: string) {
+  return value
+    .replace(/[,%()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function courseVersionIdsForSession(
+  supabase: SupabaseClient<Database>,
+  session: string,
+) {
+  const { data: periods, error: periodsError } = await supabase
+    .from("academic_periods")
+    .select("id")
+    .eq("name", session);
+  if (periodsError) throw periodsError;
+  const periodIds = (periods ?? []).map((period) => period.id);
+  if (periodIds.length === 0) return [];
+
+  const { data: sessions, error: sessionsError } = await supabase
+    .from("offering_sessions")
+    .select("course_offering_id")
+    .in("academic_period_id", periodIds);
+  if (sessionsError) throw sessionsError;
+  const offeringIds = [
+    ...new Set((sessions ?? []).map((item) => item.course_offering_id)),
+  ];
+  if (offeringIds.length === 0) return [];
+
+  const { data: offerings, error: offeringsError } = await supabase
+    .from("course_offerings")
+    .select("course_version_id")
+    .in("id", offeringIds);
+  if (offeringsError) throw offeringsError;
+  return [...new Set((offerings ?? []).map((item) => item.course_version_id))];
+}
+
+async function courseIdsForCodeSearch(
+  supabase: SupabaseClient<Database>,
+  query: string,
+) {
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id")
+    .ilike("code", `%${query}%`)
+    .limit(500);
+  if (error) throw error;
+  return (data ?? []).map((course) => course.id);
+}
+
+export async function loadPublishedCoursePage({
+  catalogueYear,
+  filters = {},
+  page = 1,
+  pageSize = 24,
+}: {
+  catalogueYear?: number;
+  filters?: PublishedCourseFilters;
+  page?: number;
+  pageSize?: number;
+} = {}): Promise<PublishedCoursePage> {
+  const safePage = Math.max(1, Math.floor(page));
+  const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
+  const query = firstFilterValue(filters.query);
+  const subject = firstFilterValue(filters.subject).toUpperCase();
+  const level = Number(firstFilterValue(filters.level));
+  const session = firstFilterValue(filters.session);
+
+  if (isDemoMode()) {
+    const courses = (await demoCatalogue()).filter((course) => {
+      const text =
+        `${course.code} ${course.name} ${course.subject} ${course.school} ${course.convener}`.toLowerCase();
+      return (
+        (!query || text.includes(query.toLowerCase())) &&
+        (!subject || course.subject === subject) &&
+        (!level || course.level === level * 1000) &&
+        (!session || course.sessions.includes(session))
+      );
+    });
+    const start = (safePage - 1) * safePageSize;
+    return {
+      courses: courses.slice(start, start + safePageSize),
+      page: safePage,
+      pageSize: safePageSize,
+      total: courses.length,
+    };
+  }
+
+  const supabase = createPublicClient();
+  const year = await publishedYear(supabase, catalogueYear);
+  if (!year)
+    return { courses: [], page: safePage, pageSize: safePageSize, total: 0 };
+
+  const [codeIds, sessionVersionIds] = await Promise.all([
+    query ? courseIdsForCodeSearch(supabase, searchPattern(query)) : [],
+    session ? courseVersionIdsForSession(supabase, session) : null,
+  ]);
+  if (sessionVersionIds?.length === 0) {
+    return { courses: [], page: safePage, pageSize: safePageSize, total: 0 };
+  }
+
+  let versionsQuery = supabase
+    .from("course_versions")
+    .select(COURSE_VERSION_SELECT, { count: "exact" })
+    .eq("catalogue_year_id", year.id)
+    .eq("publication_status", "published");
+  if (subject) versionsQuery = versionsQuery.eq("subject", subject);
+  if (Number.isInteger(level) && level > 0) {
+    versionsQuery = versionsQuery.eq("level", level * 1000);
+  }
+  if (sessionVersionIds)
+    versionsQuery = versionsQuery.in("id", sessionVersionIds);
+  if (query) {
+    const pattern = `*${searchPattern(query)}*`;
+    const codeClause = codeIds.length
+      ? `,course_id.in.(${codeIds.join(",")})`
+      : "";
+    versionsQuery = versionsQuery.or(
+      `title.ilike.${pattern},subject.ilike.${pattern},school.ilike.${pattern},convener.ilike.${pattern}${codeClause}`,
+    );
+  }
+
+  const start = (safePage - 1) * safePageSize;
+  const {
+    data: versions,
+    count,
+    error,
+  } = await versionsQuery
+    .order("subject")
+    .order("title")
+    .range(start, start + safePageSize - 1);
+  if (error) throw error;
+  const courses = await materialiseCatalogueCourses(
+    supabase,
+    year,
+    (versions ?? []) as CourseVersionRow[],
+  );
+  return {
+    courses,
+    page: safePage,
+    pageSize: safePageSize,
+    total: count ?? 0,
+  };
+}
+
+export async function loadPublishedCoursesByCodes(
+  codes: readonly string[],
+  catalogueYear?: number,
+): Promise<CatalogueCourse[]> {
+  const normalisedCodes = [
+    ...new Set(codes.map((code) => code.trim().toUpperCase()).filter(Boolean)),
+  ];
+  if (normalisedCodes.length === 0) return [];
+  if (isDemoMode()) {
+    const courses = await demoCatalogue();
+    return courses.filter((course) => normalisedCodes.includes(course.code));
+  }
+
+  const supabase = createPublicClient();
+  const year = await publishedYear(supabase, catalogueYear);
+  if (!year) return [];
+  const { data: identities, error: identitiesError } = await supabase
+    .from("courses")
+    .select("id,code")
+    .in("code", normalisedCodes);
+  if (identitiesError) throw identitiesError;
+  const courseIds = (identities ?? []).map((course) => course.id);
+  if (courseIds.length === 0) return [];
+  const { data: versions, error: versionsError } = await supabase
+    .from("course_versions")
+    .select(COURSE_VERSION_SELECT)
+    .eq("catalogue_year_id", year.id)
+    .eq("publication_status", "published")
+    .in("course_id", courseIds);
+  if (versionsError) throw versionsError;
+  return materialiseCatalogueCourses(
+    supabase,
+    year,
+    (versions ?? []) as CourseVersionRow[],
+  );
+}
+
+export async function loadPublishedCourseFilterOptions(catalogueYear?: number) {
+  if (isDemoMode()) {
+    const courses = await demoCatalogue();
+    return {
+      subjects: [...new Set(courses.map((course) => course.subject))].sort(),
+      levels: [...new Set(courses.map((course) => course.level / 1000))].sort(),
+      sessions: [
+        ...new Set(courses.flatMap((course) => course.sessions)),
+      ].sort(),
+    };
+  }
+  const supabase = createPublicClient();
+  const year = await publishedYear(supabase, catalogueYear);
+  if (!year) return { subjects: [], levels: [], sessions: [] };
+  const [
+    { data: versions, error: versionsError },
+    { data: periods, error: periodsError },
+  ] = await Promise.all([
+    supabase
+      .from("course_versions")
+      .select("subject,level")
+      .eq("catalogue_year_id", year.id)
+      .eq("publication_status", "published"),
+    supabase
+      .from("academic_periods")
+      .select("name")
+      .eq("calendar_year", year.year)
+      .eq("status", "published"),
+  ]);
+  if (versionsError) throw versionsError;
+  if (periodsError) throw periodsError;
+  return {
+    subjects: [...new Set((versions ?? []).map((item) => item.subject))].sort(),
+    levels: [
+      ...new Set((versions ?? []).map((item) => item.level / 1000)),
+    ].sort(),
+    sessions: [...new Set((periods ?? []).map((item) => item.name))].sort(),
+  };
+}
+
+export async function loadPublishedCourses(
+  catalogueYear?: number,
+): Promise<CatalogueCourse[]> {
+  return (
+    await loadPublishedCoursePage({
+      catalogueYear,
+      pageSize: 100,
+    })
+  ).courses;
 }
 
 export async function loadPublishedCourse(

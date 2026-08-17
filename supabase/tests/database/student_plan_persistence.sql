@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(10);
+select extensions.plan(13);
 
 select extensions.ok(
   has_function_privilege(
@@ -16,6 +16,20 @@ select extensions.ok(
     'execute'
   ),
   'student plan RPCs are exposed only to authenticated users'
+);
+
+select extensions.ok(
+  has_function_privilege(
+    'authenticated',
+    'public.set_current_user_plan_extension_years(smallint)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.set_current_user_plan_extension_years(smallint)',
+    'execute'
+  ),
+  'plan timeline extensions are available only to authenticated users'
 );
 
 insert into auth.users (
@@ -175,6 +189,21 @@ select extensions.ok(
       and units_earned = 6
   ),
   'recording completion creates durable academic history'
+);
+
+select extensions.lives_ok(
+  $$select public.set_current_user_plan_extension_years(2)$$,
+  'a plan owner can extend their timeline'
+);
+
+select extensions.is(
+  (
+    select extension_years
+    from public.plans
+    where owner_id = '60000000-0000-4000-8000-000000000001'
+  ),
+  2::smallint,
+  'timeline extensions persist on the primary plan'
 );
 
 reset role;

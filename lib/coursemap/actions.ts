@@ -75,6 +75,26 @@ export async function addPlanCourse(
   }
 }
 
+export async function setCurrentUserPlanExtensionYears(
+  extensionYears: number,
+): Promise<CoursemapActionResult> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.rpc(
+      "set_current_user_plan_extension_years",
+      {
+        p_extension_years: extensionYears,
+      },
+    );
+    if (error) throw error;
+    revalidatePath("/plan");
+    revalidatePath("/dashboard");
+    return { ok: true, message: "Plan timeline updated" };
+  } catch (error) {
+    return failure(error);
+  }
+}
+
 export async function movePlanCourse(
   planItemId: string,
   termId: string,

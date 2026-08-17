@@ -1,15 +1,24 @@
 import { GitBranch } from "lucide-react";
-import { loadAdminRuleRecords } from "@/lib/coursemap/admin-catalogue";
+import { loadAdminRulePage } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/pagination";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminRelationsPage() {
-  const rules = await loadAdminRuleRecords();
-  const reviews = rules.filter((rule) => rule.reviewState === "review");
+export default async function AdminRelationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const page = Number(
+    Array.isArray(params.page) ? params.page[0] : params.page,
+  );
+  const data = await loadAdminRulePage({ page });
+  const reviews = data.records.filter((rule) => rule.reviewState === "review");
 
   return (
     <AppShell admin>
@@ -38,15 +47,15 @@ export default async function AdminRelationsPage() {
             <div className="flex items-center gap-2">
               <GitBranch className="text-brand-600" size={18} />
               <h2 className="text-sm font-semibold text-zinc-900">
-                {rules.length} imported rules
+                {data.total.toLocaleString("en-AU")} imported rules
               </h2>
             </div>
             <Badge tone={reviews.length ? "warning" : "success"}>
-              {reviews.length} need source review
+              {reviews.length} on this page need source review
             </Badge>
           </div>
           <div className="divide-y divide-zinc-100">
-            {rules.map((rule) => (
+            {data.records.map((rule) => (
               <article key={rule.id} className="px-5 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs font-semibold text-zinc-900">
@@ -66,11 +75,21 @@ export default async function AdminRelationsPage() {
                 </p>
               </article>
             ))}
-            {rules.length === 0 && (
+            {data.records.length === 0 && (
               <p className="px-5 py-12 text-center text-sm text-zinc-500">
                 No imported rules are available yet.
               </p>
             )}
+          </div>
+          <div className="border-t border-zinc-100 bg-zinc-50/40 px-5 py-3">
+            <Pagination
+              pathname="/admin/relations"
+              searchParams={{}}
+              page={data.page}
+              pageSize={data.pageSize}
+              total={data.total}
+              itemName="rules"
+            />
           </div>
         </Card>
       </div>

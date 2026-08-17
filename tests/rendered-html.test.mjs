@@ -85,7 +85,10 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(homeHtml, />Prerequisites<\/button>/i);
   assert.match(homeHtml, /Start with a course, then build the rest/i);
   assert.match(homeHtml, /Explore courses/i);
-  assert.match(coursesHtml, /Viewing 1(?:<!-- -->)? course/i);
+  assert.match(
+    coursesHtml,
+    /Showing 1(?:<!-- -->)?-1(?:<!-- -->)? of 1(?:<!-- -->)? course/i,
+  );
   assert.match(coursesHtml, /Computing Project/i);
   assert.match(coursesHtml, /Search code, course name, school or convener/i);
   assert.doesNotMatch(coursesHtml, /Open entry|6 units/i);
@@ -214,11 +217,8 @@ test("server-renders the routed Coursemap degree planner", async () => {
   assert.match(html, /class="year-row"/i);
   assert.match(html, /Semester 2/i);
   const emptyAdds = (html.match(/Add course in empty slot/g) ?? []).length;
-  const recommendedAdds = (
-    html.match(/Add recommended course [A-Z]{4}\d+/g) ?? []
-  ).length;
-  assert.ok(recommendedAdds > 0);
-  assert.equal(emptyAdds + recommendedAdds, 18);
+  assert.ok(emptyAdds > 0);
+  assert.doesNotMatch(html, /Add recommended course [A-Z]{4}\d+/);
   assert.match(html, /Degree progress/i);
   assert.doesNotMatch(html, /Edit degree/i);
   assert.doesNotMatch(html, /18 of 144 units completed/i);
@@ -424,7 +424,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
     /View assessment, learning outcomes and the complete course record/,
   );
   assert.doesNotMatch(courseDrawer, /Course information|Action needed|✓/);
-  assert.match(coursePicker, /course\.units === 12 \? 2 : 1/);
+  assert.match(coursePicker, /\/api\/courses\/search/);
+  assert.match(coursePicker, /Search 2\+ characters/);
   assert.doesNotMatch(coursePicker, /In plan/);
   assert.match(providers, /normaliseAttempts/);
   assert.match(providers, /const limit = 1/);

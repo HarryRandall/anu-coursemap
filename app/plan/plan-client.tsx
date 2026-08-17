@@ -6,7 +6,6 @@ import {
   Circle,
   GripVertical,
   Plus,
-  Sparkles,
   XCircle,
 } from "lucide-react";
 import {
@@ -27,12 +26,16 @@ import { Modal } from "@/components/ui/overlay";
 import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
+  MAX_PLAN_EXTENSION_YEARS,
+  planTimelineTerms,
+  planTimelineYears,
+} from "@/lib/coursemap/plan-timeline";
+import {
   STANDARD_COURSE_SLOTS,
   degreeUnitProgress,
   effectiveStatus,
   missingPrereqs,
   planningCourseByCode,
-  recommendedCoursesForTerm,
   type EffectiveStatus,
 } from "@/lib/planner";
 
@@ -74,7 +77,8 @@ function StatusMark({
 }
 
 function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
-  const { state, addCourse, reorderAttempt, notify } = useCoursemap();
+  const { state, reorderAttempt, notify, setPlanExtensionYears } =
+    useCoursemap();
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [overloadTerm, setOverloadTerm] = useState<string | null>(null);
   const [pendingDrop, setPendingDrop] = useState<PendingDrop | null>(null);
@@ -86,43 +90,44 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   const floatingCardRef = useRef<HTMLDivElement | null>(null);
   const pointerCleanupRef = useRef<(() => void) | null>(null);
 
+  const degree = catalogue.degrees.find(
+    (item) => item.code === state.profile.degreeCode,
+  );
+  const degreeYears = useMemo(
+    () =>
+      planTimelineYears({
+        degree,
+        commencementYear: state.profile.commencementYear,
+        extensionYears: state.profile.extensionYears,
+      }),
+    [degree, state.profile.commencementYear, state.profile.extensionYears],
+  );
+  const timelineTerms = useMemo(
+    () => planTimelineTerms({ terms: catalogue.terms, years: degreeYears }),
+    [catalogue.terms, degreeYears],
+  );
   const scheduledYears = useMemo(
     () =>
       [
         ...new Set(
-          catalogue.terms
+          timelineTerms
             .filter((term) => term.id !== "unscheduled")
             .map((term) => term.year),
         ),
       ].map((year) => ({
         year,
-        terms: catalogue.terms.filter(
+        terms: timelineTerms.filter(
           (term) => term.year === year && term.id !== "unscheduled",
         ),
       })),
-    [catalogue.terms],
+    [timelineTerms],
   );
-  const unscheduled = catalogue.terms.find((term) => term.id === "unscheduled");
-  const degree = catalogue.degrees.find(
-    (item) => item.code === state.profile.degreeCode,
-  );
-  const major = catalogue.majors.find(
-    (item) => item.code === state.profile.majorCode,
-  );
+  const unscheduled = timelineTerms.find((term) => term.id === "unscheduled");
   const progress = degreeUnitProgress(
     state.attempts,
     degree?.units ?? 0,
     catalogue,
   );
-  const degreeYears = degree
-    ? Array.from(
-        { length: Math.max(1, Math.ceil(degree.duration)) },
-        (_, index) => ({
-          studyYear: index + 1,
-          year: state.profile.commencementYear + index,
-        }),
-      )
-    : [];
 
   useEffect(
     () => () => {
@@ -172,7 +177,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     if (!attempt || attemptId === beforeAttemptId) return;
     const originalTermId = attempt.termId;
     const result = await reorderAttempt(attemptId, termId, beforeAttemptId);
-    const term = catalogue.terms.find((item) => item.id === termId);
+    const term = timelineTerms.find((item) => item.id === termId);
     notify(
       result.ok
         ? originalTermId === termId
@@ -230,25 +235,6 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
       return;
     }
     setPicker({ termId: term.id, intent });
-  };
-
-  const addRecommendedCourse = async (term: Term, course: Course) => {
-    const entries = entriesFor(term.id);
-    if (
-      term.id !== "unscheduled" &&
-      (entries.length >= STANDARD_COURSE_SLOTS || unitsOf(entries) >= 24)
-    ) {
-      setPendingDrop(null);
-      setOverloadTerm(term.id);
-      return;
-    }
-    const result = await addCourse(course.code, term.id);
-    notify(
-      result.ok
-        ? `${course.code} added to ${term.name} ${term.year}`
-        : result.message,
-      result.ok ? "success" : "warning",
-    );
   };
 
   const previewDrop = (drop: PendingDrop) => {
@@ -388,14 +374,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               entries.length -
               Number(previewUsesEmptySlot),
           );
-    const recommended = recommendedCoursesForTerm(
-      term,
-      state.attempts,
-      major?.courseCodes ?? [],
-      catalogue,
-    );
-    const suggested = emptySlots > 0 ? recommended[0] : undefined;
-    const remainingEmpty = suggested ? emptySlots - 1 : emptySlots;
+    const remainingEmpty = emptySlots;
 
     const dropPreview = previewEntry ? (
       <div
@@ -446,16 +425,6 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                 : `${units} / 24 units`}
               {units > 24 && " · Overload"}
             </span>
-            {recommended.length > 0 && (
-              <button
-                type="button"
-                onClick={() => requestAddCourse(term, "recommended")}
-                aria-label={`Add a recommended course to ${term.name} ${term.year}`}
-                className="grid size-8 place-items-center rounded-md text-brand-600 transition hover:bg-brand-50"
-              >
-                <Sparkles size={14} aria-hidden="true" />
-              </button>
-            )}
             <button
               type="button"
               onClick={() => requestAddCourse(term)}
@@ -543,27 +512,6 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
             );
           })}
           {previewUsesEmptySlot && dropPreview}
-          {suggested && (
-            <button
-              type="button"
-              onClick={() => void addRecommendedCourse(term, suggested)}
-              aria-label={`Add recommended course ${suggested.code} to ${term.name} ${term.year}`}
-              className="group flex min-h-[52px] items-center gap-2 rounded-lg border border-dashed border-brand-200 bg-brand-50/50 px-2 text-left text-[11px] font-medium text-brand-800 transition hover:border-brand-300 hover:bg-brand-50"
-            >
-              <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-brand-200 bg-white text-brand-600">
-                <Sparkles size={10} aria-hidden="true" />
-              </span>
-              <span className="w-[4.75rem] shrink-0 font-mono">
-                {suggested.code}
-              </span>
-              <span className="min-w-0 flex-1 truncate font-medium text-zinc-800">
-                {suggested.name}
-              </span>
-              <span className="shrink-0 text-[10px] font-semibold tracking-wide text-brand-600 uppercase">
-                Recommended
-              </span>
-            </button>
-          )}
           {Array.from({ length: remainingEmpty }, (_, index) => (
             <button
               key={`${term.id}-empty-${index}`}
@@ -572,7 +520,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               aria-label={
                 term.id === "unscheduled"
                   ? "Add an unscheduled course"
-                  : `Add course in empty slot ${entries.length + index + 1 + Number(Boolean(suggested))} of ${STANDARD_COURSE_SLOTS} for ${term.name} ${term.year}`
+                  : `Add course in empty slot ${entries.length + index + 1} of ${STANDARD_COURSE_SLOTS} for ${term.name} ${term.year}`
               }
               className="group flex min-h-[52px] items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-600"
             >
@@ -588,7 +536,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   };
 
   const overloadTarget = overloadTerm
-    ? catalogue.terms.find((term) => term.id === overloadTerm)
+    ? timelineTerms.find((term) => term.id === overloadTerm)
     : undefined;
   const draggedAttempt = dragging
     ? state.attempts.find((attempt) => attempt.id === dragging)
@@ -671,7 +619,36 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                     </span>
                   );
                 })}
+                <button
+                  type="button"
+                  disabled={
+                    state.profile.extensionYears >= MAX_PLAN_EXTENSION_YEARS
+                  }
+                  onClick={() => {
+                    void setPlanExtensionYears(
+                      state.profile.extensionYears + 1,
+                    ).then((result) =>
+                      notify(result.message, result.ok ? "success" : "warning"),
+                    );
+                  }}
+                  className="rounded-md border border-dashed border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  + Add year
+                </button>
               </div>
+              {state.profile.extensionYears > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void setPlanExtensionYears(0).then((result) =>
+                      notify(result.message, result.ok ? "success" : "warning"),
+                    );
+                  }}
+                  className="mt-2 text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline"
+                >
+                  Restore programme duration
+                </button>
+              )}
             </div>
           )}
         </div>

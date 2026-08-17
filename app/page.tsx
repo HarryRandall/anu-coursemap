@@ -13,6 +13,9 @@ export default async function Home() {
   if (!isDemoMode() && viewer && !(await hasPrimaryPlan(viewer))) {
     redirect("/onboarding");
   }
+  if (!isDemoMode() && viewer) {
+    redirect("/dashboard");
+  }
   const canOpenPlan = isDemoMode() || Boolean(viewer);
 
   return (

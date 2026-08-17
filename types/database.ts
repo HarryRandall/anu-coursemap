@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15"
+  }
   public: {
     Tables: {
       academic_periods: {
@@ -1224,6 +1229,7 @@ export type Database = {
           catalogue_year_id: number
           commencement_year: number
           created_at: string
+          extension_years: number
           id: string
           is_primary: boolean
           name: string
@@ -1236,6 +1242,7 @@ export type Database = {
           catalogue_year_id: number
           commencement_year: number
           created_at?: string
+          extension_years?: number
           id?: string
           is_primary?: boolean
           name: string
@@ -1248,6 +1255,7 @@ export type Database = {
           catalogue_year_id?: number
           commencement_year?: number
           created_at?: string
+          extension_years?: number
           id?: string
           is_primary?: boolean
           name?: string
@@ -1484,22 +1492,7 @@ export type Database = {
           permission_id?: number | null
           role_id?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "role_permissions_permission_id_fkey"
-            columns: ["permission_id"]
-            isOneToOne: false
-            referencedRelation: "admin_permissions"
-            referencedColumns: ["permission_id"]
-          },
-          {
-            foreignKeyName: "role_permissions_role_id_fkey"
-            columns: ["role_id"]
-            isOneToOne: false
-            referencedRelation: "admin_roles"
-            referencedColumns: ["role_id"]
-          },
-        ]
+        Relationships: []
       }
       admin_roles: {
         Row: {
@@ -1611,6 +1604,10 @@ export type Database = {
           p_study_load: string
         }
         Returns: string
+      }
+      set_current_user_plan_extension_years: {
+        Args: { p_extension_years: number }
+        Returns: undefined
       }
       set_role_permission: {
         Args: { p_enabled: boolean; p_permission_id: number; p_role_id: number }
