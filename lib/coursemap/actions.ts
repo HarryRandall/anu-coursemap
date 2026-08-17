@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { AttemptStatus } from "@/lib/catalogue";
 import type { Profile } from "@/app/providers";
+import type { AttemptStatus } from "@/lib/coursemap/types";
 import { createClient } from "@/lib/supabase/server";
 
 export type CoursemapActionResult = {

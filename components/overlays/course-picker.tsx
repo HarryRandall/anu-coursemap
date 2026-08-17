@@ -11,7 +11,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
-import type { Course } from "@/lib/catalogue";
+import type { Course } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { recommendedCoursesForTerm } from "@/lib/planner";
 import { Modal } from "@/components/ui/overlay";

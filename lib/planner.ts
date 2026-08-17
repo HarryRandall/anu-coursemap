@@ -1,4 +1,4 @@
-import type { Attempt, Course, Term } from "@/lib/catalogue";
+import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 
 export type PlanningCatalogue = {
   courses: readonly Course[];

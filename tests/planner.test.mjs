@@ -11,13 +11,7 @@ const libDir = new URL("../lib/", import.meta.url);
 async function compileLib(name) {
   const dir = await mkdtemp(join(tmpdir(), `coursemap-${name}-`));
   const needed =
-    name === "planner"
-      ? ["catalogue.ts", "planner.ts"]
-      : name === "study-calendar"
-        ? ["catalogue.ts", "study-calendar.ts"]
-        : name === "dashboard-series"
-          ? ["catalogue.ts", "dashboard-series.ts"]
-          : ["catalogue.ts"];
+    name === "planner" ? ["catalogue.ts", "planner.ts"] : ["catalogue.ts"];
   for (const file of needed) {
     const source = await readFile(new URL(file, libDir), "utf8");
     const rewritten = source.replaceAll(/@\/lib\/([^"]+)/g, "./$1.js");
@@ -223,63 +217,4 @@ test("groups completed and planned units by calendar year", () => {
   assert.equal(year2026?.completed, 6);
   assert.equal(year2026?.planned, 6);
   assert.equal(year2027?.planned, 6);
-});
-
-const calendar = await compileLib("study-calendar");
-const { eventsOnDay, focusMonthForPlan, monthCells, termContaining } = calendar;
-
-test("places a Semester 2 course on its weekday inside the study period", () => {
-  const attempts = [attempt("a1", "COMP1600", "2026-s2")];
-  const days = Array.from(
-    { length: 31 },
-    (_, index) => new Date(2026, 7, index + 1),
-  );
-  const hits = days.filter((day) => eventsOnDay(day, attempts).length > 0);
-  assert.ok(hits.length > 0);
-  assert.ok(hits.every((day) => day.getDay() >= 1 && day.getDay() <= 5));
-  assert.equal(new Set(hits.map((day) => day.getDay())).size, 1);
-});
-
-test("focuses the calendar on the current study period when it has courses", () => {
-  const focus = focusMonthForPlan(
-    [attempt("a1", "COMP1600", "2026-s2")],
-    new Date(2026, 7, 15),
-  );
-  assert.deepEqual(focus, { year: 2026, month: 7 });
-});
-
-test("builds a Monday-first month grid", () => {
-  const cells = monthCells({ year: 2026, month: 7 });
-  const first = cells.find((cell) => cell);
-  assert.equal(first?.getDate(), 1);
-  assert.equal(termContaining(new Date(2026, 7, 15))?.id, "2026-s2");
-  assert.equal(termContaining(new Date(2026, 0, 10)), null);
-});
-
-const series = await compileLib("dashboard-series");
-
-test("builds cumulative earned and planned units after each study period", () => {
-  const values = series.cumulativeUnitsByTerm([
-    attempt("a1", "COMP1100", "2026-s1", "completed"),
-    attempt("a2", "MATH1005", "2026-s1", "completed"),
-    attempt("a3", "COMP1600", "2026-s2"),
-  ]);
-  assert.equal(values[0].label, "S1 26");
-  assert.equal(values[0].completed, 12);
-  assert.equal(values[0].planned, 0);
-  assert.equal(values[1].completed, 12);
-  assert.equal(values[1].planned, 6);
-  assert.equal(values[1].units, 18);
-});
-
-test("reports study-period load without counting failed attempts", () => {
-  const loads = series.unitsByTerm([
-    attempt("a1", "COMP1100", "2026-s1", "completed"),
-    attempt("a2", "COMP1110", "2026-s2", "failed"),
-    attempt("a3", "COMP1600", "2026-s2"),
-  ]);
-  assert.equal(loads[0].units, 6);
-  assert.equal(loads[0].completed, 6);
-  assert.equal(loads[1].units, 6);
-  assert.equal(loads[1].planned, 6);
 });

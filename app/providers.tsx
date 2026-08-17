@@ -9,12 +9,8 @@ import {
   useMemo,
   useState,
 } from "react";
-import {
-  type Attempt,
-  type AttemptStatus,
-  initialAttempts,
-} from "@/lib/catalogue";
 import type { AuthViewer } from "@/lib/auth/viewer";
+import type { Attempt, AttemptStatus } from "@/lib/coursemap/types";
 import {
   addPlanCourse,
   movePlanCourse,
@@ -116,7 +112,7 @@ function normaliseAttempts(attempts: Attempt[]) {
   return attempts.filter((attempt) => selectedIds.has(attempt.id));
 }
 
-function createDemoState(): AppState {
+function createDemoState(initialAttempts: Attempt[]): AppState {
   return {
     schemaVersion: 1,
     profile: {
@@ -133,8 +129,12 @@ function createDemoState(): AppState {
   };
 }
 
-function createInitialState(demoMode: boolean, viewer: AuthViewer | null) {
-  if (demoMode) return createDemoState();
+function createInitialState(
+  demoMode: boolean,
+  viewer: AuthViewer | null,
+  demoInitialAttempts: Attempt[],
+) {
+  if (demoMode) return createDemoState(demoInitialAttempts);
 
   return {
     schemaVersion: 1,
@@ -169,17 +169,21 @@ export function AppProvider({
   demoMode,
   viewer,
   canAccessAdmin,
+  demoInitialAttempts = [],
   initialState: suppliedInitialState,
 }: {
   children: React.ReactNode;
   demoMode: boolean;
   viewer: AuthViewer | null;
   canAccessAdmin: boolean;
+  demoInitialAttempts?: Attempt[];
   initialState?: AppState;
 }) {
   const initialState = useMemo(
-    () => suppliedInitialState ?? createInitialState(demoMode, viewer),
-    [demoMode, suppliedInitialState, viewer],
+    () =>
+      suppliedInitialState ??
+      createInitialState(demoMode, viewer, demoInitialAttempts),
+    [demoInitialAttempts, demoMode, suppliedInitialState, viewer],
   );
   const [state, setState] = useState<AppState>(initialState);
   const [ready, setReady] = useState(false);
@@ -434,8 +438,8 @@ export function AppProvider({
   }, []);
 
   const resetDemo = useCallback(() => {
-    if (demoMode) setState(createDemoState());
-  }, [demoMode]);
+    if (demoMode) setState(createDemoState(demoInitialAttempts));
+  }, [demoInitialAttempts, demoMode]);
 
   const value = useMemo<AppContextValue>(
     () => ({
