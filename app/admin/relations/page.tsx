@@ -1,4 +1,4 @@
-import { GitBranch } from "lucide-react";
+import { ClipboardCheck, GitBranch } from "lucide-react";
 import { loadAdminRulePage } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,8 @@ export default async function AdminRelationsPage({
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
               Original ANU wording is retained here. A review label means
               Coursemap does not claim that the rule was fully structured
-              automatically.
+              automatically. Open its course to compare every imported field,
+              correct a draft and record the review decision.
             </p>
           </div>
           <ButtonLink href="/admin/sync/courses" size="sm" variant="secondary">
@@ -56,23 +57,37 @@ export default async function AdminRelationsPage({
           </div>
           <div className="divide-y divide-zinc-100">
             {data.records.map((rule) => (
-              <article key={rule.id} className="px-5 py-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-semibold text-zinc-900">
-                    {rule.code}
-                  </span>
-                  <Badge tone="neutral">{rule.kind}</Badge>
-                  <Badge
-                    tone={rule.reviewState === "review" ? "warning" : "success"}
-                  >
-                    {rule.reviewState === "review"
-                      ? "Source review"
-                      : "Reviewed"}
-                  </Badge>
+              <article
+                key={rule.id}
+                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-xs font-semibold text-zinc-900">
+                      {rule.code}
+                    </span>
+                    <Badge tone="neutral">{rule.kind}</Badge>
+                    <Badge
+                      tone={
+                        rule.reviewState === "review" ? "warning" : "success"
+                      }
+                    >
+                      {rule.reviewState === "review"
+                        ? "Source review"
+                        : "Reviewed"}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-700">
+                    {rule.sourceText}
+                  </p>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-zinc-700">
-                  {rule.sourceText}
-                </p>
+                <ButtonLink
+                  href={`/admin/courses/${rule.code}`}
+                  size="sm"
+                  variant="secondary"
+                >
+                  <ClipboardCheck size={15} /> Review course
+                </ButtonLink>
               </article>
             ))}
             {data.records.length === 0 && (
