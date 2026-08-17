@@ -231,6 +231,7 @@ test("server-renders admin and course-detail routes", async () => {
   const [
     adminResponse,
     adminCoursesResponse,
+    adminCourseReviewResponse,
     adminUsersResponse,
     adminRolesResponse,
     relationsResponse,
@@ -240,6 +241,7 @@ test("server-renders admin and course-detail routes", async () => {
   ] = await Promise.all([
     render("/admin/dashboard"),
     render("/admin/courses"),
+    render("/admin/courses/COMP3600"),
     render("/admin/users"),
     render("/admin/roles"),
     render("/admin/relations"),
@@ -249,6 +251,7 @@ test("server-renders admin and course-detail routes", async () => {
   ]);
   assert.equal(adminResponse.status, 200);
   assert.equal(adminCoursesResponse.status, 200);
+  assert.equal(adminCourseReviewResponse.status, 200);
   assert.equal(adminUsersResponse.status, 200);
   assert.equal(adminRolesResponse.status, 200);
   assert.equal(relationsResponse.status, 200);
@@ -257,6 +260,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.equal(summaryResponse.status, 200);
   const adminHtml = await adminResponse.text();
   const adminCoursesHtml = await adminCoursesResponse.text();
+  const adminCourseReviewHtml = await adminCourseReviewResponse.text();
   const adminUsersHtml = await adminUsersResponse.text();
   const adminRolesHtml = await adminRolesResponse.text();
   const relationsHtml = await relationsResponse.text();
@@ -266,6 +270,10 @@ test("server-renders admin and course-detail routes", async () => {
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
   assert.doesNotMatch(adminHtml, /Search courses|Help &amp; support/i);
   assert.doesNotMatch(adminCoursesHtml, /Export CSV|Reparse selected/i);
+  assert.match(adminCourseReviewHtml, /What to review before publishing/i);
+  assert.match(adminCourseReviewHtml, /Course fields/i);
+  assert.match(adminCourseReviewHtml, /Requisites and compatibility/i);
+  assert.match(adminCourseReviewHtml, /24 units of COMP coded courses/i);
   assert.match(adminUsersHtml, /User management is unavailable in demo mode/i);
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
   assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);
