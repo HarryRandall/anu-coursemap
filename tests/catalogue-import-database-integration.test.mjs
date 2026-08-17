@@ -846,7 +846,7 @@ test(
                 {
                   rule_kind: "prerequisite",
                   condition_kind: "subject_units",
-                  minimum_units: "24",
+                  minimum_units: "24.00",
                   position: 0,
                   subject_code: "COMP",
                   required_course_code: null,
@@ -855,7 +855,7 @@ test(
                 {
                   rule_kind: "prerequisite",
                   condition_kind: "subject_units",
-                  minimum_units: "6",
+                  minimum_units: "6.00",
                   position: 0,
                   subject_code: "MATH",
                   required_course_code: null,
