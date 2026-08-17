@@ -535,7 +535,7 @@ export function CourseReview({
             <Card>
               <CardHeader
                 title="Imported source"
-                description="The immutable source record used for this draft."
+                description={`The immutable source record used for this ${isDraft ? "draft" : "course version"}.`}
               />
               <div className="space-y-4 border-t border-zinc-100 px-5 py-5">
                 {record.source ? (
