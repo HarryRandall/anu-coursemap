@@ -60,6 +60,9 @@ export type Term = {
   name: string;
   shortName: string;
   dates: string;
+  /** ISO calendar bounds when ANU has published the academic period. */
+  startsOn?: string;
+  endsOn?: string;
 };
 
 export type Relation = {

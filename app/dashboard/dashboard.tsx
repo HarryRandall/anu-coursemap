@@ -3,7 +3,6 @@
 import {
   AlertTriangle,
   BookOpen,
-  CalendarDays,
   CheckCircle2,
   GraduationCap,
   ListChecks,
@@ -11,6 +10,9 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { useCoursemap } from "@/app/providers";
+import { MonthCalendar } from "@/components/dashboard/month-calendar";
+import { TermLoadChart } from "@/components/dashboard/term-load-chart";
+import { UnitsTrendChart } from "@/components/dashboard/units-trend-chart";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -18,6 +20,12 @@ import { Card } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
 import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
+import {
+  cumulativeDashboardUnits,
+  currentDashboardTermId,
+  dashboardCalendarEvents,
+  dashboardTermLoads,
+} from "@/lib/coursemap/dashboard-series";
 import {
   planTimelineTerms,
   planTimelineYears,
@@ -86,15 +94,31 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
         (left.term?.id ?? "").localeCompare(right.term?.id ?? ""),
     )
     .slice(0, 5);
-  const termLoads = timelineTerms
-    .filter((term) => term.id !== "unscheduled")
-    .map((term) => ({
-      term,
-      units: planned
-        .filter((item) => item.attempt.termId === term.id)
-        .reduce((total, item) => total + item.course.units, 0),
-    }))
-    .filter((item) => item.units > 0);
+  const dashboardCatalogue = useMemo(
+    () => ({ courses: catalogue.courses, terms: timelineTerms }),
+    [catalogue.courses, timelineTerms],
+  );
+  const termLoads = useMemo(
+    () =>
+      dashboardTermLoads({ ...dashboardCatalogue, attempts: state.attempts }),
+    [dashboardCatalogue, state.attempts],
+  );
+  const cumulativeUnits = useMemo(
+    () => cumulativeDashboardUnits(termLoads),
+    [termLoads],
+  );
+  const calendarEvents = useMemo(
+    () =>
+      dashboardCalendarEvents({
+        ...dashboardCatalogue,
+        attempts: state.attempts,
+      }),
+    [dashboardCatalogue, state.attempts],
+  );
+  const currentTermId = useMemo(
+    () => currentDashboardTermId(timelineTerms),
+    [timelineTerms],
+  );
 
   if (!degree) {
     return (
@@ -207,12 +231,22 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
               {plannedUnits}
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              units across {termLoads.length} planned semesters
+              units across {termLoads.filter((term) => term.units > 0).length}{" "}
+              planned semesters
             </p>
           </Card>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
+          <UnitsTrendChart
+            degreeUnits={progress.total}
+            points={cumulativeUnits}
+          />
+          <MonthCalendar events={calendarEvents} />
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-3">
+          <TermLoadChart terms={termLoads} currentTermId={currentTermId} />
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4">
               <div>
@@ -280,84 +314,31 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
               </div>
             )}
           </Card>
-          <div className="space-y-5">
-            <Card className="overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-zinc-100 px-5 py-4">
-                <CalendarDays size={17} className="text-brand-600" />
-                <div>
-                  <h2 className="text-sm font-semibold text-zinc-900">
-                    Semester load
-                  </h2>
-                  <p className="mt-0.5 text-xs text-zinc-500">
-                    A live view of planned units.
-                  </p>
-                </div>
+          <Card className="p-5">
+            <div className="flex items-start gap-3">
+              <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-600">
+                <ListChecks size={17} />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900">
+                  Plan checks
+                </h2>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  {blocked.length === 0
+                    ? "No prerequisite conflicts are currently detected in imported course data."
+                    : `${blocked.length} ${blocked.length === 1 ? "course needs" : "courses need"} a prerequisite check before enrolment.`}
+                </p>
+                <ButtonLink
+                  href="/requirements"
+                  size="sm"
+                  variant="secondary"
+                  className="mt-3"
+                >
+                  Review requirements
+                </ButtonLink>
               </div>
-              <div className="space-y-3 p-5">
-                {termLoads.length === 0 ? (
-                  <p className="text-sm text-zinc-500">
-                    Add courses to see your semester load.
-                  </p>
-                ) : (
-                  termLoads.map(({ term, units }) => (
-                    <div key={term.id}>
-                      <div className="flex justify-between gap-3 text-xs">
-                        <span className="font-medium text-zinc-700">
-                          {term.shortName} {term.year}
-                        </span>
-                        <span
-                          className={
-                            units > 24
-                              ? "font-semibold text-amber-700"
-                              : "text-zinc-500"
-                          }
-                        >
-                          {units} / 24 units
-                        </span>
-                      </div>
-                      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-zinc-100">
-                        <div
-                          className={
-                            units > 24
-                              ? "h-full bg-amber-400"
-                              : "h-full bg-brand-500"
-                          }
-                          style={{
-                            width: `${Math.min(100, (units / 24) * 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </Card>
-            <Card className="p-5">
-              <div className="flex items-start gap-3">
-                <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-600">
-                  <ListChecks size={17} />
-                </span>
-                <div>
-                  <h2 className="text-sm font-semibold text-zinc-900">
-                    Plan checks
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
-                    {blocked.length === 0
-                      ? "No prerequisite conflicts are currently detected in imported course data."
-                      : `${blocked.length} ${blocked.length === 1 ? "course needs" : "courses need"} a prerequisite check before enrolment.`}
-                  </p>
-                  <ButtonLink
-                    href="/requirements"
-                    size="sm"
-                    variant="secondary"
-                    className="mt-3"
-                  >
-                    Review requirements
-                  </ButtonLink>
-                </div>
-              </div>
-            </Card>
-          </div>
+            </div>
+          </Card>
         </div>
       </div>
     </AppShell>

@@ -190,13 +190,15 @@ export async function loadPublishedPlanCatalogue(
     ];
   });
 
-  const terms = ((periodsResult.data ?? []) as AcademicPeriodRow[]).map(
+  const terms: Term[] = ((periodsResult.data ?? []) as AcademicPeriodRow[]).map(
     (period) => ({
       id: `${period.calendar_year}-${period.code.toLowerCase()}`,
       year: period.calendar_year,
       name: period.name,
       shortName: period.short_name,
       dates: formatDateRange(period.starts_on, period.ends_on),
+      startsOn: period.starts_on,
+      endsOn: period.ends_on,
     }),
   );
   terms.push({
