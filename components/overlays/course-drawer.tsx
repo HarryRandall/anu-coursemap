@@ -14,8 +14,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
-import { courseByCode } from "@/lib/catalogue";
-import { effectiveStatus, missingPrereqs } from "@/lib/planner";
+import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
+import {
+  effectiveStatus,
+  missingPrereqs,
+  planningCourseByCode,
+} from "@/lib/planner";
 import { Drawer } from "@/components/ui/overlay";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
 import { StatusPill } from "@/components/ui/status-pill";
@@ -23,20 +27,26 @@ import { FixIssueButton } from "@/components/plan/fix-issue-button";
 
 export function CourseDrawer({
   attemptId,
+  catalogue,
   onClose,
 }: {
   attemptId: string;
+  catalogue?: PlanCatalogue;
   onClose: () => void;
 }) {
   const { state, updateAttempt, removeAttempt, togglePermission, notify } =
     useCoursemap();
   const attempt = state.attempts.find((item) => item.id === attemptId);
-  const course = attempt ? courseByCode(attempt.courseCode) : undefined;
-  const status = attempt ? effectiveStatus(attempt, state.attempts) : "planned";
+  const course = attempt
+    ? planningCourseByCode(attempt.courseCode, catalogue)
+    : undefined;
+  const status = attempt
+    ? effectiveStatus(attempt, state.attempts, catalogue)
+    : "planned";
 
   if (!attempt || !course) return null;
 
-  const missing = new Set(missingPrereqs(attempt, state.attempts));
+  const missing = new Set(missingPrereqs(attempt, state.attempts, catalogue));
   const prereqsMet = missing.size === 0;
   const recorded =
     attempt.status === "completed" || attempt.status === "failed";
@@ -188,7 +198,7 @@ export function CourseDrawer({
                         earlier
                       </p>
                     </div>
-                    <FixIssueButton attempt={attempt} />
+                    <FixIssueButton attempt={attempt} catalogue={catalogue} />
                   </div>
                 )}
               </div>

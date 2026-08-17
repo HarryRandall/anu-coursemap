@@ -202,6 +202,15 @@ function normaliseRuleSources(requisites = {}) {
   const rawText = cleanText(requisites.rawText);
   const rawRequisiteText = cleanText(requisites.rawRequisiteText);
   const rawIncompatibilityText = cleanText(requisites.rawIncompatibilityText);
+  const linkedCourseCodes = Array.isArray(requisites.linkedCourseCodes)
+    ? requisites.linkedCourseCodes
+    : [];
+  const codesIn = (sourceText) => {
+    const text = sourceText?.toUpperCase() ?? "";
+    return linkedCourseCodes.filter((code) =>
+      new RegExp(`\\b${code}\\b`, "u").test(text),
+    );
+  };
   const prerequisiteSections = [];
 
   if (rawRequisiteText) {
@@ -215,6 +224,7 @@ function normaliseRuleSources(requisites = {}) {
     rules.push({
       ruleKind: "prerequisite",
       sourceText: prerequisiteSections.join("\n\n"),
+      referencedCourseCodes: codesIn(prerequisiteSections.join("\n\n")),
     });
   }
 
@@ -222,6 +232,7 @@ function normaliseRuleSources(requisites = {}) {
     rules.push({
       ruleKind: "incompatibility",
       sourceText: rawIncompatibilityText,
+      referencedCourseCodes: codesIn(rawIncompatibilityText),
     });
   }
 
@@ -770,6 +781,52 @@ async function upsertCourseRule(
     action: combineActions([action, group.action, condition.action]),
     id: ruleId,
   };
+}
+
+async function syncCourseRuleCourseReferences(
+  tx,
+  { courseRuleId, referencedCourseCodes },
+) {
+  const wantedCodes = [
+    ...new Set(
+      (referencedCourseCodes ?? [])
+        .map((code) => cleanText(code)?.toUpperCase())
+        .filter((code) => /^[A-Z]{4}\d{4}$/u.test(code)),
+    ),
+  ].sort();
+  const actions = [];
+
+  for (const code of wantedCodes) {
+    const course = await upsertCourse(tx, code);
+    actions.push(course.action);
+    const inserted = await tx`
+      insert into public.course_rule_course_references (
+        course_rule_id,
+        referenced_course_id,
+        source_text,
+        confidence,
+        review_state
+      )
+      values (${courseRuleId}, ${course.id}, ${code}, 0, 'review')
+      on conflict (course_rule_id, referenced_course_id) do nothing
+      returning id
+    `;
+    actions.push(inserted.length > 0 ? "created" : "unchanged");
+  }
+
+  const existing = await tx`
+    select rule_references.id, courses.code
+    from public.course_rule_course_references as rule_references
+    join public.courses as courses on courses.id = rule_references.referenced_course_id
+    where rule_references.course_rule_id = ${courseRuleId}
+  `;
+  for (const reference of existing) {
+    if (wantedCodes.includes(reference.code)) continue;
+    await tx`delete from public.course_rule_course_references where id = ${reference.id}`;
+    actions.push("updated");
+  }
+
+  return combineActions(actions);
 }
 
 async function reconcileMissingCourseRules(
@@ -1576,6 +1633,14 @@ async function importDocument(
       sourceDocumentId: snapshot.id,
     });
     actions.push(result.action);
+    if (rule.ruleKind === "prerequisite") {
+      actions.push(
+        await syncCourseRuleCourseReferences(tx, {
+          courseRuleId: result.id,
+          referencedCourseCodes: rule.referencedCourseCodes,
+        }),
+      );
+    }
     ruleChangeRequiresParentReview ||=
       result.action !== "unchanged" || result.preserved === true;
     if (result.preserved) {

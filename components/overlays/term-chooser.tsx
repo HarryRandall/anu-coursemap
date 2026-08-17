@@ -1,8 +1,8 @@
 "use client";
 
 import { ArrowRight, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useCoursemap } from "@/app/providers";
-import { terms } from "@/lib/catalogue";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { Modal } from "@/components/ui/overlay";
 import { IconButton } from "@/components/ui/button";
@@ -16,6 +16,43 @@ export function TermChooser({
   onClose: () => void;
 }) {
   const { addCourse, notify } = useCoursemap();
+  const [terms, setTerms] = useState<
+    Array<{ id: string; year: number; name: string; dates: string }>
+  >([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadTerms() {
+      try {
+        const response = await fetch("/api/plan/periods", {
+          signal: controller.signal,
+        });
+        const payload = (await response.json()) as {
+          error?: string;
+          terms?: Array<{
+            id: string;
+            year: number;
+            name: string;
+            dates: string;
+          }>;
+        };
+        if (!response.ok || !payload.terms) {
+          throw new Error(payload.error ?? "Semester options are unavailable.");
+        }
+        setTerms(payload.terms);
+      } catch (loadError) {
+        if (controller.signal.aborted) return;
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Semester options are unavailable.",
+        );
+      }
+    }
+    void loadTerms();
+    return () => controller.abort();
+  }, []);
 
   return (
     <Modal
@@ -40,34 +77,42 @@ export function TermChooser({
         </IconButton>
       </header>
       <div className="max-h-[70vh] overflow-y-auto p-2">
-        {terms.slice(0, 6).map((term) => {
-          const available = course.sessions.includes(term.name);
-          return (
-            <button
-              key={term.id}
-              type="button"
-              onClick={async () => {
-                const result = await addCourse(course.code, term.id);
-                notify(result.message, result.ok ? "success" : "warning");
-                if (result.ok) onClose();
-              }}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-50"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-semibold text-zinc-900">
-                  {term.name} {term.year}
+        {error ? (
+          <p className="px-3 py-6 text-center text-sm text-zinc-600">{error}</p>
+        ) : terms.length === 0 ? (
+          <p className="px-3 py-6 text-center text-sm text-zinc-500">
+            Loading available semesters...
+          </p>
+        ) : (
+          terms.map((term) => {
+            const available = course.sessions.includes(term.name);
+            return (
+              <button
+                key={term.id}
+                type="button"
+                onClick={async () => {
+                  const result = await addCourse(course.code, term.id);
+                  notify(result.message, result.ok ? "success" : "warning");
+                  if (result.ok) onClose();
+                }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-50"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-semibold text-zinc-900">
+                    {term.name} {term.year}
+                  </span>
+                  <span className="block text-xs text-zinc-500">
+                    {term.dates}
+                  </span>
                 </span>
-                <span className="block text-xs text-zinc-500">
-                  {term.dates}
-                </span>
-              </span>
-              <Badge tone={available ? "success" : "neutral"}>
-                {available ? "Offered" : "Not listed"}
-              </Badge>
-              <ArrowRight size={16} className="text-zinc-300" />
-            </button>
-          );
-        })}
+                <Badge tone={available ? "success" : "neutral"}>
+                  {available ? "Offered" : "Not listed"}
+                </Badge>
+                <ArrowRight size={16} className="text-zinc-300" />
+              </button>
+            );
+          })
+        )}
       </div>
     </Modal>
   );

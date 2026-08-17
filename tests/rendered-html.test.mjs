@@ -208,8 +208,6 @@ test("server-renders the routed Coursemap degree planner", async () => {
   assert.match(html, /Coursemap · Your ANU degree, mapped/i);
   assert.match(html, /coursemap/i);
   assert.match(html, /Course plan/i);
-  assert.doesNotMatch(html, /Bachelor of Computing/i);
-  assert.doesNotMatch(html, /Software Development/i);
   assert.match(html, /COMP1100/i);
   assert.match(html, /class="year-row"/i);
   assert.match(html, /Semester 2/i);
@@ -271,7 +269,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(courseHtml, /Requisites and compatibility/i);
   assert.doesNotMatch(courseHtml, /Back to courses/i);
   const chainHtml = await chainResponse.text();
-  assert.match(chainHtml, /Full prerequisite chain/i);
+  assert.match(chainHtml, /Prerequisite chain and unlocks/i);
   for (const prerequisite of ["MATH1005", "COMP2100", "COMP1110", "COMP1100"]) {
     assert.match(chainHtml, new RegExp(prerequisite));
   }
@@ -280,6 +278,7 @@ test("server-renders admin and course-detail routes", async () => {
 test("removes the disposable starter and keeps product metadata", async () => {
   const [
     planPage,
+    planClient,
     adminPage,
     coursePage,
     courseDetailClient,
@@ -299,6 +298,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     packageJson,
   ] = await Promise.all([
     readFile(new URL("../app/plan/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/plan/plan-client.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/admin/page.tsx", import.meta.url), "utf8"),
     readFile(
       new URL("../app/courses/[code]/page.tsx", import.meta.url),
@@ -345,36 +345,42 @@ test("removes the disposable starter and keeps product metadata", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(planPage, /year-board/);
-  assert.match(planPage, /STANDARD_COURSE_SLOTS/);
-  assert.match(planPage, /This semester is already full/);
-  assert.match(planPage, /reorderAttempt/);
-  assert.match(planPage, /Move anyway/);
-  assert.match(planPage, /CourseDrawer/);
-  assert.match(planPage, /onPointerDown/);
-  assert.match(planPage, /dragPreview/);
-  assert.match(planPage, /previewUsesEmptySlot/);
-  assert.match(planPage, /style=\{\{ height: dragPointer\?\.rowHeight \}\}/);
-  assert.match(planPage, /animate-drop-slot-in/);
-  assert.match(planPage, /translate3d/);
-  assert.match(planPage, /role="tooltip"/);
-  assert.match(planPage, /group-hover:visible/);
-  assert.doesNotMatch(planPage, /Blocked: needs/);
+  assert.match(planPage, /loadPublishedPlanCatalogue/);
+  assert.match(planClient, /year-board/);
+  assert.match(planClient, /STANDARD_COURSE_SLOTS/);
+  assert.match(planClient, /This semester is already full/);
+  assert.match(planClient, /reorderAttempt/);
+  assert.match(planClient, /Move anyway/);
+  assert.match(planClient, /CourseDrawer/);
+  assert.match(planClient, /onPointerDown/);
+  assert.match(planClient, /dragPreview/);
+  assert.match(planClient, /previewUsesEmptySlot/);
+  assert.match(planClient, /style=\{\{ height: dragPointer\?\.rowHeight \}\}/);
+  assert.match(planClient, /animate-drop-slot-in/);
+  assert.match(planClient, /translate3d/);
+  assert.match(planClient, /role="tooltip"/);
+  assert.match(planClient, /group-hover:visible/);
+  assert.match(planClient, /programmeRequirementsImported/);
+  assert.doesNotMatch(planClient, /Blocked: needs/);
   assert.match(adminPage, /Changed pages/);
   assert.match(coursePage, /loadPublishedCourse/);
   assert.match(courseDetailClient, /completedCodes/);
   assert.match(courseDetailClient, /plannedCodes/);
   assert.match(courseDetailClient, /prerequisiteEdges/);
+  assert.match(courseDetailClient, /CourseReferenceText/);
+  assert.match(courseDetailClient, /Student experience and self-review/);
   assert.doesNotMatch(courseDetailClient, /> Parsed</);
   assert.match(prereqGraph, /completedCodes\.has\(item\)/);
   assert.match(prereqGraph, /bg-emerald-50 text-emerald-700/);
   assert.match(prereqGraph, /isPlanned/);
-  assert.match(prereqGraph, /bg-white text-zinc-600 ring-1 ring-zinc-200/);
+  assert.match(prereqGraph, /bg-white text-zinc-700 ring-1 ring-zinc-200/);
   assert.match(prereqGraph, /bg-rose-50 text-rose-700/);
   assert.match(prereqGraph, /ring-rose-200/);
   assert.doesNotMatch(prereqGraph, /bg-rose-50\/40/);
-  assert.match(prereqGraph, /No prerequisite courses/);
-  assert.match(prereqGraph, /empty-prerequisite-edge/);
+  assert.match(prereqGraph, /No prerequisite listed/);
+  assert.match(prereqGraph, /No imported unlocks yet/);
+  assert.match(prereqGraph, /Not imported yet/);
+  assert.match(prereqGraph, /prefetch=\{false\}/);
   assert.match(prereqGraph, /stroke-zinc-300/);
   assert.doesNotMatch(courseDetailClient, /Back to courses/);
   assert.doesNotMatch(courseDrawer, /Move course to|\bmoveAttempt\b/);
@@ -394,7 +400,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     /View assessment, learning outcomes and the complete course record/,
   );
   assert.doesNotMatch(courseDrawer, /Course information|Action needed|✓/);
-  assert.match(coursePicker, /courseOccurrenceLimit\(course\.code\)/);
+  assert.match(coursePicker, /course\.units === 12 \? 2 : 1/);
   assert.doesNotMatch(coursePicker, /In plan/);
   assert.match(providers, /normaliseAttempts/);
   assert.match(providers, /courseOccurrenceLimit\(courseCode\)/);

@@ -11,13 +11,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
-import {
-  Course,
-  courseOccurrenceLimit,
-  courses,
-  majorByCode,
-  terms,
-} from "@/lib/catalogue";
+import type { Course } from "@/lib/catalogue";
+import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { recommendedCoursesForTerm } from "@/lib/planner";
 import { Modal } from "@/components/ui/overlay";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
@@ -27,10 +22,12 @@ import { CourseToken } from "@/components/ui/course-token";
 export function CoursePicker({
   termId,
   intent = "all",
+  catalogue,
   onClose,
 }: {
   termId: string;
   intent?: "all" | "recommended";
+  catalogue: PlanCatalogue;
   onClose: () => void;
 }) {
   const { state, addCourse, notify } = useCoursemap();
@@ -40,13 +37,16 @@ export function CoursePicker({
   const [convener, setConvener] = useState("All conveners");
   const [selected, setSelected] = useState<Course | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const term = terms.find((item) => item.id === termId) ?? terms[0];
+  const term =
+    catalogue.terms.find((item) => item.id === termId) ?? catalogue.terms[0];
 
   useEffect(() => searchRef.current?.focus(), []);
 
-  const subjects = [...new Set(courses.map((course) => course.subject))].sort();
+  const subjects = [
+    ...new Set(catalogue.courses.map((course) => course.subject)),
+  ].sort();
   const conveners = [
-    ...new Set(courses.map((course) => course.convener)),
+    ...new Set(catalogue.courses.map((course) => course.convener)),
   ].sort();
   const courseCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -56,19 +56,17 @@ export function CoursePicker({
     return counts;
   }, [state.attempts]);
   const recommendedCodes = useMemo(() => {
-    const major = majorByCode(state.profile.majorCode);
     return new Set(
-      recommendedCoursesForTerm(term, state.attempts, major.courseCodes).map(
+      recommendedCoursesForTerm(term, state.attempts, [], catalogue).map(
         (course) => course.code,
       ),
     );
-  }, [state.attempts, state.profile.majorCode, term]);
+  }, [catalogue, state.attempts, term]);
   const filtered = useMemo(
     () =>
-      courses.filter((course) => {
+      catalogue.courses.filter((course) => {
         if (
-          (courseCounts.get(course.code) ?? 0) >=
-          courseOccurrenceLimit(course.code)
+          (courseCounts.get(course.code) ?? 0) >= (course.units === 12 ? 2 : 1)
         ) {
           return false;
         }
@@ -88,7 +86,16 @@ export function CoursePicker({
           matchesQuery && matchesSubject && matchesLevel && matchesConvener
         );
       }),
-    [query, subject, level, convener, courseCounts, intent, recommendedCodes],
+    [
+      catalogue.courses,
+      query,
+      subject,
+      level,
+      convener,
+      courseCounts,
+      intent,
+      recommendedCodes,
+    ],
   );
 
   const choose = async (course: Course) => {

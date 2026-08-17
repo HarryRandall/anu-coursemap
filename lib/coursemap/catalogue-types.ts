@@ -13,10 +13,19 @@ export type CatalogueCourse = {
   description: string;
   prerequisiteText: string;
   prerequisiteCodes: string[];
-  prerequisiteEdges: { from: string; to: string }[];
+  prerequisiteEdges: CataloguePrerequisiteEdge[];
+  /** Published courses which can be opened from requisite prose. */
+  availableCourseCodes: string[];
   incompatibilityText: string;
   sourceUrl: string;
   sourceUpdatedAt: string | null;
   publicationStatus: "published" | "draft";
   reviewState: "automatic" | "review" | "verified";
+};
+
+export type CataloguePrerequisiteEdge = {
+  from: string;
+  to: string;
+  fromIsAvailable: boolean;
+  toIsAvailable: boolean;
 };

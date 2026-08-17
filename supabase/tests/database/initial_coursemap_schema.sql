@@ -227,7 +227,8 @@ with published_tables (name) as (
     'requirement_conditions',
     'course_rules',
     'course_rule_groups',
-    'course_rule_conditions'
+    'course_rule_conditions',
+    'course_rule_course_references'
   ]::text[])
 )
 select extensions.ok(
