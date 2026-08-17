@@ -278,13 +278,14 @@ export const courses: Course[] = [
     delivery: "In person",
     description:
       "Design and analysis of efficient algorithms for challenging computational problems.",
-    prerequisiteText: "COMP2100 and COMP1600",
-    prerequisiteCodes: ["COMP2100", "COMP1600"],
-    incompatibilities: ["COMP6600"],
+    prerequisiteText:
+      "To enrol in this course you must have completed the following: 24 units of COMP coded courses AND (6 units of MATH OR COMP1600)",
+    prerequisiteCodes: ["COMP1600"],
+    incompatibilities: ["COMP6466"],
     countsTowards: ["Computing core", "Theoretical Computer Science major"],
     sourceUrl: "https://programsandcourses.anu.edu.au/2026/course/COMP3600",
     lastChanged: "11 May 2026",
-    parseState: "Verified",
+    parseState: "Review",
     accent: "cyan",
   },
   {
