@@ -2,28 +2,69 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowRight, CornerDownLeft, Search } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { courses } from "@/lib/catalogue";
 import { Modal } from "@/components/ui/overlay";
 import { CourseToken } from "@/components/ui/course-token";
+
+type SearchCourse = {
+  accent: "amber" | "blue" | "cyan" | "mint" | "rose" | "violet";
+  code: string;
+  name: string;
+  units: number;
+};
 
 export function SearchDialog({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
+  const [results, setResults] = useState<SearchCourse[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => inputRef.current?.focus(), []);
 
-  const results = useMemo(() => {
-    const text = query.trim().toLowerCase();
-    const matches = courses.filter((course) =>
-      `${course.code} ${course.name} ${course.subject} ${course.convener}`
-        .toLowerCase()
-        .includes(text),
-    );
-    return matches.slice(0, 8);
+  useEffect(() => {
+    const text = query.trim();
+    if (!text) {
+      return;
+    }
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(
+          `/api/courses/search?q=${encodeURIComponent(text)}`,
+          {
+            signal: controller.signal,
+          },
+        );
+        const payload = (await response.json()) as {
+          courses?: SearchCourse[];
+          error?: string;
+        };
+        if (!response.ok)
+          throw new Error(payload.error ?? "Course search is unavailable.");
+        setResults(payload.courses ?? []);
+      } catch (caughtError) {
+        if (!controller.signal.aborted) {
+          setResults([]);
+          setError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : "Course search is unavailable.",
+          );
+        }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 150);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
   }, [query]);
 
   const go = (code: string) => {
@@ -47,8 +88,14 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
           ref={inputRef}
           value={query}
           onChange={(event) => {
-            setQuery(event.target.value);
+            const value = event.target.value;
+            setQuery(value);
             setActive(0);
+            if (!value.trim()) {
+              setResults([]);
+              setLoading(false);
+              setError(null);
+            }
           }}
           placeholder="Search courses…"
           aria-label="Search courses"
@@ -68,7 +115,28 @@ export function SearchDialog({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="max-h-[min(56vh,24rem)] overflow-y-auto p-1.5">
-        {results.length === 0 ? (
+        {!query.trim() ? (
+          <div className="flex flex-col items-center gap-1 px-4 py-12 text-center">
+            <Search size={20} className="text-zinc-300" />
+            <p className="mt-2 text-sm font-medium text-zinc-700">
+              Search published courses
+            </p>
+            <p className="text-xs text-zinc-400">
+              Start with a course code or keyword.
+            </p>
+          </div>
+        ) : loading ? (
+          <p className="px-4 py-12 text-center text-sm text-zinc-500">
+            Searching published courses…
+          </p>
+        ) : error ? (
+          <p
+            role="alert"
+            className="px-4 py-12 text-center text-sm text-amber-800"
+          >
+            {error}
+          </p>
+        ) : results.length === 0 ? (
           <div className="flex flex-col items-center gap-1 px-4 py-12 text-center">
             <Search size={20} className="text-zinc-300" />
             <p className="mt-2 text-sm font-medium text-zinc-700">

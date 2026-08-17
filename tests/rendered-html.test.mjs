@@ -123,26 +123,28 @@ test("server-renders the complete student workspace", async () => {
   ] = await Promise.all(responses.map((response) => response.text()));
 
   assert.match(dashboardHtml, /Overview/i);
-  assert.match(dashboardHtml, /Degree complete/i);
-  assert.match(dashboardHtml, /Course progress/i);
-  assert.match(dashboardHtml, /Semester load/i);
-  assert.match(dashboardHtml, /Units over time/i);
-  assert.match(dashboardHtml, /Needs attention/i);
-  assert.match(dashboardHtml, /Calendar/i);
-  assert.doesNotMatch(dashboardHtml, /Your degree is taking shape/i);
-  assert.doesNotMatch(dashboardHtml, /Plan health/i);
-  assert.doesNotMatch(dashboardHtml, /How you are going/i);
-  assert.match(academicHtml, /Your academic overview/i);
+  assert.match(dashboardHtml, /Set up your plan first/i);
+  assert.match(dashboardHtml, /Start onboarding/i);
+  assert.doesNotMatch(
+    dashboardHtml,
+    /Semester load|Units over time|Degree complete/i,
+  );
+  assert.match(academicHtml, /Academic overview/i);
   assert.match(academicHtml, /recorded mark average/i);
-  assert.match(calendarHtml, /Study period/i);
-  assert.match(calendarHtml, /Semester 1 2026/i);
-  assert.match(calendarHtml, /Weekly timetable/i);
-  assert.match(calendarHtml, /COMP1100/i);
-  assert.match(calendarHtml, /Lecture/i);
-  assert.doesNotMatch(calendarHtml, /Coming soon/i);
-  assert.doesNotMatch(calendarHtml, /Class timetable|Assessments and dates/i);
-  assert.match(requirementsHtml, /Rule group coverage/i);
-  assert.match(requirementsHtml, /possible matches, not a final allocation/i);
+  assert.match(calendarHtml, /Study periods/i);
+  assert.match(calendarHtml, /Timetable times and rooms are not imported yet/i);
+  assert.doesNotMatch(
+    calendarHtml,
+    /Weekly timetable|Class timetable|Assessments and dates/i,
+  );
+  assert.match(
+    requirementsHtml,
+    /Select a published degree in onboarding to begin/i,
+  );
+  assert.doesNotMatch(
+    requirementsHtml,
+    /Rule group coverage|possible matches/i,
+  );
   assert.match(roadmapHtml, /Visual degree planning/i);
   assert.match(roadmapHtml, /The current product focus/i);
   assert.doesNotMatch(roadmapHtml, /Build the useful things first/i);
@@ -255,7 +257,8 @@ test("server-renders admin and course-detail routes", async () => {
   const adminUsersHtml = await adminUsersResponse.text();
   const adminRolesHtml = await adminRolesResponse.text();
   const relationsHtml = await relationsResponse.text();
-  assert.match(adminHtml, /Catalogue health at a glance/i);
+  assert.match(adminHtml, /Live catalogue status/i);
+  assert.match(adminHtml, /Publication workflow/i);
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
   assert.doesNotMatch(adminHtml, /Search courses|Help &amp; support/i);
@@ -263,7 +266,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminUsersHtml, /User management is unavailable in demo mode/i);
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
   assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);
-  assert.match(relationsHtml, /Open prerequisite graph for COMP2100/i);
+  assert.match(relationsHtml, /Imported rules/i);
   const courseHtml = await courseResponse.text();
   assert.match(courseHtml, /Software Design Methodologies/i);
   assert.match(courseHtml, /Requisites and compatibility/i);
@@ -345,7 +348,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     readFile(new URL("../package.json", import.meta.url), "utf8"),
   ]);
 
-  assert.match(planPage, /loadPublishedPlanCatalogue/);
+  assert.match(planPage, /loadCurrentUserPlanCatalogue/);
   assert.match(planClient, /year-board/);
   assert.match(planClient, /STANDARD_COURSE_SLOTS/);
   assert.match(planClient, /This semester is already full/);
@@ -362,7 +365,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(planClient, /group-hover:visible/);
   assert.match(planClient, /programmeRequirementsImported/);
   assert.doesNotMatch(planClient, /Blocked: needs/);
-  assert.match(adminPage, /Changed pages/);
+  assert.match(adminPage, /Live catalogue status/);
+  assert.match(adminPage, /Publication workflow/);
   assert.match(coursePage, /loadPublishedCourse/);
   assert.match(courseDetailClient, /completedCodes/);
   assert.match(courseDetailClient, /plannedCodes/);
@@ -403,7 +407,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(coursePicker, /course\.units === 12 \? 2 : 1/);
   assert.doesNotMatch(coursePicker, /In plan/);
   assert.match(providers, /normaliseAttempts/);
-  assert.match(providers, /courseOccurrenceLimit\(courseCode\)/);
+  assert.match(providers, /const limit = 1/);
   assert.match(catalogue, /units === 12 \? 2 : 1/);
   assert.match(catalogue, /function prerequisiteChainCodes/);
   assert.match(globals, /scrollbar-gutter: stable/);

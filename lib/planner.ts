@@ -1,4 +1,4 @@
-import { Attempt, Course, Term, courses, terms } from "@/lib/catalogue";
+import type { Attempt, Course, Term } from "@/lib/catalogue";
 
 export type PlanningCatalogue = {
   courses: readonly Course[];
@@ -38,11 +38,11 @@ export type DegreeUnitProgress = {
 };
 
 function coursesFor(catalogue?: PlanningCatalogue) {
-  return catalogue?.courses ?? courses;
+  return catalogue?.courses ?? [];
 }
 
 function termsFor(catalogue?: PlanningCatalogue) {
-  return catalogue?.terms ?? terms;
+  return catalogue?.terms ?? [];
 }
 
 export function planningCourseByCode(

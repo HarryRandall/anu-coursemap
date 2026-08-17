@@ -4,10 +4,15 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { getAuthViewer } from "@/lib/auth/viewer";
+import { hasPrimaryPlan } from "@/lib/coursemap/state";
 import { isDemoMode } from "@/lib/supabase/config";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
   const viewer = await getAuthViewer();
+  if (!isDemoMode() && viewer && !(await hasPrimaryPlan(viewer))) {
+    redirect("/onboarding");
+  }
   const canOpenPlan = isDemoMode() || Boolean(viewer);
 
   return (

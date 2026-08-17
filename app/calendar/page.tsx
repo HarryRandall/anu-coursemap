@@ -1,19 +1,20 @@
-import { AppShell } from "@/components/shell";
-import { StudyCalendar } from "@/components/calendar/study-calendar";
+import { loadCurrentUserPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
+import { PlanCalendar } from "./plan-calendar";
 
-export default async function CalendarPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ term?: string | string[] }>;
-}) {
-  const params = await searchParams;
-  const requestedTermId = Array.isArray(params.term)
-    ? params.term[0]
-    : params.term;
+export const dynamic = "force-dynamic";
 
-  return (
-    <AppShell title="Calendar">
-      <StudyCalendar requestedTermId={requestedTermId} />
-    </AppShell>
-  );
+export default async function CalendarPage() {
+  let catalogue;
+  try {
+    catalogue = await loadCurrentUserPlanCatalogue();
+  } catch {
+    catalogue = {
+      courses: [],
+      degrees: [],
+      majors: [],
+      programmeRequirementsImported: false,
+      terms: [],
+    };
+  }
+  return <PlanCalendar catalogue={catalogue} />;
 }

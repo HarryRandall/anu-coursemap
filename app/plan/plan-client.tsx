@@ -114,6 +114,15 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     degree?.units ?? 0,
     catalogue,
   );
+  const degreeYears = degree
+    ? Array.from(
+        { length: Math.max(1, Math.ceil(degree.duration)) },
+        (_, index) => ({
+          studyYear: index + 1,
+          year: state.profile.commencementYear + index,
+        }),
+      )
+    : [];
 
   useEffect(
     () => () => {
@@ -637,10 +646,38 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               recommendations are unknown.
             </p>
           )}
+          {degreeYears.length > 0 && (
+            <div className="mt-4 border-t border-zinc-100 pt-3">
+              <p className="text-[10px] font-semibold tracking-wide text-zinc-400 uppercase">
+                Degree timeline
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {degreeYears.map((item) => {
+                  const calendarImported = scheduledYears.some(
+                    (yearGroup) => yearGroup.year === item.year,
+                  );
+                  return (
+                    <span
+                      key={item.studyYear}
+                      className={cn(
+                        "rounded-md px-2 py-1 text-[11px] font-medium ring-1 ring-inset",
+                        calendarImported
+                          ? "bg-brand-50 text-brand-800 ring-brand-100"
+                          : "bg-zinc-50 text-zinc-500 ring-zinc-200",
+                      )}
+                    >
+                      Year {item.studyYear} · {item.year}
+                      {!calendarImported && " · calendar pending"}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div data-testid="roadmap-board" className="flex flex-col gap-5">
-          {scheduledYears.map((yearGroup, index) => {
+          {scheduledYears.map((yearGroup) => {
             const yearEntries = yearGroup.terms.flatMap((term) =>
               entriesFor(term.id),
             );
@@ -649,7 +686,11 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                 <div className="mb-2 flex items-end justify-between px-1">
                   <div className="flex items-baseline gap-2">
                     <h2 className="text-sm font-semibold text-zinc-900">
-                      Year {index + 1}
+                      Year{" "}
+                      {Math.max(
+                        1,
+                        yearGroup.year - state.profile.commencementYear + 1,
+                      )}
                     </h2>
                     <span className="text-xs text-zinc-400">
                       {yearGroup.year}

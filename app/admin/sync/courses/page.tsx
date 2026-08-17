@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { Check, ExternalLink, Plus, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/shell";
 import { Button, IconButton } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 
-const years = Array.from({ length: 13 }, (_, index) => 2026 - index);
 const MAX_WEB_COURSE_IMPORTS = 100;
 
 type CourseSearchResult = {
@@ -27,7 +26,8 @@ function courseSourceUrl(year: number, code: string) {
 
 export default function AdminCourseSyncPage() {
   const [target, setTarget] = useState<"selected" | "all">("selected");
-  const [year, setYear] = useState(2026);
+  const [years, setYears] = useState<number[]>([]);
+  const [year, setYear] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CourseSearchResult[]>([]);
   const [selectedCourses, setSelectedCourses] = useState<CourseSearchResult[]>(
@@ -42,6 +42,26 @@ export default function AdminCourseSyncPage() {
     () => new Set(selectedCourses.map((course) => course.code)),
     [selectedCourses],
   );
+
+  useEffect(() => {
+    let active = true;
+    async function loadYears() {
+      try {
+        const response = await fetch("/api/admin/catalogue/years");
+        const payload = (await response.json()) as { years?: number[] };
+        if (!response.ok || !active) return;
+        const availableYears = payload.years ?? [];
+        setYears(availableYears);
+        setYear((current) => current ?? availableYears[0] ?? null);
+      } catch {
+        if (active) setYears([]);
+      }
+    }
+    void loadYears();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function setCatalogueYear(value: number) {
     setYear(value);
@@ -59,7 +79,7 @@ export default function AdminCourseSyncPage() {
     searchRequest.current = requestId;
     const trimmedQuery = value.trim();
 
-    if (!trimmedQuery) {
+    if (!trimmedQuery || year === null) {
       setResults([]);
       setSearchState("idle");
       setSearchMessage("");
@@ -108,6 +128,7 @@ export default function AdminCourseSyncPage() {
   }
 
   function openPreview() {
+    if (year === null) return;
     const params = new URLSearchParams({
       year: String(year),
       target: target === "all" ? "all-courses" : "courses",
@@ -274,12 +295,14 @@ export default function AdminCourseSyncPage() {
               <Field label="Catalogue year">
                 <Select
                   aria-label="Catalogue year"
-                  value={year}
                   onChange={(value) => setCatalogueYear(Number(value))}
                   options={years.map((item) => ({
                     value: item,
                     label: String(item),
                   }))}
+                  disabled={year === null}
+                  placeholder="No catalogue years"
+                  value={year ?? 0}
                 />
               </Field>
             </div>
@@ -304,7 +327,7 @@ export default function AdminCourseSyncPage() {
                         </span>
                       </span>
                       <a
-                        href={courseSourceUrl(year, course.code)}
+                        href={courseSourceUrl(year ?? 0, course.code)}
                         target="_blank"
                         rel="noreferrer"
                         className="hidden items-center gap-1 text-xs font-medium text-brand-700 hover:underline sm:inline-flex"
@@ -349,7 +372,10 @@ export default function AdminCourseSyncPage() {
             <div className="flex justify-end">
               <Button
                 variant="primary"
-                disabled={target === "selected" && selectedCourses.length === 0}
+                disabled={
+                  year === null ||
+                  (target === "selected" && selectedCourses.length === 0)
+                }
                 onClick={openPreview}
               >
                 Preview sync
