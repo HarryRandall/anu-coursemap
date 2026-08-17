@@ -108,6 +108,7 @@ test("redirects protected routes to the canonical sign-in page", async () => {
     "/history",
     "/timetable",
     "/admin/courses",
+    "/admin/courses/COMP3600",
     "/admin/users",
     "/admin/roles",
     "/admin/users/70000000-0000-4000-8000-000000000001",
