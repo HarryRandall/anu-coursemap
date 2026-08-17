@@ -1224,6 +1224,7 @@ export type Database = {
           catalogue_year_id: number
           commencement_year: number
           created_at: string
+          extension_years: number
           id: string
           is_primary: boolean
           name: string
@@ -1236,6 +1237,7 @@ export type Database = {
           catalogue_year_id: number
           commencement_year: number
           created_at?: string
+          extension_years?: number
           id?: string
           is_primary?: boolean
           name: string
@@ -1248,6 +1250,7 @@ export type Database = {
           catalogue_year_id?: number
           commencement_year?: number
           created_at?: string
+          extension_years?: number
           id?: string
           is_primary?: boolean
           name?: string
@@ -1611,6 +1614,10 @@ export type Database = {
           p_study_load: string
         }
         Returns: string
+      }
+      set_current_user_plan_extension_years: {
+        Args: { p_extension_years: number }
+        Returns: undefined
       }
       set_role_permission: {
         Args: { p_enabled: boolean; p_permission_id: number; p_role_id: number }

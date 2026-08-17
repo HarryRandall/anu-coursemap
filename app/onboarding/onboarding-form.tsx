@@ -77,6 +77,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       degreeCode,
       majorCode,
       studyLoad,
+      extensionYears: 0,
     });
     setSubmitting(false);
     if (!result.ok) {

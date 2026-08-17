@@ -9,6 +9,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import type { AuthViewer } from "@/lib/auth/viewer";
 import type { Attempt, AttemptStatus } from "@/lib/coursemap/types";
 import {
@@ -17,6 +18,7 @@ import {
   recordCourseAttempt,
   removePlanCourse,
   saveProfileAndPlan,
+  setCurrentUserPlanExtensionYears,
   type CoursemapActionResult,
 } from "@/lib/coursemap/actions";
 
@@ -29,6 +31,7 @@ export type Profile = {
   degreeCode: string;
   majorCode: string;
   studyLoad: "Full time" | "Part time";
+  extensionYears: number;
 };
 
 export type AppState = {
@@ -46,6 +49,9 @@ type AppContextValue = {
   demoMode: boolean;
   canAccessAdmin: boolean;
   updateProfile: (profile: Partial<Profile>) => Promise<CoursemapActionResult>;
+  setPlanExtensionYears: (
+    extensionYears: number,
+  ) => Promise<CoursemapActionResult>;
   addCourse: (
     courseCode: string,
     termId: string,
@@ -124,6 +130,7 @@ function createDemoState(initialAttempts: Attempt[]): AppState {
       degreeCode: "",
       majorCode: "",
       studyLoad: "Full time",
+      extensionYears: 0,
     },
     attempts: normaliseAttempts(initialAttempts),
   };
@@ -147,6 +154,7 @@ function createInitialState(
       degreeCode: "",
       majorCode: "",
       studyLoad: "Full time",
+      extensionYears: 0,
     },
     attempts: [],
   } satisfies AppState;
@@ -179,6 +187,7 @@ export function AppProvider({
   demoInitialAttempts?: Attempt[];
   initialState?: AppState;
 }) {
+  const router = useRouter();
   const initialState = useMemo(
     () =>
       suppliedInitialState ??
@@ -293,9 +302,36 @@ export function AppProvider({
           { id: result.id!, courseCode, termId, status: "planned" },
         ],
       }));
+      if (!demoMode) router.refresh();
       return result;
     },
-    [demoMode, state.attempts],
+    [demoMode, router, state.attempts],
+  );
+
+  const setPlanExtensionYears = useCallback(
+    async (extensionYears: number) => {
+      const nextExtensionYears = Math.max(0, Math.min(10, extensionYears));
+      if (!demoMode) {
+        const result =
+          await setCurrentUserPlanExtensionYears(nextExtensionYears);
+        if (!result.ok) return result;
+      }
+      setState((current) => ({
+        ...current,
+        profile: {
+          ...current.profile,
+          extensionYears: nextExtensionYears,
+        },
+      }));
+      return {
+        ok: true,
+        message:
+          nextExtensionYears === 0
+            ? "Plan timeline restored to the programme duration"
+            : `Plan extended by ${nextExtensionYears} ${nextExtensionYears === 1 ? "year" : "years"}`,
+      };
+    },
+    [demoMode],
   );
 
   const reorderAttempt = useCallback(
@@ -448,6 +484,7 @@ export function AppProvider({
       demoMode,
       canAccessAdmin,
       updateProfile,
+      setPlanExtensionYears,
       addCourse,
       reorderAttempt,
       updateAttempt,
@@ -464,6 +501,7 @@ export function AppProvider({
       demoMode,
       canAccessAdmin,
       updateProfile,
+      setPlanExtensionYears,
       addCourse,
       reorderAttempt,
       updateAttempt,
