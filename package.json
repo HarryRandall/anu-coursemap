@@ -36,7 +36,7 @@
     "@radix-ui/react-tabs": "1.1.21",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.112.3",
-    "cheerio": "1.1.2",
+    "cheerio": "1.2.0",
     "geist": "1.7.2",
     "lucide-react": "1.31.0",
     "next": "16.3.1",
