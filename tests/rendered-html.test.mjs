@@ -274,6 +274,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminCourseReviewHtml, /Course fields/i);
   assert.match(adminCourseReviewHtml, /Requisites and compatibility/i);
   assert.match(adminCourseReviewHtml, /24 units of COMP coded courses/i);
+  assert.match(adminCourseReviewHtml, /Imported condition matrix/i);
   assert.match(adminUsersHtml, /User management is unavailable in demo mode/i);
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
   assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);
@@ -288,7 +289,8 @@ test("server-renders admin and course-detail routes", async () => {
     assert.match(chainHtml, new RegExp(prerequisite));
   }
   const summaryHtml = await summaryResponse.text();
-  assert.match(summaryHtml, /Structured summary/i);
+  assert.match(summaryHtml, /Structured rule/i);
+  assert.match(summaryHtml, /Imported requirement matrix/i);
   assert.match(summaryHtml, /Complete all of the following/i);
   assert.match(summaryHtml, /Complete at least.*COMP.*coded courses/is);
   assert.match(summaryHtml, /Complete one of the following/i);
