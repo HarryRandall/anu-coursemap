@@ -677,10 +677,13 @@ test(
                 and rules.rule_kind = 'prerequisite'
               order by referenced_courses.code
             `;
-            assert.deepEqual(prerequisiteReferences, [
-              { code: "COMP1110", review_state: "review" },
-              { code: "COMP1140", review_state: "review" },
-            ]);
+            assert.deepEqual(
+              [...prerequisiteReferences],
+              [
+                { code: "COMP1110", review_state: "review" },
+                { code: "COMP1140", review_state: "review" },
+              ],
+            );
 
             const firstItems = await tx`
             select
