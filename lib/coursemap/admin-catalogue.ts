@@ -185,7 +185,9 @@ async function currentCatalogueYear() {
 }
 
 function safePage(value?: number) {
-  return Math.max(1, Math.floor(value ?? 1));
+  return value !== undefined && Number.isFinite(value)
+    ? Math.max(1, Math.floor(value))
+    : 1;
 }
 
 function safeQuery(value?: string) {
