@@ -236,6 +236,7 @@ test("server-renders admin and course-detail routes", async () => {
     relationsResponse,
     courseResponse,
     chainResponse,
+    summaryResponse,
   ] = await Promise.all([
     render("/admin/dashboard"),
     render("/admin/courses"),
@@ -244,6 +245,7 @@ test("server-renders admin and course-detail routes", async () => {
     render("/admin/relations"),
     render("/courses/COMP2100"),
     render("/courses/COMP3670"),
+    render("/courses/COMP3600?tab=requisites"),
   ]);
   assert.equal(adminResponse.status, 200);
   assert.equal(adminCoursesResponse.status, 200);
@@ -252,6 +254,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.equal(relationsResponse.status, 200);
   assert.equal(courseResponse.status, 200);
   assert.equal(chainResponse.status, 200);
+  assert.equal(summaryResponse.status, 200);
   const adminHtml = await adminResponse.text();
   const adminCoursesHtml = await adminCoursesResponse.text();
   const adminUsersHtml = await adminUsersResponse.text();
@@ -276,6 +279,13 @@ test("server-renders admin and course-detail routes", async () => {
   for (const prerequisite of ["MATH1005", "COMP2100", "COMP1110", "COMP1100"]) {
     assert.match(chainHtml, new RegExp(prerequisite));
   }
+  const summaryHtml = await summaryResponse.text();
+  assert.match(summaryHtml, /Structured summary/i);
+  assert.match(summaryHtml, /Complete all of the following/i);
+  assert.match(summaryHtml, /Complete at least.*COMP.*coded courses/is);
+  assert.match(summaryHtml, /Complete one of the following/i);
+  assert.match(summaryHtml, /Complete at least.*MATH.*coded courses/is);
+  assert.match(summaryHtml, /COMP6466/i);
 });
 
 test("removes the disposable starter and keeps product metadata", async () => {

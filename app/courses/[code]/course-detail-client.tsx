@@ -22,6 +22,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
+import {
+  type RequisiteCondition,
+  type RequisiteExpression,
+  parseRequisiteSummary,
+} from "@/lib/coursemap/requisite-summary";
 
 const tabs = [
   { id: "overview", label: "Overview", icon: BookOpen },
@@ -124,6 +129,69 @@ function CourseReferenceChips({
   );
 }
 
+function RequisiteConditionText({
+  condition,
+  availableCourseCodes,
+}: {
+  condition: RequisiteCondition;
+  availableCourseCodes: ReadonlySet<string>;
+}) {
+  if (condition.kind === "course") {
+    return (
+      <>
+        Complete{" "}
+        <CourseReferenceText
+          text={condition.code}
+          availableCourseCodes={availableCourseCodes}
+        />
+      </>
+    );
+  }
+  return (
+    <>
+      Complete at least {condition.units} units of {condition.subject}-coded
+      courses
+    </>
+  );
+}
+
+function RequisiteExpressionSummary({
+  expression,
+  availableCourseCodes,
+}: {
+  expression: RequisiteExpression;
+  availableCourseCodes: ReadonlySet<string>;
+}) {
+  if (expression.kind !== "group") {
+    return (
+      <RequisiteConditionText
+        condition={expression}
+        availableCourseCodes={availableCourseCodes}
+      />
+    );
+  }
+
+  const title =
+    expression.operator === "all_of"
+      ? "Complete all of the following"
+      : "Complete one of the following";
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-3">
+      <p className="text-xs font-semibold text-zinc-800">{title}</p>
+      <ul className="mt-2 space-y-2 border-l border-zinc-200 pl-3 text-xs text-zinc-700">
+        {expression.conditions.map((condition, index) => (
+          <li key={index}>
+            <RequisiteExpressionSummary
+              expression={condition}
+              availableCourseCodes={availableCourseCodes}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
   const { state } = useCoursemap();
   const searchParams = useSearchParams();
@@ -145,6 +213,10 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
       .map((attempt) => attempt.courseCode),
   );
   const availableCourseCodes = new Set(course.availableCourseCodes);
+  const requisiteSummary = parseRequisiteSummary(course.prerequisiteText);
+  const hasPrerequisiteWording =
+    course.prerequisiteText.trim().length > 0 &&
+    !/^No prerequisites listed\.?$/iu.test(course.prerequisiteText.trim());
 
   useEffect(() => {
     const syncTabFromHistory = () => {
@@ -188,9 +260,10 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
     );
   });
 
-  const ruleStatus =
-    course.prerequisiteCodes.length === 0
-      ? "No prerequisite course codes were detected in the imported source."
+  const ruleStatus = !hasPrerequisiteWording
+    ? "No prerequisite course codes were detected in the imported source."
+    : requisiteSummary
+      ? "Coursemap identified the unit and course conditions shown below. Confirm eligibility with the official ANU source."
       : course.reviewState === "verified"
         ? "The source record is verified. Read the ANU wording below for the exact requirement."
         : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
@@ -323,16 +396,22 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
                   Requisites and compatibility
                 </h2>
                 <p className="mt-0.5 text-xs text-zinc-500">
-                  Official wording is kept separate from rule logic that still
-                  needs review.
+                  An exact Coursemap summary is shown when the wording can be
+                  read safely. The official wording remains alongside it.
                 </p>
               </div>
               <Badge
-                tone={course.reviewState === "verified" ? "success" : "warning"}
+                tone={
+                  requisiteSummary || course.reviewState === "verified"
+                    ? "success"
+                    : "warning"
+                }
               >
-                {course.reviewState === "verified"
-                  ? "Source reviewed"
-                  : "Rule logic unknown"}
+                {requisiteSummary
+                  ? "Structured summary"
+                  : course.reviewState === "verified"
+                    ? "Source reviewed"
+                    : "Rule logic unknown"}
               </Badge>
             </div>
             <div className="space-y-5 p-5 text-[13px] leading-relaxed text-zinc-700">
@@ -346,6 +425,19 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
                   <p className="text-[12px] text-amber-900">{ruleStatus}</p>
                 </div>
               </div>
+              {requisiteSummary ? (
+                <div>
+                  <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                    Coursemap summary
+                  </h3>
+                  <div className="mt-2">
+                    <RequisiteExpressionSummary
+                      expression={requisiteSummary}
+                      availableCourseCodes={availableCourseCodes}
+                    />
+                  </div>
+                </div>
+              ) : null}
               <div>
                 <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                   Prerequisites
