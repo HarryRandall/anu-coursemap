@@ -10,9 +10,8 @@ import {
   useState,
 } from "react";
 import {
-  Attempt,
-  AttemptStatus,
-  courseOccurrenceLimit,
+  type Attempt,
+  type AttemptStatus,
   initialAttempts,
 } from "@/lib/catalogue";
 import type { AuthViewer } from "@/lib/auth/viewer";
@@ -87,7 +86,7 @@ function normaliseAttempts(attempts: Attempt[]) {
 
   attempts.forEach((attempt) => {
     const current = selected.get(attempt.courseCode) ?? [];
-    const limit = courseOccurrenceLimit(attempt.courseCode);
+    const limit = 1;
 
     if (current.length < limit) {
       selected.set(attempt.courseCode, [...current, attempt]);
@@ -124,10 +123,10 @@ function createDemoState(): AppState {
       name: "Harry Student",
       studentId: "u7499609",
       email: "harry.student@anu.edu.au",
-      commencementYear: 2026,
-      catalogueYear: 2026,
-      degreeCode: "BCOMP",
-      majorCode: "SOFT-MAJ",
+      commencementYear: new Date().getFullYear(),
+      catalogueYear: new Date().getFullYear(),
+      degreeCode: "",
+      majorCode: "",
       studyLoad: "Full time",
     },
     attempts: normaliseAttempts(initialAttempts),
@@ -143,10 +142,10 @@ function createInitialState(demoMode: boolean, viewer: AuthViewer | null) {
       name: "",
       studentId: "",
       email: viewer?.email ?? "",
-      commencementYear: 2026,
-      catalogueYear: 2026,
-      degreeCode: "BCOMP",
-      majorCode: "SOFT-MAJ",
+      commencementYear: new Date().getFullYear(),
+      catalogueYear: new Date().getFullYear(),
+      degreeCode: "",
+      majorCode: "",
       studyLoad: "Full time",
     },
     attempts: [],
@@ -272,7 +271,7 @@ export function AppProvider({
       const occurrenceCount = state.attempts.filter(
         (attempt) => attempt.courseCode === courseCode,
       ).length;
-      if (occurrenceCount >= courseOccurrenceLimit(courseCode)) {
+      if (occurrenceCount >= 1) {
         return { ok: false, message: `${courseCode} is already in your plan` };
       }
       const result = demoMode

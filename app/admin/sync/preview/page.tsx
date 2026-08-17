@@ -12,7 +12,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AppShell } from "@/components/shell";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 type Preview = {
@@ -63,7 +63,8 @@ export default function AdminSyncPreviewPage() {
 
 function SyncPreview() {
   const searchParams = useSearchParams();
-  const year = searchParams.get("year") ?? "2026";
+  const year = searchParams.get("year") ?? "";
+  const hasCatalogueYear = /^\d{4}$/.test(year);
   const target = ["all", "all-courses", "courses"].includes(
     searchParams.get("target") ?? "",
   )
@@ -92,13 +93,18 @@ function SyncPreview() {
   const [programmeRunComplete, setProgrammeRunComplete] = useState(false);
   const canRunSelectedCourses =
     target === "courses" &&
+    hasCatalogueYear &&
     selectedCourseCodes.length > 0 &&
     selectedCourseCodes.length <= MAX_WEB_COURSE_IMPORTS &&
     !importing;
   const canRunSelectedProgramme =
-    target === "selected" && selectedProgrammeCodes.length === 1 && !importing;
+    target === "selected" &&
+    hasCatalogueYear &&
+    selectedProgrammeCodes.length === 1 &&
+    !importing;
 
   useEffect(() => {
+    if (!hasCatalogueYear) return;
     const controller = new AbortController();
     const params = new URLSearchParams({ year, target, programmes, courses });
 
@@ -125,7 +131,7 @@ function SyncPreview() {
       });
 
     return () => controller.abort();
-  }, [courses, programmes, target, year]);
+  }, [courses, hasCatalogueYear, programmes, target, year]);
 
   async function runImport() {
     if (!canRunSelectedCourses) return;
@@ -379,6 +385,12 @@ function SyncPreview() {
             <CircleAlert size={16} /> {error}
           </div>
         )}
+        {!hasCatalogueYear && (
+          <div className="mt-6 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <CircleAlert size={16} /> Choose a catalogue year before previewing
+            an import.
+          </div>
+        )}
         {importError && (
           <div
             role="alert"
@@ -388,13 +400,24 @@ function SyncPreview() {
           </div>
         )}
         {importResult && (
-          <div
-            role="status"
-            className="mt-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-          >
-            Import {importResult.status}. {importResult.counts.added} added,{" "}
-            {importResult.counts.changed} changed and{" "}
-            {importResult.counts.unchanged} unchanged.
+          <div className="mt-6 flex flex-col gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 sm:flex-row sm:items-center sm:justify-between">
+            <p role="status">
+              Import {importResult.status}. {importResult.counts.added} added,{" "}
+              {importResult.counts.changed} changed and{" "}
+              {importResult.counts.unchanged} unchanged. Imported records remain
+              drafts until an administrator publishes them.
+            </p>
+            <ButtonLink
+              href={
+                target === "courses" || target === "all-courses"
+                  ? "/admin/courses"
+                  : "/admin/programmes"
+              }
+              size="sm"
+              variant="secondary"
+            >
+              Review and publish
+            </ButtonLink>
           </div>
         )}
         {activityRows.length > 0 && (

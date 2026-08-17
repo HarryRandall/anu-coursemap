@@ -3,13 +3,11 @@
 import Link from "next/link";
 import { Check, ExternalLink, Plus, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/shell";
 import { Button, IconButton } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
-
-const years = Array.from({ length: 13 }, (_, index) => 2026 - index);
 
 type ImportTarget = "selected" | "all";
 
@@ -29,7 +27,8 @@ function programmeSourceUrl(year: number, code: string) {
 
 export default function AdminSyncPage() {
   const [target, setTarget] = useState<ImportTarget>("selected");
-  const [year, setYear] = useState(2026);
+  const [years, setYears] = useState<number[]>([]);
+  const [year, setYear] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ProgrammeSearchResult[]>([]);
   const [selectedProgrammes, setSelectedProgrammes] = useState<
@@ -44,7 +43,28 @@ export default function AdminSyncPage() {
     () => new Set(selectedProgrammes.map((programme) => programme.code)),
     [selectedProgrammes],
   );
-  const canPreview = target === "all" || selectedProgrammes.length > 0;
+  const canPreview =
+    year !== null && (target === "all" || selectedProgrammes.length > 0);
+
+  useEffect(() => {
+    let active = true;
+    async function loadYears() {
+      try {
+        const response = await fetch("/api/admin/catalogue/years");
+        const payload = (await response.json()) as { years?: number[] };
+        if (!response.ok || !active) return;
+        const availableYears = payload.years ?? [];
+        setYears(availableYears);
+        setYear((current) => current ?? availableYears[0] ?? null);
+      } catch {
+        if (active) setYears([]);
+      }
+    }
+    void loadYears();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function setCatalogueYear(value: number) {
     setYear(value);
@@ -62,7 +82,7 @@ export default function AdminSyncPage() {
     searchRequest.current = requestId;
     const trimmedQuery = value.trim();
 
-    if (!trimmedQuery) {
+    if (!trimmedQuery || year === null) {
       setResults([]);
       setSearchState("idle");
       setSearchMessage("");
@@ -115,6 +135,7 @@ export default function AdminSyncPage() {
   }
 
   function openPreview() {
+    if (year === null) return;
     const params = new URLSearchParams({ year: String(year), target });
     if (target === "selected") {
       params.set(
@@ -284,12 +305,14 @@ export default function AdminSyncPage() {
               <Field label="Catalogue year">
                 <Select
                   aria-label="Catalogue year"
-                  value={year}
                   onChange={(value) => setCatalogueYear(Number(value))}
                   options={years.map((item) => ({
                     value: item,
                     label: String(item),
                   }))}
+                  disabled={year === null}
+                  placeholder="No catalogue years"
+                  value={year ?? 0}
                 />
               </Field>
             </div>
@@ -314,7 +337,7 @@ export default function AdminSyncPage() {
                         </span>
                       </span>
                       <a
-                        href={programmeSourceUrl(year, programme.code)}
+                        href={programmeSourceUrl(year ?? 0, programme.code)}
                         target="_blank"
                         rel="noreferrer"
                         className="hidden items-center gap-1 text-xs font-medium text-brand-700 hover:underline sm:inline-flex"

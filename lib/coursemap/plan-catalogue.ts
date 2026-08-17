@@ -13,6 +13,8 @@ import {
 import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import { loadPublishedCourses } from "@/lib/coursemap/published-catalogue";
+import { getAuthViewer } from "@/lib/auth/viewer";
+import { createClient } from "@/lib/supabase/server";
 
 export type PlanCatalogue = {
   courses: Course[];
@@ -82,7 +84,9 @@ function planCourseFromCatalogue(
   };
 }
 
-export async function loadPublishedPlanCatalogue(): Promise<PlanCatalogue> {
+export async function loadPublishedPlanCatalogue(
+  catalogueYear?: number,
+): Promise<PlanCatalogue> {
   if (isDemoMode()) {
     return {
       courses: demoCourses,
@@ -94,18 +98,45 @@ export async function loadPublishedPlanCatalogue(): Promise<PlanCatalogue> {
   }
 
   const supabase = createPublicClient();
+  const yearsResult = catalogueYear
+    ? await supabase
+        .from("catalogue_years")
+        .select("id,year")
+        .eq("status", "published")
+        .eq("year", catalogueYear)
+        .maybeSingle()
+    : await supabase
+        .from("catalogue_years")
+        .select("id,year")
+        .eq("status", "published")
+        .order("year", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+  if (yearsResult.error) throw yearsResult.error;
+  const catalogueYearRecord = yearsResult.data;
+  if (!catalogueYearRecord) {
+    return {
+      courses: [],
+      terms: [],
+      degrees: [],
+      majors: [],
+      programmeRequirementsImported: false,
+    };
+  }
   const [catalogueCourses, periodsResult, structureVersionsResult] =
     await Promise.all([
-      loadPublishedCourses(),
+      loadPublishedCourses(catalogueYearRecord.year),
       supabase
         .from("academic_periods")
         .select("calendar_year,code,ends_on,name,short_name,starts_on")
+        .eq("calendar_year", catalogueYearRecord.year)
         .eq("status", "published")
         .order("calendar_year")
         .order("sort_order"),
       supabase
         .from("academic_structure_versions")
         .select("duration_years,name,structure_id,units")
+        .eq("catalogue_year_id", catalogueYearRecord.id)
         .eq("publication_status", "published"),
     ]);
   if (periodsResult.error) throw periodsResult.error;
@@ -186,4 +217,30 @@ export async function loadPublishedPlanCatalogue(): Promise<PlanCatalogue> {
     majors,
     programmeRequirementsImported: false,
   };
+}
+
+/** Loads the catalogue year saved on the signed-in user's primary plan. */
+export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
+  if (isDemoMode()) return loadPublishedPlanCatalogue();
+
+  const viewer = await getAuthViewer();
+  if (!viewer) return loadPublishedPlanCatalogue();
+
+  const supabase = await createClient();
+  const { data: plan, error } = await supabase
+    .from("plans")
+    .select("catalogue_year_id")
+    .eq("owner_id", viewer.id)
+    .eq("is_primary", true)
+    .maybeSingle();
+  if (error || !plan) return loadPublishedPlanCatalogue();
+
+  const { data: year, error: yearError } = await supabase
+    .from("catalogue_years")
+    .select("year")
+    .eq("id", plan.catalogue_year_id)
+    .maybeSingle();
+  if (yearError || !year) return loadPublishedPlanCatalogue();
+
+  return loadPublishedPlanCatalogue(year.year);
 }

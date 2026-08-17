@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/shell";
-import { loadPublishedPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
+import { loadCurrentUserPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { PlanClient } from "./plan-client";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function PlanPage() {
   let catalogue;
   try {
-    catalogue = await loadPublishedPlanCatalogue();
+    catalogue = await loadCurrentUserPlanCatalogue();
   } catch {
     return (
       <AppShell>

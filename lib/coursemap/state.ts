@@ -9,14 +9,29 @@ export function emptyCoursemapState(viewer: AuthViewer): AppState {
       name: "",
       studentId: "",
       email: viewer.email ?? "",
-      commencementYear: 2026,
-      catalogueYear: 2026,
-      degreeCode: "BCOMP",
-      majorCode: "SOFT-MAJ",
+      commencementYear: new Date().getFullYear(),
+      catalogueYear: new Date().getFullYear(),
+      degreeCode: "",
+      majorCode: "",
       studyLoad: "Full time",
     },
     attempts: [],
   };
+}
+
+export async function hasPrimaryPlan(viewer: AuthViewer) {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("plans")
+      .select("id")
+      .eq("owner_id", viewer.id)
+      .eq("is_primary", true)
+      .maybeSingle();
+    return !error && Boolean(data);
+  } catch {
+    return false;
+  }
 }
 
 export async function loadCoursemapState(

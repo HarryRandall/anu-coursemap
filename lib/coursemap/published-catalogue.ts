@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   courseByCode as demoCourseByCode,
@@ -158,11 +159,16 @@ function demoCatalogue(): CatalogueCourse[] {
 
 async function publishedYear(
   supabase: SupabaseClient<Database>,
+  requestedYear?: number,
 ): Promise<{ id: number; year: number } | null> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("catalogue_years")
     .select("id,year")
-    .eq("status", "published")
+    .eq("status", "published");
+  if (requestedYear) {
+    query = query.eq("year", requestedYear);
+  }
+  const { data, error } = await query
     .order("year", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -424,11 +430,13 @@ function detailAsCatalogueCourse(detail: CourseDetailPayload): CatalogueCourse {
   };
 }
 
-export async function loadPublishedCourses(): Promise<CatalogueCourse[]> {
+export async function loadPublishedCourses(
+  catalogueYear?: number,
+): Promise<CatalogueCourse[]> {
   if (isDemoMode()) return demoCatalogue();
 
   const supabase = createPublicClient();
-  const year = await publishedYear(supabase);
+  const year = await publishedYear(supabase, catalogueYear);
   if (!year) return [];
 
   const { data: versions, error: versionsError } = await supabase
@@ -492,11 +500,20 @@ export async function loadPublishedCourse(
     );
   }
 
-  const { data, error } = await createPublicClient().rpc(
-    "published_course_detail",
-    { p_course_code: normalisedCode },
-  );
-  if (error) throw error;
-  const detail = data ? readCourseDetail(data) : null;
-  return detail ? detailAsCatalogueCourse(detail) : null;
+  return unstable_cache(
+    async () => {
+      const { data, error } = await createPublicClient().rpc(
+        "published_course_detail",
+        { p_course_code: normalisedCode },
+      );
+      if (error) throw error;
+      const detail = data ? readCourseDetail(data) : null;
+      return detail ? detailAsCatalogueCourse(detail) : null;
+    },
+    ["published-course-detail", normalisedCode],
+    {
+      revalidate: 300,
+      tags: [`published-course:${normalisedCode}`],
+    },
+  )();
 }

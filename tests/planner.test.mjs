@@ -42,7 +42,8 @@ const {
   termHasCapacity,
   unitsByCalendarYear,
 } = planner;
-const { terms } = catalogue;
+const { courses, terms } = catalogue;
+const demoCatalogue = { courses, terms };
 const s1 = terms.find((term) => term.id === "2026-s1");
 const s2 = terms.find((term) => term.id === "2026-s2");
 const major = [
@@ -59,16 +60,22 @@ function attempt(id, courseCode, termId, status = "planned") {
 }
 
 test("recommends first-year core courses for an empty Semester 1", () => {
-  const recommended = recommendedCoursesForTerm(s1, [], major).map(
-    (course) => course.code,
-  );
+  const recommended = recommendedCoursesForTerm(
+    s1,
+    [],
+    major,
+    demoCatalogue,
+  ).map((course) => course.code);
   assert.deepEqual(recommended, ["COMP1100", "MATH1005"]);
 });
 
 test("does not recommend a course whose prerequisite is still missing", () => {
-  const recommended = recommendedCoursesForTerm(s2, [], major).map(
-    (course) => course.code,
-  );
+  const recommended = recommendedCoursesForTerm(
+    s2,
+    [],
+    major,
+    demoCatalogue,
+  ).map((course) => course.code);
   assert.ok(recommended.includes("COMP1600"));
   assert.ok(recommended.includes("MATH1005"));
   assert.equal(recommended.includes("COMP1110"), false);
@@ -79,6 +86,7 @@ test("recommends COMP1110 once COMP1100 is sequenced earlier", () => {
     s2,
     [attempt("a1", "COMP1100", "2026-s1", "completed")],
     major,
+    demoCatalogue,
   ).map((course) => course.code);
   assert.ok(recommended.includes("COMP1110"));
 });
@@ -88,6 +96,7 @@ test("skips courses already in the plan", () => {
     s1,
     [attempt("a1", "COMP1100", "2026-s1")],
     major,
+    demoCatalogue,
   ).map((course) => course.code);
   assert.equal(recommended.includes("COMP1100"), false);
   assert.ok(recommended.includes("MATH1005"));
@@ -95,7 +104,7 @@ test("skips courses already in the plan", () => {
 
 test("adds a missing prerequisite to the latest earlier offering with space", () => {
   const blocked = attempt("blocked", "COMP2100", "2027-s1");
-  const result = proposePrerequisiteFix(blocked, [blocked]);
+  const result = proposePrerequisiteFix(blocked, [blocked], demoCatalogue);
   assert.equal(result.ok, true);
   assert.ok(
     result.steps.some(
@@ -121,7 +130,7 @@ test("moves a late prerequisite earlier when that offering is available", () => 
     attempt("prereq", "COMP1110", "2027-s2"),
     attempt("blocked", "COMP2100", "2027-s1"),
   ];
-  const result = proposePrerequisiteFix(attempts[2], attempts);
+  const result = proposePrerequisiteFix(attempts[2], attempts, demoCatalogue);
   assert.equal(result.ok, true);
   assert.deepEqual(result.steps, [
     {
@@ -142,7 +151,7 @@ test("does not invent a fix when no earlier offering has space", () => {
     attempt("a4", "COMP2310", "2026-s2"),
     attempt("blocked", "COMP2100", "2027-s1"),
   ];
-  const result = proposePrerequisiteFix(attempts[4], attempts);
+  const result = proposePrerequisiteFix(attempts[4], attempts, demoCatalogue);
   assert.equal(result.ok, false);
   assert.match(result.message, /No earlier/i);
 });
@@ -156,7 +165,11 @@ test("does not offer a sequencing fix for approval-only issues", () => {
     attempt("a1", "COMP2100", "2027-s1", "completed"),
     attemptWithApproval,
   ];
-  const result = proposePrerequisiteFix(attemptWithApproval, attempts);
+  const result = proposePrerequisiteFix(
+    attemptWithApproval,
+    attempts,
+    demoCatalogue,
+  );
   assert.equal(result.ok, false);
 });
 
@@ -179,8 +192,14 @@ test("treats a full semester as over capacity", () => {
     attempt("a3", "COMP2400", "2026-s1"),
     attempt("a4", "COMP2300", "2026-s1"),
   ];
-  assert.equal(termHasCapacity(attempts, "2026-s1", 6), false);
-  assert.equal(termHasCapacity(attempts, "unscheduled", 6), true);
+  assert.equal(
+    termHasCapacity(attempts, "2026-s1", 6, 1, undefined, demoCatalogue),
+    false,
+  );
+  assert.equal(
+    termHasCapacity(attempts, "unscheduled", 6, 1, undefined, demoCatalogue),
+    true,
+  );
 });
 
 test("course availability follows the catalogue sessions", () => {
@@ -191,11 +210,14 @@ test("course availability follows the catalogue sessions", () => {
 });
 
 test("groups completed and planned units by calendar year", () => {
-  const series = unitsByCalendarYear([
-    attempt("a1", "COMP1100", "2026-s1", "completed"),
-    attempt("a2", "COMP1600", "2026-s2"),
-    attempt("a3", "COMP2100", "2027-s2"),
-  ]);
+  const series = unitsByCalendarYear(
+    [
+      attempt("a1", "COMP1100", "2026-s1", "completed"),
+      attempt("a2", "COMP1600", "2026-s2"),
+      attempt("a3", "COMP2100", "2027-s2"),
+    ],
+    demoCatalogue,
+  );
   const year2026 = series.find((item) => item.year === 2026);
   const year2027 = series.find((item) => item.year === 2027);
   assert.equal(year2026?.completed, 6);

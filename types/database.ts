@@ -1567,6 +1567,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      publish_catalogue_course_version: {
+        Args: { p_catalogue_year: number; p_course_code: string }
+        Returns: number
+      }
+      publish_catalogue_structure_version: {
+        Args: { p_catalogue_year: number; p_structure_code: string }
+        Returns: number
+      }
       published_course_detail: {
         Args: { p_course_code: string }
         Returns: Json
