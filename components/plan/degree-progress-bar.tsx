@@ -10,8 +10,10 @@ export function DegreeProgressBar({
   compact?: boolean;
   tone?: "light" | "dark";
 }) {
-  const completedWidth = (progress.completed / progress.total) * 100;
-  const plannedWidth = (progress.planned / progress.total) * 100;
+  const completedWidth =
+    progress.total > 0 ? (progress.completed / progress.total) * 100 : 0;
+  const plannedWidth =
+    progress.total > 0 ? (progress.planned / progress.total) * 100 : 0;
   const empty = progress.mapped === 0;
   const dark = tone === "dark";
 

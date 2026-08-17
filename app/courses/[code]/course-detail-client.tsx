@@ -2,15 +2,24 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { BookOpen, CalendarClock, GitBranch, Plus } from "lucide-react";
-import { useState } from "react";
-import { AppShell } from "@/components/shell";
+import {
+  BookOpen,
+  CalendarClock,
+  CircleHelp,
+  ClipboardCheck,
+  GitBranch,
+  LockKeyhole,
+  MessageSquareText,
+  Plus,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useCoursemap } from "@/app/providers";
 import { TermChooser } from "@/components/overlays";
 import { PrereqGraph } from "@/components/prereq-graph";
+import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useCoursemap } from "@/app/providers";
 import { cn } from "@/lib/cn";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 
@@ -18,7 +27,16 @@ const tabs = [
   { id: "overview", label: "Overview", icon: BookOpen },
   { id: "requisites", label: "Requisites", icon: GitBranch },
   { id: "offerings", label: "Offerings", icon: CalendarClock },
+  { id: "student-review", label: "Student review", icon: MessageSquareText },
 ] as const;
+
+type CourseTab = (typeof tabs)[number]["id"];
+
+function tabFromSearch(value: string | null): CourseTab {
+  return tabs.some((tab) => tab.id === value)
+    ? (value as CourseTab)
+    : "overview";
+}
 
 function formatUpdatedAt(value: string | null) {
   if (!value) return "Not listed";
@@ -30,9 +48,88 @@ function formatUpdatedAt(value: string | null) {
   }).format(new Date(value));
 }
 
+function CourseReferenceText({
+  text,
+  availableCourseCodes,
+}: {
+  text: string;
+  availableCourseCodes: ReadonlySet<string>;
+}) {
+  return text.split(/([A-Z]{4}\d{4})/gu).map((part, index) => {
+    if (!/^[A-Z]{4}\d{4}$/u.test(part)) return <span key={index}>{part}</span>;
+    if (availableCourseCodes.has(part)) {
+      return (
+        <Link
+          key={index}
+          href={`/courses/${part}`}
+          prefetch={false}
+          className="rounded font-mono font-semibold text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-900"
+        >
+          {part}
+        </Link>
+      );
+    }
+    return (
+      <span
+        key={index}
+        title={`${part} is referenced by ANU but has not been imported yet`}
+        className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1 font-mono font-semibold text-zinc-600"
+      >
+        <LockKeyhole size={10} aria-hidden="true" />
+        {part}
+        <span className="sr-only">Not imported yet</span>
+      </span>
+    );
+  });
+}
+
+function CourseReferenceChips({
+  course,
+  availableCourseCodes,
+}: {
+  course: CatalogueCourse;
+  availableCourseCodes: ReadonlySet<string>;
+}) {
+  if (course.prerequisiteCodes.length === 0) return null;
+  return (
+    <div className="mt-5 border-t border-zinc-100 pt-4">
+      <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+        Detected course references
+      </h3>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {course.prerequisiteCodes.map((reference) =>
+          availableCourseCodes.has(reference) ? (
+            <Link
+              key={reference}
+              href={`/courses/${reference}`}
+              prefetch={false}
+              className="rounded-md bg-brand-50 px-2 py-1 font-mono text-xs font-semibold text-brand-700 ring-1 ring-brand-100 hover:bg-brand-100"
+            >
+              {reference}
+            </Link>
+          ) : (
+            <span
+              key={reference}
+              title={`${reference} has not been imported yet`}
+              className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 font-mono text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200"
+            >
+              <LockKeyhole size={11} aria-hidden="true" />
+              {reference}
+              <span className="sr-only">Not imported yet</span>
+            </span>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
   const { state } = useCoursemap();
   const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<CourseTab>(() =>
+    tabFromSearch(searchParams.get("tab")),
+  );
   const [planOpen, setPlanOpen] = useState(false);
   const completedCodes = new Set(
     state.attempts
@@ -47,23 +144,37 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
       )
       .map((attempt) => attempt.courseCode),
   );
-  const requestedTab = searchParams.get("tab") ?? "overview";
-  const activeTab = tabs.some((tab) => tab.id === requestedTab)
-    ? requestedTab
-    : "overview";
+  const availableCourseCodes = new Set(course.availableCourseCodes);
+
+  useEffect(() => {
+    const syncTabFromHistory = () => {
+      setActiveTab(
+        tabFromSearch(new URL(window.location.href).searchParams.get("tab")),
+      );
+    };
+    window.addEventListener("popstate", syncTabFromHistory);
+    return () => window.removeEventListener("popstate", syncTabFromHistory);
+  }, []);
+
+  const selectTab = (tab: CourseTab) => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    if (tab === "overview") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", tab);
+    window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
+  };
+
   const tabLinks = tabs.map(({ id, label, icon: Icon }) => {
     const active = activeTab === id;
     return (
-      <Link
+      <button
         key={id}
-        href={
-          id === "overview"
-            ? `/courses/${course.code}`
-            : `/courses/${course.code}?tab=${id}`
-        }
-        replace
-        scroll={false}
-        aria-current={active ? "page" : undefined}
+        id={`course-tab-${id}`}
+        type="button"
+        role="tab"
+        aria-selected={active}
+        aria-controls={`course-panel-${id}`}
+        onClick={() => selectTab(id)}
         className={cn(
           "relative flex h-11 shrink-0 items-center gap-1.5 px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-400 motion-reduce:transition-none",
           active
@@ -73,9 +184,16 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
       >
         <Icon size={15} aria-hidden="true" className="hidden sm:block" />
         {label}
-      </Link>
+      </button>
     );
   });
+
+  const ruleStatus =
+    course.prerequisiteCodes.length === 0
+      ? "No prerequisite course codes were detected in the imported source."
+      : course.reviewState === "verified"
+        ? "The source record is verified. Read the ANU wording below for the exact requirement."
+        : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
 
   return (
     <AppShell
@@ -112,6 +230,9 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
         </header>
 
         <section
+          id="course-panel-overview"
+          role="tabpanel"
+          aria-labelledby="course-tab-overview"
           className={cn(
             "flex-col gap-4",
             activeTab === "overview" ? "flex" : "hidden",
@@ -167,6 +288,9 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
         </section>
 
         <section
+          id="course-panel-requisites"
+          role="tabpanel"
+          aria-labelledby="course-tab-requisites"
           className={cn(
             "flex-col gap-4",
             activeTab === "requisites" ? "flex" : "hidden",
@@ -175,10 +299,11 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
           <Card>
             <div className="border-b border-zinc-100 px-5 py-4">
               <h2 className="text-[15px] font-semibold text-zinc-900">
-                Full prerequisite chain
+                Prerequisite chain and unlocks
               </h2>
               <p className="mt-0.5 text-xs text-zinc-500">
-                Structured prerequisite links extracted from the ANU source.
+                Detected course references stay visible even before their course
+                records are imported.
               </p>
             </div>
             <div className="pt-5">
@@ -190,28 +315,62 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
               />
             </div>
           </Card>
+
           <Card>
-            <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">
-                Requisites and compatibility
-              </h2>
+            <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-[15px] font-semibold text-zinc-900">
+                  Requisites and compatibility
+                </h2>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  Official wording is kept separate from rule logic that still
+                  needs review.
+                </p>
+              </div>
+              <Badge
+                tone={course.reviewState === "verified" ? "success" : "warning"}
+              >
+                {course.reviewState === "verified"
+                  ? "Source reviewed"
+                  : "Rule logic unknown"}
+              </Badge>
             </div>
             <div className="space-y-5 p-5 text-[13px] leading-relaxed text-zinc-700">
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                <div className="flex gap-2">
+                  <CircleHelp
+                    size={16}
+                    className="mt-0.5 shrink-0 text-amber-700"
+                    aria-hidden="true"
+                  />
+                  <p className="text-[12px] text-amber-900">{ruleStatus}</p>
+                </div>
+              </div>
               <div>
                 <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                   Prerequisites
                 </h3>
-                <p className="mt-1 whitespace-pre-line">
-                  {course.prerequisiteText}
+                <p className="mt-2 whitespace-pre-line">
+                  <CourseReferenceText
+                    text={course.prerequisiteText}
+                    availableCourseCodes={availableCourseCodes}
+                  />
                 </p>
+                <CourseReferenceChips
+                  course={course}
+                  availableCourseCodes={availableCourseCodes}
+                />
               </div>
               {course.incompatibilityText ? (
-                <div>
+                <div className="border-t border-zinc-100 pt-5">
                   <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     Incompatibilities
                   </h3>
-                  <p className="mt-1 whitespace-pre-line">
-                    {course.incompatibilityText}
+                  <p className="mt-2 whitespace-pre-line">
+                    <CourseReferenceText
+                      text={course.incompatibilityText}
+                      availableCourseCodes={availableCourseCodes}
+                    />
                   </p>
                 </div>
               ) : null}
@@ -220,6 +379,9 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
         </section>
 
         <section
+          id="course-panel-offerings"
+          role="tabpanel"
+          aria-labelledby="course-tab-offerings"
           className={cn(
             "flex-col gap-4",
             activeTab === "offerings" ? "flex" : "hidden",
@@ -247,6 +409,78 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
                   No course offering is listed in the imported catalogue yet.
                 </p>
               )}
+            </div>
+          </Card>
+        </section>
+
+        <section
+          id="course-panel-student-review"
+          role="tabpanel"
+          aria-labelledby="course-tab-student-review"
+          className={cn(
+            "flex-col gap-4",
+            activeTab === "student-review" ? "flex" : "hidden",
+          )}
+        >
+          <Card>
+            <div className="border-b border-zinc-100 px-5 py-4">
+              <h2 className="text-[15px] font-semibold text-zinc-900">
+                Student experience and self-review
+              </h2>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                Shared placeholder while course-specific SELT and student
+                feedback are imported.
+              </p>
+            </div>
+            <div className="space-y-5 p-5">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-[13px] font-semibold text-zinc-800">
+                  No course-specific ratings are shown yet
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-zinc-600">
+                  This is deliberately not a made-up score. Once authorised
+                  source data is imported, it will appear here with its year and
+                  provenance.
+                </p>
+              </div>
+              <div>
+                <h3 className="text-[13px] font-semibold text-zinc-900">
+                  A useful self-review after taking the course
+                </h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {[
+                    [
+                      "Workload",
+                      "Were the weekly study hours manageable for the unit value?",
+                    ],
+                    [
+                      "Assessment",
+                      "Did the assessment types build the skills the course promised?",
+                    ],
+                    [
+                      "Teaching",
+                      "Were lectures, tutorials and feedback helpful when you needed them?",
+                    ],
+                  ].map(([title, description]) => (
+                    <div
+                      key={title}
+                      className="rounded-xl border border-zinc-200 p-4"
+                    >
+                      <ClipboardCheck
+                        size={17}
+                        className="text-brand-600"
+                        aria-hidden="true"
+                      />
+                      <h4 className="mt-2 text-[13px] font-semibold text-zinc-800">
+                        {title}
+                      </h4>
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                        {description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </Card>
         </section>

@@ -6,20 +6,23 @@ import { useCoursemap } from "@/app/providers";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import type { Attempt } from "@/lib/catalogue";
+import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { proposePrerequisiteFix } from "@/lib/planner";
 
 export function FixIssueButton({
   attempt,
+  catalogue,
   size = "sm",
   className,
 }: {
   attempt: Attempt;
+  catalogue?: PlanCatalogue;
   size?: "sm" | "md";
   className?: string;
 }) {
   const { state, addCourse, reorderAttempt, notify } = useCoursemap();
   const [busy, setBusy] = useState(false);
-  const proposal = proposePrerequisiteFix(attempt, state.attempts);
+  const proposal = proposePrerequisiteFix(attempt, state.attempts, catalogue);
   if (!proposal.ok) return null;
 
   const apply = async () => {

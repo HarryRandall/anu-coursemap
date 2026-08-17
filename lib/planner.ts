@@ -1,12 +1,9 @@
-import {
-  Attempt,
-  Course,
-  Term,
-  courseByCode,
-  courseOccurrenceLimit,
-  courses,
-  terms,
-} from "@/lib/catalogue";
+import { Attempt, Course, Term, courses, terms } from "@/lib/catalogue";
+
+export type PlanningCatalogue = {
+  courses: readonly Course[];
+  terms: readonly Term[];
+};
 
 export type EffectiveStatus = Attempt["status"] | "blocked" | "approval";
 
@@ -40,11 +37,29 @@ export type DegreeUnitProgress = {
   percent: number;
 };
 
-const termOrder = new Map(terms.map((term, index) => [term.id, index]));
-const orderOf = (termId: string) => termOrder.get(termId) ?? terms.length;
+function coursesFor(catalogue?: PlanningCatalogue) {
+  return catalogue?.courses ?? courses;
+}
 
-export function termIndex(termId: string) {
-  return orderOf(termId);
+function termsFor(catalogue?: PlanningCatalogue) {
+  return catalogue?.terms ?? terms;
+}
+
+export function planningCourseByCode(
+  code: string,
+  catalogue?: PlanningCatalogue,
+) {
+  return coursesFor(catalogue).find((course) => course.code === code);
+}
+
+function orderOf(termId: string, catalogue?: PlanningCatalogue) {
+  const availableTerms = termsFor(catalogue);
+  const index = availableTerms.findIndex((term) => term.id === termId);
+  return index >= 0 ? index : availableTerms.length;
+}
+
+export function termIndex(termId: string, catalogue?: PlanningCatalogue) {
+  return orderOf(termId, catalogue);
 }
 
 export function completedCodes(attempts: Attempt[]) {
@@ -64,17 +79,18 @@ export function completedCodes(attempts: Attempt[]) {
 export function missingPrereqs(
   attempt: Attempt,
   attempts: Attempt[],
+  catalogue?: PlanningCatalogue,
 ): string[] {
-  const course = courseByCode(attempt.courseCode);
+  const course = planningCourseByCode(attempt.courseCode, catalogue);
   if (!course) return [];
-  const myOrder = orderOf(attempt.termId);
+  const myOrder = orderOf(attempt.termId, catalogue);
   return course.prerequisiteCodes.filter(
     (code) =>
       !attempts.some(
         (other) =>
           other.courseCode === code &&
           other.status !== "failed" &&
-          orderOf(other.termId) <= myOrder,
+          orderOf(other.termId, catalogue) <= myOrder,
       ),
   );
 }
@@ -82,11 +98,12 @@ export function missingPrereqs(
 export function effectiveStatus(
   attempt: Attempt,
   attempts: Attempt[],
+  catalogue?: PlanningCatalogue,
 ): EffectiveStatus {
   if (attempt.status !== "planned") return attempt.status;
-  const course = courseByCode(attempt.courseCode);
+  const course = planningCourseByCode(attempt.courseCode, catalogue);
   if (!course) return attempt.status;
-  if (missingPrereqs(attempt, attempts).length > 0) return "blocked";
+  if (missingPrereqs(attempt, attempts, catalogue).length > 0) return "blocked";
   if (course.permissionText && !attempt.permissionApproved) return "approval";
   return "planned";
 }
@@ -102,50 +119,64 @@ export function statusLabel(status: EffectiveStatus) {
   }[status];
 }
 
-export function earnedUnits(attempts: Attempt[]) {
+export function earnedUnits(
+  attempts: Attempt[],
+  catalogue?: PlanningCatalogue,
+) {
   const unique = completedCodes(attempts);
   return [...unique].reduce(
-    (total, code) => total + (courseByCode(code)?.units ?? 0),
+    (total, code) =>
+      total + (planningCourseByCode(code, catalogue)?.units ?? 0),
     0,
   );
 }
 
-export function mappedUnits(attempts: Attempt[]) {
+export function mappedUnits(
+  attempts: Attempt[],
+  catalogue?: PlanningCatalogue,
+) {
   const latest = new Map<string, Attempt>();
   attempts
     .filter((attempt) => attempt.status !== "failed")
     .forEach((attempt) => latest.set(attempt.courseCode, attempt));
   return [...latest.values()].reduce(
-    (total, attempt) => total + (courseByCode(attempt.courseCode)?.units ?? 0),
+    (total, attempt) =>
+      total + (planningCourseByCode(attempt.courseCode, catalogue)?.units ?? 0),
     0,
   );
 }
 
-export function unitsByCalendarYear(attempts: Attempt[]) {
+export function unitsByCalendarYear(
+  attempts: Attempt[],
+  catalogue?: PlanningCatalogue,
+) {
+  const availableTerms = termsFor(catalogue);
   const years = [
     ...new Set(
-      terms
+      availableTerms
         .filter((term) => term.id !== "unscheduled")
         .map((term) => term.year),
     ),
   ];
   return years.map((year) => {
     const inYear = attempts.filter((attempt) => {
-      const term = terms.find((item) => item.id === attempt.termId);
+      const term = availableTerms.find((item) => item.id === attempt.termId);
       return term?.year === year && attempt.status !== "failed";
     });
     const completed = inYear
       .filter((attempt) => attempt.status === "completed")
       .reduce(
         (total, attempt) =>
-          total + (courseByCode(attempt.courseCode)?.units ?? 0),
+          total +
+          (planningCourseByCode(attempt.courseCode, catalogue)?.units ?? 0),
         0,
       );
     const planned = inYear
       .filter((attempt) => attempt.status !== "completed")
       .reduce(
         (total, attempt) =>
-          total + (courseByCode(attempt.courseCode)?.units ?? 0),
+          total +
+          (planningCourseByCode(attempt.courseCode, catalogue)?.units ?? 0),
         0,
       );
     return { year, completed, planned, total: completed + planned };
@@ -160,9 +191,10 @@ export function courseIsAvailable(course: Course, termName: string) {
 export function degreeUnitProgress(
   attempts: Attempt[],
   totalUnits: number,
+  catalogue?: PlanningCatalogue,
 ): DegreeUnitProgress {
-  const completed = earnedUnits(attempts);
-  const mapped = mappedUnits(attempts);
+  const completed = earnedUnits(attempts, catalogue);
+  const mapped = mappedUnits(attempts, catalogue);
   const planned = Math.max(0, mapped - completed);
   const remaining = Math.max(0, totalUnits - mapped);
   return {
@@ -179,6 +211,7 @@ export function termLoad(
   attempts: Attempt[],
   termId: string,
   ignoreAttemptId?: string,
+  catalogue?: PlanningCatalogue,
 ) {
   const entries = attempts.filter(
     (attempt) =>
@@ -190,7 +223,8 @@ export function termLoad(
     courses: entries.length,
     units: entries.reduce(
       (total, attempt) =>
-        total + (courseByCode(attempt.courseCode)?.units ?? 0),
+        total +
+        (planningCourseByCode(attempt.courseCode, catalogue)?.units ?? 0),
       0,
     ),
   };
@@ -202,9 +236,10 @@ export function termHasCapacity(
   extraUnits: number,
   extraCourses = 1,
   ignoreAttemptId?: string,
+  catalogue?: PlanningCatalogue,
 ) {
   if (termId === "unscheduled") return true;
-  const load = termLoad(attempts, termId, ignoreAttemptId);
+  const load = termLoad(attempts, termId, ignoreAttemptId, catalogue);
   return (
     load.courses + extraCourses <= STANDARD_COURSE_SLOTS &&
     load.units + extraUnits <= STANDARD_TERM_UNITS
@@ -239,15 +274,16 @@ export function recommendedCoursesForTerm(
   term: Term,
   attempts: Attempt[],
   majorCodes: string[],
+  catalogue?: PlanningCatalogue,
 ): Course[] {
-  return courses
+  return coursesFor(catalogue)
     .filter((course) => {
       if (!isRecommendedDegreeCourse(course, majorCodes)) return false;
       if (!courseIsAvailable(course, term.name)) return false;
       const taken = attempts.filter(
         (attempt) => attempt.courseCode === course.code,
       ).length;
-      if (taken >= courseOccurrenceLimit(course.code)) return false;
+      if (taken >= (course.units === 12 ? 2 : 1)) return false;
       if (activeAttemptFor(attempts, course.code)) return false;
       const preview: Attempt = {
         id: `recommended-${course.code}`,
@@ -255,7 +291,9 @@ export function recommendedCoursesForTerm(
         termId: term.id,
         status: "planned",
       };
-      return missingPrereqs(preview, [...attempts, preview]).length === 0;
+      return (
+        missingPrereqs(preview, [...attempts, preview], catalogue).length === 0
+      );
     })
     .sort(
       (left, right) =>
@@ -287,14 +325,22 @@ function earlierOfferingFor(
   beforeTermId: string,
   attempts: Attempt[],
   ignoreAttemptId?: string,
+  catalogue?: PlanningCatalogue,
 ) {
-  const beforeOrder = orderOf(beforeTermId);
-  const candidates = terms.filter(
+  const beforeOrder = orderOf(beforeTermId, catalogue);
+  const candidates = termsFor(catalogue).filter(
     (term) =>
       term.id !== "unscheduled" &&
-      orderOf(term.id) < beforeOrder &&
+      orderOf(term.id, catalogue) < beforeOrder &&
       courseIsAvailable(course, term.name) &&
-      termHasCapacity(attempts, term.id, course.units, 1, ignoreAttemptId),
+      termHasCapacity(
+        attempts,
+        term.id,
+        course.units,
+        1,
+        ignoreAttemptId,
+        catalogue,
+      ),
   );
   return candidates.at(-1);
 }
@@ -303,8 +349,9 @@ function placePrerequisiteEarlier(
   courseCode: string,
   beforeTermId: string,
   attempts: Attempt[],
+  catalogue?: PlanningCatalogue,
 ): PlanFixResult {
-  const course = courseByCode(courseCode);
+  const course = planningCourseByCode(courseCode, catalogue);
   if (!course) {
     return { ok: false, message: `${courseCode} is not in the catalogue.` };
   }
@@ -325,6 +372,7 @@ function placePrerequisiteEarlier(
     beforeTermId,
     attempts,
     existing?.id,
+    catalogue,
   );
   if (!target) {
     const offered = course.sessions.join(" or ");
@@ -363,10 +411,10 @@ function placePrerequisiteEarlier(
   };
 }
 
-function describeFixSteps(steps: PlanFixStep[]) {
+function describeFixSteps(steps: PlanFixStep[], catalogue?: PlanningCatalogue) {
   return steps
     .map((step) => {
-      const term = terms.find((item) =>
+      const term = termsFor(catalogue).find((item) =>
         step.type === "move"
           ? item.id === step.toTermId
           : item.id === step.termId,
@@ -390,8 +438,9 @@ function describeFixSteps(steps: PlanFixStep[]) {
 export function proposePrerequisiteFix(
   attempt: Attempt,
   attempts: Attempt[],
+  catalogue?: PlanningCatalogue,
 ): PlanFixResult {
-  if (effectiveStatus(attempt, attempts) !== "blocked") {
+  if (effectiveStatus(attempt, attempts, catalogue) !== "blocked") {
     return {
       ok: false,
       message: "This course does not have a sequencing issue to fix.",
@@ -408,8 +457,13 @@ export function proposePrerequisiteFix(
     if (!current || seen.has(current.courseCode)) continue;
     seen.add(current.courseCode);
 
-    for (const code of missingPrereqs(current, working)) {
-      const placement = placePrerequisiteEarlier(code, current.termId, working);
+    for (const code of missingPrereqs(current, working, catalogue)) {
+      const placement = placePrerequisiteEarlier(
+        code,
+        current.termId,
+        working,
+        catalogue,
+      );
       if (!placement.ok) return placement;
 
       steps.push(...placement.steps);
@@ -429,6 +483,6 @@ export function proposePrerequisiteFix(
   return {
     ok: true,
     steps,
-    summary: `Fix by ${describeFixSteps(steps)}`,
+    summary: `Fix by ${describeFixSteps(steps, catalogue)}`,
   };
 }

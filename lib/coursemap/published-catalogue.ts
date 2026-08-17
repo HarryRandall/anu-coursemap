@@ -1,13 +1,17 @@
 import "server-only";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   courseByCode as demoCourseByCode,
   courses as demoCourses,
 } from "@/lib/catalogue";
-import { canManageCatalogueImports } from "@/lib/auth/viewer";
 import { isDemoMode } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import type { CatalogueCourse } from "./catalogue-types";
+import { createPublicClient } from "@/lib/supabase/public-server";
+import type { Database, Json } from "@/types/database";
+import type {
+  CatalogueCourse,
+  CataloguePrerequisiteEdge,
+} from "./catalogue-types";
 
 const ANU_SOURCE_BASE_URL = "https://programsandcourses.anu.edu.au";
 
@@ -39,66 +43,29 @@ type OfferingSessionRow = {
   delivery_mode: string | null;
 };
 type AcademicPeriodRow = { id: number; name: string; short_name: string };
-type CourseRuleRow = {
-  id: number;
-  course_version_id: number;
-  rule_kind: string;
-  source_text: string;
+
+type CourseDetailPayload = {
+  code: string;
+  year: number;
+  name: string;
+  units: number;
+  level: number;
+  subject: string;
+  school: string;
+  convener: string;
+  delivery: string;
+  description: string;
+  sessions: string[];
+  prerequisiteText: string;
+  prerequisiteCodes: string[];
+  prerequisiteEdges: CataloguePrerequisiteEdge[];
+  incompatibilityText: string;
+  sourceUpdatedAt: string | null;
+  reviewState: CatalogueCourse["reviewState"];
 };
-type CourseRuleConditionRow = {
-  course_rule_id: number;
-  condition_kind: string;
-  required_course_id: number | null;
-};
-type CourseVersionIdentityRow = { id: number; course_id: number };
 
-function demoCatalogue(): CatalogueCourse[] {
-  return demoCourses.map((course) => ({
-    accent: course.accent,
-    code: course.code,
-    name: course.name,
-    year: course.year,
-    units: course.units,
-    level: course.level,
-    subject: course.subject,
-    school: course.school,
-    convener: course.convener,
-    sessions: course.sessions,
-    delivery: course.delivery,
-    description: course.description,
-    prerequisiteText: course.prerequisiteText,
-    prerequisiteCodes: course.prerequisiteCodes,
-    prerequisiteEdges: demoPrerequisiteEdges(course.code),
-    incompatibilityText: course.incompatibilities.join(", "),
-    sourceUrl: course.sourceUrl,
-    sourceUpdatedAt: null,
-    publicationStatus: "published",
-    reviewState:
-      course.parseState === "Verified"
-        ? "verified"
-        : course.parseState === "Review"
-          ? "review"
-          : "automatic",
-  }));
-}
-
-function demoPrerequisiteEdges(code: string) {
-  const edges: { from: string; to: string }[] = [];
-  const visited = new Set<string>();
-
-  const visit = (courseCode: string) => {
-    if (visited.has(courseCode)) return;
-    visited.add(courseCode);
-    const course = demoCourseByCode(courseCode);
-    if (!course) return;
-    for (const prerequisite of course.prerequisiteCodes) {
-      edges.push({ from: prerequisite, to: courseCode });
-      visit(prerequisite);
-    }
-  };
-
-  visit(code);
-  return edges;
+function sourceUrl(year: number, code: string) {
+  return `${ANU_SOURCE_BASE_URL}/${year}/course/${code}`;
 }
 
 function accentFor(code: string): CatalogueCourse["accent"] {
@@ -117,12 +84,81 @@ function accentFor(code: string): CatalogueCourse["accent"] {
   return accents[sum % accents.length];
 }
 
-function sourceUrl(year: number, code: string) {
-  return `${ANU_SOURCE_BASE_URL}/${year}/course/${code}`;
+function demoPrerequisiteEdges(code: string): CataloguePrerequisiteEdge[] {
+  const edges = new Map<string, CataloguePrerequisiteEdge>();
+  const visited = new Set<string>();
+
+  const addEdge = (from: string, to: string) => {
+    edges.set(`${from}:${to}`, {
+      from,
+      to,
+      fromIsAvailable: Boolean(demoCourseByCode(from)),
+      toIsAvailable: Boolean(demoCourseByCode(to)),
+    });
+  };
+  const visit = (courseCode: string) => {
+    if (visited.has(courseCode)) return;
+    visited.add(courseCode);
+    const course = demoCourseByCode(courseCode);
+    if (!course) return;
+    for (const prerequisite of course.prerequisiteCodes) {
+      addEdge(prerequisite, courseCode);
+      visit(prerequisite);
+    }
+  };
+
+  visit(code);
+  for (const course of demoCourses) {
+    if (course.prerequisiteCodes.includes(code)) addEdge(code, course.code);
+  }
+  return [...edges.values()].sort(
+    (left, right) =>
+      left.from.localeCompare(right.from) || left.to.localeCompare(right.to),
+  );
 }
 
-async function publishedYearId() {
-  const supabase = await createClient();
+function demoCatalogue(): CatalogueCourse[] {
+  return demoCourses.map((course) => {
+    const prerequisiteEdges = demoPrerequisiteEdges(course.code);
+    const availableCourseCodes = new Set<string>([course.code]);
+    for (const edge of prerequisiteEdges) {
+      if (edge.fromIsAvailable) availableCourseCodes.add(edge.from);
+      if (edge.toIsAvailable) availableCourseCodes.add(edge.to);
+    }
+    return {
+      accent: course.accent,
+      code: course.code,
+      name: course.name,
+      year: course.year,
+      units: course.units,
+      level: course.level,
+      subject: course.subject,
+      school: course.school,
+      convener: course.convener,
+      sessions: course.sessions,
+      delivery: course.delivery,
+      description: course.description,
+      prerequisiteText: course.prerequisiteText,
+      prerequisiteCodes: course.prerequisiteCodes,
+      prerequisiteEdges,
+      availableCourseCodes: [...availableCourseCodes].sort(),
+      incompatibilityText: course.incompatibilities.join(", "),
+      sourceUrl: course.sourceUrl,
+      sourceUpdatedAt: null,
+      publicationStatus: "published",
+      reviewState:
+        course.parseState === "Verified"
+          ? "verified"
+          : course.parseState === "Review"
+            ? "review"
+            : "automatic",
+    };
+  });
+}
+
+async function publishedYear(
+  supabase: SupabaseClient<Database>,
+): Promise<{ id: number; year: number } | null> {
   const { data, error } = await supabase
     .from("catalogue_years")
     .select("id,year")
@@ -130,15 +166,16 @@ async function publishedYearId() {
     .order("year", { ascending: false })
     .limit(1)
     .maybeSingle();
-
   if (error) throw error;
   return data;
 }
 
-async function loadOfferings(courseVersionIds: readonly number[]) {
+async function loadOfferings(
+  supabase: SupabaseClient<Database>,
+  courseVersionIds: readonly number[],
+) {
   if (courseVersionIds.length === 0) return new Map<number, OfferingRow[]>();
 
-  const supabase = await createClient();
   const { data: offerings, error: offeringsError } = await supabase
     .from("course_offerings")
     .select("id,course_version_id,delivery_mode")
@@ -180,7 +217,12 @@ async function loadOfferings(courseVersionIds: readonly number[]) {
     sessionsByOffering.set(session.course_offering_id, existing);
   }
 
-  const byCourseVersion = new Map<number, OfferingRow[]>();
+  const byCourseVersion = new Map<
+    number,
+    Array<
+      OfferingRow & { periodNames: string[]; sessionDeliveryModes: string[] }
+    >
+  >();
   for (const offering of offeringRows) {
     const sessionsForOffering = sessionsByOffering.get(offering.id) ?? [];
     const periodNames = sessionsForOffering
@@ -197,142 +239,7 @@ async function loadOfferings(courseVersionIds: readonly number[]) {
     existing.push(enriched);
     byCourseVersion.set(offering.course_version_id, existing);
   }
-
   return byCourseVersion;
-}
-
-async function loadPrerequisiteEdges({
-  catalogueYearId,
-  rootVersion,
-  rootCode,
-  includeDrafts,
-}: {
-  catalogueYearId: number;
-  rootVersion: CourseVersionIdentityRow;
-  rootCode: string;
-  includeDrafts: boolean;
-}) {
-  const supabase = await createClient();
-  const codesByCourseId = new Map<number, string>([
-    [rootVersion.course_id, rootCode],
-  ]);
-  const versionsById = new Map<number, CourseVersionIdentityRow>([
-    [rootVersion.id, rootVersion],
-  ]);
-  const seenVersionIds = new Set<number>();
-  const edges = new Map<string, { from: string; to: string }>();
-  let frontier = [rootVersion];
-
-  while (frontier.length > 0) {
-    const current = frontier.filter(
-      (version) => !seenVersionIds.has(version.id),
-    );
-    if (current.length === 0) break;
-    current.forEach((version) => seenVersionIds.add(version.id));
-
-    const { data: rules, error: rulesError } = await supabase
-      .from("course_rules")
-      .select("id,course_version_id,rule_kind,source_text")
-      .in(
-        "course_version_id",
-        current.map((version) => version.id),
-      )
-      .eq("rule_kind", "prerequisite");
-    if (rulesError) throw rulesError;
-
-    const ruleRows = (rules ?? []) as CourseRuleRow[];
-    if (ruleRows.length === 0) {
-      frontier = [];
-      continue;
-    }
-
-    const { data: conditions, error: conditionsError } = await supabase
-      .from("course_rule_conditions")
-      .select("course_rule_id,condition_kind,required_course_id")
-      .in(
-        "course_rule_id",
-        ruleRows.map((rule) => rule.id),
-      );
-    if (conditionsError) throw conditionsError;
-
-    const conditionsByRule = new Map<number, CourseRuleConditionRow[]>();
-    for (const condition of (conditions ?? []) as CourseRuleConditionRow[]) {
-      const existing = conditionsByRule.get(condition.course_rule_id) ?? [];
-      existing.push(condition);
-      conditionsByRule.set(condition.course_rule_id, existing);
-    }
-
-    const requiredCourseIds = [
-      ...new Set(
-        ruleRows.flatMap((rule) =>
-          (conditionsByRule.get(rule.id) ?? []).flatMap((condition) =>
-            condition.condition_kind === "course" &&
-            condition.required_course_id
-              ? [condition.required_course_id]
-              : [],
-          ),
-        ),
-      ),
-    ];
-    if (requiredCourseIds.length === 0) {
-      frontier = [];
-      continue;
-    }
-
-    const { data: identities, error: identitiesError } = await supabase
-      .from("courses")
-      .select("id,code")
-      .in("id", requiredCourseIds);
-    if (identitiesError) throw identitiesError;
-    for (const identity of (identities ?? []) as CourseIdentityRow[]) {
-      codesByCourseId.set(identity.id, identity.code);
-    }
-
-    for (const rule of ruleRows) {
-      const targetVersion = versionsById.get(rule.course_version_id);
-      const targetCode = targetVersion
-        ? codesByCourseId.get(targetVersion.course_id)
-        : undefined;
-      if (!targetCode) continue;
-      for (const condition of conditionsByRule.get(rule.id) ?? []) {
-        if (
-          condition.condition_kind !== "course" ||
-          !condition.required_course_id
-        ) {
-          continue;
-        }
-        const prerequisiteCode = codesByCourseId.get(
-          condition.required_course_id,
-        );
-        if (prerequisiteCode) {
-          edges.set(`${prerequisiteCode}:${targetCode}`, {
-            from: prerequisiteCode,
-            to: targetCode,
-          });
-        }
-      }
-    }
-
-    let nextVersionsQuery = supabase
-      .from("course_versions")
-      .select("id,course_id")
-      .eq("catalogue_year_id", catalogueYearId)
-      .in("course_id", requiredCourseIds);
-    if (!includeDrafts) {
-      nextVersionsQuery = nextVersionsQuery.eq(
-        "publication_status",
-        "published",
-      );
-    }
-    const { data: nextVersions, error: nextVersionsError } =
-      await nextVersionsQuery;
-    if (nextVersionsError) throw nextVersionsError;
-
-    frontier = (nextVersions ?? []) as CourseVersionIdentityRow[];
-    for (const version of frontier) versionsById.set(version.id, version);
-  }
-
-  return [...edges.values()];
 }
 
 function asCatalogueCourse({
@@ -342,7 +249,12 @@ function asCatalogueCourse({
   offerings,
   prerequisiteText = "No prerequisite information is available.",
   prerequisiteCodes = [],
-  prerequisiteEdges = prerequisiteCodes.map((from) => ({ from, to: code })),
+  prerequisiteEdges = prerequisiteCodes.map((from) => ({
+    from,
+    to: code,
+    fromIsAvailable: true,
+    toIsAvailable: true,
+  })),
   incompatibilityText = "",
 }: {
   year: number;
@@ -353,7 +265,7 @@ function asCatalogueCourse({
   >;
   prerequisiteText?: string;
   prerequisiteCodes?: string[];
-  prerequisiteEdges?: { from: string; to: string }[];
+  prerequisiteEdges?: CataloguePrerequisiteEdge[];
   incompatibilityText?: string;
 }): CatalogueCourse {
   const sessions = [
@@ -368,6 +280,11 @@ function asCatalogueCourse({
       .find((mode): mode is string => Boolean(mode)) ??
     version.delivery_summary ??
     "Not listed";
+  const availableCourseCodes = new Set<string>([code]);
+  for (const edge of prerequisiteEdges) {
+    if (edge.fromIsAvailable) availableCourseCodes.add(edge.from);
+    if (edge.toIsAvailable) availableCourseCodes.add(edge.to);
+  }
 
   return {
     accent: accentFor(code),
@@ -385,11 +302,11 @@ function asCatalogueCourse({
     prerequisiteText,
     prerequisiteCodes,
     prerequisiteEdges,
+    availableCourseCodes: [...availableCourseCodes].sort(),
     incompatibilityText,
     sourceUrl: sourceUrl(year, code),
     sourceUpdatedAt: version.source_updated_at,
-    publicationStatus:
-      version.publication_status === "published" ? "published" : "draft",
+    publicationStatus: "published",
     reviewState:
       version.review_state === "verified"
         ? "verified"
@@ -399,38 +316,148 @@ function asCatalogueCourse({
   };
 }
 
+function isRecord(value: Json): value is { [key: string]: Json | undefined } {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readString(value: Json | undefined, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function readNumber(value: Json | undefined, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function readStringArray(value: Json | undefined): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function readPrerequisiteEdges(
+  value: Json | undefined,
+): CataloguePrerequisiteEdge[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!isRecord(item)) return [];
+    const from = readString(item.from).toUpperCase();
+    const to = readString(item.to).toUpperCase();
+    if (!/^[A-Z]{4}\d{4}$/u.test(from) || !/^[A-Z]{4}\d{4}$/u.test(to)) {
+      return [];
+    }
+    return [
+      {
+        from,
+        to,
+        fromIsAvailable: item.from_is_available === true,
+        toIsAvailable: item.to_is_available === true,
+      },
+    ];
+  });
+}
+
+function readCourseDetail(value: Json): CourseDetailPayload | null {
+  if (!isRecord(value)) return null;
+  const code = readString(value.code).toUpperCase();
+  if (!/^[A-Z]{4}\d{4}$/u.test(code)) return null;
+  const reviewState = readString(value.review_state);
+  return {
+    code,
+    year: readNumber(value.year),
+    name: readString(value.name, code),
+    units: readNumber(value.units),
+    level: readNumber(value.level),
+    subject: readString(value.subject, code.slice(0, 4)),
+    school: readString(value.school, "Not listed"),
+    convener: readString(value.convener, "Not listed"),
+    delivery: readString(value.delivery, "Not listed"),
+    description: readString(value.description, "No description is listed."),
+    sessions: readStringArray(value.sessions),
+    prerequisiteText: readString(
+      value.prerequisite_text,
+      "No prerequisites listed.",
+    ),
+    prerequisiteCodes: readStringArray(value.prerequisite_codes),
+    prerequisiteEdges: readPrerequisiteEdges(value.prerequisite_edges),
+    incompatibilityText: readString(value.incompatibility_text),
+    sourceUpdatedAt:
+      typeof value.source_updated_at === "string"
+        ? value.source_updated_at
+        : null,
+    reviewState:
+      reviewState === "verified"
+        ? "verified"
+        : reviewState === "review"
+          ? "review"
+          : "automatic",
+  };
+}
+
+function detailAsCatalogueCourse(detail: CourseDetailPayload): CatalogueCourse {
+  const availableCourseCodes = new Set<string>([detail.code]);
+  for (const edge of detail.prerequisiteEdges) {
+    if (edge.fromIsAvailable) availableCourseCodes.add(edge.from);
+    if (edge.toIsAvailable) availableCourseCodes.add(edge.to);
+  }
+  return {
+    accent: accentFor(detail.code),
+    code: detail.code,
+    name: detail.name,
+    year: detail.year,
+    units: detail.units,
+    level: detail.level,
+    subject: detail.subject,
+    school: detail.school,
+    convener: detail.convener,
+    sessions: detail.sessions,
+    delivery: detail.delivery,
+    description: detail.description,
+    prerequisiteText: detail.prerequisiteText,
+    prerequisiteCodes: detail.prerequisiteCodes,
+    prerequisiteEdges: detail.prerequisiteEdges,
+    availableCourseCodes: [...availableCourseCodes].sort(),
+    incompatibilityText: detail.incompatibilityText,
+    sourceUrl: sourceUrl(detail.year, detail.code),
+    sourceUpdatedAt: detail.sourceUpdatedAt,
+    publicationStatus: "published",
+    reviewState: detail.reviewState,
+  };
+}
+
 export async function loadPublishedCourses(): Promise<CatalogueCourse[]> {
   if (isDemoMode()) return demoCatalogue();
 
-  // Draft rows remain protected by RLS. Only an authenticated user with the
-  // catalogue-import permission may see them in this live catalogue view.
-  const includeDrafts = await canManageCatalogueImports();
-
-  const year = await publishedYearId();
+  const supabase = createPublicClient();
+  const year = await publishedYear(supabase);
   if (!year) return [];
 
-  const supabase = await createClient();
-  let versionsQuery = supabase
+  const { data: versions, error: versionsError } = await supabase
     .from("course_versions")
     .select(
       "id,course_id,title,units,level,subject,school,convener,delivery_summary,description,publication_status,review_state,source_updated_at",
     )
     .eq("catalogue_year_id", year.id)
+    .eq("publication_status", "published")
     .order("subject")
     .order("title");
-  if (!includeDrafts) {
-    versionsQuery = versionsQuery.eq("publication_status", "published");
-  }
-  const { data: versions, error: versionsError } = await versionsQuery;
   if (versionsError) throw versionsError;
 
   const versionRows = (versions ?? []) as CourseVersionRow[];
   const courseIds = [
     ...new Set(versionRows.map((version) => version.course_id)),
   ];
-  const { data: courseIdentities, error: identitiesError } = courseIds.length
-    ? await supabase.from("courses").select("id,code").in("id", courseIds)
-    : { data: [], error: null };
+  const [
+    { data: courseIdentities, error: identitiesError },
+    offeringsByVersion,
+  ] = await Promise.all([
+    courseIds.length
+      ? supabase.from("courses").select("id,code").in("id", courseIds)
+      : Promise.resolve({ data: [], error: null }),
+    loadOfferings(
+      supabase,
+      versionRows.map((version) => version.id),
+    ),
+  ]);
   if (identitiesError) throw identitiesError;
 
   const codesById = new Map(
@@ -439,21 +466,18 @@ export async function loadPublishedCourses(): Promise<CatalogueCourse[]> {
       course.code,
     ]),
   );
-  const offeringsByVersion = await loadOfferings(
-    versionRows.map((row) => row.id),
-  );
-
   return versionRows.flatMap((version) => {
     const code = codesById.get(version.course_id);
-    if (!code) return [];
-    return [
-      asCatalogueCourse({
-        year: year.year,
-        version,
-        code,
-        offerings: offeringsByVersion.get(version.id) ?? [],
-      }),
-    ];
+    return code
+      ? [
+          asCatalogueCourse({
+            year: year.year,
+            version,
+            code,
+            offerings: offeringsByVersion.get(version.id) ?? [],
+          }),
+        ]
+      : [];
   });
 }
 
@@ -461,115 +485,18 @@ export async function loadPublishedCourse(
   code: string,
 ): Promise<CatalogueCourse | null> {
   const normalisedCode = code.trim().toUpperCase();
-  if (!/^[A-Z]{4}\d{4}$/.test(normalisedCode)) return null;
-
+  if (!/^[A-Z]{4}\d{4}$/u.test(normalisedCode)) return null;
   if (isDemoMode()) {
     return (
       demoCatalogue().find((course) => course.code === normalisedCode) ?? null
     );
   }
 
-  const includeDrafts = await canManageCatalogueImports();
-
-  const year = await publishedYearId();
-  if (!year) return null;
-
-  const supabase = await createClient();
-  const { data: identity, error: identityError } = await supabase
-    .from("courses")
-    .select("id,code")
-    .eq("code", normalisedCode)
-    .maybeSingle();
-  if (identityError) throw identityError;
-  if (!identity) return null;
-
-  let versionQuery = supabase
-    .from("course_versions")
-    .select(
-      "id,course_id,title,units,level,subject,school,convener,delivery_summary,description,publication_status,review_state,source_updated_at",
-    )
-    .eq("catalogue_year_id", year.id)
-    .eq("course_id", identity.id);
-  if (!includeDrafts) {
-    versionQuery = versionQuery.eq("publication_status", "published");
-  }
-  const { data: version, error: versionError } =
-    await versionQuery.maybeSingle();
-  if (versionError) throw versionError;
-  if (!version) return null;
-
-  const versionRow = version as CourseVersionRow;
-  const [
-    { data: rules, error: rulesError },
-    offeringsByVersion,
-    prerequisiteEdges,
-  ] = await Promise.all([
-    supabase
-      .from("course_rules")
-      .select("id,course_version_id,rule_kind,source_text")
-      .eq("course_version_id", versionRow.id),
-    loadOfferings([versionRow.id]),
-    loadPrerequisiteEdges({
-      catalogueYearId: year.id,
-      rootVersion: versionRow,
-      rootCode: identity.code,
-      includeDrafts,
-    }),
-  ]);
-  if (rulesError) throw rulesError;
-
-  const ruleRows = (rules ?? []) as CourseRuleRow[];
-  const prerequisiteRules = ruleRows.filter(
-    (rule) => rule.rule_kind === "prerequisite",
+  const { data, error } = await createPublicClient().rpc(
+    "published_course_detail",
+    { p_course_code: normalisedCode },
   );
-  const incompatibilityRules = ruleRows.filter(
-    (rule) => rule.rule_kind === "incompatibility",
-  );
-  const prerequisiteRuleIds = prerequisiteRules.map((rule) => rule.id);
-  const { data: conditions, error: conditionsError } =
-    prerequisiteRuleIds.length
-      ? await supabase
-          .from("course_rule_conditions")
-          .select("course_rule_id,condition_kind,required_course_id")
-          .in("course_rule_id", prerequisiteRuleIds)
-      : { data: [], error: null };
-  if (conditionsError) throw conditionsError;
-
-  const conditionRows = (conditions ?? []) as CourseRuleConditionRow[];
-  const prerequisiteIds = [
-    ...new Set(
-      conditionRows.flatMap((condition) =>
-        condition.condition_kind === "course" && condition.required_course_id
-          ? [condition.required_course_id]
-          : [],
-      ),
-    ),
-  ];
-  const { data: prerequisiteCourses, error: prerequisiteCoursesError } =
-    prerequisiteIds.length
-      ? await supabase
-          .from("courses")
-          .select("id,code")
-          .in("id", prerequisiteIds)
-      : { data: [], error: null };
-  if (prerequisiteCoursesError) throw prerequisiteCoursesError;
-
-  const prerequisiteCodes = ((prerequisiteCourses ?? []) as CourseIdentityRow[])
-    .map((course) => course.code)
-    .sort();
-
-  return asCatalogueCourse({
-    year: year.year,
-    version: versionRow,
-    code: identity.code,
-    offerings: offeringsByVersion.get(versionRow.id) ?? [],
-    prerequisiteText:
-      prerequisiteRules.map((rule) => rule.source_text).join("\n\n") ||
-      "No prerequisites listed.",
-    prerequisiteCodes,
-    prerequisiteEdges,
-    incompatibilityText: incompatibilityRules
-      .map((rule) => rule.source_text)
-      .join("\n\n"),
-  });
+  if (error) throw error;
+  const detail = data ? readCourseDetail(data) : null;
+  return detail ? detailAsCatalogueCourse(detail) : null;
 }
