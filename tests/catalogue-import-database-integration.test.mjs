@@ -59,6 +59,37 @@ const manifest = parseCatalogueManifest({
 });
 
 const changedPrerequisite = `${expectedPrerequisite} Permission from the course convener is also required.`;
+const structuredRuleCourseCode = "COMP3600";
+const structuredRuleText =
+  "To enrol in this course you must have completed the following: 24 units of COMP coded courses AND (6 units of MATH OR COMP1600)";
+const structuredIncompatibilityText =
+  "You are not able to enrol in this course if you have successfully completed COMP6466.";
+const structuredRuleManifest = (() => {
+  const changed = structuredClone(manifest);
+  const document = changed.documents[0];
+  document.externalKey = structuredRuleCourseCode;
+  document.canonicalUrl = `https://programsandcourses.anu.edu.au/2026/course/${structuredRuleCourseCode}`;
+  document.contentSha256 = createHash("sha256")
+    .update(`${fixtureHtml}\nstructured-rule-import`, "utf8")
+    .digest("hex");
+  document.course.code = structuredRuleCourseCode;
+  document.course.requisites = {
+    observed: true,
+    rawText: `${structuredRuleText} ${structuredIncompatibilityText}`,
+    rawRequisiteText: structuredRuleText,
+    rawIncompatibilityText: structuredIncompatibilityText,
+    linkedCourseCodes: ["COMP1600", "COMP6466"],
+  };
+  document.diagnostics = document.diagnostics.filter(
+    ({ code }) => code !== "UNSTRUCTURED_REQUISITE_TEXT",
+  );
+  document.sourceFragment = "structured requisite rule import";
+  changed.scope = {
+    kind: "course_codes",
+    courseCodes: [structuredRuleCourseCode],
+  };
+  return parseCatalogueManifest(changed);
+})();
 const publicationRegressionManifest = (() => {
   const changed = structuredClone(manifest);
   const changedDocument = changed.documents[0];
@@ -725,6 +756,138 @@ test(
               assert.equal(review.details.externalKey, courseCode);
             }
 
+            await tx`
+              delete from public.course_versions as versions
+              using public.courses as courses, public.catalogue_years as years
+              where versions.course_id = courses.id
+                and versions.catalogue_year_id = years.id
+                and courses.code = ${structuredRuleCourseCode}
+                and years.year = ${catalogueYear}
+            `;
+            const structured = await importManifest(structuredRuleManifest);
+            runIds.push(structured.runId);
+            assert.equal(structured.status, "succeeded");
+            const structuredGroups = await tx`
+              select
+                rules.rule_kind,
+                groups.operator,
+                groups.parent_group_id is null as is_root,
+                groups.position
+              from public.course_rules as rules
+              join public.course_versions as versions
+                on versions.id = rules.course_version_id
+              join public.courses as courses on courses.id = versions.course_id
+              join public.course_rule_groups as groups
+                on groups.course_rule_id = rules.id
+              where courses.code = ${structuredRuleCourseCode}
+                and versions.catalogue_year_id = (
+                  select id from public.catalogue_years where year = ${catalogueYear}
+                )
+              order by rules.rule_kind, groups.parent_group_id nulls first, groups.position
+            `;
+            assert.deepEqual(
+              [...structuredGroups],
+              [
+                {
+                  rule_kind: "incompatibility",
+                  operator: "all_of",
+                  is_root: true,
+                  position: 0,
+                },
+                {
+                  rule_kind: "prerequisite",
+                  operator: "all_of",
+                  is_root: true,
+                  position: 0,
+                },
+                {
+                  rule_kind: "prerequisite",
+                  operator: "any_of",
+                  is_root: false,
+                  position: 1,
+                },
+              ],
+            );
+            const structuredConditions = await tx`
+              select
+                rules.rule_kind,
+                conditions.condition_kind,
+                conditions.minimum_units::text as minimum_units,
+                conditions.position,
+                conditions.subject_code,
+                required_courses.code as required_course_code,
+                conditions.review_state
+              from public.course_rules as rules
+              join public.course_versions as versions
+                on versions.id = rules.course_version_id
+              join public.courses as courses on courses.id = versions.course_id
+              join public.course_rule_conditions as conditions
+                on conditions.course_rule_id = rules.id
+              left join public.courses as required_courses
+                on required_courses.id = conditions.required_course_id
+              where courses.code = ${structuredRuleCourseCode}
+                and versions.catalogue_year_id = (
+                  select id from public.catalogue_years where year = ${catalogueYear}
+                )
+              order by rules.rule_kind, conditions.group_id, conditions.position
+            `;
+            assert.deepEqual(
+              [...structuredConditions],
+              [
+                {
+                  rule_kind: "incompatibility",
+                  condition_kind: "other",
+                  minimum_units: null,
+                  position: 0,
+                  subject_code: null,
+                  required_course_code: null,
+                  review_state: "review",
+                },
+                {
+                  rule_kind: "prerequisite",
+                  condition_kind: "subject_units",
+                  minimum_units: "24",
+                  position: 0,
+                  subject_code: "COMP",
+                  required_course_code: null,
+                  review_state: "automatic",
+                },
+                {
+                  rule_kind: "prerequisite",
+                  condition_kind: "subject_units",
+                  minimum_units: "6",
+                  position: 0,
+                  subject_code: "MATH",
+                  required_course_code: null,
+                  review_state: "automatic",
+                },
+                {
+                  rule_kind: "prerequisite",
+                  condition_kind: "course",
+                  minimum_units: null,
+                  position: 1,
+                  subject_code: null,
+                  required_course_code: "COMP1600",
+                  review_state: "automatic",
+                },
+              ],
+            );
+            const structuredReferences = await tx`
+              select referenced_courses.code
+              from public.course_rule_course_references as rule_references
+              join public.course_rules as rules
+                on rules.id = rule_references.course_rule_id
+              join public.course_versions as versions
+                on versions.id = rules.course_version_id
+              join public.courses as courses on courses.id = versions.course_id
+              join public.courses as referenced_courses
+                on referenced_courses.id = rule_references.referenced_course_id
+              where courses.code = ${structuredRuleCourseCode}
+                and rules.rule_kind = 'prerequisite'
+              order by referenced_courses.code
+            `;
+            assert.deepEqual([...structuredReferences], [{ code: "COMP1600" }]);
+
             const second = await importManifest(manifest);
             runIds.push(second.runId);
             assert.deepEqual(second, {
@@ -1333,7 +1496,7 @@ test(
         (error) => error === rollbackSignal,
       );
 
-      assert.equal(runIds.length, 9);
+      assert.equal(runIds.length, 10);
       for (const runId of runIds) {
         const [cleanup] = await sql`
           select

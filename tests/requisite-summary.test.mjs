@@ -23,7 +23,8 @@ async function loadSummaryParser() {
   return import(pathToFileURL(path).href);
 }
 
-const { parseRequisiteSummary } = await loadSummaryParser();
+const { evaluateRequisiteExpression, parseRequisiteSummary } =
+  await loadSummaryParser();
 
 test("summarises COMP3600 subject-unit and alternative-course requisites", () => {
   assert.deepEqual(
@@ -56,5 +57,51 @@ test("does not infer logic from wording outside the supported grammar", () => {
       "Successfully completed COMP1110 or COMP1140 AND 6 units of 1000 level MATH.",
     ),
     null,
+  );
+});
+
+test("evaluates subject units and alternatives from completed courses only", () => {
+  const expression = parseRequisiteSummary(
+    "24 units of COMP coded courses AND (6 units of MATH OR COMP1600)",
+  );
+  assert.ok(expression);
+
+  assert.deepEqual(
+    evaluateRequisiteExpression(expression, [
+      { code: "COMP1100", units: 6 },
+      { code: "COMP1110", units: 6 },
+      { code: "COMP2100", units: 6 },
+      { code: "COMP2300", units: 6 },
+      { code: "MATH1005", units: 6 },
+    ]),
+    {
+      kind: "group",
+      operator: "all_of",
+      satisfied: true,
+      conditions: [
+        {
+          kind: "subject_units",
+          subject: "COMP",
+          requiredUnits: 24,
+          completedUnits: 24,
+          satisfied: true,
+        },
+        {
+          kind: "group",
+          operator: "any_of",
+          satisfied: true,
+          conditions: [
+            {
+              kind: "subject_units",
+              subject: "MATH",
+              requiredUnits: 6,
+              completedUnits: 6,
+              satisfied: true,
+            },
+            { kind: "course", code: "COMP1600", satisfied: false },
+          ],
+        },
+      ],
+    },
   );
 });

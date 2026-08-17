@@ -17,6 +17,10 @@ import {
   type CourseReviewDraftInput,
 } from "@/lib/coursemap/catalogue-publication-actions";
 import type { AdminCourseReviewRecord } from "@/lib/coursemap/admin-catalogue";
+import {
+  parseRequisiteSummary,
+  type RequisiteExpression,
+} from "@/lib/coursemap/requisite-summary";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -87,6 +91,40 @@ function DetailList({
         </div>
       ))}
     </dl>
+  );
+}
+
+function RequisiteRuleMatrix({
+  expression,
+}: {
+  expression: RequisiteExpression;
+}) {
+  if (expression.kind === "course") {
+    return <span>Complete {expression.code}</span>;
+  }
+  if (expression.kind === "subject_units") {
+    return (
+      <span>
+        Complete at least {expression.units} units of {expression.subject}-coded
+        courses
+      </span>
+    );
+  }
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-3">
+      <p className="text-xs font-semibold text-zinc-800">
+        {expression.operator === "all_of"
+          ? "Complete all of the following"
+          : "Complete one of the following"}
+      </p>
+      <ul className="mt-2 space-y-2 border-l border-zinc-200 pl-3 text-xs text-zinc-700">
+        {expression.conditions.map((condition, index) => (
+          <li key={index}>
+            <RequisiteRuleMatrix expression={condition} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -501,27 +539,43 @@ export function CourseReview({
                 description="The original rule wording stays visible as evidence for the review."
               />
               <div className="divide-y divide-zinc-100 border-t border-zinc-100">
-                {record.rules.map((rule) => (
-                  <section key={rule.id} className="px-5 py-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-semibold text-zinc-900 capitalize">
-                          {rule.kind.replaceAll("_", " ")}
-                        </h3>
-                        <Badge tone={reviewTone(rule.reviewState)}>
-                          {reviewLabel(rule.reviewState)}
-                        </Badge>
+                {record.rules.map((rule) => {
+                  const matrix =
+                    rule.kind === "prerequisite"
+                      ? parseRequisiteSummary(rule.sourceText)
+                      : null;
+                  return (
+                    <section key={rule.id} className="px-5 py-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-sm font-semibold text-zinc-900 capitalize">
+                            {rule.kind.replaceAll("_", " ")}
+                          </h3>
+                          <Badge tone={reviewTone(rule.reviewState)}>
+                            {reviewLabel(rule.reviewState)}
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-zinc-500">
+                          {rule.hardness} · {Math.round(rule.confidence * 100)}%
+                          confidence
+                        </span>
                       </div>
-                      <span className="text-xs text-zinc-500">
-                        {rule.hardness} · {Math.round(rule.confidence * 100)}%
-                        confidence
-                      </span>
-                    </div>
-                    <p className="mt-3 rounded-xl bg-zinc-50 px-3 py-3 text-sm leading-6 whitespace-pre-wrap text-zinc-800 ring-1 ring-zinc-100">
-                      {rule.sourceText}
-                    </p>
-                  </section>
-                ))}
+                      <p className="mt-3 rounded-xl bg-zinc-50 px-3 py-3 text-sm leading-6 whitespace-pre-wrap text-zinc-800 ring-1 ring-zinc-100">
+                        {rule.sourceText}
+                      </p>
+                      {matrix ? (
+                        <div className="mt-4">
+                          <h4 className="text-xs font-medium tracking-wide text-zinc-500 uppercase">
+                            Imported condition matrix
+                          </h4>
+                          <div className="mt-2">
+                            <RequisiteRuleMatrix expression={matrix} />
+                          </div>
+                        </div>
+                      ) : null}
+                    </section>
+                  );
+                })}
                 {record.rules.length === 0 && (
                   <p className="px-5 py-10 text-center text-sm text-zinc-500">
                     No requisite or compatibility rules were imported.

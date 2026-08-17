@@ -10,8 +10,9 @@ import {
   type CatalogueManifestSource,
   type CatalogueOfferingSession,
 } from "./manifest.ts";
+import { parseRequisiteSummary } from "../coursemap/requisite-summary.ts";
 
-export const ANU_COURSE_PARSER_VERSION = "anu-programs-courses-course-v1";
+export const ANU_COURSE_PARSER_VERSION = "anu-programs-courses-course-v2";
 
 export const ANU_PROGRAMS_AND_COURSES_SOURCE = {
   name: "ANU Programs and Courses",
@@ -336,7 +337,7 @@ function splitRequisiteText(rawText: string | null) {
   }
 
   const incompatibility =
-    /\b(?:this course is incompatible with|incompatible with|you (?:are )?not able to enrol in this course if you have completed)\b/i;
+    /\b(?:this course is incompatible with|incompatible with|you (?:are )?not able to enrol in this course if you have (?:successfully )?completed)\b/i;
   const match = incompatibility.exec(rawText);
   if (!match || match.index === undefined) {
     return { rawRequisiteText: rawText, rawIncompatibilityText: null };
@@ -382,7 +383,12 @@ function extractRequisites($: CheerioAPI, diagnostics: CatalogueDiagnostic[]) {
     linkedCourseCodes.add(code.toUpperCase());
   }
 
-  if (rawText) {
+  const splitText = splitRequisiteText(rawText);
+  const structuredPrerequisite =
+    splitText.rawRequisiteText !== null &&
+    parseRequisiteSummary(splitText.rawRequisiteText) !== null;
+
+  if (rawText && !structuredPrerequisite) {
     diagnostics.push({
       code: "UNSTRUCTURED_REQUISITE_TEXT",
       severity: "warning",
@@ -396,7 +402,7 @@ function extractRequisites($: CheerioAPI, diagnostics: CatalogueDiagnostic[]) {
   return {
     observed,
     rawText,
-    ...splitRequisiteText(rawText),
+    ...splitText,
     linkedCourseCodes: [...linkedCourseCodes].sort(),
   };
 }

@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import {
   BookOpen,
   CalendarClock,
+  CheckCircle2,
+  Circle,
   CircleHelp,
   ClipboardCheck,
   GitBranch,
@@ -23,8 +25,11 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import {
+  evaluateRequisiteExpression,
+  type CompletedRequisiteCourse,
   type RequisiteCondition,
   type RequisiteExpression,
+  type RequisiteProgress,
   parseRequisiteSummary,
 } from "@/lib/coursemap/requisite-summary";
 
@@ -192,7 +197,101 @@ function RequisiteExpressionSummary({
   );
 }
 
-export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
+function RequisiteProgressSummary({
+  progress,
+  availableCourseCodes,
+}: {
+  progress: RequisiteProgress;
+  availableCourseCodes: ReadonlySet<string>;
+}) {
+  if (progress.kind === "course") {
+    return (
+      <div className="flex items-start gap-2">
+        {progress.satisfied ? (
+          <CheckCircle2
+            aria-label="Completed"
+            className="mt-0.5 shrink-0 text-emerald-600"
+            size={16}
+          />
+        ) : (
+          <Circle
+            aria-label="Not completed"
+            className="mt-0.5 shrink-0 text-amber-700"
+            size={16}
+          />
+        )}
+        <span>
+          Complete{" "}
+          <CourseReferenceText
+            text={progress.code}
+            availableCourseCodes={availableCourseCodes}
+          />
+        </span>
+      </div>
+    );
+  }
+
+  if (progress.kind === "subject_units") {
+    return (
+      <div className="flex items-start gap-2">
+        {progress.satisfied ? (
+          <CheckCircle2
+            aria-label="Completed"
+            className="mt-0.5 shrink-0 text-emerald-600"
+            size={16}
+          />
+        ) : (
+          <Circle
+            aria-label="Not completed"
+            className="mt-0.5 shrink-0 text-amber-700"
+            size={16}
+          />
+        )}
+        <span>
+          {progress.completedUnits} of {progress.requiredUnits}{" "}
+          {progress.subject}
+          -coded units completed
+        </span>
+      </div>
+    );
+  }
+
+  const title =
+    progress.operator === "all_of"
+      ? "Complete all of the following"
+      : "Complete one of the following";
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-zinc-800">{title}</p>
+        <Badge tone={progress.satisfied ? "success" : "warning"}>
+          {progress.satisfied ? "Met" : "Not met"}
+        </Badge>
+      </div>
+      <ul className="mt-3 space-y-2 border-l border-zinc-200 pl-3 text-xs text-zinc-700">
+        {progress.conditions.map((condition, index) => (
+          <li key={index}>
+            <RequisiteProgressSummary
+              progress={condition}
+              availableCourseCodes={availableCourseCodes}
+            />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function CourseDetailClient({
+  course,
+  requisiteCompletion,
+}: {
+  course: CatalogueCourse;
+  requisiteCompletion: {
+    completedCourses: CompletedRequisiteCourse[];
+    isAuthenticated: boolean;
+  };
+}) {
   const { state } = useCoursemap();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<CourseTab>(() =>
@@ -213,7 +312,15 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
       .map((attempt) => attempt.courseCode),
   );
   const availableCourseCodes = new Set(course.availableCourseCodes);
-  const requisiteSummary = parseRequisiteSummary(course.prerequisiteText);
+  const structuredRule = course.prerequisiteRule?.expression ?? null;
+  const requisiteSummary =
+    structuredRule ?? parseRequisiteSummary(course.prerequisiteText);
+  const requisiteProgress = structuredRule
+    ? evaluateRequisiteExpression(
+        structuredRule,
+        requisiteCompletion.completedCourses,
+      )
+    : null;
   const hasPrerequisiteWording =
     course.prerequisiteText.trim().length > 0 &&
     !/^No prerequisites listed\.?$/iu.test(course.prerequisiteText.trim());
@@ -262,11 +369,17 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
 
   const ruleStatus = !hasPrerequisiteWording
     ? "No prerequisite course codes were detected in the imported source."
-    : requisiteSummary
-      ? "Coursemap identified the unit and course conditions shown below. Confirm eligibility with the official ANU source."
-      : course.reviewState === "verified"
-        ? "The source record is verified. Read the ANU wording below for the exact requirement."
-        : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
+    : requisiteProgress && requisiteCompletion.isAuthenticated
+      ? requisiteProgress.satisfied
+        ? "Your recorded completed courses meet this imported prerequisite matrix. Confirm final enrolment eligibility with ANU."
+        : "Your recorded completed courses do not yet meet this imported prerequisite matrix. Planned and enrolled courses are not counted."
+      : structuredRule
+        ? "Sign in and record completed courses in Academic to see whether you meet this prerequisite matrix."
+        : requisiteSummary
+          ? "Coursemap identified the unit and course conditions shown below. Confirm eligibility with the official ANU source."
+          : course.reviewState === "verified"
+            ? "The source record is verified. Read the ANU wording below for the exact requirement."
+            : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
 
   return (
     <AppShell
@@ -402,16 +515,22 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
               </div>
               <Badge
                 tone={
-                  requisiteSummary || course.reviewState === "verified"
+                  structuredRule ||
+                  requisiteSummary ||
+                  course.reviewState === "verified"
                     ? "success"
                     : "warning"
                 }
               >
-                {requisiteSummary
-                  ? "Structured summary"
-                  : course.reviewState === "verified"
-                    ? "Source reviewed"
-                    : "Rule logic unknown"}
+                {structuredRule
+                  ? requisiteCompletion.isAuthenticated
+                    ? "Eligibility checked"
+                    : "Structured rule"
+                  : requisiteSummary
+                    ? "Structured summary"
+                    : course.reviewState === "verified"
+                      ? "Source reviewed"
+                      : "Rule logic unknown"}
               </Badge>
             </div>
             <div className="space-y-5 p-5 text-[13px] leading-relaxed text-zinc-700">
@@ -425,10 +544,25 @@ export function CourseDetailClient({ course }: { course: CatalogueCourse }) {
                   <p className="text-[12px] text-amber-900">{ruleStatus}</p>
                 </div>
               </div>
+              {requisiteProgress && requisiteCompletion.isAuthenticated ? (
+                <div>
+                  <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                    Your completed-course progress
+                  </h3>
+                  <div className="mt-2">
+                    <RequisiteProgressSummary
+                      progress={requisiteProgress}
+                      availableCourseCodes={availableCourseCodes}
+                    />
+                  </div>
+                </div>
+              ) : null}
               {requisiteSummary ? (
                 <div>
                   <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                    Coursemap summary
+                    {structuredRule
+                      ? "Imported requirement matrix"
+                      : "Coursemap summary"}
                   </h3>
                   <div className="mt-2">
                     <RequisiteExpressionSummary

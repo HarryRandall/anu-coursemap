@@ -333,6 +333,26 @@ test("keeps demonstrably current COMP3900 facts and reviewable rule ambiguity", 
   );
 });
 
+test("separates successful-completion incompatibilities from prerequisites", () => {
+  const document = parseFixture(
+    comp3900Html.replace(
+      'Incompatible with\n      <a href="/2026/course/COMP6390">COMP6390</a>.',
+      'You are not able to enrol in this course if you have successfully completed\n      <a href="/2026/course/COMP6390">COMP6390</a>.',
+    ),
+    comp3900Url,
+    "COMP3900",
+  );
+
+  assert.equal(
+    document.course.requisites.rawRequisiteText,
+    "To enrol in this course you must have completed 12 units of 2000 level COMP courses.",
+  );
+  assert.equal(
+    document.course.requisites.rawIncompatibilityText,
+    "You are not able to enrol in this course if you have successfully completed COMP6390.",
+  );
+});
+
 test("retains malformed document provenance without inventing required fields", () => {
   const malformedHtml = comp2100Html
     .replace(/<meta\s+name="course-description"[\s\S]*?\/>/, "")
