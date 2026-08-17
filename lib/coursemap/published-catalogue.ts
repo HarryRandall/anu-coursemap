@@ -2,10 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  courseByCode as demoCourseByCode,
-  courses as demoCourses,
-} from "@/lib/catalogue";
+import type { Course } from "@/lib/coursemap/types";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import type { Database, Json } from "@/types/database";
@@ -85,22 +82,27 @@ function accentFor(code: string): CatalogueCourse["accent"] {
   return accents[sum % accents.length];
 }
 
-function demoPrerequisiteEdges(code: string): CataloguePrerequisiteEdge[] {
+function demoPrerequisiteEdges(
+  code: string,
+  courses: Course[],
+): CataloguePrerequisiteEdge[] {
   const edges = new Map<string, CataloguePrerequisiteEdge>();
   const visited = new Set<string>();
+  const courseByCode = (courseCode: string) =>
+    courses.find((course) => course.code === courseCode);
 
   const addEdge = (from: string, to: string) => {
     edges.set(`${from}:${to}`, {
       from,
       to,
-      fromIsAvailable: Boolean(demoCourseByCode(from)),
-      toIsAvailable: Boolean(demoCourseByCode(to)),
+      fromIsAvailable: Boolean(courseByCode(from)),
+      toIsAvailable: Boolean(courseByCode(to)),
     });
   };
   const visit = (courseCode: string) => {
     if (visited.has(courseCode)) return;
     visited.add(courseCode);
-    const course = demoCourseByCode(courseCode);
+    const course = courseByCode(courseCode);
     if (!course) return;
     for (const prerequisite of course.prerequisiteCodes) {
       addEdge(prerequisite, courseCode);
@@ -109,7 +111,7 @@ function demoPrerequisiteEdges(code: string): CataloguePrerequisiteEdge[] {
   };
 
   visit(code);
-  for (const course of demoCourses) {
+  for (const course of courses) {
     if (course.prerequisiteCodes.includes(code)) addEdge(code, course.code);
   }
   return [...edges.values()].sort(
@@ -118,9 +120,10 @@ function demoPrerequisiteEdges(code: string): CataloguePrerequisiteEdge[] {
   );
 }
 
-function demoCatalogue(): CatalogueCourse[] {
-  return demoCourses.map((course) => {
-    const prerequisiteEdges = demoPrerequisiteEdges(course.code);
+async function demoCatalogue(): Promise<CatalogueCourse[]> {
+  const { courses } = await import("@/lib/catalogue");
+  return courses.map((course) => {
+    const prerequisiteEdges = demoPrerequisiteEdges(course.code, courses);
     const availableCourseCodes = new Set<string>([course.code]);
     for (const edge of prerequisiteEdges) {
       if (edge.fromIsAvailable) availableCourseCodes.add(edge.from);
@@ -495,9 +498,8 @@ export async function loadPublishedCourse(
   const normalisedCode = code.trim().toUpperCase();
   if (!/^[A-Z]{4}\d{4}$/u.test(normalisedCode)) return null;
   if (isDemoMode()) {
-    return (
-      demoCatalogue().find((course) => course.code === normalisedCode) ?? null
-    );
+    const courses = await demoCatalogue();
+    return courses.find((course) => course.code === normalisedCode) ?? null;
   }
 
   return unstable_cache(

@@ -1,15 +1,6 @@
 import "server-only";
 
-import {
-  courses as demoCourses,
-  degrees as demoDegrees,
-  majors as demoMajors,
-  terms as demoTerms,
-  type Course,
-  type Degree,
-  type Major,
-  type Term,
-} from "@/lib/catalogue";
+import type { Course, Degree, Major, Term } from "@/lib/coursemap/types";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import { loadPublishedCourses } from "@/lib/coursemap/published-catalogue";
@@ -88,6 +79,12 @@ export async function loadPublishedPlanCatalogue(
   catalogueYear?: number,
 ): Promise<PlanCatalogue> {
   if (isDemoMode()) {
+    const {
+      courses: demoCourses,
+      degrees: demoDegrees,
+      majors: demoMajors,
+      terms: demoTerms,
+    } = await import("@/lib/catalogue");
     return {
       courses: demoCourses,
       terms: demoTerms,

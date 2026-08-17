@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { courses } from "@/lib/catalogue";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,6 +32,7 @@ async function getImportedCourseCodes(
   year: number,
 ): Promise<ImportedCourseCodes> {
   if (isDemoMode()) {
+    const { courses } = await import("@/lib/catalogue");
     return {
       codes: new Set(
         courses

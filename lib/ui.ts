@@ -1,4 +1,4 @@
-import type { Accent } from "@/lib/catalogue";
+import type { Accent } from "@/lib/coursemap/types";
 import type { EffectiveStatus } from "@/lib/planner";
 
 /**

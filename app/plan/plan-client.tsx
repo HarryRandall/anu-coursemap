@@ -24,7 +24,7 @@ import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/overlay";
-import { type Attempt, type Course, type Term } from "@/lib/catalogue";
+import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
   STANDARD_COURSE_SLOTS,

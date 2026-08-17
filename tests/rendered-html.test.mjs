@@ -289,6 +289,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
     courseDrawer,
     coursePicker,
     providers,
+    publishedCatalogue,
+    planCatalogue,
     catalogue,
     globals,
     appShell,
@@ -327,6 +329,14 @@ test("removes the disposable starter and keeps product metadata", async () => {
       "utf8",
     ),
     readFile(new URL("../app/providers.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../lib/coursemap/published-catalogue.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../lib/coursemap/plan-catalogue.ts", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../lib/catalogue.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(
@@ -408,6 +418,11 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(coursePicker, /In plan/);
   assert.match(providers, /normaliseAttempts/);
   assert.match(providers, /const limit = 1/);
+  assert.doesNotMatch(providers, /from "@\/lib\/catalogue"/);
+  assert.match(layout, /await import\("@\/lib\/catalogue"\)/);
+  assert.match(publishedCatalogue, /await import\("@\/lib\/catalogue"\)/);
+  assert.doesNotMatch(publishedCatalogue, /from "@\/lib\/catalogue"/);
+  assert.match(planCatalogue, /await import\("@\/lib\/catalogue"\)/);
   assert.match(catalogue, /units === 12 \? 2 : 1/);
   assert.match(catalogue, /function prerequisiteChainCodes/);
   assert.match(globals, /scrollbar-gutter: stable/);
@@ -446,4 +461,13 @@ test("removes the disposable starter and keeps product metadata", async () => {
 
   await assert.rejects(access(new URL("app/_sites-preview", projectRoot)));
   await access(new URL("../public/og.png", import.meta.url));
+  for (const path of [
+    "components/admin/relation-graph.tsx",
+    "components/calendar/study-calendar.tsx",
+    "components/charts/student-experience-trend.tsx",
+    "components/dashboard/course-progress-chart.tsx",
+    "lib/student-progress.ts",
+  ]) {
+    await assert.rejects(access(new URL(`../${path}`, import.meta.url)));
+  }
 });
