@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle2, Upload } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Upload } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { publishCourseVersion } from "@/lib/coursemap/catalogue-publication-actions";
@@ -51,9 +52,9 @@ export function AdminCourseList({
               Course versions
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-              Imports are held as drafts until you explicitly make them
-              available to students. Source wording marked for review stays
-              labelled as such.
+              Open a course version to compare every imported field with its
+              source, correct draft details and record the review decision
+              before publishing it for students.
             </p>
           </div>
           <ButtonLink href="/admin/sync/courses" size="sm" variant="secondary">
@@ -88,9 +89,12 @@ export function AdminCourseList({
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-zinc-900">
+                    <Link
+                      href={`/admin/courses/${record.code}`}
+                      className="font-mono text-xs font-bold text-zinc-900 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                    >
                       {record.code}
-                    </span>
+                    </Link>
                     <Badge tone={statusTone(record.publicationStatus)}>
                       {record.publicationStatus === "published"
                         ? "Published"
@@ -100,32 +104,55 @@ export function AdminCourseList({
                       <Badge tone="warning">Source review</Badge>
                     )}
                   </div>
-                  <p className="mt-1 text-sm font-semibold text-zinc-900">
+                  <Link
+                    href={`/admin/courses/${record.code}`}
+                    className="mt-1 block text-sm font-semibold text-zinc-900 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                  >
                     {record.title}
-                  </p>
+                  </Link>
                   <p className="mt-0.5 text-xs text-zinc-500">
                     {record.subject} · {record.units} units · {record.year}{" "}
                     catalogue
                   </p>
                 </div>
                 {record.publicationStatus === "published" ? (
-                  <ButtonLink
-                    href={`/courses/${record.code}`}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    <CheckCircle2 size={15} /> View live course
-                  </ButtonLink>
+                  <div className="flex flex-wrap gap-2">
+                    <ButtonLink
+                      href={`/admin/courses/${record.code}`}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      <ClipboardCheck size={15} /> Review record
+                    </ButtonLink>
+                    <ButtonLink
+                      href={`/courses/${record.code}`}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      <CheckCircle2 size={15} /> View live course
+                    </ButtonLink>
+                  </div>
                 ) : (
-                  <Button
-                    disabled={pendingCode === record.code}
-                    onClick={() => publish(record)}
-                    size="sm"
-                  >
-                    {pendingCode === record.code
-                      ? "Publishing…"
-                      : "Publish for students"}
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <ButtonLink
+                      href={`/admin/courses/${record.code}`}
+                      size="sm"
+                    >
+                      <ClipboardCheck size={15} /> Review draft
+                    </ButtonLink>
+                    {record.reviewState === "verified" && (
+                      <Button
+                        disabled={pendingCode === record.code}
+                        onClick={() => publish(record)}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        {pendingCode === record.code
+                          ? "Publishing…"
+                          : "Publish for students"}
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
