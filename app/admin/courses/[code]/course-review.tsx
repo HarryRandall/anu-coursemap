@@ -217,22 +217,32 @@ export function CourseReview({
               />
               <div>
                 <h2 className="text-sm font-semibold text-amber-950">
-                  What to review before publishing
+                  {isDraft
+                    ? "What to review before publishing"
+                    : "Source review remains open"}
                 </h2>
-                <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-amber-900">
-                  <li>
-                    Open the ANU source and compare the title, units, school,
-                    delivery and description below.
-                  </li>
-                  <li>
-                    Check each offering and requisite wording against that
-                    source, especially any item marked Source review.
-                  </li>
-                  <li>
-                    Correct draft fields if needed, then save with the review
-                    decision set to Verified.
-                  </li>
-                </ol>
+                {isDraft ? (
+                  <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-amber-900">
+                    <li>
+                      Open the ANU source and compare the title, units, school,
+                      delivery and description below.
+                    </li>
+                    <li>
+                      Check each offering and requisite wording against that
+                      source, especially any item marked Source review.
+                    </li>
+                    <li>
+                      Correct draft fields if needed, then save with the review
+                      decision set to Verified.
+                    </li>
+                  </ol>
+                ) : (
+                  <p className="mt-2 text-sm leading-6 text-amber-900">
+                    This version is already visible to students. Its original
+                    imported wording and source record remain available below
+                    for an administrator to assess and follow up.
+                  </p>
+                )}
               </div>
             </div>
           </section>
@@ -243,7 +253,11 @@ export function CourseReview({
             <Card>
               <CardHeader
                 title="Course fields"
-                description="These are the values that will appear in Coursemap when this draft is published."
+                description={
+                  isDraft
+                    ? "These are the values that will appear in Coursemap when this draft is published."
+                    : "These are the values currently available to students in Coursemap."
+                }
                 icon={
                   <FileText
                     aria-hidden="true"
@@ -569,18 +583,38 @@ export function CourseReview({
             <Card>
               <CardHeader
                 title="Review safeguards"
-                description="Draft editing does not overwrite the imported source record."
+                description={
+                  isDraft
+                    ? "Draft editing does not overwrite the imported source record."
+                    : "Published versions are read-only so their student-facing record stays stable."
+                }
               />
               <ul className="space-y-2 border-t border-zinc-100 px-5 py-5 text-sm leading-6 text-zinc-600">
-                <li>Only draft course versions can be edited here.</li>
-                <li>
-                  Save Verified only after comparing the visible fields and rule
-                  wording with ANU.
-                </li>
-                <li>
-                  A newer ANU source should be imported rather than replacing
-                  the evidence text by hand.
-                </li>
+                {isDraft ? (
+                  <>
+                    <li>Only draft course versions can be edited here.</li>
+                    <li>
+                      Save Verified only after comparing the visible fields and
+                      rule wording with ANU.
+                    </li>
+                    <li>
+                      A newer ANU source should be imported rather than
+                      replacing the evidence text by hand.
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li>Published course values cannot be changed in place.</li>
+                    <li>
+                      Compare the visible values and source wording before
+                      recording any correction for the next review cycle.
+                    </li>
+                    <li>
+                      Keep the imported source record intact rather than
+                      replacing its evidence text by hand.
+                    </li>
+                  </>
+                )}
               </ul>
             </Card>
           </aside>
