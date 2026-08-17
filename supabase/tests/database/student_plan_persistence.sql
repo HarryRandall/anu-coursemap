@@ -192,7 +192,7 @@ select extensions.ok(
 );
 
 select extensions.lives_ok(
-  $$select public.set_current_user_plan_extension_years(2)$$,
+  $$select public.set_current_user_plan_extension_years(2::smallint)$$,
   'a plan owner can extend their timeline'
 );
 
