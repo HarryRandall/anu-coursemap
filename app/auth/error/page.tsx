@@ -27,15 +27,15 @@ export default async function AuthErrorPage({
           That sign-in link did not work
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-          The link may have expired or already been used. Request a fresh link
-          and try again.
+          The link may have expired or already been used. Sign in with your
+          email and password to continue.
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <ButtonLink
             href={`/auth/sign-in?next=${encodeURIComponent(next)}`}
             variant="primary"
           >
-            Request another link
+            Back to sign in
           </ButtonLink>
           <ButtonLink href="/courses" variant="secondary">
             Browse courses

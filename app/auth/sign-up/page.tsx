@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AuthShell } from "@/app/auth/auth-shell";
-import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
+import { SignUpForm } from "@/app/auth/sign-up/sign-up-form";
 import { SocialSignIn } from "@/app/auth/social-sign-in";
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 import { getSupabaseConfig } from "@/lib/supabase/config";
@@ -11,7 +11,7 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function SignInPage({
+export default async function SignUpPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
@@ -20,26 +20,19 @@ export default async function SignInPage({
   const next = safeInternalRedirect(first(params.next));
 
   const configured = Boolean(getSupabaseConfig());
-  const signedOut = first(params.signedOut) === "true";
-  const configurationMissing = first(params.reason) === "configuration";
-  const signUpHref = `/auth/sign-up?next=${encodeURIComponent(next)}`;
+  const signInHref = `/auth/sign-in?next=${encodeURIComponent(next)}`;
 
   return (
     <AuthShell>
       <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
-        Welcome back
+        Create your account
       </h1>
       <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-        Sign in to your plan and pick up where you left off.
+        Map your degree, follow prerequisites and keep one plan across every
+        semester. Free for ANU students.
       </p>
 
-      {signedOut && (
-        <p className="mt-5 rounded-lg bg-zinc-50 px-3 py-2.5 text-xs text-zinc-600 ring-1 ring-zinc-200">
-          You have been signed out.
-        </p>
-      )}
-
-      {(!configured || configurationMissing) && (
+      {!configured && (
         <p
           role="alert"
           className="mt-5 rounded-lg bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800 ring-1 ring-amber-200"
@@ -61,15 +54,15 @@ export default async function SignInPage({
         <span className="h-px flex-1 bg-zinc-200" />
       </div>
 
-      <SignInForm next={next} configured={configured} />
+      <SignUpForm next={next} configured={configured} />
 
       <p className="mt-6 text-center text-sm text-zinc-500">
-        New to Coursemap?{" "}
+        Already have an account?{" "}
         <Link
-          href={signUpHref}
+          href={signInHref}
           className="font-semibold text-brand-700 hover:text-brand-800 hover:underline"
         >
-          Create an account
+          Sign in
         </Link>
       </p>
     </AuthShell>

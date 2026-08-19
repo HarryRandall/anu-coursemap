@@ -1,18 +1,7 @@
 import { AppShell } from "@/components/shell";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
-
-function Skeleton({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "block animate-pulse rounded-md bg-zinc-200/70 motion-reduce:animate-none",
-        className,
-      )}
-    />
-  );
-}
 
 function SectionSkeleton({ rows }: { rows: number }) {
   return (
@@ -37,7 +26,7 @@ function SectionSkeleton({ rows }: { rows: number }) {
 
 export default function CourseLoading() {
   return (
-    <AppShell title="Course">
+    <AppShell>
       <div aria-busy="true">
         <span className="sr-only">Loading course</span>
         <Card className="p-5">

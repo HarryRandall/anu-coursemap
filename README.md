@@ -48,7 +48,8 @@ or any Supabase secret key.
 
 Student and admin routes require an account in the configured Supabase project
 when `COURSEMAP_DEMO_MODE=false`. Create an email-and-password account at
-`/auth/sign-in`. Local email confirmations are disabled in
+`/auth/sign-up`. New accounts without a primary plan are routed to
+`/onboarding` before the dashboard. Local email confirmations are disabled in
 `supabase/config.toml` so the account receives a session immediately. Disable
 **Confirm email** under **Authentication > Sign In / Providers > Email** in a
 hosted Supabase project before enabling password-only sign-up there. Exact
@@ -57,7 +58,7 @@ rendered CI tests.
 
 The first catalogue administrator is granted once through the reviewed SQL in
 `supabase/README.md`. That administrator can then manage user role assignments
-at `/admin/users`; effective permissions remain migration-owned and read-only.
+at `/admin/users` and edit database-managed role permissions at `/admin/roles`.
 
 The Sydney hosted development project has the complete migration history,
 Row Level Security policies and the reviewed 2026 BCOMP and SOFT-MAJ structure
@@ -86,14 +87,25 @@ seed. Its Auth redirect configuration accepts the trusted local callback.
 | `npm run verify`           | Run the complete local quality gate            |
 | `npm run build`            | Create the Vercel-compatible production build  |
 
-The catalogue fetcher defaults to 44 Coursemap courses, including every course
-referenced by the authoritative 2026 [Bachelor of Computing](https://programsandcourses.anu.edu.au/2026/program/BCOMP)
+The catalogue fetcher can capture any catalogue year and any scope of courses.
+`--all-courses` discovers every published course for the selected year through
+the official course search endpoint before fetching each course page with
+per-request timeouts and retry backoff. Without `--course` or `--all-courses`
+it defaults to 44 pinned Coursemap courses, including every course referenced
+by the authoritative 2026 [Bachelor of Computing](https://programsandcourses.anu.edu.au/2026/program/BCOMP)
 and [Software Development major](https://programsandcourses.anu.edu.au/2026/major/SOFT-MAJ)
 structures. It never writes to the database. Give it a new path inside the
 ignored local cache, or use `--stdout` for a pipeline:
 
 ```bash
-npm run catalogue:fetch -- --output .catalogue-cache/anu-2026.json
+# Every course published for 2026 (about 2,800 pages)
+npm run catalogue:fetch -- --year 2026 --all-courses --output .catalogue-cache/anu-2026.json
+
+# A specific scope from an earlier catalogue year
+npm run catalogue:fetch -- --year 2024 --course COMP1100 --stdout
+
+# The pinned Coursemap seed scope
+npm run catalogue:fetch -- --output .catalogue-cache/anu-2026-seed.json
 ```
 
 Each manifest retains its official canonical URL, retrieval time, content hash,
@@ -157,15 +169,9 @@ COMP3500's 6+6 sequence and programme exclusions stay explicit in the review
 queue. Both structures remain `draft` and `review` until those exceptions and
 the six other major versions are resolved.
 
-Draft catalogue rows remain hidden by RLS. To test them with an existing local
-Auth account, grant the narrow preview role by email:
-
-```bash
-npm run db:grant-preview -- student@example.com
-```
-
-This command refuses non-loopback database connections. Signed-in students can
-then save their profile, primary programme and major, planned course periods and
+Draft catalogue rows remain hidden by RLS until an authorised reviewer
+publishes them from the admin review workspace. Signed-in students can save
+their profile, primary programme and major, planned course periods and
 recorded results through owner-scoped database RPCs. Reloading the application
 hydrates that state from Supabase rather than browser storage.
 
@@ -198,5 +204,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURIT
 
 Private alpha. The native Next.js foundation, local Supabase authentication,
 owner-scoped student plan persistence and draft ANU catalogue are in place. The
-reserved hosted project remains empty. Verified catalogue publication is the
-next data milestone.
+Sydney hosted development project carries the migration history and reviewed
+structure seed. Verified catalogue publication is the next data milestone.

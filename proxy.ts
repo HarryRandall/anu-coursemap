@@ -13,6 +13,7 @@ import { createRequestClient } from "@/lib/supabase/request";
 const PROTECTED_ROUTE_PREFIXES = [
   "/admin",
   "/dashboard",
+  "/onboarding",
   "/plan",
   "/profile",
   "/requirements",

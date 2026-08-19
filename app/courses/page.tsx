@@ -1,4 +1,6 @@
+import { CircleAlert } from "lucide-react";
 import { AppShell } from "@/components/shell";
+import { ButtonLink } from "@/components/ui/button";
 import { FilterBar } from "@/components/ui/filter-bar";
 import {
   loadPublishedCourseFilterOptions,
@@ -37,6 +39,7 @@ export default async function CoursesPage({
     levels: [],
     sessions: [],
   };
+  let catalogueUnavailable = false;
   try {
     [result, options] = await Promise.all([
       loadPublishedCoursePage({
@@ -51,7 +54,8 @@ export default async function CoursesPage({
       loadPublishedCourseFilterOptions(),
     ]);
   } catch {
-    // Keep this public route usable while the catalogue service recovers.
+    // Show an explicit outage state rather than an empty catalogue.
+    catalogueUnavailable = true;
   }
   const paginationSearchParams = {
     q: firstParam(params.q) || undefined,
@@ -59,6 +63,38 @@ export default async function CoursesPage({
     level: firstParam(params.level) || undefined,
     session: firstParam(params.session) || undefined,
   };
+
+  if (catalogueUnavailable) {
+    const retryQuery = new URLSearchParams();
+    for (const [key, value] of Object.entries(paginationSearchParams)) {
+      if (value) retryQuery.set(key, value);
+    }
+    if (page > 1) retryQuery.set("page", String(page));
+    const retryHref = retryQuery.size
+      ? `/courses?${retryQuery.toString()}`
+      : "/courses";
+    return (
+      <AppShell>
+        <div className="mx-auto flex min-h-64 max-w-xl flex-col items-center justify-center rounded-2xl bg-white p-8 text-center ring-1 ring-zinc-200">
+          <CircleAlert className="text-amber-500" size={28} />
+          <h1 className="mt-4 text-lg font-semibold text-zinc-900">
+            Course catalogue temporarily unavailable
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+            Courses could not be loaded. Please try again shortly.
+          </p>
+          <ButtonLink
+            className="mt-5"
+            href={retryHref}
+            size="sm"
+            variant="secondary"
+          >
+            Try again
+          </ButtonLink>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

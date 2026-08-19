@@ -1,3 +1,4 @@
+import { LandingBento } from "@/components/landing/landing-bento";
 import { LandingCapabilities } from "@/components/landing/landing-capabilities";
 import { LandingFeatureTabs } from "@/components/landing/landing-feature-tabs";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -24,6 +25,7 @@ export default async function Home() {
         <LandingHeader canOpenPlan={canOpenPlan} />
         <LandingHero canOpenPlan={canOpenPlan} />
       </div>
+      <LandingBento />
       <LandingFeatureTabs />
       <LandingCapabilities />
       <LandingFooter canOpenPlan={canOpenPlan} />
