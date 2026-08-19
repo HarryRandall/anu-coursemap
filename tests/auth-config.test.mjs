@@ -190,6 +190,32 @@ test("uses the active local port without trusting non-local request origins", ()
   );
 });
 
+test("uses only the exact trusted Coursemap production alias", () => {
+  withEnvironment(
+    {
+      NEXT_PUBLIC_SITE_URL: "https://coursemap-kappa.vercel.app",
+    },
+    () => {
+      assert.equal(
+        getSiteOriginForRequest(
+          new URL("https://coursemap-kappa.vercel.app/login"),
+          "anucoursemap.vercel.app",
+          "https",
+        ),
+        "https://anucoursemap.vercel.app",
+      );
+      assert.equal(
+        getSiteOriginForRequest(
+          new URL("https://coursemap-kappa.vercel.app/login"),
+          "evil.vercel.app",
+          "https",
+        ),
+        "https://coursemap-kappa.vercel.app",
+      );
+    },
+  );
+});
+
 test("accepts only HTTPS or loopback canonical origins", () => {
   const cases = [
     [undefined, null],
