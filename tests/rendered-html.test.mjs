@@ -157,6 +157,7 @@ test("server-renders the complete student workspace", async () => {
   ].forEach((label) => assert.match(studentNavigation, new RegExp(label, "i")));
   assert.doesNotMatch(studentNavigation, /Overview|Planning|Your study|More/i);
   assert.doesNotMatch(studentNavigation, /Search courses/i);
+  assert.match(dashboardHtml, /aria-label="Find courses"/i);
   assert.match(dashboardHtml, /Set up your plan first/i);
   assert.match(dashboardHtml, /Start onboarding/i);
   assert.doesNotMatch(
@@ -175,6 +176,7 @@ test("server-renders the complete student workspace", async () => {
     calendarHtml,
     /Weekly timetable|Class timetable|Assessments and dates/i,
   );
+  assert.doesNotMatch(calendarHtml, /Do not use this planning view/i);
   assert.match(keyDatesHtml, /Key dates/i);
   assert.match(keyDatesHtml, /No key dates published yet/i);
   assert.doesNotMatch(keyDatesHtml, /Official ANU academic calendar/i);
@@ -184,7 +186,7 @@ test("server-renders the complete student workspace", async () => {
   );
   assert.doesNotMatch(
     requirementsHtml,
-    /Rule group coverage|possible matches/i,
+    /Rule group coverage|possible matches|not an official graduation assessment/i,
   );
   assert.match(roadmapHtml, /Visual degree planning/i);
   assert.match(roadmapHtml, /The current product focus/i);
@@ -337,7 +339,10 @@ test("server-renders admin and course-detail routes", async () => {
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
   assert.doesNotMatch(adminHtml, /Catalogue administration/i);
-  assert.doesNotMatch(adminHtml, /Search courses|Help &amp; support/i);
+  assert.doesNotMatch(
+    adminHtml,
+    /Find courses|Search courses|Help &amp; support/i,
+  );
   assert.doesNotMatch(adminCoursesHtml, /Export CSV|Reparse selected/i);
   assert.doesNotMatch(
     adminCoursesHtml,
@@ -390,6 +395,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     planCatalogue,
     catalogue,
     globals,
+    courseFind,
     appShell,
     sidebar,
     topbar,
@@ -436,6 +442,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     ),
     readFile(new URL("../lib/catalogue.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../components/course-find.tsx", import.meta.url), "utf8"),
     readFile(
       new URL("../components/shell/app-shell.tsx", import.meta.url),
       "utf8",
@@ -524,6 +531,15 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(catalogue, /units === 12 \? 2 : 1/);
   assert.match(catalogue, /function prerequisiteChainCodes/);
   assert.match(globals, /scrollbar-gutter: stable/);
+  assert.match(globals, /find-background-in/);
+  assert.match(globals, /find-content-in/);
+  assert.match(globals, /find-closing-field-out/);
+  assert.match(courseFind, /import \{ Command \} from "cmdk"/);
+  assert.match(courseFind, /shouldFilter=\{false\}/);
+  assert.match(courseFind, /\/api\/courses\/search/);
+  assert.match(courseFind, /aria-label="Find courses"/);
+  assert.match(courseFind, /const defaultOptions/);
+  assert.match(courseFind, /backdrop-blur-\[1px\]/);
   assert.doesNotMatch(appShell, /max-w-\[1440px\]/);
   assert.match(appShell, /min-w-0/);
   assert.match(appShell, /w-full/);

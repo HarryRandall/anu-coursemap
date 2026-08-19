@@ -97,6 +97,57 @@
   }
 }
 
+@keyframes find-background-in {
+  from {
+    border-radius: 0.5rem;
+    transform: scale(var(--find-scale-x), var(--find-scale-y));
+  }
+  to {
+    border-radius: 0.75rem;
+    transform: none;
+  }
+}
+
+@keyframes find-content-in {
+  from {
+    clip-path: inset(
+      0 calc(100% - var(--find-trigger-width))
+        calc(100% - var(--find-trigger-height)) 0 round 0.5rem
+    );
+  }
+  to {
+    clip-path: inset(0 round 0.75rem);
+  }
+}
+
+@keyframes find-surface-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes find-closing-field-out {
+  from {
+    width: 100%;
+  }
+  to {
+    width: var(--find-trigger-width);
+  }
+}
+
+@keyframes find-overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes find-dialog-presence-out {
+  from,
+  to {
+    opacity: 1;
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Base                                                                */
 /* ------------------------------------------------------------------ */
@@ -207,6 +258,57 @@
   font-family: ui-rounded, "SF Pro Rounded", "Avenir Next", var(--font-sans);
   font-weight: 700;
   letter-spacing: -0.04em;
+}
+
+/* Vercel Find: the field grows into a modal without scaling its contents. */
+.find-dialog {
+  transition: height 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: height;
+}
+
+.find-dialog[data-state="closed"] {
+  animation: find-dialog-presence-out 180ms linear;
+}
+
+.find-dialog-background {
+  transform-origin: top left;
+  will-change: transform;
+}
+
+.find-dialog[data-state="open"] .find-dialog-background {
+  animation: find-background-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.find-dialog-content {
+  will-change: clip-path;
+}
+
+.find-dialog[data-state="open"] .find-dialog-content {
+  animation: find-content-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.find-closing-field {
+  display: none;
+  width: 100%;
+}
+
+.find-dialog[data-state="closed"] .find-dialog-background,
+.find-dialog[data-state="closed"] .find-dialog-content {
+  animation: find-surface-out 45ms ease-in both;
+}
+
+.find-dialog[data-state="closed"] .find-closing-field {
+  display: flex;
+  animation: find-closing-field-out 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.find-overlay[data-state="closed"] {
+  animation: find-overlay-out 180ms ease-in both;
+}
+
+.find-command-list {
+  overscroll-behavior: contain;
+  scroll-padding-block: 0.25rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

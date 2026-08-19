@@ -61,10 +61,6 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                   <h2 className="text-sm font-semibold text-zinc-900">
                     Overall unit progress
                   </h2>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    This is a planning view, not an official graduation
-                    assessment.
-                  </p>
                 </div>
                 <strong className="text-2xl tracking-tight text-zinc-950">
                   {progress.percent}%

@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ExternalLink, MapPin } from "lucide-react";
+import { CalendarDays, ExternalLink } from "lucide-react";
 import { useMemo } from "react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
@@ -100,11 +100,6 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
             ))}
           </div>
         )}
-
-        <p className="flex items-center gap-2 text-xs text-zinc-400">
-          <MapPin size={14} /> Do not use this planning view as a live ANU
-          timetable.
-        </p>
       </div>
     </AppShell>
   );

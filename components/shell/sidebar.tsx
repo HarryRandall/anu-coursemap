@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { BrandMark } from "@/components/brand-mark";
+import { CourseFind } from "@/components/course-find";
 
 type NavItem = {
   href: string;
@@ -177,6 +178,12 @@ export function Sidebar({
             <X size={18} />
           </button>
         </div>
+
+        {!admin && (
+          <div className="px-3">
+            <CourseFind onNavigate={onClose} />
+          </div>
+        )}
 
         <nav
           aria-label={admin ? "Admin navigation" : "Student navigation"}
