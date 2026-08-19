@@ -198,7 +198,7 @@ export function Sidebar({
 
         <nav
           aria-label={admin ? "Admin navigation" : "Student navigation"}
-          className="mt-5 min-h-0 flex-1 overflow-y-auto pr-0.5"
+          className="mt-5 min-h-0 flex-1 overflow-y-auto"
         >
           {admin ? (
             <div className="flex flex-col gap-1">
@@ -217,7 +217,10 @@ export function Sidebar({
                 <Fragment key={item.href}>
                   <NavLink item={item} admin={false} onNavigate={onClose} />
                   {item.dividerAfter && (
-                    <div className="my-1.5 border-t border-zinc-200/80" />
+                    <div
+                      aria-hidden="true"
+                      className="-mx-3 my-1.5 border-t border-zinc-200/80"
+                    />
                   )}
                 </Fragment>
               ))}
@@ -226,7 +229,10 @@ export function Sidebar({
 
           {!admin && canAccessAdmin && (
             <>
-              <div className="my-1.5 border-t border-zinc-200/80" />
+              <div
+                aria-hidden="true"
+                className="-mx-3 my-1.5 border-t border-zinc-200/80"
+              />
               <Link
                 href="/admin/dashboard"
                 onClick={onClose}
