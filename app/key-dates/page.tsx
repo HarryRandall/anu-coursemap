@@ -18,14 +18,6 @@ function firstParam(value?: string | string[]) {
   return (Array.isArray(value) ? value[0] : value)?.trim() ?? "";
 }
 
-function validMonth(value: string, year: number | null) {
-  return (
-    /^\d{4}-(0[1-9]|1[0-2])$/.test(value) &&
-    year !== null &&
-    value.startsWith(`${year}-`)
-  );
-}
-
 function EmptyCalendarCard() {
   return (
     <Card className="px-6 py-12 text-center sm:py-16">
@@ -60,7 +52,6 @@ export default async function KeyDatesPage({
 }: {
   searchParams: Promise<{
     year?: string | string[];
-    month?: string | string[];
   }>;
 }) {
   const params = await searchParams;
@@ -85,14 +76,6 @@ export default async function KeyDatesPage({
     day: "2-digit",
   }).format(new Date());
   const allEvents = decorateUniversityCalendarEvents(data.events);
-  const viewingCurrentYear =
-    data.year !== null && String(data.year) === todayIso.slice(0, 4);
-  const defaultMonth = viewingCurrentYear
-    ? todayIso.slice(0, 7)
-    : (allEvents[0]?.date.slice(0, 7) ??
-      `${data.year ?? requestedYear ?? Number(todayIso.slice(0, 4))}-01`);
-  const rawMonth = firstParam(params.month);
-  const focusMonth = validMonth(rawMonth, data.year) ? rawMonth : defaultMonth;
 
   return (
     <AppShell>
@@ -103,9 +86,9 @@ export default async function KeyDatesPage({
           <EmptyCalendarCard />
         ) : (
           <UniversityCalendarView
+            key={data.year}
             allEvents={allEvents}
             availableYears={data.availableYears}
-            focusMonth={focusMonth}
             sourceUrl={ANU_CALENDAR_URL}
             todayIso={todayIso}
             year={data.year}

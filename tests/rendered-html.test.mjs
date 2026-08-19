@@ -226,7 +226,7 @@ test("redirects legacy student routes to their replacements", async () => {
   assert.equal(timetableResponse.headers.get("location"), "/calendar");
 });
 
-test("keeps the key-dates experience calendar-led and data-driven", async () => {
+test("keeps the key-dates experience continuous and data-driven", async () => {
   const [page, calendarView] = await Promise.all([
     readFile(new URL("../app/key-dates/page.tsx", import.meta.url), "utf8"),
     readFile(
@@ -240,10 +240,10 @@ test("keeps the key-dates experience calendar-led and data-driven", async () => 
 
   assert.match(page, /loadPublishedUniversityCalendar/);
   assert.match(page, /decorateUniversityCalendarEvents/);
-  assert.match(calendarView, /University calendar/);
-  assert.match(calendarView, /Dates this month/);
-  assert.match(calendarView, /monthCells/);
-  assert.doesNotMatch(calendarView, /Next up|Breakdown|MonthAgenda/);
+  assert.match(calendarView, /groupUniversityCalendarEventsByMonth/);
+  assert.match(calendarView, /IntersectionObserver/);
+  assert.match(calendarView, /Load more dates/);
+  assert.doesNotMatch(calendarView, /Next up|Breakdown|MonthAgenda|monthCells/);
   assert.doesNotMatch(calendarView, /const events = \[/);
 });
 
