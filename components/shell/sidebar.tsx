@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Fragment } from "react";
 import {
   BookOpen,
   CalendarDays,
@@ -34,16 +35,27 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   badge?: string;
+  dividerAfter?: boolean;
 };
 
 const studentNav: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: House },
   { href: "/plan", label: "Plan", icon: Map },
   { href: "/courses", label: "Courses", icon: BookOpen },
-  { href: "/requirements", label: "Requirements", icon: ListChecks },
+  {
+    href: "/requirements",
+    label: "Requirements",
+    icon: ListChecks,
+    dividerAfter: true,
+  },
   { href: "/academic", label: "Academic", icon: GraduationCap },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/key-dates", label: "Key dates", icon: CalendarRange },
+  {
+    href: "/key-dates",
+    label: "Key dates",
+    icon: CalendarRange,
+    dividerAfter: true,
+  },
   { href: "/roadmap", label: "Roadmap", icon: Route },
   {
     href: "/rooms",
@@ -202,12 +214,12 @@ export function Sidebar({
           ) : (
             <div className="flex flex-col gap-1">
               {studentNav.map((item) => (
-                <NavLink
-                  key={item.href}
-                  item={item}
-                  admin={false}
-                  onNavigate={onClose}
-                />
+                <Fragment key={item.href}>
+                  <NavLink item={item} admin={false} onNavigate={onClose} />
+                  {item.dividerAfter && (
+                    <div className="my-1.5 border-t border-zinc-200/80" />
+                  )}
+                </Fragment>
               ))}
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -20,7 +20,6 @@ export function RoadmapTimeline({
   currentStage,
 }: RoadmapTimelineProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const currentStageRef = useRef<HTMLLIElement>(null);
 
   const scrollByPage = (direction: "back" | "forward") => {
     const viewport = viewportRef.current;
@@ -32,44 +31,13 @@ export function RoadmapTimeline({
     });
   };
 
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    const current = currentStageRef.current;
-    if (!viewport || !current) return;
-
-    const centreCurrentStage = () => {
-      const viewportBounds = viewport.getBoundingClientRect();
-      const currentBounds = current.getBoundingClientRect();
-      viewport.scrollTo({
-        left:
-          currentBounds.left -
-          viewportBounds.left +
-          viewport.scrollLeft +
-          currentBounds.width / 2 -
-          viewportBounds.width / 2,
-        behavior: "instant",
-      });
-    };
-
-    centreCurrentStage();
-    window.addEventListener("resize", centreCurrentStage);
-    return () => window.removeEventListener("resize", centreCurrentStage);
-  }, [currentStage]);
-
   return (
-    <section
-      aria-label="Product direction"
-      className="mx-auto w-full max-w-[1500px]"
-    >
-      <p className="mb-6 px-1 text-[10px] font-semibold tracking-[0.2em] text-brand-500 uppercase sm:px-2">
-        Product direction
-      </p>
-
-      <div className="relative">
+    <section aria-label="Coursemap roadmap" className="h-full w-full">
+      <div className="relative h-full">
         <div
           ref={viewportRef}
           tabIndex={0}
-          aria-label="Coursemap product roadmap"
+          aria-label="Coursemap roadmap timeline"
           onKeyDown={(event) => {
             if (event.key === "ArrowLeft") {
               event.preventDefault();
@@ -80,9 +48,9 @@ export function RoadmapTimeline({
               scrollByPage("forward");
             }
           }}
-          className="overflow-x-auto overscroll-x-contain scroll-smooth pb-5 outline-none"
+          className="h-full overflow-x-auto overscroll-x-contain scroll-smooth pb-5 outline-none"
         >
-          <ol className="relative flex w-max min-w-full px-[calc(50%-10rem)] before:absolute before:top-[23.25rem] before:right-0 before:left-0 before:h-px before:bg-zinc-200">
+          <ol className="relative flex h-full w-max min-w-full px-4 before:absolute before:top-1/2 before:right-0 before:left-0 before:h-px before:bg-zinc-200 sm:px-6">
             {stages.map((stage, index) => {
               const above = index % 2 === 0;
               const done = index < currentStage;
@@ -92,13 +60,12 @@ export function RoadmapTimeline({
               return (
                 <li
                   key={stage.title}
-                  ref={current ? currentStageRef : undefined}
                   aria-current={current ? "step" : undefined}
-                  className="relative z-10 flex w-80 shrink-0 snap-center flex-col"
+                  className="relative z-10 flex h-full w-80 shrink-0 snap-center flex-col"
                 >
                   <article
                     className={cn(
-                      "flex h-[22rem] flex-col border-l-2 px-6",
+                      "flex h-[calc(50%-1.25rem)] flex-col border-l-2 px-6",
                       above ? "order-1 justify-end pb-8" : "order-3 pt-8",
                       current && "border-brand-400",
                       done && "border-brand-200",
@@ -175,7 +142,10 @@ export function RoadmapTimeline({
 
                   <div
                     aria-hidden="true"
-                    className={cn("h-[22rem]", above ? "order-3" : "order-1")}
+                    className={cn(
+                      "h-[calc(50%-1.25rem)]",
+                      above ? "order-3" : "order-1",
+                    )}
                   />
                 </li>
               );
