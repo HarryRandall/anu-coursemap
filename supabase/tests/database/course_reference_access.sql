@@ -15,7 +15,7 @@ select extensions.ok(
 
 select extensions.ok(
   (
-    select array_agg(policies.policyname order by policies.policyname)
+    select array_agg(policies.policyname::text order by policies.policyname)
     from pg_policies as policies
     where policies.schemaname = 'public'
       and policies.tablename = 'course_rule_course_references'
