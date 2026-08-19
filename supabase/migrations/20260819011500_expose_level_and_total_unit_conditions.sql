@@ -6,11 +6,11 @@ returns jsonb
 language sql
 stable
 security invoker
-set search_path = public
+set search_path = ''
 as $function$
   with current_year as (
     select years.id, years.year
-    from catalogue_years as years
+    from public.catalogue_years as years
     where years.status = 'published'
     order by years.year desc
     limit 1
@@ -30,9 +30,9 @@ as $function$
       versions.description,
       versions.review_state,
       versions.source_updated_at
-    from course_versions as versions
+    from public.course_versions as versions
     join current_year as years on years.id = versions.catalogue_year_id
-    join courses on courses.id = versions.course_id
+    join public.courses on courses.id = versions.course_id
     where versions.publication_status = 'published'
       and courses.code = upper(btrim(p_course_code))
     limit 1
@@ -49,8 +49,8 @@ as $function$
     'delivery', coalesce(
       (
         select coalesce(sessions.delivery_mode, offerings.delivery_mode)
-        from course_offerings as offerings
-        left join offering_sessions as sessions
+        from public.course_offerings as offerings
+        left join public.offering_sessions as sessions
           on sessions.course_offering_id = offerings.id
         where offerings.course_version_id = target.course_version_id
           and offerings.status = 'published'
@@ -66,10 +66,11 @@ as $function$
         select jsonb_agg(periods.name order by periods.name)
         from (
           select distinct periods.name
-          from course_offerings as offerings
-          join offering_sessions as sessions
+          from public.course_offerings as offerings
+          join public.offering_sessions as sessions
             on sessions.course_offering_id = offerings.id
-          join academic_periods as periods on periods.id = sessions.academic_period_id
+          join public.academic_periods as periods
+            on periods.id = sessions.academic_period_id
           where offerings.course_version_id = target.course_version_id
             and offerings.status = 'published'
         ) as periods
@@ -79,7 +80,7 @@ as $function$
     'prerequisite_text', coalesce(
       (
         select string_agg(rules.source_text, E'\n\n' order by rules.id)
-        from course_rules as rules
+        from public.course_rules as rules
         where rules.course_version_id = target.course_version_id
           and rules.rule_kind = 'prerequisite'
       ),
@@ -101,7 +102,7 @@ as $function$
               )
               order by groups.parent_group_id nulls first, groups.position, groups.id
             )
-            from course_rule_groups as groups
+            from public.course_rule_groups as groups
             where groups.course_rule_id = rules.id
           ),
           '[]'::jsonb
@@ -121,15 +122,15 @@ as $function$
               )
               order by conditions.group_id, conditions.position, conditions.id
             )
-            from course_rule_conditions as conditions
-            left join courses as required_courses
+            from public.course_rule_conditions as conditions
+            left join public.courses as required_courses
               on required_courses.id = conditions.required_course_id
             where conditions.course_rule_id = rules.id
           ),
           '[]'::jsonb
         )
       )
-      from course_rules as rules
+      from public.course_rules as rules
       where rules.course_version_id = target.course_version_id
         and rules.rule_kind = 'prerequisite'
       limit 1
@@ -139,18 +140,18 @@ as $function$
         select jsonb_agg(prerequisite_references.code order by prerequisite_references.code)
         from (
           select courses.code
-          from course_rule_course_references as rule_references
-          join courses on courses.id = rule_references.referenced_course_id
-          join course_rules as rules on rules.id = rule_references.course_rule_id
+          from public.course_rule_course_references as rule_references
+          join public.courses on courses.id = rule_references.referenced_course_id
+          join public.course_rules as rules on rules.id = rule_references.course_rule_id
           where rules.course_version_id = target.course_version_id
             and rules.rule_kind = 'prerequisite'
 
           union
 
           select courses.code
-          from course_rule_conditions as conditions
-          join courses on courses.id = conditions.required_course_id
-          join course_rules as rules on rules.id = conditions.course_rule_id
+          from public.course_rule_conditions as conditions
+          join public.courses on courses.id = conditions.required_course_id
+          join public.course_rules as rules on rules.id = conditions.course_rule_id
           where rules.course_version_id = target.course_version_id
             and rules.rule_kind = 'prerequisite'
             and conditions.condition_kind = 'course'
@@ -169,14 +170,14 @@ as $function$
           )
           order by graph.from_code, graph.to_code
         )
-        from published_course_requisite_graph(target.code) as graph
+        from public.published_course_requisite_graph(target.code) as graph
       ),
       '[]'::jsonb
     ),
     'incompatibility_text', coalesce(
       (
         select string_agg(rules.source_text, E'\n\n' order by rules.id)
-        from course_rules as rules
+        from public.course_rules as rules
         where rules.course_version_id = target.course_version_id
           and rules.rule_kind = 'incompatibility'
       ),
