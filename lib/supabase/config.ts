@@ -12,6 +12,8 @@ export class SupabaseConfigurationError extends Error {
   }
 }
 
+const TRUSTED_SITE_ALIASES = new Set(["https://anucoursemap.vercel.app"]);
+
 export function isDemoMode() {
   if (process.env.COURSEMAP_DEMO_MODE !== "true" || process.env.VERCEL) {
     return false;
@@ -72,36 +74,56 @@ function isLocalHostname(hostname: string) {
 export function getSiteOriginForRequest(
   requestUrl: URL,
   requestHost?: string | null,
+  requestProtocol?: string | null,
 ) {
   const canonicalOrigin = getCanonicalSiteOrigin();
   if (!canonicalOrigin) return null;
 
   const canonicalUrl = new URL(canonicalOrigin);
+  let requestedUrl: URL | null = null;
+
+  if (requestHost && !requestHost.includes(",")) {
+    const forwardedProtocol = requestProtocol?.split(",")[0].trim();
+    const protocol = forwardedProtocol || requestUrl.protocol;
+    if (["http", "http:", "https", "https:"].includes(protocol)) {
+      try {
+        const normalisedProtocol = protocol.endsWith(":")
+          ? protocol
+          : `${protocol}:`;
+        const candidate = new URL(`${normalisedProtocol}//${requestHost}`);
+        if (
+          !candidate.username &&
+          !candidate.password &&
+          candidate.pathname === "/" &&
+          !candidate.search &&
+          !candidate.hash
+        ) {
+          requestedUrl = candidate;
+        }
+      } catch {
+        // Fall back to the validated request URL or canonical origin.
+      }
+    }
+  }
+
+  if (requestedUrl && TRUSTED_SITE_ALIASES.has(requestedUrl.origin)) {
+    return requestedUrl.origin;
+  }
+
   const localCanonical =
     canonicalUrl.protocol === "http:" && isLocalHostname(canonicalUrl.hostname);
-  if (!localCanonical) return canonicalOrigin;
-
-  if (requestHost) {
-    try {
-      const hostUrl = new URL(`http://${requestHost}`);
-      if (
-        !hostUrl.username &&
-        !hostUrl.password &&
-        hostUrl.pathname === "/" &&
-        !hostUrl.search &&
-        !hostUrl.hash &&
-        isLocalHostname(hostUrl.hostname)
-      ) {
-        return hostUrl.origin;
-      }
-    } catch {
-      // Fall back to the validated request URL or canonical origin.
-    }
+  if (
+    requestedUrl &&
+    localCanonical &&
+    requestedUrl.protocol === "http:" &&
+    isLocalHostname(requestedUrl.hostname)
+  ) {
+    return requestedUrl.origin;
   }
 
   const localRequest =
     requestUrl.protocol === "http:" && isLocalHostname(requestUrl.hostname);
-  return localRequest ? requestUrl.origin : canonicalOrigin;
+  return localCanonical && localRequest ? requestUrl.origin : canonicalOrigin;
 }
 
 export function getSupabaseCookieOptions() {

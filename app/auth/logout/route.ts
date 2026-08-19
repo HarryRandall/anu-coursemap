@@ -8,7 +8,8 @@ import { createRequestClient } from "@/lib/supabase/request";
 export async function POST(request: NextRequest) {
   const siteOrigin = getSiteOriginForRequest(
     request.nextUrl,
-    request.headers.get("host"),
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
+    request.headers.get("x-forwarded-proto"),
   );
   if (!siteOrigin || !getSupabaseConfig()) {
     return new NextResponse("Coursemap authentication is not configured.", {

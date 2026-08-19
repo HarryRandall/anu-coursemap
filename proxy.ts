@@ -45,7 +45,8 @@ function isProtectedRoute(pathname: string) {
 function signInRedirect(request: NextRequest, reason?: string) {
   const siteOrigin = getSiteOriginForRequest(
     request.nextUrl,
-    request.headers.get("host"),
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
+    request.headers.get("x-forwarded-proto"),
   );
   if (!siteOrigin) {
     return new NextResponse("Coursemap authentication is not configured.", {
