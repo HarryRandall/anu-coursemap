@@ -5,11 +5,13 @@ import { cn } from "@/lib/cn";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
 import { SearchDialog } from "@/components/search-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 
 export type AppShellProps = {
   children: ReactNode;
-  /** Kept for page-level context; navigation now uses breadcrumbs. */
+  /** Page heading rendered above the content. */
   title?: string;
+  /** Muted line rendered under the title. */
   subtitle?: string;
   actions?: ReactNode;
   /** Section tab links rendered in a full-width bar below the breadcrumbs. */
@@ -21,6 +23,8 @@ export type AppShellProps = {
 
 export function AppShell({
   children,
+  title,
+  subtitle,
   actions,
   tabs,
   admin = false,
@@ -65,6 +69,9 @@ export function AppShell({
             !fullBleed && "px-4 py-6 sm:px-6 sm:py-7",
           )}
         >
+          {title && (
+            <PageHeader title={title} meta={subtitle} className="mb-5" />
+          )}
           {children}
         </main>
       </div>

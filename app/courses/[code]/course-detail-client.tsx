@@ -382,11 +382,7 @@ export function CourseDetailClient({
             : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
 
   return (
-    <AppShell
-      title={course.code}
-      subtitle={`${course.year} course version`}
-      tabs={tabLinks}
-    >
+    <AppShell tabs={tabLinks}>
       <div className="mx-auto max-w-6xl">
         <header className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
           <div className="min-w-0">

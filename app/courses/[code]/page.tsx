@@ -30,7 +30,7 @@ export default async function CoursePage({
 
   if (unavailable) {
     return (
-      <AppShell title={code.trim().toUpperCase()}>
+      <AppShell>
         <div className="mx-auto max-w-2xl py-16 text-center">
           <h1 className="text-xl font-semibold text-zinc-900">
             Course catalogue temporarily unavailable

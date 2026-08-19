@@ -38,7 +38,7 @@ const plannedDetails = [
 
 export default function RoomsPage() {
   return (
-    <AppShell title="Room finder" subtitle="Campus spaces and directions">
+    <AppShell>
       <div className="mx-auto max-w-5xl">
         <Card className="overflow-hidden">
           <div className="bg-zinc-900 px-6 py-10 text-center text-white sm:px-10 sm:py-14">
