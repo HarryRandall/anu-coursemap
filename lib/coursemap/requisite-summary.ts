@@ -7,6 +7,16 @@ export type RequisiteCondition =
       kind: "subject_units";
       subject: string;
       units: number;
+    }
+  | {
+      kind: "level_units";
+      units: number;
+      level: number;
+      subject?: string;
+    }
+  | {
+      kind: "units_total";
+      units: number;
     };
 
 export type RequisiteExpression =
@@ -36,6 +46,20 @@ export type RequisiteProgress =
       subject: string;
     }
   | {
+      completedUnits: number;
+      kind: "level_units";
+      level: number;
+      requiredUnits: number;
+      satisfied: boolean;
+      subject?: string;
+    }
+  | {
+      completedUnits: number;
+      kind: "units_total";
+      requiredUnits: number;
+      satisfied: boolean;
+    }
+  | {
       conditions: RequisiteProgress[];
       kind: "group";
       operator: "all_of" | "any_of";
@@ -43,11 +67,38 @@ export type RequisiteProgress =
     };
 
 type RequisiteToken =
-  | { kind: "and" | "left_parenthesis" | "or" | "right_parenthesis" }
+  | {
+      kind:
+        | "and"
+        | "clause_and"
+        | "comma"
+        | "left_parenthesis"
+        | "or"
+        | "right_parenthesis";
+    }
   | { kind: "condition"; condition: RequisiteCondition };
+
+const COURSE_LEVEL_PATTERN = /^[A-Z]{4}(\d)\d{3}$/u;
 
 function normaliseSourceText(value: string) {
   return value.replace(/\s+/gu, " ").trim();
+}
+
+/**
+ * Official enrolment preambles carry no rule content, so they are removed
+ * before tokenising. Anything else left unrecognised still refuses to parse.
+ */
+function stripPreamble(value: string) {
+  return value
+    .replace(
+      /^to enrol in (?:this|the) course,? (?:you|students) must have (?:successfully )?completed:?\s*(?:the following:?\s*)?/iu,
+      "",
+    )
+    .replace(
+      /^to enrol in [A-Z]{4}\d{4},? (?:you|students) must have (?:successfully )?completed:?\s*/iu,
+      "",
+    )
+    .replace(/^either\s+/iu, "");
 }
 
 function tokenise(sourceText: string): RequisiteToken[] | null {
@@ -69,6 +120,18 @@ function tokenise(sourceText: string): RequisiteToken[] | null {
       remainder = remainder.slice(1);
       continue;
     }
+    if (punctuation === ",") {
+      tokens.push({ kind: "comma" });
+      remainder = remainder.slice(1);
+      continue;
+    }
+
+    const clauseConjunction = /^as well as\b/iu.exec(remainder)?.[0];
+    if (clauseConjunction) {
+      tokens.push({ kind: "clause_and" });
+      remainder = remainder.slice(clauseConjunction.length);
+      continue;
+    }
 
     const conjunction = /^(AND|OR)\b/iu.exec(remainder)?.[1];
     if (conjunction) {
@@ -77,8 +140,39 @@ function tokenise(sourceText: string): RequisiteToken[] | null {
       continue;
     }
 
+    const levelUnits =
+      /^(?:at least\s+)?(\d+(?:\.\d+)?)\s+units?\s+of\s+(\d)000[-\s]level(?:\s+([A-Z]{4}))?(?:[-\s]coded)?(?:\s+courses?)?\b/iu.exec(
+        remainder,
+      );
+    if (levelUnits) {
+      tokens.push({
+        kind: "condition",
+        condition: {
+          kind: "level_units",
+          units: Number(levelUnits[1]),
+          level: Number(levelUnits[2]) * 1000,
+          ...(levelUnits[3] ? { subject: levelUnits[3].toUpperCase() } : {}),
+        },
+      });
+      remainder = remainder.slice(levelUnits[0].length);
+      continue;
+    }
+
+    const totalUnits =
+      /^(?:at least\s+)?(\d+(?:\.\d+)?)\s+units?\s+of\s+(?:prior\s+)?(?:tertiary|university)\s+study\b/iu.exec(
+        remainder,
+      );
+    if (totalUnits) {
+      tokens.push({
+        kind: "condition",
+        condition: { kind: "units_total", units: Number(totalUnits[1]) },
+      });
+      remainder = remainder.slice(totalUnits[0].length);
+      continue;
+    }
+
     const subjectUnits =
-      /^(\d+(?:\.\d+)?)\s+units?\s+of\s+([A-Z]{4})(?:\s+coded)?(?:\s+courses?)?\b/iu.exec(
+      /^(?:at least\s+)?(\d+(?:\.\d+)?)\s+units?\s+of\s+([A-Z]{4})(?:[-\s]coded)?(?:\s+courses?)?\b/iu.exec(
         remainder,
       );
     if (subjectUnits) {
@@ -110,6 +204,75 @@ function tokenise(sourceText: string): RequisiteToken[] | null {
   return tokens.length > 0 ? tokens : null;
 }
 
+/**
+ * Resolves commas without guessing. A comma directly before a conjunction is
+ * an Oxford comma; ", as well as" separates whole clauses; and a plain list
+ * comma adopts the run's terminating conjunction only when nothing but plain
+ * conditions sit between them. Any other comma refuses to parse.
+ */
+function resolveCommas(tokens: RequisiteToken[]): RequisiteToken[] | null {
+  const resolved: RequisiteToken[] = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token.kind !== "comma") {
+      resolved.push(token);
+      continue;
+    }
+
+    const next = tokens[index + 1];
+    if (
+      next?.kind === "and" ||
+      next?.kind === "or" ||
+      next?.kind === "clause_and"
+    ) {
+      continue;
+    }
+
+    let terminator: "and" | "clause_and" | "or" | null = null;
+    for (let ahead = index + 1; ahead < tokens.length; ahead += 1) {
+      const candidate = tokens[ahead].kind;
+      if (candidate === "condition" || candidate === "comma") continue;
+      if (
+        candidate === "and" ||
+        candidate === "or" ||
+        candidate === "clause_and"
+      ) {
+        terminator = candidate;
+      }
+      break;
+    }
+    if (!terminator) return null;
+    resolved.push({ kind: terminator });
+  }
+
+  return resolved;
+}
+
+/**
+ * Official wording like "COMP1110 or COMP1140 AND 6 units of MATH" is
+ * ambiguous without parentheses, so a clause mixing bare and/or at one
+ * depth refuses to parse instead of guessing an operator precedence.
+ */
+function hasUnambiguousConjunctions(tokens: RequisiteToken[]) {
+  const frames: Array<Set<"and" | "or">> = [new Set()];
+  for (const token of tokens) {
+    if (token.kind === "left_parenthesis") {
+      frames.push(new Set());
+    } else if (token.kind === "right_parenthesis") {
+      if (frames.length === 1) return false;
+      frames.pop();
+    } else if (token.kind === "clause_and") {
+      frames[frames.length - 1] = new Set();
+    } else if (token.kind === "and" || token.kind === "or") {
+      const frame = frames[frames.length - 1];
+      frame.add(token.kind);
+      if (frame.size > 1) return false;
+    }
+  }
+  return true;
+}
+
 function group(
   operator: "all_of" | "any_of",
   left: RequisiteExpression,
@@ -126,22 +289,22 @@ function group(
 }
 
 /**
- * Parses only complete, unambiguous combinations of course codes and subject
- * unit conditions. Anything broader stays as official wording rather than
- * becoming an inferred eligibility rule.
+ * Parses only complete, unambiguous combinations of course codes and unit
+ * conditions. Anything broader stays as official wording rather than
+ * becoming an inferred eligibility rule. Inline AND binds tighter than OR;
+ * clause separators such as ", as well as" bind loosest, matching how the
+ * official wording groups whole requirements.
  */
 export function parseRequisiteSummary(
   sourceText: string,
 ): RequisiteExpression | null {
   const normalised = normaliseSourceText(sourceText);
-  const expression = normalised
-    .replace(
-      /^to enrol in this course you must have completed the following:\s*/iu,
-      "",
-    )
-    .replace(/[.]$/u, "");
-  const tokens = tokenise(expression);
-  if (!tokens) return null;
+  const expression = stripPreamble(normalised).replace(/[.]$/u, "");
+  const rawTokens = tokenise(expression);
+  if (!rawTokens) return null;
+  const tokens = resolveCommas(rawTokens);
+  if (!tokens || tokens.length === 0) return null;
+  if (!hasUnambiguousConjunctions(tokens)) return null;
 
   let position = 0;
   const current = () => tokens[position];
@@ -152,7 +315,7 @@ export function parseRequisiteSummary(
     if (!token) return null;
     if (token.kind === "condition") return token.condition;
     if (token.kind !== "left_parenthesis") return null;
-    const nested = parseOr();
+    const nested = parseClause();
     if (current()?.kind !== "right_parenthesis") return null;
     take();
     return nested;
@@ -180,8 +343,24 @@ export function parseRequisiteSummary(
     return left;
   };
 
-  const parsed = parseOr();
+  const parseClause = (): RequisiteExpression | null => {
+    let left = parseOr();
+    while (left && current()?.kind === "clause_and") {
+      take();
+      const right = parseOr();
+      if (!right) return null;
+      left = group("all_of", left, right);
+    }
+    return left;
+  };
+
+  const parsed = parseClause();
   return parsed && position === tokens.length ? parsed : null;
+}
+
+function courseLevel(code: string) {
+  const digit = COURSE_LEVEL_PATTERN.exec(code.toUpperCase())?.[1];
+  return digit === undefined ? null : Number(digit) * 1000;
 }
 
 /**
@@ -212,6 +391,44 @@ export function evaluateRequisiteExpression(
     return {
       kind: "subject_units",
       subject: expression.subject,
+      requiredUnits: expression.units,
+      completedUnits,
+      satisfied: completedUnits >= expression.units,
+    };
+  }
+
+  if (expression.kind === "level_units") {
+    const completedUnits = completedCourses.reduce((total, course) => {
+      const subject = course.code.slice(0, 4).toUpperCase();
+      const level = courseLevel(course.code);
+      const subjectMatches =
+        expression.subject === undefined || subject === expression.subject;
+      return subjectMatches &&
+        level === expression.level &&
+        Number.isFinite(course.units)
+        ? total + course.units
+        : total;
+    }, 0);
+    return {
+      kind: "level_units",
+      level: expression.level,
+      ...(expression.subject !== undefined
+        ? { subject: expression.subject }
+        : {}),
+      requiredUnits: expression.units,
+      completedUnits,
+      satisfied: completedUnits >= expression.units,
+    };
+  }
+
+  if (expression.kind === "units_total") {
+    const completedUnits = completedCourses.reduce(
+      (total, course) =>
+        Number.isFinite(course.units) ? total + course.units : total,
+      0,
+    );
+    return {
+      kind: "units_total",
       requiredUnits: expression.units,
       completedUnits,
       satisfied: completedUnits >= expression.units,

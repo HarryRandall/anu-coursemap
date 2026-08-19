@@ -309,7 +309,7 @@ test("ignores descriptive rows in an ANU offering table", () => {
   );
 });
 
-test("keeps demonstrably current COMP3900 facts and reviewable rule ambiguity", () => {
+test("keeps demonstrably current COMP3900 facts and structures its unit rule", () => {
   const document = parseFixture(comp3900Html, comp3900Url, "COMP3900");
 
   assert.equal(document.course.title, "Human-Computer Interaction");
@@ -325,11 +325,10 @@ test("keeps demonstrably current COMP3900 facts and reviewable rule ambiguity", 
   assert.deepEqual(document.course.requisites.linkedCourseCodes, ["COMP6390"]);
   assert.equal(document.offering?.sessions[0].classNumber, "8692");
   assert.ok(
-    document.diagnostics.some(
-      (diagnostic) =>
-        diagnostic.code === "UNSTRUCTURED_REQUISITE_TEXT" &&
-        diagnostic.sourceFragment?.includes("12 units of 2000 level COMP"),
+    !document.diagnostics.some(
+      (diagnostic) => diagnostic.code === "UNSTRUCTURED_REQUISITE_TEXT",
     ),
+    "the level-gated unit rule now parses structurally",
   );
 });
 

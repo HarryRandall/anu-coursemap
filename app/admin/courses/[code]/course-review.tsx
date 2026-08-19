@@ -110,6 +110,17 @@ function RequisiteRuleMatrix({
       </span>
     );
   }
+  if (expression.kind === "level_units") {
+    return (
+      <span>
+        Complete at least {expression.units} units of {expression.level}-level
+        {expression.subject ? ` ${expression.subject}` : ""} courses
+      </span>
+    );
+  }
+  if (expression.kind === "units_total") {
+    return <span>Complete at least {expression.units} units of study</span>;
+  }
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-3">
       <p className="text-xs font-semibold text-zinc-800">

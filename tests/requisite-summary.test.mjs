@@ -60,6 +60,145 @@ test("does not infer logic from wording outside the supported grammar", () => {
   );
 });
 
+test("strips enrolment preambles before parsing the rule content", () => {
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course you must have completed CHEM1201.",
+    ),
+    { kind: "course", code: "CHEM1201" },
+  );
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course students must have completed 24 units of ARAB coded courses.",
+    ),
+    { kind: "subject_units", subject: "ARAB", units: 24 },
+  );
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in AATD2001, students must have completed at least 24 units of tertiary study.",
+    ),
+    { kind: "units_total", units: 24 },
+  );
+});
+
+test("parses level-gated unit rules with and without a subject", () => {
+  assert.deepEqual(
+    parseRequisiteSummary("12 units of 6000-level COMP courses"),
+    {
+      kind: "level_units",
+      units: 12,
+      level: 6000,
+      subject: "COMP",
+    },
+  );
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course you must have completed 12 units of 1000 level courses",
+    ),
+    { kind: "level_units", units: 12, level: 1000 },
+  );
+});
+
+test("treats clause separators as the loosest binding operator", () => {
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course you must have completed EMSC2021, as well as MATH1003 or MATH1013 or MATH1115.",
+    ),
+    {
+      kind: "group",
+      operator: "all_of",
+      conditions: [
+        { kind: "course", code: "EMSC2021" },
+        {
+          kind: "group",
+          operator: "any_of",
+          conditions: [
+            { kind: "course", code: "MATH1003" },
+            { kind: "course", code: "MATH1013" },
+            { kind: "course", code: "MATH1115" },
+          ],
+        },
+      ],
+    },
+  );
+});
+
+test("resolves list commas from their terminating conjunction only", () => {
+  assert.deepEqual(parseRequisiteSummary("COMP1100, COMP1110 and COMP2100"), {
+    kind: "group",
+    operator: "all_of",
+    conditions: [
+      { kind: "course", code: "COMP1100" },
+      { kind: "course", code: "COMP1110" },
+      { kind: "course", code: "COMP2100" },
+    ],
+  });
+  assert.deepEqual(parseRequisiteSummary("COMP1100, COMP1110, or COMP1730"), {
+    kind: "group",
+    operator: "any_of",
+    conditions: [
+      { kind: "course", code: "COMP1100" },
+      { kind: "course", code: "COMP1110" },
+      { kind: "course", code: "COMP1730" },
+    ],
+  });
+  assert.equal(parseRequisiteSummary("COMP1100, COMP1110"), null);
+});
+
+test("refuses clauses that mix bare and/or without parentheses", () => {
+  assert.equal(
+    parseRequisiteSummary(
+      "To enrol in this course you must have successfully completed: COMP1110 or COMP1140 AND 6 units of 1000 level MATH.",
+    ),
+    null,
+  );
+  assert.ok(
+    parseRequisiteSummary(
+      "(COMP1110 or COMP1140) AND 6 units of 1000 level MATH",
+    ),
+  );
+});
+
+test("evaluates level and total unit progress from completed courses", () => {
+  const levelExpression = parseRequisiteSummary(
+    "12 units of 2000 level COMP courses",
+  );
+  assert.ok(levelExpression);
+  assert.deepEqual(
+    evaluateRequisiteExpression(levelExpression, [
+      { code: "COMP2100", units: 6 },
+      { code: "COMP2300", units: 6 },
+      { code: "COMP1100", units: 6 },
+      { code: "MATH2222", units: 6 },
+    ]),
+    {
+      kind: "level_units",
+      level: 2000,
+      subject: "COMP",
+      requiredUnits: 12,
+      completedUnits: 12,
+      satisfied: true,
+    },
+  );
+
+  const totalExpression = parseRequisiteSummary(
+    "at least 24 units of tertiary study",
+  );
+  assert.ok(totalExpression);
+  assert.deepEqual(
+    evaluateRequisiteExpression(totalExpression, [
+      { code: "COMP1100", units: 6 },
+      { code: "MATH1005", units: 6 },
+    ]),
+    {
+      kind: "units_total",
+      requiredUnits: 24,
+      completedUnits: 12,
+      satisfied: false,
+    },
+  );
+});
+
 test("evaluates subject units and alternatives from completed courses only", () => {
   const expression = parseRequisiteSummary(
     "24 units of COMP coded courses AND (6 units of MATH OR COMP1600)",

@@ -800,6 +800,13 @@ function expressionSourceText(expression) {
   if (expression.kind === "subject_units") {
     return `${expression.units} units of ${expression.subject} coded courses`;
   }
+  if (expression.kind === "level_units") {
+    const subject = expression.subject ? ` ${expression.subject}` : "";
+    return `${expression.units} units of ${expression.level} level${subject} courses`;
+  }
+  if (expression.kind === "units_total") {
+    return `${expression.units} units of tertiary study`;
+  }
   return expression.conditions.map(expressionSourceText).join(" ");
 }
 
@@ -874,6 +881,16 @@ async function insertStructuredRuleTree(tx, courseRuleId, expression) {
       return;
     }
 
+    const unitCondition =
+      value.kind === "subject_units"
+        ? { subject: value.subject, minimumLevel: null, maximumLevel: null }
+        : value.kind === "level_units"
+          ? {
+              subject: value.subject ?? null,
+              minimumLevel: value.level,
+              maximumLevel: value.level + 999,
+            }
+          : { subject: null, minimumLevel: null, maximumLevel: null };
     await tx`
       insert into public.course_rule_conditions (
         course_rule_id,
@@ -881,6 +898,8 @@ async function insertStructuredRuleTree(tx, courseRuleId, expression) {
         condition_kind,
         minimum_units,
         subject_code,
+        minimum_course_level,
+        maximum_course_level,
         source_text,
         confidence,
         review_state,
@@ -889,9 +908,11 @@ async function insertStructuredRuleTree(tx, courseRuleId, expression) {
       values (
         ${courseRuleId},
         ${parentGroupId},
-        'subject_units',
+        ${value.kind},
         ${value.units},
-        ${value.subject},
+        ${unitCondition.subject},
+        ${unitCondition.minimumLevel},
+        ${unitCondition.maximumLevel},
         ${expressionSourceText(value)},
         1,
         'automatic',
