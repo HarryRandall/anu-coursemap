@@ -23,7 +23,7 @@
     "lint": "eslint . --ignore-pattern .next",
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run test:unit && npm run test:build:demo && npm run test:rendered && npm run test:build:auth && npm run test:auth-access",
-    "test:unit": "node --test tests/auth-redirect.test.mjs tests/auth-config.test.mjs tests/catalogue-fetch-cli.test.mjs tests/catalogue-import-cli.test.mjs tests/catalogue-import-local-database.test.mjs tests/catalogue-import-parser.test.mjs tests/dashboard-series.test.mjs tests/plan-timeline.test.mjs tests/planner.test.mjs tests/requisite-summary.test.mjs",
+    "test:unit": "node --test tests/auth-redirect.test.mjs tests/auth-config.test.mjs tests/catalogue-directory.test.mjs tests/catalogue-fetch-cli.test.mjs tests/catalogue-import-cli.test.mjs tests/catalogue-import-local-database.test.mjs tests/catalogue-import-parser.test.mjs tests/dashboard-series.test.mjs tests/plan-timeline.test.mjs tests/planner.test.mjs tests/requisite-summary.test.mjs",
     "test:catalogue-db": "node --test tests/catalogue-import-database-integration.test.mjs",
     "test:build:demo": "COURSEMAP_DEMO_MODE=true NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3217 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:9 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_test npm run build",
     "test:rendered": "node --test tests/rendered-html.test.mjs",
