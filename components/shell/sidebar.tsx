@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
-  CalendarDays,
-  CalendarRange,
   GitBranch,
   GraduationCap,
   House,
@@ -14,9 +12,7 @@ import {
   LifeBuoy,
   ListChecks,
   Map,
-  MapPin,
   RefreshCw,
-  Route,
   Search as SearchIcon,
   Table2,
   UserRound,
@@ -47,26 +43,6 @@ const studentNavGroups: Array<{ label: string; items: NavItem[] }> = [
       { href: "/plan", label: "Plan", icon: Map },
       { href: "/courses", label: "Courses", icon: BookOpen },
       { href: "/requirements", label: "Requirements", icon: ListChecks },
-    ],
-  },
-  {
-    label: "Your study",
-    items: [
-      { href: "/academic", label: "Academic", icon: GraduationCap },
-      { href: "/calendar", label: "Calendar", icon: CalendarDays },
-      { href: "/key-dates", label: "Key dates", icon: CalendarRange },
-    ],
-  },
-  {
-    label: "More",
-    items: [
-      { href: "/roadmap", label: "Roadmap", icon: Route },
-      {
-        href: "/rooms",
-        label: "Room finder",
-        icon: MapPin,
-        badge: "Soon",
-      },
     ],
   },
 ];
