@@ -4,25 +4,31 @@ import { open, mkdir } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
+import { fetchAnuCourseDirectory } from "../../lib/catalogue-import/anu-course-directory.ts";
 import {
   ANU_2026_COURSE_CODES,
   fetchAnuCourseManifest,
 } from "../../lib/catalogue-import/anu-programs-courses.ts";
 
 const CACHE_DIRECTORY = ".catalogue-cache";
+const DEFAULT_CATALOGUE_YEAR = 2026;
 const usage = `Usage:
-  npm run catalogue:fetch -- --output .catalogue-cache/anu-2026.json
-  npm run catalogue:fetch -- --stdout
+  npm run catalogue:fetch -- --year 2026 --all-courses --output .catalogue-cache/anu-2026.json
+  npm run catalogue:fetch -- --course COMP1100 --stdout
 
 Options:
-  --course CODE   Fetch a specific course. Repeat to fetch several courses.
-  --output PATH   Write a new JSON manifest inside .catalogue-cache/.
-  --stdout        Print the JSON manifest instead of writing a file.
-  --help, -h      Show this help text.
+  --year YYYY        Catalogue year to fetch (default ${DEFAULT_CATALOGUE_YEAR}).
+  --all-courses      Discover and fetch every course published for the year.
+  --course CODE      Fetch a specific course. Repeat to fetch several courses.
+  --concurrency N    Parallel page fetches, 1 to 8 (default 4).
+  --output PATH      Write a new JSON manifest inside .catalogue-cache/.
+  --stdout           Print the JSON manifest instead of writing a file.
+  --help, -h         Show this help text.
 
-The default scope is 44 Coursemap courses, including every course referenced by
-the authoritative 2026 BCOMP and SOFT-MAJ structures. This command fetches
-official ANU HTML only and never writes to a database.`;
+Without --course or --all-courses the scope is the 44 pinned Coursemap
+courses, including every course referenced by the authoritative 2026 BCOMP
+and SOFT-MAJ structures. This command fetches official ANU pages only and
+never writes to a database.`;
 
 function requireSupportedNode() {
   const major = Number.parseInt(process.versions.node.split(".")[0], 10);
@@ -37,18 +43,40 @@ export function parseFetchArguments(args) {
   const courses = [];
   let output;
   let stdout = false;
+  let allCourses = false;
+  let year;
+  let concurrency;
 
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === "--help" || argument === "-h") {
-      return { help: true, courses: [], output: undefined, stdout: false };
+      return {
+        help: true,
+        courses: [],
+        output: undefined,
+        stdout: false,
+        allCourses: false,
+        year: DEFAULT_CATALOGUE_YEAR,
+        concurrency: undefined,
+      };
     }
     if (argument === "--stdout") {
       if (stdout) throw new Error("--stdout may be supplied only once.");
       stdout = true;
       continue;
     }
-    if (argument === "--output" || argument === "--course") {
+    if (argument === "--all-courses") {
+      if (allCourses)
+        throw new Error("--all-courses may be supplied only once.");
+      allCourses = true;
+      continue;
+    }
+    if (
+      argument === "--output" ||
+      argument === "--course" ||
+      argument === "--year" ||
+      argument === "--concurrency"
+    ) {
       const value = args[index + 1];
       if (!value || value.startsWith("--")) {
         throw new Error(`${argument} requires a value.\n\n${usage}`);
@@ -57,8 +85,28 @@ export function parseFetchArguments(args) {
       if (argument === "--output") {
         if (output) throw new Error("--output may be supplied only once.");
         output = value;
-      } else {
+      } else if (argument === "--course") {
         courses.push(value);
+      } else if (argument === "--year") {
+        if (year !== undefined)
+          throw new Error("--year may be supplied only once.");
+        if (!/^\d{4}$/.test(value.trim())) {
+          throw new Error(`--year requires a four-digit year.\n\n${usage}`);
+        }
+        year = Number.parseInt(value.trim(), 10);
+      } else {
+        if (concurrency !== undefined)
+          throw new Error("--concurrency may be supplied only once.");
+        concurrency = Number.parseInt(value, 10);
+        if (
+          !Number.isInteger(concurrency) ||
+          concurrency < 1 ||
+          concurrency > 8
+        ) {
+          throw new Error(
+            `--concurrency requires an integer between 1 and 8.\n\n${usage}`,
+          );
+        }
       }
       continue;
     }
@@ -68,7 +116,20 @@ export function parseFetchArguments(args) {
   if (stdout === Boolean(output)) {
     throw new Error(`Choose exactly one of --output or --stdout.\n\n${usage}`);
   }
-  return { help: false, courses, output, stdout };
+  if (allCourses && courses.length > 0) {
+    throw new Error(
+      `--all-courses cannot be combined with --course.\n\n${usage}`,
+    );
+  }
+  return {
+    help: false,
+    courses,
+    output,
+    stdout,
+    allCourses,
+    year: year ?? DEFAULT_CATALOGUE_YEAR,
+    concurrency,
+  };
 }
 
 export function resolveManifestOutputPath(output, cwd = process.cwd()) {
@@ -121,6 +182,36 @@ async function writeNewManifest(outputPath, contents) {
   }
 }
 
+async function resolveScope(options) {
+  if (options.courses.length > 0) {
+    return { courseCodes: options.courses, directoryDiagnostics: [] };
+  }
+  if (!options.allCourses) {
+    return {
+      courseCodes: [...ANU_2026_COURSE_CODES],
+      directoryDiagnostics: [],
+    };
+  }
+
+  console.error(`Discovering all ${options.year} courses...`);
+  const directory = await fetchAnuCourseDirectory(options.year);
+  console.error(
+    `Discovered ${directory.courseCodes.length} courses for ${options.year}.`,
+  );
+  const errors = directory.diagnostics.filter(
+    (diagnostic) => diagnostic.severity === "error",
+  );
+  if (errors.length > 0) {
+    throw new Error(
+      `Course discovery failed:\n- ${errors.map((error) => error.message).join("\n- ")}`,
+    );
+  }
+  return {
+    courseCodes: directory.courseCodes,
+    directoryDiagnostics: directory.diagnostics,
+  };
+}
+
 async function main() {
   requireSupportedNode();
   const options = parseFetchArguments(process.argv.slice(2));
@@ -129,10 +220,18 @@ async function main() {
     return;
   }
 
-  const courseCodes =
-    options.courses.length > 0 ? options.courses : ANU_2026_COURSE_CODES;
-  const signal = AbortSignal.timeout(120_000);
-  const manifest = await fetchAnuCourseManifest({ courseCodes, signal });
+  const { courseCodes } = await resolveScope(options);
+  const progressStep = courseCodes.length > 200 ? 100 : 25;
+  const manifest = await fetchAnuCourseManifest({
+    catalogueYear: options.year,
+    courseCodes,
+    ...(options.concurrency ? { concurrency: options.concurrency } : {}),
+    onProgress: ({ completed, total }) => {
+      if (completed % progressStep === 0 || completed === total) {
+        console.error(`Fetched ${completed}/${total} course pages...`);
+      }
+    },
+  });
   const contents = `${JSON.stringify(manifest, null, 2)}\n`;
 
   if (options.stdout) {

@@ -1,4 +1,5 @@
 import { fetchAnuCourseManifest } from "@/lib/catalogue-import/anu-programs-courses";
+import { assertSupportedCatalogueYear } from "@/lib/catalogue-import/catalogue-years";
 import { isDemoMode } from "@/lib/supabase/config";
 import { importCatalogueManifest } from "@/scripts/catalogue/lib/importer.mjs";
 import {
@@ -66,13 +67,7 @@ export async function runSelectedCourseImport({
   catalogueYear: number;
   courseCodes: readonly string[];
 }): Promise<CourseImportResult> {
-  if (
-    !Number.isInteger(catalogueYear) ||
-    catalogueYear < 2014 ||
-    catalogueYear > 2026
-  ) {
-    throw new TypeError("Unsupported catalogue year.");
-  }
+  assertSupportedCatalogueYear(catalogueYear);
 
   const codes = normaliseCourseCodes(courseCodes);
   const manifest = await fetchAnuCourseManifest({

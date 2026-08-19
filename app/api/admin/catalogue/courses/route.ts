@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isSupportedCatalogueYear } from "@/lib/catalogue-import/catalogue-years";
 
 const catalogueBaseUrl = "https://programsandcourses.anu.edu.au";
 
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
   if (!query || query.length > 120) {
     return NextResponse.json({ results: [] });
   }
-  if (!Number.isInteger(year) || year < 2014 || year > 2026) {
+  if (!isSupportedCatalogueYear(year)) {
     return NextResponse.json(
       { error: "Unsupported catalogue year." },
       { status: 400 },
