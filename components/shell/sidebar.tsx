@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   BookOpen,
   CalendarDays,
-  CalendarRange,
   GitBranch,
   GraduationCap,
   House,
@@ -54,7 +53,6 @@ const studentNavGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { href: "/academic", label: "Academic", icon: GraduationCap },
       { href: "/calendar", label: "Calendar", icon: CalendarDays },
-      { href: "/key-dates", label: "Key dates", icon: CalendarRange },
     ],
   },
   {
