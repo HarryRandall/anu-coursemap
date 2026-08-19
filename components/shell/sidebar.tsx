@@ -109,7 +109,7 @@ function NavLink({
       onClick={onNavigate}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "relative flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition",
+        "relative mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition",
         isActive
           ? admin
             ? "bg-brand-50 text-brand-700"
@@ -165,11 +165,11 @@ export function Sidebar({
       )}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 px-3 pt-5 pb-3 backdrop-blur transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 pt-5 pb-3 backdrop-blur transition-transform lg:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-3">
           <Brand />
           <button
             type="button"
@@ -186,7 +186,7 @@ export function Sidebar({
             type="button"
             onClick={onOpenSearch}
             aria-label="Search courses"
-            className="mt-5 flex h-9 w-full items-center gap-2 rounded-lg bg-white px-2.5 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:ring-zinc-300"
+            className="mx-3 mt-5 flex h-9 items-center gap-2 rounded-lg bg-white px-2.5 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:ring-zinc-300"
           >
             <SearchIcon size={15} />
             <span className="flex-1 text-left text-xs">Search courses</span>
@@ -198,7 +198,7 @@ export function Sidebar({
 
         <nav
           aria-label={admin ? "Admin navigation" : "Student navigation"}
-          className="mt-5 min-h-0 flex-1 overflow-y-auto"
+          className="mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
         >
           {admin ? (
             <div className="flex flex-col gap-1">
@@ -219,7 +219,7 @@ export function Sidebar({
                   {item.dividerAfter && (
                     <div
                       aria-hidden="true"
-                      className="-mx-3 my-1.5 border-t border-zinc-200/80"
+                      className="my-1.5 border-t border-zinc-200/80"
                     />
                   )}
                 </Fragment>
@@ -231,12 +231,12 @@ export function Sidebar({
             <>
               <div
                 aria-hidden="true"
-                className="-mx-3 my-1.5 border-t border-zinc-200/80"
+                className="my-1.5 border-t border-zinc-200/80"
               />
               <Link
                 href="/admin/dashboard"
                 onClick={onClose}
-                className="flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+                className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
               >
                 <Wrench size={17} strokeWidth={1.9} />
                 <span>Admin console</span>
@@ -247,11 +247,11 @@ export function Sidebar({
 
         {admin && (
           <>
-            <div className="-mx-3 mb-1.5 border-t border-zinc-200/80" />
+            <div className="mb-1.5 border-t border-zinc-200/80" />
             <Link
               href="/dashboard"
               onClick={onClose}
-              className="flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+              className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >
               <Map size={17} strokeWidth={1.9} />
               <span>Back to student home</span>
@@ -263,7 +263,7 @@ export function Sidebar({
           <Link
             href="/help"
             onClick={onClose}
-            className="mt-1 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+            className="mx-3 mt-1 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
           >
             <LifeBuoy size={17} strokeWidth={1.9} />
             <span>Help &amp; support</span>
@@ -273,7 +273,7 @@ export function Sidebar({
         <Link
           href="/profile"
           onClick={onClose}
-          className="mt-1 flex items-center gap-3 rounded-xl p-2 transition hover:bg-zinc-100"
+          className="mx-3 mt-1 flex items-center gap-3 rounded-xl p-2 transition hover:bg-zinc-100"
         >
           <span className="grid size-9 place-items-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
             {initials}
