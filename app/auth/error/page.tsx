@@ -32,7 +32,7 @@ export default async function AuthErrorPage({
         </p>
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <ButtonLink
-            href={`/auth/sign-in?next=${encodeURIComponent(next)}`}
+            href={`/login?next=${encodeURIComponent(next)}`}
             variant="primary"
           >
             Back to sign in

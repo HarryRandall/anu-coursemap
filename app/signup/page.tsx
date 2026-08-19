@@ -11,7 +11,7 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function SignUpPage({
+export default async function SignupPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
@@ -20,7 +20,7 @@ export default async function SignUpPage({
   const next = safeInternalRedirect(first(params.next));
 
   const configured = Boolean(getSupabaseConfig());
-  const signInHref = `/auth/sign-in?next=${encodeURIComponent(next)}`;
+  const signInHref = `/login?next=${encodeURIComponent(next)}`;
 
   return (
     <AuthShell>

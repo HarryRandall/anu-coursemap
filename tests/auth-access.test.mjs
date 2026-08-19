@@ -45,7 +45,7 @@ before(
         );
       }
       try {
-        const response = await fetch(`${origin}/auth/sign-in`);
+        const response = await fetch(`${origin}/login`);
         if (response.ok) return;
       } catch {
         // The server is still starting.
@@ -72,8 +72,8 @@ test("keeps anonymous public routes available without demo data", async () => {
       "/courses",
       "/courses/COMP2100",
       "/key-dates",
-      "/auth/sign-in",
-      "/auth/sign-up",
+      "/login",
+      "/signup",
     ].map((path) => request(path, { headers: { accept: "text/html" } })),
   );
 
@@ -88,7 +88,7 @@ test("keeps anonymous public routes available without demo data", async () => {
 });
 
 test("renders password authentication without magic-link instructions", async () => {
-  const response = await request("/auth/sign-in?next=%2Fplan");
+  const response = await request("/login?next=%2Fplan");
   assert.equal(response.status, 200);
 
   const html = await response.text();
@@ -99,7 +99,7 @@ test("renders password authentication without magic-link instructions", async ()
   assert.doesNotMatch(html, /magic link|Mailpit|one-time email link/i);
 });
 
-test("redirects protected routes to the canonical sign-in page", async () => {
+test("redirects protected routes to the canonical login page", async () => {
   for (const path of [
     "/plan?year=2026",
     "/profile",
@@ -124,11 +124,26 @@ test("redirects protected routes to the canonical sign-in page", async () => {
     assert.equal(response.status, 307);
     const location = new URL(response.headers.get("location"), origin);
     assert.equal(location.origin, origin);
-    assert.equal(location.pathname, "/auth/sign-in");
+    assert.equal(location.pathname, "/login");
     assert.equal(location.searchParams.get("next"), path);
     assert.equal(location.searchParams.get("reason"), null);
     assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
   }
+});
+
+test("redirects legacy auth pages to the canonical public paths", async () => {
+  const [loginResponse, signupResponse] = await Promise.all([
+    request("/auth/sign-in?next=%2Fplan", { redirect: "manual" }),
+    request("/auth/sign-up?next=%2Fonboarding", { redirect: "manual" }),
+  ]);
+
+  assert.equal(loginResponse.status, 308);
+  assert.equal(signupResponse.status, 308);
+  assert.equal(loginResponse.headers.get("location"), "/login?next=%2Fplan");
+  assert.equal(
+    signupResponse.headers.get("location"),
+    "/signup?next=%2Fonboarding",
+  );
 });
 
 test("does not expose logout over GET", async () => {

@@ -30,7 +30,7 @@ export function LandingHeader({ canOpenPlan }: { canOpenPlan: boolean }) {
           ) : (
             <>
               <ButtonLink
-                href="/auth/sign-in"
+                href="/login"
                 variant="ghost"
                 size="sm"
                 className="min-h-11 px-3"
@@ -38,7 +38,7 @@ export function LandingHeader({ canOpenPlan }: { canOpenPlan: boolean }) {
                 Sign in
               </ButtonLink>
               <ButtonLink
-                href="/auth/sign-up"
+                href="/signup"
                 variant="primary"
                 size="sm"
                 className="min-h-11 !rounded-full px-4"

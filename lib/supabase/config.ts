@@ -61,6 +61,49 @@ export function getCanonicalSiteOrigin() {
   }
 }
 
+function isLocalHostname(hostname: string) {
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+/**
+ * Keep production redirects on the configured canonical origin while allowing
+ * a local development server to use the port that received the request.
+ */
+export function getSiteOriginForRequest(
+  requestUrl: URL,
+  requestHost?: string | null,
+) {
+  const canonicalOrigin = getCanonicalSiteOrigin();
+  if (!canonicalOrigin) return null;
+
+  const canonicalUrl = new URL(canonicalOrigin);
+  const localCanonical =
+    canonicalUrl.protocol === "http:" && isLocalHostname(canonicalUrl.hostname);
+  if (!localCanonical) return canonicalOrigin;
+
+  if (requestHost) {
+    try {
+      const hostUrl = new URL(`http://${requestHost}`);
+      if (
+        !hostUrl.username &&
+        !hostUrl.password &&
+        hostUrl.pathname === "/" &&
+        !hostUrl.search &&
+        !hostUrl.hash &&
+        isLocalHostname(hostUrl.hostname)
+      ) {
+        return hostUrl.origin;
+      }
+    } catch {
+      // Fall back to the validated request URL or canonical origin.
+    }
+  }
+
+  const localRequest =
+    requestUrl.protocol === "http:" && isLocalHostname(requestUrl.hostname);
+  return localRequest ? requestUrl.origin : canonicalOrigin;
+}
+
 export function getSupabaseCookieOptions() {
   const origin = getCanonicalSiteOrigin();
   return {

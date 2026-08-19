@@ -4,8 +4,8 @@ import {
   safeInternalRedirect,
 } from "@/lib/auth/redirect";
 import {
-  getCanonicalSiteOrigin,
   getSupabaseConfig,
+  getSiteOriginForRequest,
   isDemoMode,
 } from "@/lib/supabase/config";
 import { createRequestClient } from "@/lib/supabase/request";
@@ -43,14 +43,17 @@ function isProtectedRoute(pathname: string) {
 }
 
 function signInRedirect(request: NextRequest, reason?: string) {
-  const canonicalOrigin = getCanonicalSiteOrigin();
-  if (!canonicalOrigin) {
+  const siteOrigin = getSiteOriginForRequest(
+    request.nextUrl,
+    request.headers.get("host"),
+  );
+  if (!siteOrigin) {
     return new NextResponse("Coursemap authentication is not configured.", {
       status: 503,
       headers: { "Cache-Control": "private, no-store" },
     });
   }
-  const signInUrl = new URL("/auth/sign-in", canonicalOrigin);
+  const signInUrl = new URL("/login", siteOrigin);
   signInUrl.searchParams.set(
     "next",
     safeInternalRedirect(requestPathWithSearch(request.nextUrl)),

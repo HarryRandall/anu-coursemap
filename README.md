@@ -48,7 +48,7 @@ or any Supabase secret key.
 
 Student and admin routes require an account in the configured Supabase project
 when `COURSEMAP_DEMO_MODE=false`. Create an email-and-password account at
-`/auth/sign-up`. New accounts without a primary plan are routed to
+`/signup`. New accounts without a primary plan are routed to
 `/onboarding` before the dashboard. Local email confirmations are disabled in
 `supabase/config.toml` so the account receives a session immediately. Disable
 **Confirm email** under **Authentication > Sign In / Providers > Email** in a

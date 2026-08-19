@@ -1,13 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import {
-  getCanonicalSiteOrigin,
   getSupabaseConfig,
+  getSiteOriginForRequest,
 } from "@/lib/supabase/config";
 import { createRequestClient } from "@/lib/supabase/request";
 
 export async function POST(request: NextRequest) {
-  const canonicalOrigin = getCanonicalSiteOrigin();
-  if (!canonicalOrigin || !getSupabaseConfig()) {
+  const siteOrigin = getSiteOriginForRequest(
+    request.nextUrl,
+    request.headers.get("host"),
+  );
+  if (!siteOrigin || !getSupabaseConfig()) {
     return new NextResponse("Coursemap authentication is not configured.", {
       status: 503,
       headers: { "Cache-Control": "private, no-store" },
@@ -15,14 +18,14 @@ export async function POST(request: NextRequest) {
   }
 
   const requestOrigin = request.headers.get("origin");
-  if (requestOrigin !== canonicalOrigin) {
+  if (requestOrigin !== siteOrigin) {
     return new NextResponse("Invalid request origin.", {
       status: 403,
       headers: { "Cache-Control": "private, no-store" },
     });
   }
 
-  const signInUrl = new URL("/auth/sign-in", canonicalOrigin);
+  const signInUrl = new URL("/login", siteOrigin);
   signInUrl.searchParams.set("signedOut", "true");
   const response = NextResponse.redirect(signInUrl, 303);
   response.headers.set(

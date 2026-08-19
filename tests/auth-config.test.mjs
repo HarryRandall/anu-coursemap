@@ -16,6 +16,7 @@ const compiled = ts.transpileModule(source, {
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`;
 const {
   getCanonicalSiteOrigin,
+  getSiteOriginForRequest,
   getSupabaseConfig,
   getSupabaseCookieOptions,
   isDemoMode,
@@ -141,6 +142,52 @@ test("parses only complete HTTP Supabase configuration", () => {
       assert.deepEqual(getSupabaseConfig(), expected);
     });
   }
+});
+
+test("uses the active local port without trusting non-local request origins", () => {
+  withEnvironment(
+    {
+      NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
+    },
+    () => {
+      assert.equal(
+        getSiteOriginForRequest(
+          new URL("http://localhost:3000/login"),
+          "localhost:3001",
+        ),
+        "http://localhost:3001",
+      );
+      assert.equal(
+        getSiteOriginForRequest(
+          new URL("http://localhost:3000/login"),
+          "127.0.0.1:3218",
+        ),
+        "http://127.0.0.1:3218",
+      );
+      assert.equal(
+        getSiteOriginForRequest(
+          new URL("http://localhost:3000/login"),
+          "coursemap.example",
+        ),
+        "http://localhost:3000",
+      );
+    },
+  );
+
+  withEnvironment(
+    {
+      NEXT_PUBLIC_SITE_URL: "https://coursemap.example",
+    },
+    () => {
+      assert.equal(
+        getSiteOriginForRequest(
+          new URL("https://evil.example/login"),
+          "evil.example",
+        ),
+        "https://coursemap.example",
+      );
+    },
+  );
 });
 
 test("accepts only HTTPS or loopback canonical origins", () => {
