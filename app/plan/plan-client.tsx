@@ -19,20 +19,17 @@ import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { CourseDrawer, CoursePicker } from "@/components/overlays";
-import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/overlay";
 import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
-  MAX_PLAN_EXTENSION_YEARS,
   planTimelineTerms,
   planTimelineYears,
 } from "@/lib/coursemap/plan-timeline";
 import {
   STANDARD_COURSE_SLOTS,
-  degreeUnitProgress,
   effectiveStatus,
   missingPrereqs,
   planningCourseByCode,
@@ -77,8 +74,7 @@ function StatusMark({
 }
 
 function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
-  const { state, reorderAttempt, notify, setPlanExtensionYears } =
-    useCoursemap();
+  const { state, reorderAttempt, notify } = useCoursemap();
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [overloadTerm, setOverloadTerm] = useState<string | null>(null);
   const [pendingDrop, setPendingDrop] = useState<PendingDrop | null>(null);
@@ -123,12 +119,9 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     [timelineTerms],
   );
   const unscheduled = timelineTerms.find((term) => term.id === "unscheduled");
-  const progress = degreeUnitProgress(
-    state.attempts,
-    degree?.units ?? 0,
-    catalogue,
-  );
-
+  const pickerTerm = picker
+    ? timelineTerms.find((term) => term.id === picker.termId)
+    : undefined;
   useEffect(
     () => () => {
       pointerCleanupRef.current?.();
@@ -551,108 +544,6 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <section aria-label="Course plan" className="year-board">
-        <div className="mb-4 rounded-2xl bg-white px-4 py-3.5 shadow-sm ring-1 ring-zinc-200/70 sm:px-5">
-          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
-                Degree progress
-              </p>
-              <p className="mt-0.5 text-sm font-semibold text-zinc-900">
-                {degree
-                  ? `${progress.percent}% of units completed`
-                  : `${progress.completed} units completed`}
-              </p>
-            </div>
-            <div
-              className="flex gap-4 text-[11px] text-zinc-500"
-              aria-label="Course statuses"
-            >
-              <span className="inline-flex items-center gap-1.5">
-                <CheckCircle2 size={12} className="text-emerald-500" />{" "}
-                Completed
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Circle size={12} className="text-zinc-300" /> Planned
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <AlertTriangle size={12} className="text-amber-500" /> Needs
-                attention
-              </span>
-            </div>
-          </div>
-          {degree ? (
-            <DegreeProgressBar progress={progress} compact />
-          ) : (
-            <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
-              Programme requirements and your completion target are not imported
-              yet.
-            </p>
-          )}
-          {degree && !catalogue.programmeRequirementsImported && (
-            <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">
-              Programme requirements are not imported yet, so course
-              recommendations are unknown.
-            </p>
-          )}
-          {degreeYears.length > 0 && (
-            <div className="mt-4 border-t border-zinc-100 pt-3">
-              <p className="text-[10px] font-semibold tracking-wide text-zinc-400 uppercase">
-                Degree timeline
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {degreeYears.map((item) => {
-                  const calendarImported = scheduledYears.some(
-                    (yearGroup) => yearGroup.year === item.year,
-                  );
-                  return (
-                    <span
-                      key={item.studyYear}
-                      className={cn(
-                        "rounded-md px-2 py-1 text-[11px] font-medium ring-1 ring-inset",
-                        calendarImported
-                          ? "bg-brand-50 text-brand-800 ring-brand-100"
-                          : "bg-zinc-50 text-zinc-500 ring-zinc-200",
-                      )}
-                    >
-                      Year {item.studyYear} · {item.year}
-                      {!calendarImported && " · calendar pending"}
-                    </span>
-                  );
-                })}
-                <button
-                  type="button"
-                  disabled={
-                    state.profile.extensionYears >= MAX_PLAN_EXTENSION_YEARS
-                  }
-                  onClick={() => {
-                    void setPlanExtensionYears(
-                      state.profile.extensionYears + 1,
-                    ).then((result) =>
-                      notify(result.message, result.ok ? "success" : "warning"),
-                    );
-                  }}
-                  className="rounded-md border border-dashed border-zinc-300 px-2 py-1 text-[11px] font-medium text-zinc-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  + Add year
-                </button>
-              </div>
-              {state.profile.extensionYears > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    void setPlanExtensionYears(0).then((result) =>
-                      notify(result.message, result.ok ? "success" : "warning"),
-                    );
-                  }}
-                  className="mt-2 text-[11px] font-medium text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline"
-                >
-                  Restore programme duration
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
         <div data-testid="roadmap-board" className="flex flex-col gap-5">
           {scheduledYears.map((yearGroup) => {
             const yearEntries = yearGroup.terms.flatMap((term) =>
@@ -721,11 +612,10 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         </div>
       )}
 
-      {picker && (
+      {picker && pickerTerm && (
         <CoursePicker
-          termId={picker.termId}
+          term={pickerTerm}
           intent={picker.intent}
-          catalogue={catalogue}
           onClose={() => setPicker(null)}
         />
       )}

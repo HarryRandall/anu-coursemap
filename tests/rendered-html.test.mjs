@@ -289,7 +289,10 @@ test("server-renders the routed Coursemap degree planner", async () => {
   const emptyAdds = (html.match(/Add course in empty slot/g) ?? []).length;
   assert.ok(emptyAdds > 0);
   assert.doesNotMatch(html, /Add recommended course [A-Z]{4}\d+/);
-  assert.match(html, /Degree progress/i);
+  assert.doesNotMatch(
+    html,
+    /Degree progress|Degree timeline|Programme requirements and your completion target|Restore programme duration|Add year/i,
+  );
   assert.doesNotMatch(html, /Edit degree/i);
   assert.doesNotMatch(html, /18 of 144 units completed/i);
   assert.doesNotMatch(html, /48 mapped/i);
@@ -477,7 +480,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(planClient, /translate3d/);
   assert.match(planClient, /role="tooltip"/);
   assert.match(planClient, /group-hover:visible/);
-  assert.match(planClient, /programmeRequirementsImported/);
+  assert.doesNotMatch(planClient, /programmeRequirementsImported/);
   assert.doesNotMatch(planClient, /Blocked: needs/);
   assert.match(adminPage, /Live catalogue status/);
   assert.match(adminPage, /Publication workflow/);
@@ -520,6 +523,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(courseDrawer, /Course information|Action needed|✓/);
   assert.match(coursePicker, /\/api\/courses\/search/);
   assert.match(coursePicker, /Search 2\+ characters/);
+  assert.match(planClient, /term=\{pickerTerm\}/);
+  assert.doesNotMatch(coursePicker, /catalogue\.terms\[0\]/);
   assert.doesNotMatch(coursePicker, /In plan/);
   assert.match(providers, /normaliseAttempts/);
   assert.match(providers, /const limit = 1/);

@@ -4,8 +4,7 @@ import { ArrowRight, BookMarked, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
-import type { Course } from "@/lib/coursemap/types";
-import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
+import type { Course, Term } from "@/lib/coursemap/types";
 import { Modal } from "@/components/ui/overlay";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
 import { CourseToken } from "@/components/ui/course-token";
@@ -19,14 +18,12 @@ type CourseSearchResponse = {
 };
 
 export function CoursePicker({
-  termId,
+  term,
   intent = "all",
-  catalogue,
   onClose,
 }: {
-  termId: string;
+  term: Term;
   intent?: "all" | "recommended";
-  catalogue: PlanCatalogue;
   onClose: () => void;
 }) {
   const { state, addCourse, notify } = useCoursemap();
@@ -36,8 +33,6 @@ export function CoursePicker({
   const [selected, setSelected] = useState<Course | null>(null);
   const [loading, setLoading] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  const term =
-    catalogue.terms.find((item) => item.id === termId) ?? catalogue.terms[0];
   const trimmedQuery = query.trim();
 
   useEffect(() => searchRef.current?.focus(), []);
@@ -93,7 +88,7 @@ export function CoursePicker({
   );
 
   const choose = async (course: Course) => {
-    const result = await addCourse(course.code, termId);
+    const result = await addCourse(course.code, term.id);
     notify(
       result.ok
         ? `${course.code} added to ${term.name}${term.year < 2029 ? ` ${term.year}` : ""}`
