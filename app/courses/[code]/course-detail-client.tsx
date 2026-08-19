@@ -152,6 +152,17 @@ function RequisiteConditionText({
       </>
     );
   }
+  if (condition.kind === "level_units") {
+    return (
+      <>
+        Complete at least {condition.units} units of {condition.level}-level
+        {condition.subject ? ` ${condition.subject}` : ""} courses
+      </>
+    );
+  }
+  if (condition.kind === "units_total") {
+    return <>Complete at least {condition.units} units of study</>;
+  }
   return (
     <>
       Complete at least {condition.units} units of {condition.subject}-coded
@@ -231,7 +242,17 @@ function RequisiteProgressSummary({
     );
   }
 
-  if (progress.kind === "subject_units") {
+  if (
+    progress.kind === "subject_units" ||
+    progress.kind === "level_units" ||
+    progress.kind === "units_total"
+  ) {
+    const description =
+      progress.kind === "subject_units"
+        ? `${progress.subject}-coded units completed`
+        : progress.kind === "level_units"
+          ? `${progress.level}-level${progress.subject ? ` ${progress.subject}` : ""} units completed`
+          : "units of study completed";
     return (
       <div className="flex items-start gap-2">
         {progress.satisfied ? (
@@ -248,9 +269,7 @@ function RequisiteProgressSummary({
           />
         )}
         <span>
-          {progress.completedUnits} of {progress.requiredUnits}{" "}
-          {progress.subject}
-          -coded units completed
+          {progress.completedUnits} of {progress.requiredUnits} {description}
         </span>
       </div>
     );

@@ -422,6 +422,20 @@ type RequisiteConditionPayload =
       position: number;
       subject: string;
       units: number;
+    }
+  | {
+      groupId: number;
+      kind: "level_units";
+      level: number;
+      position: number;
+      subject?: string;
+      units: number;
+    }
+  | {
+      groupId: number;
+      kind: "units_total";
+      position: number;
+      units: number;
     };
 
 function readRequisiteRule(
@@ -498,6 +512,39 @@ function readRequisiteRule(
               ]
             : [];
         }
+        if (kind === "level_units") {
+          const subject = readString(condition.subject_code).toUpperCase();
+          const units = readNumber(condition.minimum_units, Number.NaN);
+          const level = readNumber(condition.minimum_course_level, Number.NaN);
+          return units > 0 &&
+            Number.isInteger(level) &&
+            level >= 0 &&
+            (subject === "" || /^[A-Z]{4}$/u.test(subject))
+            ? [
+                {
+                  groupId,
+                  position,
+                  kind: "level_units" as const,
+                  level,
+                  units,
+                  ...(subject ? { subject } : {}),
+                },
+              ]
+            : [];
+        }
+        if (kind === "units_total") {
+          const units = readNumber(condition.minimum_units, Number.NaN);
+          return units > 0
+            ? [
+                {
+                  groupId,
+                  position,
+                  kind: "units_total" as const,
+                  units,
+                },
+              ]
+            : [];
+        }
         return [];
       })
     : [];
@@ -529,10 +576,22 @@ function readRequisiteRule(
         expression = expressionForGroup(child.value.id, nextAncestors);
       } else if (child.value.kind === "course") {
         expression = { kind: "course", code: child.value.code };
-      } else {
+      } else if (child.value.kind === "subject_units") {
         expression = {
           kind: "subject_units",
           subject: child.value.subject,
+          units: child.value.units,
+        };
+      } else if (child.value.kind === "level_units") {
+        expression = {
+          kind: "level_units",
+          level: child.value.level,
+          units: child.value.units,
+          ...(child.value.subject ? { subject: child.value.subject } : {}),
+        };
+      } else {
+        expression = {
+          kind: "units_total",
           units: child.value.units,
         };
       }

@@ -349,7 +349,7 @@ function splitRequisiteText(rawText: string | null) {
   }
 
   const incompatibility =
-    /\b(?:this course is incompatible with|incompatible with|you (?:are )?not able to enrol in this course if you have (?:successfully )?completed)\b/i;
+    /\b(?:this course is incompatible with|incompatible with|incompatibl(?:e|ity):|you (?:are )?not able to enrol in this course if you have (?:successfully )?completed)/i;
   const match = incompatibility.exec(rawText);
   if (!match || match.index === undefined) {
     return { rawRequisiteText: rawText, rawIncompatibilityText: null };
