@@ -116,6 +116,7 @@ test("server-renders the complete student workspace", async () => {
     "/dashboard",
     "/academic",
     "/calendar",
+    "/key-dates",
     "/requirements",
     "/roadmap",
     "/rooms",
@@ -129,6 +130,7 @@ test("server-renders the complete student workspace", async () => {
     dashboardHtml,
     academicHtml,
     calendarHtml,
+    keyDatesHtml,
     requirementsHtml,
     roadmapHtml,
     roomsHtml,
@@ -151,6 +153,9 @@ test("server-renders the complete student workspace", async () => {
     calendarHtml,
     /Weekly timetable|Class timetable|Assessments and dates/i,
   );
+  assert.match(keyDatesHtml, /Key dates/i);
+  assert.match(keyDatesHtml, /No key dates published yet/i);
+  assert.match(keyDatesHtml, /Official ANU academic calendar/i);
   assert.match(
     requirementsHtml,
     /Select a published degree in onboarding to begin/i,

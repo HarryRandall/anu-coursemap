@@ -71,6 +71,7 @@ test("keeps anonymous public routes available without demo data", async () => {
       "/",
       "/courses",
       "/courses/COMP2100",
+      "/key-dates",
       "/auth/sign-in",
       "/auth/sign-up",
     ].map((path) => request(path, { headers: { accept: "text/html" } })),
