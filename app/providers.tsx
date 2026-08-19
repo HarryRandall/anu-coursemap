@@ -75,6 +75,7 @@ type AppContextValue = {
 };
 
 const DEMO_STORAGE_KEY = "coursemap.demo.v1";
+const EMPTY_DEMO_INITIAL_ATTEMPTS: Attempt[] = [];
 
 const statusPriority: Record<AttemptStatus, number> = {
   completed: 4,
@@ -177,7 +178,7 @@ export function AppProvider({
   demoMode,
   viewer,
   canAccessAdmin,
-  demoInitialAttempts = [],
+  demoInitialAttempts = EMPTY_DEMO_INITIAL_ATTEMPTS,
   initialState: suppliedInitialState,
 }: {
   children: React.ReactNode;

@@ -62,7 +62,7 @@ export function LandingHero({ canOpenPlan }: { canOpenPlan: boolean }) {
 
       <div className="mt-6 flex justify-center">
         <ButtonLink
-          href={canOpenPlan ? "/plan" : "/auth/sign-up"}
+          href={canOpenPlan ? "/plan" : "/signup"}
           variant="ghost"
           className="min-h-11 text-zinc-600"
         >

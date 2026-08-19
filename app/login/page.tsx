@@ -11,7 +11,7 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function SignInPage({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
@@ -22,7 +22,7 @@ export default async function SignInPage({
   const configured = Boolean(getSupabaseConfig());
   const signedOut = first(params.signedOut) === "true";
   const configurationMissing = first(params.reason) === "configuration";
-  const signUpHref = `/auth/sign-up?next=${encodeURIComponent(next)}`;
+  const signUpHref = `/signup?next=${encodeURIComponent(next)}`;
 
   return (
     <AuthShell>

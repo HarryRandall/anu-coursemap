@@ -26,7 +26,7 @@ Read `components/AGENTS.md` and use `$coursemap-ui` for interface work. Prefer r
 
 ## Auth and onboarding
 
-- `/auth/sign-in` and `/auth/sign-up` share the `AuthShell` split layout and the email-and-password Supabase flow.
+- `/login` and `/signup` share the `AuthShell` split layout and the email-and-password Supabase flow.
 - Social sign-in buttons are placeholders until OAuth ships: they announce that the provider is coming soon and must never start a broken flow.
 - A signed-in student without a primary plan is routed to `/onboarding` before the dashboard. Keep that guard on the default post-auth route and keep `/onboarding` in the proxy's protected prefixes.
 

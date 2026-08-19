@@ -70,8 +70,8 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
     await Promise.all([
       render("/"),
       render("/courses?q=COMP3900"),
-      render("/auth/sign-in?next=%2F%2Fevil.example%2Fplan"),
-      render("/auth/sign-up"),
+      render("/login?next=%2F%2Fevil.example%2Fplan"),
+      render("/signup"),
     ]);
 
   assert.equal(homeResponse.status, 200);
@@ -492,6 +492,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   );
   assert.match(providers, /event\.persisted/);
   assert.match(providers, /window\.location\.reload\(\)/);
+  assert.match(providers, /demoInitialAttempts = EMPTY_DEMO_INITIAL_ATTEMPTS/);
   assert.match(logoutRoute, /Clear-Site-Data/);
   assert.match(packageJson, /"name": "anu-coursemap"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);

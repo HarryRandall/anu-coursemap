@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
   if (isDemoMode()) redirect("/plan");
 
   const viewer = await getAuthViewer();
-  if (!viewer) redirect("/auth/sign-in?next=%2Fonboarding");
+  if (!viewer) redirect("/login?next=%2Fonboarding");
   if (await hasPrimaryPlan(viewer)) redirect("/dashboard");
 
   let catalogue;

@@ -25,7 +25,7 @@ export function LandingFooter({ canOpenPlan }: { canOpenPlan: boolean }) {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <ButtonLink
-                href={canOpenPlan ? "/plan" : "/auth/sign-up"}
+                href={canOpenPlan ? "/plan" : "/signup"}
                 size="lg"
                 className="!rounded-full !bg-white !text-zinc-950 !ring-white hover:!bg-zinc-100"
               >

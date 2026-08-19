@@ -11,7 +11,7 @@ export default async function AdminLayout({
 
   const { viewer, canAccessAdmin } = await getAuthContext();
   if (!viewer) {
-    redirect("/auth/sign-in?next=%2Fadmin%2Fdashboard");
+    redirect("/login?next=%2Fadmin%2Fdashboard");
   }
 
   if (!canAccessAdmin) {
