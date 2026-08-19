@@ -57,7 +57,7 @@ rendered CI tests.
 
 The first catalogue administrator is granted once through the reviewed SQL in
 `supabase/README.md`. That administrator can then manage user role assignments
-at `/admin/users`; effective permissions remain migration-owned and read-only.
+at `/admin/users` and edit database-managed role permissions at `/admin/roles`.
 
 The Sydney hosted development project has the complete migration history,
 Row Level Security policies and the reviewed 2026 BCOMP and SOFT-MAJ structure
@@ -73,11 +73,10 @@ seed. Its Auth redirect configuration accepts the trusted local callback.
 | `npm run db:test`          | Run local pgTAP database tests                |
 | `npm run db:lint`          | Run strict local schema linting               |
 | `npm run db:types`         | Regenerate committed local database types     |
-| `npm run db:grant-preview` | Grant one local user draft catalogue access   |
 | `npm run catalogue:fetch`  | Fetch official ANU HTML into a local manifest |
 | `npm run catalogue:import` | Import a manifest into local Supabase         |
 | `npm run format:check`     | Check repository formatting                   |
-| `npm run lint`             | Run ESLint and accessibility rules            |
+| `npm run lint`             | Run ESLint checks                             |
 | `npm run typecheck`        | Run strict TypeScript checks                  |
 | `npm test`                 | Run unit, build and rendered-route tests      |
 | `npm run check`            | Run formatting, linting and type checks       |
@@ -135,15 +134,9 @@ COMP3500's 6+6 sequence and programme exclusions stay explicit in the review
 queue. Both structures remain `draft` and `review` until those exceptions and
 the six other major versions are resolved.
 
-Draft catalogue rows remain hidden by RLS. To test them with an existing local
-Auth account, grant the narrow preview role by email:
-
-```bash
-npm run db:grant-preview -- student@example.com
-```
-
-This command refuses non-loopback database connections. Signed-in students can
-then save their profile, primary programme and major, planned course periods and
+Draft catalogue rows remain hidden by RLS until an authorised reviewer
+publishes them from the admin review workspace. Signed-in students can save
+their profile, primary programme and major, planned course periods and
 recorded results through owner-scoped database RPCs. Reloading the application
 hydrates that state from Supabase rather than browser storage.
 
@@ -175,5 +168,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURIT
 
 Private alpha. The native Next.js foundation, local Supabase authentication,
 owner-scoped student plan persistence and draft ANU catalogue are in place. The
-reserved hosted project remains empty. Verified catalogue publication is the
-next data milestone.
+Sydney hosted development project carries the migration history and reviewed
+structure seed. Verified catalogue publication is the next data milestone.
