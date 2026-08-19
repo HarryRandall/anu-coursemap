@@ -5,5 +5,6 @@ export { CourseToken } from "./course-token";
 export { Field, Input } from "./field";
 export { Select, type SelectOption } from "./select";
 export { PageHeader } from "./page-header";
+export { Skeleton } from "./skeleton";
 export { StatusPill } from "./status-pill";
-export { Modal, Drawer, useDismiss } from "./overlay";
+export { Modal, Drawer } from "./overlay";

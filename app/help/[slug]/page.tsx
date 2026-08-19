@@ -40,17 +40,9 @@ export default async function HelpArticlePage({
       <div className="mx-auto grid max-w-5xl items-start gap-8 px-1 py-2 sm:py-6 md:grid-cols-[minmax(0,1fr)_11rem] lg:grid-cols-[minmax(0,1fr)_12rem] lg:gap-10">
         <article className="max-w-3xl min-w-0">
           <header>
-            <div className="flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-600">
-                <Icon size={21} />
-              </span>
-              <p className="text-[13px] font-semibold tracking-wide text-brand-700 uppercase">
-                Help guide
-              </p>
-            </div>
-            <h1 className="mt-5 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-              {article.title}
-            </h1>
+            <span className="grid size-11 place-items-center rounded-xl bg-brand-50 text-brand-600">
+              <Icon size={21} />
+            </span>
             <p className="mt-3 text-lg leading-relaxed text-zinc-600">
               {article.description}
             </p>
