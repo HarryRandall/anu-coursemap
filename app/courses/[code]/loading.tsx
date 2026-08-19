@@ -26,7 +26,7 @@ function SectionSkeleton({ rows }: { rows: number }) {
 
 export default function CourseLoading() {
   return (
-    <AppShell title="Course">
+    <AppShell>
       <div aria-busy="true">
         <span className="sr-only">Loading course</span>
         <Card className="p-5">
