@@ -14,7 +14,7 @@ Ship every Supabase change as reviewed code with least-privilege access, reprodu
 1. Inspect the existing migrations, generated types and callers before designing the change.
 2. Write a forward-only migration under `supabase/migrations`. Do not make an untracked dashboard-only schema change.
 3. Add explicit table, column, constraint and index names where they improve diagnostics.
-4. Enable RLS and define explicit grants and policies for every exposed table, view or function.
+4. Enable RLS and define explicit grants and policies for every exposed table, view or function. When a new table joins an existing family (for example the catalogue tables), mirror the family's complete policy and grant set, including usage grants on identity sequences.
 5. Apply the migration to the local stack with `npm run db:reset`, then regenerate `types/database.ts` with `npm run db:types`. Applying migrations to the hosted project is a separate, explicitly approved step.
 6. Run database tests, relevant application tests and Supabase security and performance advisers.
 7. Record any manual dashboard configuration in the pull request and repository documentation.
@@ -23,11 +23,12 @@ Ship every Supabase change as reviewed code with least-privilege access, reprodu
 
 - Never expose the service-role key to browser code, logs, commits or pull requests.
 - Use request-scoped server clients and the official `@supabase/ssr` cookie pattern.
-- Protect server routes with verified claims or users, not an unverified client session.
+- Protect server routes with verified claims or users, not an unverified client session. The proxy only guards page prefixes, so API route handlers must enforce their own permission checks.
 - Treat `auth.users` as identity infrastructure. Store application profile data in public tables keyed to `auth.users.id`.
 - Read authorisation from database-owned role tables or trusted claims, never user-editable metadata.
 - Make owner checks cheap and obvious. Add indexes for columns used by RLS policies and foreign keys.
-- Set `search_path` deliberately on security-definer functions and revoke unnecessary execution.
+- Scope every policy to explicit roles with `to`, and wrap `auth.uid()` and permission helpers in `(select ...)` so they evaluate once per statement instead of once per row.
+- Pin an empty `search_path` and schema-qualify identifiers on every database function, not only security-definer functions, and revoke unnecessary execution.
 
 ## Data rules
 

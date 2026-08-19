@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { canManageCatalogueImports } from "@/lib/auth/viewer";
 import { isSupportedCatalogueYear } from "@/lib/catalogue-import/catalogue-years";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -80,6 +81,10 @@ async function getImportedCourseCodes(
 }
 
 export async function GET(request: Request) {
+  if (!(await canManageCatalogueImports())) {
+    return NextResponse.json({ error: "Not authorised." }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const year = Number(searchParams.get("year"));
   const target = searchParams.get("target");

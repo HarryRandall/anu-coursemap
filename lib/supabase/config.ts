@@ -12,13 +12,6 @@ export class SupabaseConfigurationError extends Error {
   }
 }
 
-export class SiteConfigurationError extends Error {
-  constructor() {
-    super("NEXT_PUBLIC_SITE_URL must be a valid Coursemap origin.");
-    this.name = "SiteConfigurationError";
-  }
-}
-
 export function isDemoMode() {
   if (process.env.COURSEMAP_DEMO_MODE !== "true" || process.env.VERCEL) {
     return false;
@@ -81,10 +74,4 @@ export function requireSupabaseConfig() {
   const config = getSupabaseConfig();
   if (!config) throw new SupabaseConfigurationError();
   return config;
-}
-
-export function requireCanonicalSiteOrigin() {
-  const origin = getCanonicalSiteOrigin();
-  if (!origin) throw new SiteConfigurationError();
-  return origin;
 }
