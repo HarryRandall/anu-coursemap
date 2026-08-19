@@ -136,8 +136,8 @@ const stages: RoadmapStage[] = [
 
 export default function RoadmapPage() {
   return (
-    <AppShell fullBleed>
-      <div className="h-[calc(100dvh-3.5rem)] overflow-hidden py-3 sm:py-4">
+    <AppShell>
+      <div className="py-2 sm:py-6">
         <RoadmapTimeline stages={stages} currentStage={currentStage} />
       </div>
     </AppShell>
