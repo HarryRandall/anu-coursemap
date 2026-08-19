@@ -1448,6 +1448,47 @@ export type Database = {
           },
         ]
       }
+      university_calendar_events: {
+        Row: {
+          calendar_year: number
+          created_at: string
+          event_date: string
+          id: number
+          source_document_id: number | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          calendar_year: number
+          created_at?: string
+          event_date: string
+          id?: never
+          source_document_id?: number | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          calendar_year?: number
+          created_at?: string
+          event_date?: string
+          id?: never
+          source_document_id?: number | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_calendar_events_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_source_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       admin_permissions: {

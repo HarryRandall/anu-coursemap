@@ -26,6 +26,7 @@ Catalogue identity and year-specific facts are separate:
 - `academic_periods`, `course_offerings` and `offering_sessions`
 - `course_rules`, nested `course_rule_groups` and `course_rule_conditions`
 - versioned `academic_structures` and `requirement_groups`
+- `university_calendar_events` keyed by calendar year, date and title
 
 User-owned planning data is also separate:
 

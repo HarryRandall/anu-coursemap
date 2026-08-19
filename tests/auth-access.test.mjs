@@ -67,8 +67,8 @@ function request(path, init = {}) {
 
 test("keeps anonymous public routes available without demo data", async () => {
   const responses = await Promise.all(
-    ["/", "/courses", "/courses/COMP2100", "/auth/sign-in"].map((path) =>
-      request(path, { headers: { accept: "text/html" } }),
+    ["/", "/courses", "/courses/COMP2100", "/key-dates", "/auth/sign-in"].map(
+      (path) => request(path, { headers: { accept: "text/html" } }),
     ),
   );
 

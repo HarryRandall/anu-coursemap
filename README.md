@@ -65,24 +65,26 @@ seed. Its Auth redirect configuration accepts the trusted local callback.
 
 ## Commands
 
-| Command                    | Purpose                                       |
-| -------------------------- | --------------------------------------------- |
-| `npm run dev`              | Start the development server                  |
-| `npm run db:start`         | Start the full local Supabase stack           |
-| `npm run db:reset`         | Rebuild the local database from migrations    |
-| `npm run db:test`          | Run local pgTAP database tests                |
-| `npm run db:lint`          | Run strict local schema linting               |
-| `npm run db:types`         | Regenerate committed local database types     |
-| `npm run db:grant-preview` | Grant one local user draft catalogue access   |
-| `npm run catalogue:fetch`  | Fetch official ANU HTML into a local manifest |
-| `npm run catalogue:import` | Import a manifest into local Supabase         |
-| `npm run format:check`     | Check repository formatting                   |
-| `npm run lint`             | Run ESLint and accessibility rules            |
-| `npm run typecheck`        | Run strict TypeScript checks                  |
-| `npm test`                 | Run unit, build and rendered-route tests      |
-| `npm run check`            | Run formatting, linting and type checks       |
-| `npm run verify`           | Run the complete local quality gate           |
-| `npm run build`            | Create the Vercel-compatible production build |
+| Command                    | Purpose                                        |
+| -------------------------- | ---------------------------------------------- |
+| `npm run dev`              | Start the development server                   |
+| `npm run db:start`         | Start the full local Supabase stack            |
+| `npm run db:reset`         | Rebuild the local database from migrations     |
+| `npm run db:test`          | Run local pgTAP database tests                 |
+| `npm run db:lint`          | Run strict local schema linting                |
+| `npm run db:types`         | Regenerate committed local database types      |
+| `npm run db:grant-preview` | Grant one local user draft catalogue access    |
+| `npm run catalogue:fetch`  | Fetch official ANU HTML into a local manifest  |
+| `npm run catalogue:import` | Import a manifest into local Supabase          |
+| `npm run calendar:fetch`   | Fetch the ANU university calendar for a year   |
+| `npm run calendar:import`  | Import a calendar manifest into local Supabase |
+| `npm run format:check`     | Check repository formatting                    |
+| `npm run lint`             | Run ESLint and accessibility rules             |
+| `npm run typecheck`        | Run strict TypeScript checks                   |
+| `npm test`                 | Run unit, build and rendered-route tests       |
+| `npm run check`            | Run formatting, linting and type checks        |
+| `npm run verify`           | Run the complete local quality gate            |
+| `npm run build`            | Create the Vercel-compatible production build  |
 
 The catalogue fetcher defaults to 44 Coursemap courses, including every course
 referenced by the authoritative 2026 [Bachelor of Computing](https://programsandcourses.anu.edu.au/2026/program/BCOMP)
@@ -113,6 +115,26 @@ through natural keys in one transaction. Re-running the same manifest preserves
 domain rows and content-hash snapshots while recording a new import run.
 Ambiguous prerequisite text and conflicting source facts remain attached to
 open review items rather than being treated as verified catalogue rules.
+
+### University calendar key dates
+
+The `/key-dates` page shows the official ANU university calendar for a year:
+teaching periods, examination windows, enrolment and fee deadlines, graduations
+and public holidays. Events are scraped from the
+[ANU university calendar](https://www.anu.edu.au/directories/university-calendar)
+with the same manifest-then-import pipeline as the course catalogue:
+
+```bash
+npm run calendar:fetch -- --year 2026 --output .catalogue-cache/anu-calendar-2026.json
+npm run calendar:import -- .catalogue-cache/anu-calendar-2026.json
+```
+
+Each manifest keeps the canonical source URL, retrieval time, content hash and
+parser diagnostics. The importer records a catalogue import run and a calendar
+source document, publishes validated events idempotently through their natural
+key (year, date, title), and archives previously published events that a clean
+manifest no longer contains. A manifest with error diagnostics records a failed
+run and leaves published events untouched.
 
 ### Selected-course web sync
 
@@ -156,9 +178,10 @@ a separate rights decision before it is enabled.
 
 Shared academic periods are currently inferred from course class start and end
 dates, retained as draft provenance and flagged for review. They must be
-verified against the official ANU University Calendar before publication. A
-later forward migration can retain class dates in dedicated session columns and
-import calendar periods from their own authoritative source.
+verified against the official ANU University Calendar before publication. The
+university calendar itself is imported as `university_calendar_events` through
+`npm run calendar:fetch` and `npm run calendar:import`; a later forward
+migration can align academic periods with those verified dates.
 
 ## Repository guide
 
