@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BookOpen,
+  CalendarDays,
+  CalendarRange,
   GitBranch,
   GraduationCap,
   House,
@@ -12,7 +14,9 @@ import {
   LifeBuoy,
   ListChecks,
   Map,
+  MapPin,
   RefreshCw,
+  Route,
   Search as SearchIcon,
   Table2,
   UserRound,
@@ -32,18 +36,20 @@ type NavItem = {
   badge?: string;
 };
 
-const studentNavGroups: Array<{ label: string; items: NavItem[] }> = [
+const studentNav: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: House },
+  { href: "/plan", label: "Plan", icon: Map },
+  { href: "/courses", label: "Courses", icon: BookOpen },
+  { href: "/requirements", label: "Requirements", icon: ListChecks },
+  { href: "/academic", label: "Academic", icon: GraduationCap },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/key-dates", label: "Key dates", icon: CalendarRange },
+  { href: "/roadmap", label: "Roadmap", icon: Route },
   {
-    label: "Overview",
-    items: [{ href: "/dashboard", label: "Home", icon: House }],
-  },
-  {
-    label: "Planning",
-    items: [
-      { href: "/plan", label: "Plan", icon: Map },
-      { href: "/courses", label: "Courses", icon: BookOpen },
-      { href: "/requirements", label: "Requirements", icon: ListChecks },
-    ],
+    href: "/rooms",
+    label: "Room finder",
+    icon: MapPin,
+    badge: "Soon",
   },
 ];
 
@@ -184,9 +190,6 @@ export function Sidebar({
         >
           {admin ? (
             <div className="flex flex-col gap-1">
-              <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                Catalogue
-              </p>
               {adminNav.map((item) => (
                 <NavLink
                   key={item.href}
@@ -197,21 +200,14 @@ export function Sidebar({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              {studentNavGroups.map((group) => (
-                <div key={group.label} className="flex flex-col gap-1">
-                  <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                    {group.label}
-                  </p>
-                  {group.items.map((item) => (
-                    <NavLink
-                      key={item.href}
-                      item={item}
-                      admin={false}
-                      onNavigate={onClose}
-                    />
-                  ))}
-                </div>
+            <div className="flex flex-col gap-1">
+              {studentNav.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  admin={false}
+                  onNavigate={onClose}
+                />
               ))}
             </div>
           )}

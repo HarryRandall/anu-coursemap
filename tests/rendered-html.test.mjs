@@ -138,7 +138,24 @@ test("server-renders the complete student workspace", async () => {
     helpGuideHtml,
   ] = await Promise.all(responses.map((response) => response.text()));
 
-  assert.match(dashboardHtml, /Overview/i);
+  const studentNavigation =
+    dashboardHtml.match(
+      /<nav aria-label="Student navigation"[^>]*>([\s\S]*?)<\/nav>/i,
+    )?.[1] ?? "";
+
+  assert.ok(studentNavigation);
+  [
+    "Home",
+    "Plan",
+    "Courses",
+    "Requirements",
+    "Academic",
+    "Calendar",
+    "Key dates",
+    "Roadmap",
+    "Room finder",
+  ].forEach((label) => assert.match(studentNavigation, new RegExp(label, "i")));
+  assert.doesNotMatch(studentNavigation, /Overview|Planning|Your study|More/i);
   assert.match(dashboardHtml, /Set up your plan first/i);
   assert.match(dashboardHtml, /Start onboarding/i);
   assert.doesNotMatch(
