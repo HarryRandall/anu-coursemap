@@ -78,7 +78,7 @@ export function ProfileEditor({
         ) : undefined
       }
     >
-      <form className="mx-auto max-w-3xl space-y-5" onSubmit={save}>
+      <form className="w-full space-y-5" onSubmit={save}>
         <header>
           <p className="text-sm font-medium text-brand-700">Your plan</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">

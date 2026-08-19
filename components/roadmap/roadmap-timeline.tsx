@@ -33,7 +33,7 @@ export function RoadmapTimeline({
 
   return (
     <section aria-label="Coursemap roadmap" className="h-full w-full">
-      <div className="relative h-full">
+      <div className="relative h-full before:absolute before:top-1/2 before:right-0 before:left-0 before:h-px before:bg-zinc-200">
         <div
           ref={viewportRef}
           tabIndex={0}
@@ -50,7 +50,7 @@ export function RoadmapTimeline({
           }}
           className="h-full overflow-x-auto overscroll-x-contain scroll-smooth pb-5 outline-none"
         >
-          <ol className="relative flex h-full w-max min-w-full px-4 before:absolute before:top-1/2 before:right-0 before:left-0 before:h-px before:bg-zinc-200 sm:px-6">
+          <ol className="relative flex h-full w-max min-w-full px-4 sm:px-6">
             {stages.map((stage, index) => {
               const above = index % 2 === 0;
               const done = index < currentStage;
