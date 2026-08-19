@@ -15,7 +15,7 @@ Ship every Supabase change as reviewed code with least-privilege access, reprodu
 2. Write a forward-only migration under `supabase/migrations`. Do not make an untracked dashboard-only schema change.
 3. Add explicit table, column, constraint and index names where they improve diagnostics.
 4. Enable RLS and define explicit grants and policies for every exposed table, view or function. When a new table joins an existing family (for example the catalogue tables), mirror the family's complete policy and grant set, including usage grants on identity sequences.
-5. Apply the migration through the Supabase connector or CLI, then regenerate `types/database.ts` from the linked project.
+5. Apply the migration to the local stack with `npm run db:reset`, then regenerate `types/database.ts` with `npm run db:types`. Applying migrations to the hosted project is a separate, explicitly approved step.
 6. Run database tests, relevant application tests and Supabase security and performance advisers.
 7. Record any manual dashboard configuration in the pull request and repository documentation.
 

@@ -3,6 +3,7 @@ import {
   type AnuProgrammeDocument,
 } from "@/lib/catalogue-import/anu-programme";
 import { fetchAnuCourseManifest } from "@/lib/catalogue-import/anu-programs-courses";
+import { assertSupportedCatalogueYear } from "@/lib/catalogue-import/catalogue-years";
 import { isDemoMode } from "@/lib/supabase/config";
 import { importCatalogueManifest } from "@/scripts/catalogue/lib/importer.mjs";
 import { importProgrammeDocument } from "@/scripts/catalogue/lib/programme-importer.mjs";
@@ -70,13 +71,7 @@ export async function runSelectedProgrammeImport({
   programmeCodes: readonly string[];
   onProgress: (progress: ProgrammeImportProgress) => void | Promise<void>;
 }): Promise<ProgrammeImportResult> {
-  if (
-    !Number.isInteger(catalogueYear) ||
-    catalogueYear < 2014 ||
-    catalogueYear > 2026
-  ) {
-    throw new TypeError("Unsupported catalogue year.");
-  }
+  assertSupportedCatalogueYear(catalogueYear);
   const [programmeCode] = normaliseProgrammeCodes(programmeCodes);
   const programme: AnuProgrammeDocument = await loadProgramme(
     catalogueYear,

@@ -13,6 +13,9 @@ test("requires one explicit manifest destination", () => {
     courses: ["COMP2100"],
     output: undefined,
     stdout: true,
+    allCourses: false,
+    year: 2026,
+    concurrency: undefined,
   });
   assert.deepEqual(
     parseFetchArguments([
@@ -28,6 +31,9 @@ test("requires one explicit manifest destination", () => {
       courses: ["COMP2100", "COMP3900"],
       output: ".catalogue-cache/review/anu-2026.json",
       stdout: false,
+      allCourses: false,
+      year: 2026,
+      concurrency: undefined,
     },
   );
   assert.throws(() => parseFetchArguments([]), /exactly one/);
@@ -36,6 +42,59 @@ test("requires one explicit manifest destination", () => {
     /exactly one/,
   );
   assert.throws(() => parseFetchArguments(["--unknown"]), /Unknown argument/);
+});
+
+test("parses catalogue year, full discovery and concurrency options", () => {
+  assert.deepEqual(
+    parseFetchArguments([
+      "--year",
+      "2024",
+      "--all-courses",
+      "--concurrency",
+      "8",
+      "--output",
+      ".catalogue-cache/anu-2024.json",
+    ]),
+    {
+      help: false,
+      courses: [],
+      output: ".catalogue-cache/anu-2024.json",
+      stdout: false,
+      allCourses: true,
+      year: 2024,
+      concurrency: 8,
+    },
+  );
+  assert.throws(
+    () => parseFetchArguments(["--year", "24", "--stdout"]),
+    /four-digit year/,
+  );
+  assert.throws(
+    () => parseFetchArguments(["--year", "twenty", "--stdout"]),
+    /four-digit year/,
+  );
+  assert.throws(
+    () => parseFetchArguments(["--concurrency", "0", "--stdout"]),
+    /between 1 and 8/,
+  );
+  assert.throws(
+    () => parseFetchArguments(["--concurrency", "9", "--stdout"]),
+    /between 1 and 8/,
+  );
+  assert.throws(
+    () =>
+      parseFetchArguments([
+        "--all-courses",
+        "--course",
+        "COMP1100",
+        "--stdout",
+      ]),
+    /cannot be combined/,
+  );
+  assert.throws(
+    () => parseFetchArguments(["--year", "2024", "--year", "2025", "--stdout"]),
+    /only once/,
+  );
 });
 
 test("confines file output to the ignored catalogue cache", () => {

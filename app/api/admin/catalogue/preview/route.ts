@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { canManageCatalogueImports } from "@/lib/auth/viewer";
+import { isSupportedCatalogueYear } from "@/lib/catalogue-import/catalogue-years";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -88,7 +89,7 @@ export async function GET(request: Request) {
   const year = Number(searchParams.get("year"));
   const target = searchParams.get("target");
 
-  if (!Number.isInteger(year) || year < 2014 || year > 2026) {
+  if (!isSupportedCatalogueYear(year)) {
     return NextResponse.json(
       { error: "Unsupported catalogue year." },
       { status: 400 },
