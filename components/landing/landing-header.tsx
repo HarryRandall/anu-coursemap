@@ -18,14 +18,35 @@ export function LandingHeader({ canOpenPlan }: { canOpenPlan: boolean }) {
           >
             Browse courses
           </ButtonLink>
-          <ButtonLink
-            href={canOpenPlan ? "/plan" : "/auth/sign-in"}
-            variant="primary"
-            size="sm"
-            className="min-h-11 px-3"
-          >
-            {canOpenPlan ? "Open your plan" : "Sign in"}
-          </ButtonLink>
+          {canOpenPlan ? (
+            <ButtonLink
+              href="/plan"
+              variant="primary"
+              size="sm"
+              className="min-h-11 !rounded-full px-4"
+            >
+              Open your plan
+            </ButtonLink>
+          ) : (
+            <>
+              <ButtonLink
+                href="/auth/sign-in"
+                variant="ghost"
+                size="sm"
+                className="min-h-11 px-3"
+              >
+                Sign in
+              </ButtonLink>
+              <ButtonLink
+                href="/auth/sign-up"
+                variant="primary"
+                size="sm"
+                className="min-h-11 !rounded-full px-4"
+              >
+                Get started free
+              </ButtonLink>
+            </>
+          )}
         </nav>
       </div>
     </header>
