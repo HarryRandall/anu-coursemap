@@ -11,6 +11,7 @@ import {
   type CatalogueOfferingSession,
 } from "./manifest.ts";
 import { parseRequisiteSummary } from "../coursemap/requisite-summary.ts";
+import { fetchSourceWithRetry } from "./source-http.ts";
 
 export const ANU_COURSE_PARSER_VERSION = "anu-programs-courses-course-v2";
 
@@ -96,13 +97,24 @@ type ParseAnuCourseDocumentInput = {
   sourceLastModified?: string | null;
 };
 
+export type FetchAnuCourseManifestProgress = {
+  courseCode: string;
+  completed: number;
+  total: number;
+  ok: boolean;
+};
+
 export type FetchAnuCourseManifestOptions = {
   catalogueYear?: number;
   courseCodes?: readonly string[];
   concurrency?: number;
+  requestTimeoutMs?: number;
+  retryAttempts?: number;
+  retryDelayMs?: number;
   fetchImpl?: typeof fetch;
   now?: () => Date;
   signal?: AbortSignal;
+  onProgress?: (progress: FetchAnuCourseManifestProgress) => void;
 };
 
 type PeriodIdentity = {
@@ -939,21 +951,34 @@ function normaliseScope(courseCodes: readonly string[]) {
   return { courseCodes: courseCodesInScope, diagnostics };
 }
 
+type FetchAnuCourseDocumentContext = {
+  fetchImpl: typeof fetch;
+  now: () => Date;
+  signal?: AbortSignal;
+  requestTimeoutMs: number;
+  retryAttempts: number;
+  retryDelayMs: number;
+};
+
 async function fetchAnuCourseDocument(
   catalogueYear: number,
   courseCode: string,
-  fetchImpl: typeof fetch,
-  now: () => Date,
-  signal?: AbortSignal,
+  {
+    fetchImpl,
+    now,
+    signal,
+    requestTimeoutMs,
+    retryAttempts,
+    retryDelayMs,
+  }: FetchAnuCourseDocumentContext,
 ) {
   const sourceUrl = createAnuCourseUrl(catalogueYear, courseCode);
-  const response = await fetchImpl(sourceUrl, {
-    headers: {
-      Accept: "text/html,application/xhtml+xml",
-      "User-Agent": "Coursemap catalogue importer (local development)",
-    },
-    redirect: "error",
+  const response = await fetchSourceWithRetry(sourceUrl, {
+    fetchImpl,
     signal,
+    requestTimeoutMs,
+    retryAttempts,
+    retryDelayMs,
   });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} ${response.statusText}`);
@@ -986,9 +1011,13 @@ export async function fetchAnuCourseManifest({
   catalogueYear = 2026,
   courseCodes = ANU_2026_COURSE_CODES,
   concurrency = 4,
+  requestTimeoutMs = 30_000,
+  retryAttempts = 3,
+  retryDelayMs = 500,
   fetchImpl = fetch,
   now = () => new Date(),
   signal,
+  onProgress,
 }: FetchAnuCourseManifestOptions = {}): Promise<CatalogueManifest> {
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 8) {
     throw new TypeError("concurrency must be an integer between 1 and 8");
@@ -999,22 +1028,31 @@ export async function fetchAnuCourseManifest({
     scope.courseCodes.length,
   );
   const diagnostics = [...scope.diagnostics];
+  const context: FetchAnuCourseDocumentContext = {
+    fetchImpl,
+    now,
+    signal,
+    requestTimeoutMs,
+    retryAttempts,
+    retryDelayMs,
+  };
   let nextIndex = 0;
+  let completed = 0;
 
   const worker = async () => {
     while (nextIndex < scope.courseCodes.length) {
       const index = nextIndex;
       nextIndex += 1;
       const courseCode = scope.courseCodes[index];
+      let ok = true;
       try {
         documents[index] = await fetchAnuCourseDocument(
           catalogueYear,
           courseCode,
-          fetchImpl,
-          now,
-          signal,
+          context,
         );
       } catch (error) {
+        ok = false;
         diagnostics.push({
           code: "SOURCE_FETCH_FAILED",
           severity: "error",
@@ -1023,6 +1061,13 @@ export async function fetchAnuCourseManifest({
           sourceFragment: createAnuCourseUrl(catalogueYear, courseCode),
         });
       }
+      completed += 1;
+      onProgress?.({
+        courseCode,
+        completed,
+        total: scope.courseCodes.length,
+        ok,
+      });
     }
   };
 

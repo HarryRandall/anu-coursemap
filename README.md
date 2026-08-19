@@ -84,14 +84,25 @@ seed. Its Auth redirect configuration accepts the trusted local callback.
 | `npm run verify`           | Run the complete local quality gate           |
 | `npm run build`            | Create the Vercel-compatible production build |
 
-The catalogue fetcher defaults to 44 Coursemap courses, including every course
-referenced by the authoritative 2026 [Bachelor of Computing](https://programsandcourses.anu.edu.au/2026/program/BCOMP)
+The catalogue fetcher can capture any catalogue year and any scope of courses.
+`--all-courses` discovers every published course for the selected year through
+the official course search endpoint before fetching each course page with
+per-request timeouts and retry backoff. Without `--course` or `--all-courses`
+it defaults to 44 pinned Coursemap courses, including every course referenced
+by the authoritative 2026 [Bachelor of Computing](https://programsandcourses.anu.edu.au/2026/program/BCOMP)
 and [Software Development major](https://programsandcourses.anu.edu.au/2026/major/SOFT-MAJ)
 structures. It never writes to the database. Give it a new path inside the
 ignored local cache, or use `--stdout` for a pipeline:
 
 ```bash
-npm run catalogue:fetch -- --output .catalogue-cache/anu-2026.json
+# Every course published for 2026 (about 2,800 pages)
+npm run catalogue:fetch -- --year 2026 --all-courses --output .catalogue-cache/anu-2026.json
+
+# A specific scope from an earlier catalogue year
+npm run catalogue:fetch -- --year 2024 --course COMP1100 --stdout
+
+# The pinned Coursemap seed scope
+npm run catalogue:fetch -- --output .catalogue-cache/anu-2026-seed.json
 ```
 
 Each manifest retains its official canonical URL, retrieval time, content hash,

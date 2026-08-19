@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { load } from "cheerio";
 import { ANU_PROGRAMS_AND_COURSES_SOURCE } from "./anu-programs-courses";
+import { assertSupportedCatalogueYear } from "./catalogue-years";
 
 const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]+$/;
 const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}\b/g;
@@ -33,13 +34,7 @@ function meta($: ReturnType<typeof load>, name: string) {
 }
 
 function programmeUrl(catalogueYear: number, programmeCode: string) {
-  if (
-    !Number.isInteger(catalogueYear) ||
-    catalogueYear < 2014 ||
-    catalogueYear > 2026
-  ) {
-    throw new TypeError("Unsupported catalogue year.");
-  }
+  assertSupportedCatalogueYear(catalogueYear);
   const code = programmeCode.trim().toUpperCase();
   if (!PROGRAMME_CODE_PATTERN.test(code)) {
     throw new TypeError("Choose a valid ANU programme code.");
