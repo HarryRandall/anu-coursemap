@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Info } from "lucide-react";
+import { useCoursemap } from "@/app/providers";
 
 type Provider = "Google" | "Microsoft";
 
@@ -44,9 +43,14 @@ function MicrosoftLogo() {
  * option is coming soon instead of starting an OAuth flow.
  */
 export function SocialSignIn({ disabled }: { disabled?: boolean }) {
-  const [announcement, setAnnouncement] = useState<Provider | null>(null);
+  const { notify } = useCoursemap();
 
-  const announce = (provider: Provider) => setAnnouncement(provider);
+  const announce = (provider: Provider) => {
+    notify(
+      `${provider} sign-in is coming soon. Use your email and password for now.`,
+      "info",
+    );
+  };
 
   return (
     <div className="space-y-2.5">
@@ -68,17 +72,6 @@ export function SocialSignIn({ disabled }: { disabled?: boolean }) {
         <MicrosoftLogo />
         Continue with Microsoft
       </button>
-
-      {announcement && (
-        <p
-          role="status"
-          className="flex items-start gap-2 rounded-lg bg-sky-50 px-3 py-2.5 text-xs leading-relaxed text-sky-800 ring-1 ring-sky-200"
-        >
-          <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
-          {announcement} sign-in is coming soon. Use your email and password for
-          now.
-        </p>
-      )}
     </div>
   );
 }

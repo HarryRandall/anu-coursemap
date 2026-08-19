@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -40,7 +40,7 @@ export type AppState = {
   attempts: Attempt[];
 };
 
-type ToastTone = "success" | "warning";
+type ToastTone = "success" | "warning" | "info";
 type Toast = { message: string; tone: ToastTone };
 
 type AppContextValue = {
@@ -528,18 +528,26 @@ export function AppProvider({
             className={
               toast.tone === "warning"
                 ? "grid size-8 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100 ring-inset"
-                : "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 ring-inset"
+                : toast.tone === "info"
+                  ? "grid size-8 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-600 ring-1 ring-sky-100 ring-inset"
+                  : "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 ring-inset"
             }
           >
             {toast.tone === "warning" ? (
               <AlertTriangle size={17} />
+            ) : toast.tone === "info" ? (
+              <Info size={17} />
             ) : (
               <CheckCircle2 size={17} />
             )}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-xs font-semibold">
-              {toast.tone === "warning" ? "Action needed" : "Plan updated"}
+              {toast.tone === "warning"
+                ? "Action needed"
+                : toast.tone === "info"
+                  ? "Coming soon"
+                  : "Plan updated"}
             </span>
             <span className="mt-0.5 block text-[11px] leading-relaxed text-zinc-500">
               {toast.message}
