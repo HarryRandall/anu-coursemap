@@ -14,7 +14,6 @@ import { AppShell } from "@/components/shell/app-shell";
 import { Badge } from "@/components/ui/badge";
 import { buttonClasses } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
 import { cn } from "@/lib/cn";
 import {
   UNIVERSITY_CALENDAR_CATEGORIES,
@@ -260,40 +259,9 @@ export default async function KeyDatesPage({
   }
 
   return (
-    <AppShell title="Key dates" subtitle="Official ANU academic calendar">
+    <AppShell>
       <div className="mx-auto flex max-w-3xl flex-col gap-6">
-        <PageHeader
-          title="Key dates"
-          meta={
-            data.year !== null
-              ? `Official ANU academic calendar · ${data.year}`
-              : "Official ANU academic calendar"
-          }
-          actions={
-            data.availableYears.length > 1 ? (
-              <nav aria-label="Calendar year" className="flex flex-wrap gap-2">
-                {data.availableYears.map((year) => {
-                  const isActive = year === data.year;
-                  return (
-                    <Link
-                      key={year}
-                      href={keyDatesHref(year, activeCategory)}
-                      aria-current={isActive ? "page" : undefined}
-                      className={cn(
-                        "inline-flex min-h-11 items-center rounded-full px-4 text-[13px] font-semibold ring-1 transition ring-inset",
-                        isActive
-                          ? "bg-brand-700 text-white ring-brand-700"
-                          : "bg-white text-zinc-600 ring-zinc-200 hover:bg-zinc-50 hover:text-zinc-900",
-                      )}
-                    >
-                      {year}
-                    </Link>
-                  );
-                })}
-              </nav>
-            ) : undefined
-          }
-        />
+        <h1 className="sr-only">Key dates</h1>
 
         {allEvents.length === 0 ? (
           <EmptyCalendarCard />

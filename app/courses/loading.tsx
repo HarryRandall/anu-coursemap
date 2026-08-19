@@ -10,10 +10,6 @@ export default function CoursesLoading() {
         className="mx-auto flex w-full max-w-[1280px] flex-col gap-5"
       >
         <span className="sr-only">Loading the course catalogue</span>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-10 flex-1 rounded-lg" />
-          <Skeleton className="h-10 w-24 shrink-0 rounded-lg" />
-        </div>
         <Card className="overflow-hidden">
           <div className="border-b border-zinc-100 px-4 py-3">
             <Skeleton className="h-3 w-56 max-w-full" />

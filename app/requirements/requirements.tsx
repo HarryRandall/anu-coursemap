@@ -41,22 +41,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <div className="mx-auto max-w-5xl space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">Degree rules</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-              Requirements
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {degree
-                ? `${degree.name} · ${state.profile.catalogueYear} catalogue`
-                : "Set up a degree to see progress."}
-            </p>
-          </div>
-          <ButtonLink href="/plan" size="sm" variant="secondary">
-            Open plan
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">Requirements</h1>
 
         {!degree ? (
           <Card className="p-8 text-center">

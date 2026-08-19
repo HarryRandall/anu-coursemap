@@ -2,7 +2,6 @@ import { AlertTriangle, KeyRound } from "lucide-react";
 import { RolePermissionMatrix } from "@/components/admin/role-permission-matrix";
 import { AppShell } from "@/components/shell";
 import { Card, CardHeader } from "@/components/ui/card";
-import { FilterBar } from "@/components/ui/filter-bar";
 import { loadAdminRoleManagement } from "@/lib/admin/users";
 import { isDemoMode } from "@/lib/supabase/config";
 
@@ -14,43 +13,8 @@ async function loadRoles() {
   }
 }
 
-function permissionArea(category: string) {
-  const labels: Record<string, string> = {
-    admin: "Platform access",
-    approvals: "Approvals",
-    catalogue: "Catalogue",
-    imports: "Imports",
-  };
-  return labels[category] ?? category;
-}
-
-export default async function AdminRolesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; area?: string; role?: string }>;
-}) {
-  const [params, data] = await Promise.all([
-    searchParams,
-    isDemoMode() ? Promise.resolve(null) : loadRoles(),
-  ]);
-
-  const query = (params.q ?? "").trim().toLowerCase();
-  const categories = Array.from(
-    new Set(data?.permissions.map((permission) => permission.category) ?? []),
-  );
-  const roles =
-    params.role && data?.roles.some((role) => role.key === params.role)
-      ? data.roles.filter((role) => role.key === params.role)
-      : (data?.roles ?? []);
-  const permissions = (data?.permissions ?? []).filter((permission) => {
-    const matchesQuery =
-      !query ||
-      `${permission.name} ${permission.description} ${permission.key} ${permission.category}`
-        .toLowerCase()
-        .includes(query);
-    const matchesArea = !params.area || permission.category === params.area;
-    return matchesQuery && matchesArea;
-  });
+export default async function AdminRolesPage() {
+  const data = isDemoMode() ? null : await loadRoles();
 
   return (
     <AppShell admin>
@@ -69,34 +33,11 @@ export default async function AdminRolesPage({
             />
           </Card>
         ) : data ? (
-          <>
-            <FilterBar
-              searchPlaceholder="Search permissions by name or area…"
-              filters={[
-                {
-                  key: "area",
-                  label: "Area",
-                  options: categories.map((category) => ({
-                    value: category,
-                    label: permissionArea(category),
-                  })),
-                },
-                {
-                  key: "role",
-                  label: "Role",
-                  options: data.roles.map((role) => ({
-                    value: role.key,
-                    label: role.name,
-                  })),
-                },
-              ]}
-            />
-            <RolePermissionMatrix
-              roles={roles}
-              permissions={permissions}
-              grants={data.grants}
-            />
-          </>
+          <RolePermissionMatrix
+            roles={data.roles}
+            permissions={data.permissions}
+            grants={data.grants}
+          />
         ) : (
           <Card>
             <CardHeader

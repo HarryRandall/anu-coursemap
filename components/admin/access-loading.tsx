@@ -12,23 +12,9 @@ function Skeleton({ className }: { className?: string }) {
   );
 }
 
-function SearchSkeleton() {
-  return (
-    <div className="flex gap-2" aria-hidden="true">
-      <div className="flex h-10 flex-1 items-center rounded-lg border border-zinc-200 bg-white px-3 shadow-xs">
-        <Skeleton className="h-3 w-52 max-w-[60%]" />
-      </div>
-      <div className="flex h-10 w-24 items-center justify-center rounded-lg border border-zinc-200 bg-white shadow-xs">
-        <Skeleton className="h-3 w-12" />
-      </div>
-    </div>
-  );
-}
-
 export function UserDirectoryLoadingSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5">
-      <SearchSkeleton />
       <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs">
         <div className="overflow-x-hidden">
           <div className="grid h-10 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-zinc-200/80 bg-zinc-50/70 px-4">
@@ -65,7 +51,6 @@ export function UserDirectoryLoadingSkeleton() {
 export function RoleMatrixLoadingSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5">
-      <SearchSkeleton />
       <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs">
         <div className="grid h-10 min-w-[800px] grid-cols-[minmax(500px,1fr)_150px_150px] items-center border-b border-zinc-200/80 bg-zinc-50/70 px-4">
           <Skeleton className="h-2.5 w-20" />

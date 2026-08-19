@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, GraduationCap, Upload } from "lucide-react";
+import { CheckCircle2, GraduationCap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { publishStructureVersion } from "@/lib/coursemap/catalogue-publication-actions";
@@ -10,9 +10,8 @@ import type {
 } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 
 export function ProgrammeList({
@@ -38,34 +37,8 @@ export function ProgrammeList({
   return (
     <AppShell admin>
       <div className="mx-auto w-full max-w-7xl">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">
-              Catalogue review
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
-              Degrees and structures
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-              Publish a degree or major when its imported source is ready for
-              student onboarding and planning.
-            </p>
-          </div>
-          <ButtonLink href="/admin/sync" size="sm" variant="secondary">
-            <Upload size={15} /> Import a programme
-          </ButtonLink>
-        </div>
-
-        <Card className="mt-6 overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-zinc-100 bg-zinc-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-xl flex-1">
-              <FilterBar searchPlaceholder="Search imported degrees and majors" />
-            </div>
-            <span className="text-xs text-zinc-500">
-              {data.total.toLocaleString("en-AU")} imported structures
-            </span>
-          </div>
-
+        <h1 className="sr-only">Degrees and structures</h1>
+        <Card className="overflow-hidden">
           {message && (
             <p
               role="status"
@@ -132,7 +105,7 @@ export function ProgrammeList({
             ))}
             {data.records.length === 0 && (
               <p className="px-4 py-12 text-center text-sm text-zinc-500">
-                No imported programme structures match that search.
+                No imported programme structures are available yet.
               </p>
             )}
           </div>

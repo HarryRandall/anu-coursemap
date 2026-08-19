@@ -79,7 +79,7 @@ export function CourseDirectory({
                   "py-12 text-center font-normal whitespace-normal text-zinc-500",
                 )}
               >
-                No courses match the current filters.
+                No published courses are available yet.
               </td>
             </tr>
           ) : null}

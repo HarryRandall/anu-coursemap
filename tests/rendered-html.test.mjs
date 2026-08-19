@@ -90,12 +90,12 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(homeHtml, />Prerequisites<\/button>/i);
   assert.match(homeHtml, /Start with a course, then build the rest/i);
   assert.match(homeHtml, /Explore courses/i);
-  assert.match(
-    coursesHtml,
-    /Showing 1(?:<!-- -->)?-1(?:<!-- -->)? of 1(?:<!-- -->)? course/i,
-  );
+  assert.match(coursesHtml, /Showing .* of .* course/i);
   assert.match(coursesHtml, /Computing Project/i);
-  assert.match(coursesHtml, /Search code, course name, school or convener/i);
+  assert.doesNotMatch(
+    coursesHtml,
+    /Search code, course name, school or convener/i,
+  );
   assert.doesNotMatch(coursesHtml, /Open entry|6 units/i);
   assert.match(signInHtml, /Welcome back/i);
   assert.match(signInHtml, /name="next" value="\/dashboard"/i);
@@ -156,6 +156,7 @@ test("server-renders the complete student workspace", async () => {
     "Room finder",
   ].forEach((label) => assert.match(studentNavigation, new RegExp(label, "i")));
   assert.doesNotMatch(studentNavigation, /Overview|Planning|Your study|More/i);
+  assert.doesNotMatch(studentNavigation, /Search courses/i);
   assert.match(dashboardHtml, /Set up your plan first/i);
   assert.match(dashboardHtml, /Start onboarding/i);
   assert.doesNotMatch(
@@ -164,15 +165,19 @@ test("server-renders the complete student workspace", async () => {
   );
   assert.match(academicHtml, /Academic overview/i);
   assert.match(academicHtml, /recorded mark average/i);
-  assert.match(calendarHtml, /Study periods/i);
-  assert.match(calendarHtml, /Timetable times and rooms are not imported yet/i);
+  assert.doesNotMatch(academicHtml, /Your study record|Edit study details/i);
+  assert.match(calendarHtml, /Plan calendar/i);
+  assert.doesNotMatch(
+    calendarHtml,
+    /Study periods|Timetable times and rooms are not imported yet/i,
+  );
   assert.doesNotMatch(
     calendarHtml,
     /Weekly timetable|Class timetable|Assessments and dates/i,
   );
   assert.match(keyDatesHtml, /Key dates/i);
   assert.match(keyDatesHtml, /No key dates published yet/i);
-  assert.match(keyDatesHtml, /Official ANU academic calendar/i);
+  assert.doesNotMatch(keyDatesHtml, /Official ANU academic calendar/i);
   assert.match(
     requirementsHtml,
     /Select a published degree in onboarding to begin/i,
@@ -190,8 +195,12 @@ test("server-renders the complete student workspace", async () => {
   );
   assert.doesNotMatch(roadmapHtml, /Build the useful things first/i);
   assert.doesNotMatch(roadmapHtml, /Something important missing/i);
-  assert.match(roomsHtml, /Find the right room/i);
-  assert.match(helpHtml, /How can we help/i);
+  assert.match(roomsHtml, /Building and room search/i);
+  assert.doesNotMatch(
+    roomsHtml,
+    /Find the right room|Room Finder will connect/i,
+  );
+  assert.doesNotMatch(helpHtml, /How can we help|Coursemap support/i);
   assert.match(helpHtml, /Read guide/i);
   assert.match(helpHtml, /Email support/i);
   assert.match(helpHtml, /Use the study calendar/i);
@@ -306,8 +315,13 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminHtml, /Publication workflow/i);
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
+  assert.doesNotMatch(adminHtml, /Catalogue administration/i);
   assert.doesNotMatch(adminHtml, /Search courses|Help &amp; support/i);
   assert.doesNotMatch(adminCoursesHtml, /Export CSV|Reparse selected/i);
+  assert.doesNotMatch(
+    adminCoursesHtml,
+    /Catalogue review|Open a course version|Search imported courses/i,
+  );
   assert.match(adminCourseReviewHtml, /What to review before publishing/i);
   assert.match(adminCourseReviewHtml, /Course fields/i);
   assert.match(adminCourseReviewHtml, /Requisites and compatibility/i);
@@ -317,6 +331,10 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
   assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);
   assert.match(relationsHtml, /Imported rules/i);
+  assert.doesNotMatch(
+    relationsHtml,
+    /Catalogue quality|Original ANU wording is retained here/i,
+  );
   const courseHtml = await courseResponse.text();
   assert.match(courseHtml, /Software Design Methodologies/i);
   assert.match(courseHtml, /Requisites and compatibility/i);

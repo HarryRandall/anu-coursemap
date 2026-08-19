@@ -1,4 +1,4 @@
-import { AlertTriangle, BookOpen, GraduationCap, Upload } from "lucide-react";
+import { AlertTriangle, BookOpen, GraduationCap } from "lucide-react";
 import { loadAdminCatalogueSummary } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
@@ -12,22 +12,7 @@ export default async function AdminOverviewPage() {
   return (
     <AppShell admin>
       <div className="mx-auto w-full max-w-6xl space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">
-              Catalogue administration
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-              Live catalogue status
-            </h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              Counts come directly from the current published catalogue year.
-            </p>
-          </div>
-          <ButtonLink href="/admin/sync/courses" size="sm">
-            <Upload size={15} /> Import courses
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">Live catalogue status</h1>
         <div className="grid gap-3 sm:grid-cols-3">
           <Card className="p-5">
             <BookOpen className="text-brand-600" size={19} />

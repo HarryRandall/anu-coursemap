@@ -41,9 +41,6 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
   );
-  const major = catalogue.majors.find(
-    (item) => item.code === state.profile.majorCode,
-  );
   const timelineYears = planTimelineYears({
     degree,
     commencementYear: state.profile.commencementYear,
@@ -143,26 +140,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">
-              Welcome back
-              {state.profile.name
-                ? `, ${state.profile.name.split(" ")[0]}`
-                : ""}
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-              {degree.name}
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {degree.code} · {state.profile.catalogueYear} catalogue
-              {major ? ` · ${major.name}` : ""}
-            </p>
-          </div>
-          <ButtonLink href="/plan" size="sm">
-            <Map size={15} /> Open plan
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">{degree.name}</h1>
 
         <Card className="overflow-hidden p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

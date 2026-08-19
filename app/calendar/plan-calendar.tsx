@@ -40,21 +40,7 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <div className="mx-auto max-w-5xl space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">Study periods</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-              Plan calendar
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Coursemap shows confirmed course offerings. Timetable times and
-              rooms are not imported yet.
-            </p>
-          </div>
-          <ButtonLink href="/plan" size="sm" variant="secondary">
-            Edit plan
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">Plan calendar</h1>
 
         {groups.length === 0 ? (
           <Card className="p-10 text-center">

@@ -18,7 +18,6 @@ import {
   MapPin,
   RefreshCw,
   Route,
-  Search as SearchIcon,
   Table2,
   UserRound,
   UsersRound,
@@ -137,12 +136,10 @@ export function Sidebar({
   admin,
   mobileOpen,
   onClose,
-  onOpenSearch,
 }: {
   admin: boolean;
   mobileOpen: boolean;
   onClose: () => void;
-  onOpenSearch: () => void;
 }) {
   const { state, canAccessAdmin } = useCoursemap();
   const initials =
@@ -180,21 +177,6 @@ export function Sidebar({
             <X size={18} />
           </button>
         </div>
-
-        {!admin && (
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            aria-label="Search courses"
-            className="mx-3 mt-5 flex h-9 items-center gap-2 rounded-lg bg-white px-2.5 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:ring-zinc-300"
-          >
-            <SearchIcon size={15} />
-            <span className="flex-1 text-left text-xs">Search courses</span>
-            <kbd className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
-              ⌘K
-            </kbd>
-          </button>
-        )}
 
         <nav
           aria-label={admin ? "Admin navigation" : "Student navigation"}

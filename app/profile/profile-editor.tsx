@@ -79,15 +79,7 @@ export function ProfileEditor({
       }
     >
       <form className="w-full space-y-5" onSubmit={save}>
-        <header>
-          <p className="text-sm font-medium text-brand-700">Your plan</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-            Profile and study details
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">
-            These choices use the published catalogue, not a local sample plan.
-          </p>
-        </header>
+        <h1 className="sr-only">Profile and study details</h1>
 
         <Card className="overflow-hidden">
           <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">

@@ -9,18 +9,7 @@ export default function HelpPage() {
   return (
     <AppShell>
       <div className="mx-auto max-w-7xl">
-        <header className="max-w-2xl px-1 pt-2 pb-8 sm:pt-4 sm:pb-10">
-          <p className="text-[13px] font-semibold tracking-wide text-brand-700 uppercase">
-            Coursemap support
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl">
-            How can we help?
-          </h1>
-          <p className="mt-3 text-base leading-relaxed text-zinc-600">
-            Read a short guide, report incorrect data or tell us what would make
-            degree planning easier.
-          </p>
-        </header>
+        <h1 className="sr-only">Help and support</h1>
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <section

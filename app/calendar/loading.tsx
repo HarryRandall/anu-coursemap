@@ -7,14 +7,6 @@ export default function CalendarLoading() {
     <AppShell>
       <div aria-busy="true" className="mx-auto max-w-5xl space-y-5">
         <span className="sr-only">Loading plan calendar</span>
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-3.5 w-28" />
-            <Skeleton className="h-7 w-52 max-w-full" />
-            <Skeleton className="h-3.5 w-72 max-w-full" />
-          </div>
-          <Skeleton className="h-8 w-24 rounded-lg" />
-        </header>
         <div className="space-y-4">
           {Array.from({ length: 2 }, (_, cardIndex) => (
             <Card key={cardIndex} className="overflow-hidden">
