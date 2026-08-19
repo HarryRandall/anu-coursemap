@@ -226,6 +226,27 @@ test("redirects legacy student routes to their replacements", async () => {
   assert.equal(timetableResponse.headers.get("location"), "/calendar");
 });
 
+test("keeps the key-dates experience calendar-led and data-driven", async () => {
+  const [page, calendarView] = await Promise.all([
+    readFile(new URL("../app/key-dates/page.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL(
+        "../components/key-dates/university-calendar-view.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(page, /loadPublishedUniversityCalendar/);
+  assert.match(page, /decorateUniversityCalendarEvents/);
+  assert.match(calendarView, /University calendar/);
+  assert.match(calendarView, /Dates this month/);
+  assert.match(calendarView, /monthCells/);
+  assert.doesNotMatch(calendarView, /Next up|Breakdown|MonthAgenda/);
+  assert.doesNotMatch(calendarView, /const events = \[/);
+});
+
 test("fails closed for malformed auth handlers and cross-origin logout", async () => {
   const [callbackResponse, confirmResponse, logoutResponse] = await Promise.all(
     [
