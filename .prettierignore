@@ -8,5 +8,4 @@ package-lock.json
 playwright-report
 public
 test-results
-tests/fixtures/calendar
 types/database.ts

@@ -14,7 +14,6 @@ const labels: Record<string, string> = {
   courses: "Courses",
   academic: "Academic",
   calendar: "Calendar",
-  "key-dates": "Key dates",
   roadmap: "Roadmap",
   rooms: "Room finder",
   help: "Help & support",
