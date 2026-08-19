@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { AuthShell } from "@/app/auth/auth-shell";
 import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
-import { BrandMark } from "@/components/brand-mark";
+import { SocialSignIn } from "@/app/auth/social-sign-in";
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 
@@ -22,57 +22,57 @@ export default async function SignInPage({
   const configured = Boolean(getSupabaseConfig());
   const signedOut = first(params.signedOut) === "true";
   const configurationMissing = first(params.reason) === "configuration";
+  const signUpHref = `/auth/sign-up?next=${encodeURIComponent(next)}`;
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-zinc-50 px-4 py-10">
-      <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm ring-1 ring-zinc-200 sm:p-8">
-        <Link
-          href="/courses"
-          className="inline-flex items-center gap-2.5 text-zinc-900"
-          aria-label="Browse Coursemap courses"
+    <AuthShell>
+      <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
+        Welcome back
+      </h1>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+        Sign in to your plan and pick up where you left off.
+      </p>
+
+      {signedOut && (
+        <p className="mt-5 rounded-lg bg-zinc-50 px-3 py-2.5 text-xs text-zinc-600 ring-1 ring-zinc-200">
+          You have been signed out.
+        </p>
+      )}
+
+      {(!configured || configurationMissing) && (
+        <p
+          role="alert"
+          className="mt-5 rounded-lg bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800 ring-1 ring-amber-200"
         >
-          <BrandMark className="size-10" />
-          <strong className="brand-wordmark text-lg">coursemap</strong>
+          Local Supabase is not configured. Copy .env.example to .env.local, add
+          the values from `supabase status`, then restart Next.js.
+        </p>
+      )}
+
+      <div className="mt-7">
+        <SocialSignIn disabled={!configured} />
+      </div>
+
+      <div className="my-6 flex items-center gap-3" aria-hidden="true">
+        <span className="h-px flex-1 bg-zinc-200" />
+        <span className="text-[11px] text-zinc-400">
+          or continue with email
+        </span>
+        <span className="h-px flex-1 bg-zinc-200" />
+      </div>
+
+      <SignInForm next={next} configured={configured} />
+
+      <p className="mt-6 text-center text-sm text-zinc-500">
+        New to Coursemap?{" "}
+        <Link
+          href={signUpHref}
+          className="font-semibold text-brand-700 hover:text-brand-800 hover:underline"
+        >
+          Create an account
         </Link>
-
-        <div className="mt-7">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-950">
-            Sign in to your plan
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-            Use your email address and Coursemap password.
-          </p>
-        </div>
-
-        {signedOut && (
-          <p className="mt-5 rounded-lg bg-zinc-50 px-3 py-2.5 text-xs text-zinc-600 ring-1 ring-zinc-200">
-            You have been signed out.
-          </p>
-        )}
-
-        {(!configured || configurationMissing) && (
-          <p
-            role="alert"
-            className="mt-5 rounded-lg bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800 ring-1 ring-amber-200"
-          >
-            Local Supabase is not configured. Copy .env.example to .env.local,
-            add the values from `supabase status`, then restart Next.js.
-          </p>
-        )}
-
-        <div className="mt-6">
-          <SignInForm next={next} configured={configured} />
-        </div>
-
-        <div className="mt-6 flex items-start gap-2 border-t border-zinc-100 pt-5 text-[11px] leading-relaxed text-zinc-400">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <p>
-            Passwords are handled securely by Supabase. Use a unique password,
-            not your ANU password.
-          </p>
-        </div>
-      </section>
-    </main>
+      </p>
+    </AuthShell>
   );
 }
 

@@ -5,25 +5,42 @@ import { ButtonLink } from "@/components/ui/button";
 export function LandingFooter({ canOpenPlan }: { canOpenPlan: boolean }) {
   return (
     <footer>
-      <section className="mx-auto max-w-6xl px-4 py-16 text-center sm:px-6 sm:py-24">
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-950 sm:text-5xl">
-          Start with a course, then build the rest.
-        </h2>
-        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg">
-          Browse the catalogue without an account. Sign in when you are ready to
-          keep a degree plan across semesters.
-        </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <ButtonLink href="/courses" variant="primary" size="lg">
-            Explore courses <ArrowRight className="size-4" aria-hidden="true" />
-          </ButtonLink>
-          <ButtonLink
-            href={canOpenPlan ? "/plan" : "/auth/sign-in"}
-            variant="secondary"
-            size="lg"
-          >
-            {canOpenPlan ? "Open your plan" : "Sign in with email"}
-          </ButtonLink>
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-zinc-950 px-6 py-16 text-center sm:px-12 sm:py-20">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(ellipse 60% 55% at 18% 0%, rgba(124, 58, 237, 0.45), transparent 60%), radial-gradient(ellipse 55% 50% at 85% 15%, rgba(14, 165, 233, 0.35), transparent 55%), radial-gradient(ellipse 45% 45% at 70% 100%, rgba(244, 114, 182, 0.3), transparent 55%)",
+            }}
+          />
+          <div className="relative">
+            <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-white sm:text-5xl">
+              Start with a course, then build the rest.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
+              Browse the catalogue without an account. Sign in when you are
+              ready to keep a degree plan across semesters.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <ButtonLink
+                href={canOpenPlan ? "/plan" : "/auth/sign-up"}
+                size="lg"
+                className="!rounded-full !bg-white !text-zinc-950 !ring-white hover:!bg-zinc-100"
+              >
+                {canOpenPlan ? "Open your plan" : "Get Coursemap free"}
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </ButtonLink>
+              <ButtonLink
+                href="/courses"
+                size="lg"
+                className="!rounded-full !bg-white/10 !text-white !ring-white/25 hover:!bg-white/20"
+              >
+                Explore courses
+              </ButtonLink>
+            </div>
+          </div>
         </div>
       </section>
 

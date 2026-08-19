@@ -24,6 +24,12 @@ Use the `$verify-coursemap` skill and run `npm run verify` before hand-off. The 
 
 Read `components/AGENTS.md` and use `$coursemap-ui` for interface work. Prefer repository primitives built from shadcn and Radix. Preserve the direct course-selection experience and prerequisite exploration while improving structure and accessibility.
 
+## Auth and onboarding
+
+- `/auth/sign-in` and `/auth/sign-up` share the `AuthShell` split layout and the email-and-password Supabase flow.
+- Social sign-in buttons are placeholders until OAuth ships: they announce that the provider is coming soon and must never start a broken flow.
+- A signed-in student without a primary plan is routed to `/onboarding` before the dashboard. Keep that guard on the default post-auth route and keep `/onboarding` in the proxy's protected prefixes.
+
 ## Supabase
 
 Use `$supabase-change` for schema, RLS, auth, client or generated-type work. Every exposed table requires explicit grants and RLS. Never expose a service-role key to the browser. Use the official SSR client pattern and verified claims for protected server access.

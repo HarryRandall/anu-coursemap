@@ -14,6 +14,7 @@ Next.js owns routing, server rendering and mutations. Supabase Auth owns identit
 
 - Route components load data on the server by default.
 - Client components are limited to interaction boundaries such as search, drag-and-drop and graph exploration.
+- Authenticated students without a primary plan are routed to `/onboarding` before the dashboard; the wizard creates the profile and primary plan in one server action.
 - Domain rules remain framework-independent and operate on typed inputs.
 - Supabase clients are request-scoped. Server and browser clients live behind separate modules.
 - Generated database types are committed and used at every query boundary.
@@ -26,6 +27,7 @@ Catalogue identity and year-specific facts are separate:
 - `academic_periods`, `course_offerings` and `offering_sessions`
 - `course_rules`, nested `course_rule_groups` and `course_rule_conditions`
 - versioned `academic_structures` and `requirement_groups`
+- `university_calendar_events` keyed by calendar year, date and title
 
 User-owned planning data is also separate:
 

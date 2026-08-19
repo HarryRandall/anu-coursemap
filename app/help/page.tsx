@@ -7,10 +7,7 @@ import { helpArticles } from "@/lib/help";
 
 export default function HelpPage() {
   return (
-    <AppShell
-      title="Help & support"
-      subtitle="Answers, corrections and feedback"
-    >
+    <AppShell>
       <div className="mx-auto max-w-7xl">
         <header className="max-w-2xl px-1 pt-2 pb-8 sm:pt-4 sm:pb-10">
           <p className="text-[13px] font-semibold tracking-wide text-brand-700 uppercase">

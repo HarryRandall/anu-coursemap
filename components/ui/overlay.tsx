@@ -1,47 +1,34 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "@/lib/cn";
 
-/** Close on Escape + lock body scroll while an overlay is open. */
-export function useDismiss(onClose: () => void) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [onClose]);
-}
-
-function Scrim({
+/**
+ * Shared Radix Dialog wiring for overlays that are conditionally rendered by
+ * their callers: the dialog is always open while mounted and any dismissal
+ * (Escape, outside press or programmatic close) is reported through onClose.
+ */
+function OverlayRoot({
   onClose,
-  label,
-  className,
+  children,
 }: {
   onClose: () => void;
-  label: string;
-  className?: string;
+  children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClose}
-      className={cn(
-        "absolute inset-0 h-full w-full animate-fade-in cursor-default bg-zinc-950/45 backdrop-blur-[3px]",
-        className,
-      )}
-    />
+    <DialogPrimitive.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <DialogPrimitive.Portal>{children}</DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 
-/** Centred modal dialog. */
+/** Centred modal dialog. Label it with labelledBy pointing at a heading. */
 export function Modal({
   onClose,
   labelledBy,
@@ -55,31 +42,30 @@ export function Modal({
   children: ReactNode;
   align?: "center" | "top";
 }) {
-  useDismiss(onClose);
   return (
-    <div
-      className={cn(
-        "fixed inset-0 z-[100] grid p-4 sm:p-6",
-        align === "top" ? "place-items-start pt-[8vh]" : "place-items-center",
-      )}
-    >
-      <Scrim onClose={onClose} label="Close dialog" />
+    <OverlayRoot onClose={onClose}>
+      <DialogPrimitive.Overlay className="fixed inset-0 z-[100] animate-fade-in bg-zinc-950/45 backdrop-blur-[3px]" />
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={labelledBy}
         className={cn(
-          "relative z-10 flex max-h-[calc(100dvh-3rem)] w-full animate-modal-in flex-col overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-zinc-200",
-          className,
+          "fixed inset-0 z-[100] grid p-4 sm:p-6",
+          align === "top" ? "place-items-start pt-[8vh]" : "place-items-center",
         )}
       >
-        {children}
+        <DialogPrimitive.Content
+          aria-labelledby={labelledBy}
+          className={cn(
+            "relative flex max-h-[calc(100dvh-3rem)] w-full animate-modal-in flex-col overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-zinc-200 outline-none",
+            className,
+          )}
+        >
+          {children}
+        </DialogPrimitive.Content>
       </div>
-    </div>
+    </OverlayRoot>
   );
 }
 
-/** Right-hand slide-over drawer. */
+/** Right-hand slide-over drawer. Label it with labelledBy pointing at a heading. */
 export function Drawer({
   onClose,
   labelledBy,
@@ -91,21 +77,18 @@ export function Drawer({
   className?: string;
   children: ReactNode;
 }) {
-  useDismiss(onClose);
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end">
-      <Scrim onClose={onClose} label="Close panel" className="bg-zinc-950/35" />
-      <aside
-        role="dialog"
-        aria-modal="true"
+    <OverlayRoot onClose={onClose}>
+      <DialogPrimitive.Overlay className="fixed inset-0 z-[100] animate-fade-in bg-zinc-950/35 backdrop-blur-[3px]" />
+      <DialogPrimitive.Content
         aria-labelledby={labelledBy}
         className={cn(
-          "relative z-10 flex h-dvh w-full animate-drawer-in flex-col bg-white shadow-lg ring-1 ring-zinc-200 sm:w-[440px]",
+          "fixed inset-y-0 right-0 z-[100] flex h-dvh w-full animate-drawer-in flex-col bg-white shadow-lg ring-1 ring-zinc-200 outline-none sm:w-[440px]",
           className,
         )}
       >
         {children}
-      </aside>
-    </div>
+      </DialogPrimitive.Content>
+    </OverlayRoot>
   );
 }

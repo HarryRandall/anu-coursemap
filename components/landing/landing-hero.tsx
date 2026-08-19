@@ -1,13 +1,15 @@
 import { ArrowRight, Search } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
 
+const popularSearches = ["COMP2100", "Machine learning", "MATH1013"] as const;
+
 export function LandingHero({ canOpenPlan }: { canOpenPlan: boolean }) {
   return (
-    <section className="mx-auto max-w-4xl px-4 pt-16 pb-12 text-center sm:px-6 sm:pt-24 sm:pb-16">
-      <p className="text-xs font-bold tracking-wider text-brand-700 uppercase">
+    <section className="mx-auto max-w-4xl px-4 pt-16 pb-14 text-center sm:px-6 sm:pt-24 sm:pb-20">
+      <p className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1.5 text-xs font-bold tracking-wider text-brand-700 uppercase shadow-xs ring-1 ring-brand-100">
         ANU degree planning, made clear
       </p>
-      <h1 className="mt-4 text-4xl leading-tight font-bold tracking-tight text-zinc-950 sm:text-6xl">
+      <h1 className="mt-6 text-4xl leading-tight font-bold tracking-tight text-zinc-950 sm:text-6xl">
         See how every course fits before you enrol.
       </h1>
       <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-zinc-600 sm:text-lg">
@@ -37,19 +39,35 @@ export function LandingHero({ canOpenPlan }: { canOpenPlan: boolean }) {
           type="submit"
           variant="primary"
           size="lg"
-          className="sm:min-w-44"
+          className="!rounded-3xl sm:min-w-44"
         >
           Explore courses <ArrowRight className="size-4" aria-hidden="true" />
         </Button>
       </form>
 
-      <div className="mt-4 flex justify-center">
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+        <span className="text-xs text-zinc-500">Popular:</span>
+        {popularSearches.map((query) => (
+          <ButtonLink
+            key={query}
+            href={`/courses?q=${encodeURIComponent(query)}`}
+            variant="secondary"
+            size="sm"
+            className="min-h-9 !rounded-full px-3.5 text-xs"
+          >
+            {query}
+          </ButtonLink>
+        ))}
+      </div>
+
+      <div className="mt-6 flex justify-center">
         <ButtonLink
-          href={canOpenPlan ? "/plan" : "/auth/sign-in"}
+          href={canOpenPlan ? "/plan" : "/auth/sign-up"}
           variant="ghost"
           className="min-h-11 text-zinc-600"
         >
-          {canOpenPlan ? "Continue planning" : "Sign in with email"}
+          {canOpenPlan ? "Continue planning" : "Create a free account"}
+          <ArrowRight className="size-4" aria-hidden="true" />
         </ButtonLink>
       </div>
     </section>

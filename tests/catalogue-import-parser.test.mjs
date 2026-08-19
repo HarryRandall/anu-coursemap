@@ -497,6 +497,7 @@ test("builds a deterministic scoped manifest and reports fetch exceptions", asyn
       "COMP1110",
     ],
     concurrency: 2,
+    retryAttempts: 1,
     fetchImpl,
     now: () => new Date(fetchedAt),
   });

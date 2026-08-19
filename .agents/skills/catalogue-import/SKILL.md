@@ -1,6 +1,6 @@
 ---
 name: catalogue-import
-description: Import, reconcile and verify ANU catalogue data for Coursemap with provenance and reviewable exceptions. Use when adding a catalogue year, courses, offerings, prerequisite rules, degree structures, source parsers or synchronisation jobs.
+description: Import, reconcile and verify ANU catalogue data for Coursemap with provenance and reviewable exceptions. Use when adding a catalogue year, courses, offerings, prerequisite rules, degree structures, university calendar key dates, source parsers or synchronisation jobs.
 ---
 
 # Catalogue import
@@ -34,4 +34,4 @@ Turn authoritative ANU source material into idempotent, versioned Coursemap reco
 - Check broken course references, duplicate natural keys, impossible units and malformed rule trees.
 - Re-run the same input and confirm the second run is a no-op.
 - Review a sample of transformed records against the original source before publishing.
-- Keep runtime fallback fixtures clearly marked and outside the production data path.
+- Keep captured test fixtures under `tests/fixtures` with their source dates and provenance; never serve fixture data from the production path.

@@ -66,21 +66,26 @@ async function render(path = "/plan") {
 }
 
 test("keeps the public entry, catalogue and authentication routes accessible", async () => {
-  const [homeResponse, coursesResponse, signInResponse] = await Promise.all([
-    render("/"),
-    render("/courses?q=COMP3900"),
-    render("/auth/sign-in?next=%2F%2Fevil.example%2Fplan"),
-  ]);
+  const [homeResponse, coursesResponse, signInResponse, signUpResponse] =
+    await Promise.all([
+      render("/"),
+      render("/courses?q=COMP3900"),
+      render("/auth/sign-in?next=%2F%2Fevil.example%2Fplan"),
+      render("/auth/sign-up"),
+    ]);
 
   assert.equal(homeResponse.status, 200);
   assert.equal(coursesResponse.status, 200);
   assert.equal(signInResponse.status, 200);
+  assert.equal(signUpResponse.status, 200);
 
   const homeHtml = await homeResponse.text();
   const coursesHtml = await coursesResponse.text();
   const signInHtml = await signInResponse.text();
+  const signUpHtml = await signUpResponse.text();
   assert.match(homeHtml, /See how every course fits before you enrol/i);
   assert.match(homeHtml, /name="q"/i);
+  assert.match(homeHtml, /Everything you need to plan with confidence/i);
   assert.match(homeHtml, /Coursemap product areas/i);
   assert.match(homeHtml, />Prerequisites<\/button>/i);
   assert.match(homeHtml, /Start with a course, then build the rest/i);
@@ -92,12 +97,18 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(coursesHtml, /Computing Project/i);
   assert.match(coursesHtml, /Search code, course name, school or convener/i);
   assert.doesNotMatch(coursesHtml, /Open entry|6 units/i);
-  assert.match(signInHtml, /Sign in to your plan/i);
+  assert.match(signInHtml, /Welcome back/i);
   assert.match(signInHtml, /name="next" value="\/dashboard"/i);
   assert.match(signInHtml, /name="email"/i);
   assert.match(signInHtml, /name="password"/i);
+  assert.match(signInHtml, /Continue with Google/i);
+  assert.match(signInHtml, /Continue with Microsoft/i);
   assert.match(signInHtml, /Create an account/i);
   assert.doesNotMatch(signInHtml, /magic link|Mailpit|one-time email link/i);
+  assert.match(signUpHtml, /Create your account/i);
+  assert.match(signUpHtml, /name="passwordConfirmation"/i);
+  assert.match(signUpHtml, /Continue with Google/i);
+  assert.match(signUpHtml, /Already have an account/i);
 });
 
 test("server-renders the complete student workspace", async () => {
@@ -105,6 +116,7 @@ test("server-renders the complete student workspace", async () => {
     "/dashboard",
     "/academic",
     "/calendar",
+    "/key-dates",
     "/requirements",
     "/roadmap",
     "/rooms",
@@ -118,6 +130,7 @@ test("server-renders the complete student workspace", async () => {
     dashboardHtml,
     academicHtml,
     calendarHtml,
+    keyDatesHtml,
     requirementsHtml,
     roadmapHtml,
     roomsHtml,
@@ -140,6 +153,9 @@ test("server-renders the complete student workspace", async () => {
     calendarHtml,
     /Weekly timetable|Class timetable|Assessments and dates/i,
   );
+  assert.match(keyDatesHtml, /Key dates/i);
+  assert.match(keyDatesHtml, /No key dates published yet/i);
+  assert.match(keyDatesHtml, /Official ANU academic calendar/i);
   assert.match(
     requirementsHtml,
     /Select a published degree in onboarding to begin/i,

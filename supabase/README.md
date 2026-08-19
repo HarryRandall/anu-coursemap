@@ -9,10 +9,11 @@ forward-only migrations and database tests.
 - Region: Sydney (`ap-southeast-2`)
 - Plan: Supabase Free
 
-The hosted project is reserved but intentionally has no migrations or public
-tables. The application currently uses the local Supabase stack. Browser-safe
-local values belong in `.env.local`; service-role keys and database passwords
-must never be committed.
+The hosted development project carries the complete migration history, Row
+Level Security policies and the reviewed 2026 structure seed. Day-to-day
+development uses the local Supabase stack. Browser-safe local values belong in
+`.env.local`; service-role keys and database passwords must never be
+committed.
 
 ## Workflow
 
