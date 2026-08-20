@@ -1,4 +1,5 @@
--- Coursemap deliberately has no authoritative seed data.
+-- Coursemap deliberately has no default catalogue or user fixtures.
 --
--- Prototype courses and user plans are test fixtures only. Catalogue records
--- must enter the database through a provenance-backed import.
+-- Run `npm run db:reset` for the guarded local preview seed. Keeping this
+-- default file empty prevents hosted preview and remote seed workflows from
+-- creating the predictable local-only demonstration administrator.
