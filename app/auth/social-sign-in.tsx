@@ -1,6 +1,7 @@
 "use client";
 
 import { useCoursemap } from "@/app/providers";
+import { Button } from "@/components/ui/button";
 
 type Provider = "Google" | "Microsoft";
 
@@ -54,24 +55,30 @@ export function SocialSignIn({ disabled }: { disabled?: boolean }) {
 
   return (
     <div className="space-y-2.5">
-      <button
+      <Button
         type="button"
         disabled={disabled}
+        fullWidth
         onClick={() => announce("Google")}
-        className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-white px-4 text-[13px] font-semibold text-zinc-800 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:bg-zinc-50 hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 disabled:pointer-events-none disabled:opacity-50"
+        className="min-h-11 !rounded-xl text-[13px] font-semibold"
+        size="lg"
+        variant="secondary"
       >
         <GoogleLogo />
         Continue with Google
-      </button>
-      <button
+      </Button>
+      <Button
         type="button"
         disabled={disabled}
+        fullWidth
         onClick={() => announce("Microsoft")}
-        className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-white px-4 text-[13px] font-semibold text-zinc-800 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:bg-zinc-50 hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 disabled:pointer-events-none disabled:opacity-50"
+        className="min-h-11 !rounded-xl text-[13px] font-semibold"
+        size="lg"
+        variant="secondary"
       >
         <MicrosoftLogo />
         Continue with Microsoft
-      </button>
+      </Button>
     </div>
   );
 }
