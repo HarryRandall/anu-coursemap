@@ -8,6 +8,13 @@ import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { StatTile } from "@/components/ui/stat-tile";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { planningCourseByCode } from "@/lib/planner";
 
@@ -88,17 +95,12 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
             { icon: GraduationCap, label: "Units earned", value: earned },
             { icon: FileClock, label: "Failed attempts", value: failed },
           ].map(({ icon: Icon, label, value }) => (
-            <Card key={label} className="flex items-center gap-3 p-4">
-              <span className="grid size-9 place-items-center rounded-lg bg-brand-50 text-brand-700">
-                <Icon size={17} />
-              </span>
-              <div>
-                <p className="text-xl font-bold tracking-tight text-zinc-900">
-                  {value}
-                </p>
-                <p className="text-[11px] text-zinc-500">{label}</p>
-              </div>
-            </Card>
+            <StatTile
+              key={label}
+              icon={<Icon aria-hidden="true" />}
+              label={label}
+              value={value}
+            />
           ))}
         </div>
 
@@ -109,9 +111,14 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
             title="Course history"
           />
           {entries.length === 0 ? (
-            <div className="px-5 py-12 text-center text-sm text-zinc-500">
-              No course attempts recorded yet.
-            </div>
+            <Empty className="rounded-none px-5 py-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <BookCheck aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>No course attempts recorded yet</EmptyTitle>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="divide-y divide-zinc-100">
               {entries.map(({ attempt, course, term }) => (

@@ -1,4 +1,8 @@
+import { CircleAlert } from "lucide-react";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { loadCurrentUserPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { PlanClient } from "./plan-client";
 
@@ -11,14 +15,21 @@ export default async function PlanPage() {
   } catch {
     return (
       <AppShell>
-        <div className="mx-auto flex min-h-64 max-w-xl flex-col items-center justify-center rounded-2xl bg-white p-8 text-center ring-1 ring-zinc-200">
-          <h1 className="text-lg font-semibold text-zinc-900">
-            Planning catalogue temporarily unavailable
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-            Your plan has not been changed. Please try again shortly.
-          </p>
-        </div>
+        <h1 className="sr-only">Plan</h1>
+        <Card className="mx-auto max-w-xl p-4 sm:p-5">
+          <Alert tone="warning" role="alert">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Planning catalogue temporarily unavailable</AlertTitle>
+            <AlertDescription>
+              Your plan has not been changed. Please try again shortly.
+            </AlertDescription>
+          </Alert>
+          <div className="mt-4">
+            <ButtonLink href="/plan" size="sm" variant="primary">
+              Try again
+            </ButtonLink>
+          </div>
+        </Card>
       </AppShell>
     );
   }

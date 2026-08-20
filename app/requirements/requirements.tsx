@@ -4,9 +4,18 @@ import { BookOpenCheck, CircleAlert, ListChecks } from "lucide-react";
 import { useMemo } from "react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { degreeUnitProgress, planningCourseByCode } from "@/lib/planner";
 
@@ -44,14 +53,21 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
         <h1 className="sr-only">Requirements</h1>
 
         {!degree ? (
-          <Card className="p-8 text-center">
-            <ListChecks className="mx-auto text-brand-600" size={28} />
-            <p className="mt-4 text-sm text-zinc-700">
-              Select a published degree in onboarding to begin.
-            </p>
-            <ButtonLink className="mt-5" href="/onboarding">
-              Start onboarding
-            </ButtonLink>
+          <Card>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <ListChecks aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>Choose a published degree</EmptyTitle>
+                <EmptyDescription>
+                  Select a published degree in onboarding to begin.
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <ButtonLink href="/onboarding">Start onboarding</ButtonLink>
+              </EmptyContent>
+            </Empty>
           </Card>
         ) : (
           <>
@@ -79,25 +95,18 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
             </Card>
 
             {!catalogue.programmeRequirementsImported && (
-              <Card className="border-amber-200 bg-amber-50/60 p-5">
-                <div className="flex gap-3">
-                  <CircleAlert
-                    className="mt-0.5 shrink-0 text-amber-700"
-                    size={18}
-                  />
-                  <div>
-                    <h2 className="text-sm font-semibold text-amber-950">
-                      Detailed requirement mapping is not imported yet
-                    </h2>
-                    <p className="mt-1 text-sm leading-6 text-amber-900">
-                      Coursemap will not pretend that the old sample core,
-                      elective or major buckets are this degree&apos;s official
-                      rules. Imported programme requirements will replace this
-                      notice when they are reviewed.
-                    </p>
-                  </div>
-                </div>
-              </Card>
+              <Alert tone="warning" className="rounded-xl px-5 py-4">
+                <CircleAlert aria-hidden="true" />
+                <AlertTitle>
+                  Detailed requirement mapping is not imported yet
+                </AlertTitle>
+                <AlertDescription>
+                  Coursemap will not pretend that the old sample core, elective
+                  or major buckets are this degree&apos;s official rules.
+                  Imported programme requirements will replace this notice when
+                  they are reviewed.
+                </AlertDescription>
+              </Alert>
             )}
 
             <Card className="overflow-hidden">
@@ -110,9 +119,17 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                 </p>
               </div>
               {courses.length === 0 ? (
-                <p className="px-5 py-10 text-center text-sm text-zinc-500">
-                  No planned or recorded courses yet.
-                </p>
+                <Empty className="rounded-none">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <BookOpenCheck aria-hidden="true" />
+                    </EmptyMedia>
+                    <EmptyTitle>No planned or recorded courses yet</EmptyTitle>
+                    <EmptyDescription>
+                      Add courses to your plan to track them here.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               ) : (
                 <div className="divide-y divide-zinc-100">
                   {courses.map(({ attempt, course }) => (

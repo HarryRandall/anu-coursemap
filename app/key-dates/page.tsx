@@ -1,8 +1,17 @@
-import { CalendarDays, ExternalLink } from "lucide-react";
+import { CalendarDays, CircleAlert, ExternalLink } from "lucide-react";
 import { UniversityCalendarView } from "@/components/key-dates/university-calendar-view";
 import { AppShell } from "@/components/shell/app-shell";
-import { buttonClasses } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { decorateUniversityCalendarEvents } from "@/lib/coursemap/university-calendar";
 import {
   loadPublishedUniversityCalendar,
@@ -20,27 +29,57 @@ function firstParam(value?: string | string[]) {
 
 function EmptyCalendarCard() {
   return (
-    <Card className="px-6 py-12 text-center sm:py-16">
-      <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-brand-50 text-brand-600">
-        <CalendarDays size={22} aria-hidden="true" />
-      </span>
-      <h2 className="mt-4 text-lg font-semibold tracking-tight text-zinc-900">
-        No key dates published yet
-      </h2>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-        Key dates are imported from the official ANU university calendar. Once
-        an import is published, semester starts, census dates and examination
-        periods will appear here.
-      </p>
-      <div className="mt-6 flex justify-center">
+    <Card>
+      <Empty className="py-12 sm:py-16">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <CalendarDays aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle>No key dates published yet</EmptyTitle>
+          <EmptyDescription>
+            Key dates are imported from the official ANU university calendar.
+            Once an import is published, semester starts, census dates and
+            examination periods will appear here.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <a
+            href={ANU_CALENDAR_URL}
+            target="_blank"
+            rel="noreferrer"
+            className={buttonClasses({ variant: "secondary", size: "sm" })}
+          >
+            View the ANU calendar
+            <ExternalLink size={14} aria-hidden="true" />
+          </a>
+        </EmptyContent>
+      </Empty>
+    </Card>
+  );
+}
+
+function CalendarLoadError({ retryHref }: { retryHref: string }) {
+  return (
+    <Card className="mx-auto max-w-xl p-4 sm:p-5">
+      <Alert tone="warning" role="alert">
+        <CircleAlert aria-hidden="true" />
+        <AlertTitle>Key dates temporarily unavailable</AlertTitle>
+        <AlertDescription>
+          The published calendar could not be loaded. Please try again shortly.
+        </AlertDescription>
+      </Alert>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <ButtonLink href={retryHref} size="sm" variant="primary">
+          Try again
+        </ButtonLink>
         <a
           href={ANU_CALENDAR_URL}
           target="_blank"
           rel="noreferrer"
-          className={buttonClasses({ variant: "secondary" })}
+          className={buttonClasses({ variant: "secondary", size: "sm" })}
         >
           View the ANU calendar
-          <ExternalLink size={15} aria-hidden="true" />
+          <ExternalLink size={14} aria-hidden="true" />
         </a>
       </div>
     </Card>
@@ -63,10 +102,11 @@ export default async function KeyDatesPage({
     availableYears: [],
     events: [],
   };
+  let calendarUnavailable = false;
   try {
     data = await loadPublishedUniversityCalendar(requestedYear);
   } catch {
-    // Keep the page renderable with the empty state while the source recovers.
+    calendarUnavailable = true;
   }
 
   const todayIso = new Intl.DateTimeFormat("en-CA", {
@@ -76,13 +116,18 @@ export default async function KeyDatesPage({
     day: "2-digit",
   }).format(new Date());
   const allEvents = decorateUniversityCalendarEvents(data.events);
+  const retryHref = requestedYear
+    ? `/key-dates?year=${requestedYear}`
+    : "/key-dates";
 
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl">
         <h1 className="sr-only">Key dates</h1>
 
-        {allEvents.length === 0 || data.year === null ? (
+        {calendarUnavailable ? (
+          <CalendarLoadError retryHref={retryHref} />
+        ) : allEvents.length === 0 || data.year === null ? (
           <EmptyCalendarCard />
         ) : (
           <UniversityCalendarView

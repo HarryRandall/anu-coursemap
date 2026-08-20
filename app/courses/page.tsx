@@ -1,6 +1,8 @@
 import { CircleAlert } from "lucide-react";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   loadPublishedCoursePage,
   type PublishedCoursePage,
@@ -45,23 +47,21 @@ export default async function CoursesPage({
       : "/courses";
     return (
       <AppShell>
-        <div className="mx-auto flex min-h-64 max-w-xl flex-col items-center justify-center rounded-2xl bg-white p-8 text-center ring-1 ring-zinc-200">
-          <CircleAlert className="text-amber-500" size={28} />
-          <h1 className="mt-4 text-lg font-semibold text-zinc-900">
-            Course catalogue temporarily unavailable
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-            Courses could not be loaded. Please try again shortly.
-          </p>
-          <ButtonLink
-            className="mt-5"
-            href={retryHref}
-            size="sm"
-            variant="secondary"
-          >
-            Try again
-          </ButtonLink>
-        </div>
+        <h1 className="sr-only">Courses</h1>
+        <Card className="mx-auto max-w-xl p-4 sm:p-5">
+          <Alert tone="warning" role="alert">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Course catalogue temporarily unavailable</AlertTitle>
+            <AlertDescription>
+              Courses could not be loaded. Please try again shortly.
+            </AlertDescription>
+          </Alert>
+          <div className="mt-4">
+            <ButtonLink href={retryHref} size="sm" variant="primary">
+              Try again
+            </ButtonLink>
+          </div>
+        </Card>
       </AppShell>
     );
   }

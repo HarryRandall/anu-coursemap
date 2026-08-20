@@ -7,6 +7,13 @@ import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { planningCourseByCode } from "@/lib/planner";
 
@@ -43,14 +50,21 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
         <h1 className="sr-only">Plan calendar</h1>
 
         {groups.length === 0 ? (
-          <Card className="p-10 text-center">
-            <CalendarDays className="mx-auto text-zinc-300" size={28} />
-            <p className="mt-4 text-sm font-medium text-zinc-700">
-              No courses scheduled in a published study period
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Add courses to your plan to see their published offerings here.
-            </p>
+          <Card>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <CalendarDays aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>
+                  No courses scheduled in a published study period
+                </EmptyTitle>
+                <EmptyDescription>
+                  Add courses to your plan to see their published offerings
+                  here.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           </Card>
         ) : (
           <div className="space-y-4">

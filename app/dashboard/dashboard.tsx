@@ -18,6 +18,15 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { StatTile } from "@/components/ui/stat-tile";
 import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
@@ -120,19 +129,23 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   if (!degree) {
     return (
       <AppShell>
-        <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center ring-1 ring-zinc-200">
-          <GraduationCap className="mx-auto text-brand-600" size={28} />
-          <h1 className="mt-4 text-xl font-semibold text-zinc-950">
-            Set up your plan first
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-600">
-            Choose a published degree before Coursemap can calculate your
-            progress.
-          </p>
-          <ButtonLink className="mt-5" href="/onboarding">
-            Start onboarding
-          </ButtonLink>
-        </div>
+        <Card className="mx-auto w-full max-w-xl">
+          <Empty className="min-h-64">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <GraduationCap aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>Set up your plan first</EmptyTitle>
+              <EmptyDescription>
+                Choose a published degree before Coursemap can calculate your
+                progress.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <ButtonLink href="/onboarding">Start onboarding</ButtonLink>
+            </EmptyContent>
+          </Empty>
+        </Card>
       </AppShell>
     );
   }
@@ -171,48 +184,32 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
         </Card>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">Degree progress</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {progress.percent}%
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              {progress.completed} completed · {progress.planned} planned ·{" "}
-              {progress.total} units total
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">
-              Courses in your plan
-            </p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {planned.length}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Only published catalogue courses are shown.
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">
-              Prerequisite alerts
-            </p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {blocked.length}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Based on imported requisite references.
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">Scheduled load</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {plannedUnits}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              units across {termLoads.filter((term) => term.units > 0).length}{" "}
-              planned semesters
-            </p>
-          </Card>
+          <StatTile
+            description={`${progress.completed} completed · ${progress.planned} planned · ${progress.total} units total`}
+            icon={<GraduationCap aria-hidden="true" />}
+            label="Degree progress"
+            unit="%"
+            value={progress.percent}
+          />
+          <StatTile
+            description="Only published catalogue courses are shown."
+            icon={<BookOpen aria-hidden="true" />}
+            label="Courses in your plan"
+            value={planned.length}
+          />
+          <StatTile
+            description="Based on imported requisite references."
+            icon={<AlertTriangle aria-hidden="true" />}
+            label="Prerequisite alerts"
+            value={blocked.length}
+          />
+          <StatTile
+            description={`Across ${termLoads.filter((term) => term.units > 0).length} planned semesters`}
+            icon={<Map aria-hidden="true" />}
+            label="Scheduled load"
+            unit="units"
+            value={plannedUnits}
+          />
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
@@ -240,15 +237,17 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
               </ButtonLink>
             </div>
             {nextCourses.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <BookOpen className="mx-auto text-zinc-300" size={24} />
-                <p className="mt-3 text-sm font-medium text-zinc-700">
-                  No courses planned yet
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Choose a course from your plan board to get started.
-                </p>
-              </div>
+              <Empty className="rounded-none px-5 py-12">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <BookOpen aria-hidden="true" />
+                  </EmptyMedia>
+                  <EmptyTitle>No courses planned yet</EmptyTitle>
+                  <EmptyDescription>
+                    Choose a course from your plan board to get started.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               <div className="divide-y divide-zinc-100">
                 {nextCourses.map(({ attempt, course, term }) => {
