@@ -3,7 +3,22 @@ import { loadAdminRulePage } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  DataList,
+  DataListActions,
+  DataListContent,
+  DataListDescription,
+  DataListItem,
+  DataListMeta,
+} from "@/components/ui/data-list";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Pagination } from "@/components/ui/pagination";
 
 export const dynamic = "force-dynamic";
@@ -25,25 +40,21 @@ export default async function AdminRelationsPage({
       <div className="mx-auto w-full max-w-6xl">
         <h1 className="sr-only">Imported rules</h1>
         <Card className="overflow-hidden">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
-            <div className="flex items-center gap-2">
-              <GitBranch className="text-brand-600" size={18} />
-              <h2 className="text-sm font-semibold text-zinc-900">
-                {data.total.toLocaleString("en-AU")} imported rules
-              </h2>
-            </div>
-            <Badge tone={reviews.length ? "warning" : "success"}>
-              {reviews.length} on this page need source review
-            </Badge>
-          </div>
-          <div className="divide-y divide-zinc-100">
+          <CardHeader
+            className="border-b border-zinc-100"
+            icon={<GitBranch className="text-brand-600" size={18} />}
+            title={`${data.total.toLocaleString("en-AU")} imported rules`}
+            action={
+              <Badge tone={reviews.length ? "warning" : "success"}>
+                {reviews.length} need review
+              </Badge>
+            }
+          />
+          <DataList>
             {data.records.map((rule) => (
-              <article
-                key={rule.id}
-                className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
+              <DataListItem key={rule.id} className="items-start px-5 py-4">
+                <DataListContent>
+                  <DataListMeta>
                     <span className="font-mono text-xs font-semibold text-zinc-900">
                       {rule.code}
                     </span>
@@ -57,27 +68,39 @@ export default async function AdminRelationsPage({
                         ? "Source review"
                         : "Reviewed"}
                     </Badge>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-zinc-700">
+                  </DataListMeta>
+                  <DataListDescription className="mt-2 line-clamp-3 text-sm leading-6 whitespace-normal text-zinc-700">
                     {rule.sourceText}
-                  </p>
-                </div>
-                <ButtonLink
-                  href={`/admin/courses/${rule.code}`}
-                  size="sm"
-                  variant="secondary"
-                >
-                  <ClipboardCheck size={15} /> Review course
-                </ButtonLink>
-              </article>
+                  </DataListDescription>
+                </DataListContent>
+                <DataListActions>
+                  <ButtonLink
+                    href={`/admin/courses/${rule.code}`}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    <ClipboardCheck size={15} /> Review course
+                  </ButtonLink>
+                </DataListActions>
+              </DataListItem>
             ))}
             {data.records.length === 0 && (
-              <p className="px-5 py-12 text-center text-sm text-zinc-500">
-                No imported rules are available yet.
-              </p>
+              <li>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <GitBranch />
+                    </EmptyMedia>
+                    <EmptyTitle>No imported rules</EmptyTitle>
+                    <EmptyDescription>
+                      Rules will appear after a catalogue import.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </li>
             )}
-          </div>
-          <div className="border-t border-zinc-100 bg-zinc-50/40 px-5 py-3">
+          </DataList>
+          <CardFooter className="bg-zinc-50/40">
             <Pagination
               pathname="/admin/relations"
               searchParams={{}}
@@ -86,7 +109,7 @@ export default async function AdminRelationsPage({
               total={data.total}
               itemName="rules"
             />
-          </div>
+          </CardFooter>
         </Card>
       </div>
     </AppShell>

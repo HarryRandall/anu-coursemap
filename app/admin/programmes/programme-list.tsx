@@ -9,9 +9,27 @@ import type {
   PaginatedAdminResult,
 } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardFooter } from "@/components/ui/card";
+import {
+  DataList,
+  DataListActions,
+  DataListContent,
+  DataListDescription,
+  DataListIcon,
+  DataListItem,
+  DataListMeta,
+  DataListTitle,
+} from "@/components/ui/data-list";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Pagination } from "@/components/ui/pagination";
 
 export function ProgrammeList({
@@ -23,14 +41,17 @@ export function ProgrammeList({
 }) {
   const router = useRouter();
   const [pendingCode, setPendingCode] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{
+    message: string;
+    ok: boolean;
+  } | null>(null);
 
   async function publish(record: AdminStructureRecord) {
     setPendingCode(record.code);
-    setMessage(null);
+    setNotice(null);
     const result = await publishStructureVersion(record.code, record.year);
     setPendingCode(null);
-    setMessage(result.message);
+    setNotice({ message: result.message, ok: result.ok });
     if (result.ok) router.refresh();
   }
 
@@ -39,26 +60,24 @@ export function ProgrammeList({
       <div className="mx-auto w-full max-w-7xl">
         <h1 className="sr-only">Degrees and structures</h1>
         <Card className="overflow-hidden">
-          {message && (
-            <p
-              role="status"
-              className="border-b border-zinc-100 bg-brand-50 px-4 py-3 text-sm text-brand-900"
+          {notice && (
+            <Alert
+              tone={notice.ok ? "success" : "danger"}
+              className="rounded-none border-x-0 border-t-0"
             >
-              {message}
-            </p>
+              <CheckCircle2 />
+              <AlertDescription>{notice.message}</AlertDescription>
+            </Alert>
           )}
 
-          <div className="divide-y divide-zinc-100">
+          <DataList>
             {data.records.map((record) => (
-              <div
-                key={record.id}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4"
-              >
-                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
+              <DataListItem key={record.id}>
+                <DataListIcon className="border-brand-100 bg-brand-50 text-brand-700">
                   <GraduationCap size={18} aria-hidden="true" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
+                </DataListIcon>
+                <DataListContent>
+                  <DataListMeta>
                     <span className="font-mono text-xs font-bold text-zinc-900">
                       {record.code}
                     </span>
@@ -77,39 +96,49 @@ export function ProgrammeList({
                     {record.reviewState === "review" && (
                       <Badge tone="warning">Source review</Badge>
                     )}
-                  </div>
-                  <p className="mt-1 text-sm font-semibold text-zinc-900">
-                    {record.name}
-                  </p>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">
+                  </DataListMeta>
+                  <DataListTitle>{record.name}</DataListTitle>
+                  <DataListDescription className="line-clamp-2 whitespace-normal">
                     {record.units} units · {record.year} catalogue ·{" "}
                     {record.description}
-                  </p>
-                </div>
+                  </DataListDescription>
+                </DataListContent>
                 {record.publicationStatus === "published" ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+                  <DataListActions className="text-xs font-medium text-emerald-700">
                     <CheckCircle2 size={15} /> Available in onboarding
-                  </span>
+                  </DataListActions>
                 ) : (
-                  <Button
-                    disabled={pendingCode === record.code}
-                    onClick={() => publish(record)}
-                    size="sm"
-                  >
-                    {pendingCode === record.code
-                      ? "Publishing…"
-                      : "Publish for students"}
-                  </Button>
+                  <DataListActions>
+                    <Button
+                      disabled={pendingCode === record.code}
+                      onClick={() => publish(record)}
+                      size="sm"
+                    >
+                      {pendingCode === record.code
+                        ? "Publishing…"
+                        : "Publish for students"}
+                    </Button>
+                  </DataListActions>
                 )}
-              </div>
+              </DataListItem>
             ))}
             {data.records.length === 0 && (
-              <p className="px-4 py-12 text-center text-sm text-zinc-500">
-                No imported programme structures are available yet.
-              </p>
+              <li>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <GraduationCap />
+                    </EmptyMedia>
+                    <EmptyTitle>No programme structures</EmptyTitle>
+                    <EmptyDescription>
+                      Imported degrees and structures will appear here.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </li>
             )}
-          </div>
-          <div className="border-t border-zinc-100 bg-zinc-50/40 px-4 py-3">
+          </DataList>
+          <CardFooter className="bg-zinc-50/40">
             <Pagination
               pathname="/admin/programmes"
               searchParams={searchParams}
@@ -118,7 +147,7 @@ export function ProgrammeList({
               total={data.total}
               itemName="programme structures"
             />
-          </div>
+          </CardFooter>
         </Card>
       </div>
     </AppShell>

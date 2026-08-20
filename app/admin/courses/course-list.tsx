@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, ClipboardCheck } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, LibraryBig } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -10,9 +10,27 @@ import type {
   PaginatedAdminResult,
 } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardFooter } from "@/components/ui/card";
+import {
+  DataList,
+  DataListActions,
+  DataListContent,
+  DataListDescription,
+  DataListIcon,
+  DataListItem,
+  DataListMeta,
+  DataListTitle,
+} from "@/components/ui/data-list";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Pagination } from "@/components/ui/pagination";
 
 function statusTone(status: string) {
@@ -28,14 +46,17 @@ export function AdminCourseList({
 }) {
   const router = useRouter();
   const [pendingCode, setPendingCode] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{
+    message: string;
+    ok: boolean;
+  } | null>(null);
 
   async function publish(record: AdminCourseRecord) {
     setPendingCode(record.code);
-    setMessage(null);
+    setNotice(null);
     const result = await publishCourseVersion(record.code, record.year);
     setPendingCode(null);
-    setMessage(result.message);
+    setNotice({ message: result.message, ok: result.ok });
     if (result.ok) router.refresh();
   }
 
@@ -44,29 +65,27 @@ export function AdminCourseList({
       <div className="mx-auto w-full max-w-7xl">
         <h1 className="sr-only">Course versions</h1>
         <Card className="overflow-hidden">
-          {message && (
-            <p
-              role="status"
-              className="border-b border-zinc-100 bg-brand-50 px-4 py-3 text-sm text-brand-900"
+          {notice && (
+            <Alert
+              tone={notice.ok ? "success" : "danger"}
+              className="rounded-none border-x-0 border-t-0"
             >
-              {message}
-            </p>
+              {notice.ok ? <CheckCircle2 /> : <ClipboardCheck />}
+              <AlertDescription>{notice.message}</AlertDescription>
+            </Alert>
           )}
 
-          <div className="divide-y divide-zinc-100">
+          <DataList>
             {data.records.map((record) => (
-              <div
-                key={record.id}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={`/admin/courses/${record.code}`}
-                      className="font-mono text-xs font-bold text-zinc-900 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
-                    >
+              <DataListItem key={record.id}>
+                <DataListIcon className="border-brand-100 bg-brand-50 text-brand-700">
+                  <LibraryBig />
+                </DataListIcon>
+                <DataListContent>
+                  <DataListMeta>
+                    <span className="font-mono text-[11px] font-semibold text-zinc-700">
                       {record.code}
-                    </Link>
+                    </span>
                     <Badge tone={statusTone(record.publicationStatus)}>
                       {record.publicationStatus === "published"
                         ? "Published"
@@ -75,20 +94,22 @@ export function AdminCourseList({
                     {record.reviewState === "review" && (
                       <Badge tone="warning">Source review</Badge>
                     )}
-                  </div>
-                  <Link
-                    href={`/admin/courses/${record.code}`}
-                    className="mt-1 block text-sm font-semibold text-zinc-900 underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
-                  >
-                    {record.title}
-                  </Link>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  </DataListMeta>
+                  <DataListTitle>
+                    <Link
+                      href={`/admin/courses/${record.code}`}
+                      className="rounded-sm hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                    >
+                      {record.title}
+                    </Link>
+                  </DataListTitle>
+                  <DataListDescription>
                     {record.subject} · {record.units} units · {record.year}{" "}
                     catalogue
-                  </p>
-                </div>
+                  </DataListDescription>
+                </DataListContent>
                 {record.publicationStatus === "published" ? (
-                  <div className="flex flex-wrap gap-2">
+                  <DataListActions>
                     <ButtonLink
                       href={`/admin/courses/${record.code}`}
                       size="sm"
@@ -103,9 +124,9 @@ export function AdminCourseList({
                     >
                       <CheckCircle2 size={15} /> View live course
                     </ButtonLink>
-                  </div>
+                  </DataListActions>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <DataListActions>
                     <ButtonLink
                       href={`/admin/courses/${record.code}`}
                       size="sm"
@@ -124,17 +145,27 @@ export function AdminCourseList({
                           : "Publish for students"}
                       </Button>
                     )}
-                  </div>
+                  </DataListActions>
                 )}
-              </div>
+              </DataListItem>
             ))}
             {data.records.length === 0 && (
-              <p className="px-4 py-12 text-center text-sm text-zinc-500">
-                No imported course versions are available yet.
-              </p>
+              <li>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <LibraryBig />
+                    </EmptyMedia>
+                    <EmptyTitle>No course versions</EmptyTitle>
+                    <EmptyDescription>
+                      Imported course versions will appear here for review.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              </li>
             )}
-          </div>
-          <div className="border-t border-zinc-100 bg-zinc-50/40 px-4 py-3">
+          </DataList>
+          <CardFooter className="bg-zinc-50/40">
             <Pagination
               pathname="/admin/courses"
               searchParams={searchParams}
@@ -143,7 +174,7 @@ export function AdminCourseList({
               total={data.total}
               itemName="course versions"
             />
-          </div>
+          </CardFooter>
         </Card>
       </div>
     </AppShell>
