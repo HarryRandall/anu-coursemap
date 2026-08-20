@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   CheckCircle2,
+  CircleAlert,
   ClipboardCheck,
   ExternalLink,
   FileText,
@@ -22,6 +23,7 @@ import {
   type RequisiteExpression,
 } from "@/lib/coursemap/requisite-summary";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -151,7 +153,10 @@ export function CourseReview({
   const [draft, setDraft] = useState(() => initialDraft(record));
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    tone: "success" | "danger";
+  } | null>(null);
   const isDraft = record.publicationStatus === "draft";
   const needsReview =
     record.reviewState !== "verified" ||
@@ -173,7 +178,10 @@ export function CourseReview({
       code: record.code,
     });
     setSaving(false);
-    setMessage(result.message);
+    setMessage({
+      text: result.message,
+      tone: result.ok ? "success" : "danger",
+    });
     if (result.ok) {
       setEditing(false);
       router.refresh();
@@ -185,7 +193,10 @@ export function CourseReview({
     setMessage(null);
     const result = await publishCourseVersion(record.code, record.year);
     setPublishing(false);
-    setMessage(result.message);
+    setMessage({
+      text: result.message,
+      tone: result.ok ? "success" : "danger",
+    });
     if (result.ok) router.refresh();
   }
 
@@ -248,53 +259,51 @@ export function CourseReview({
         </header>
 
         {message && (
-          <p
-            role="status"
-            className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-900 ring-1 ring-brand-100"
-          >
-            {message}
-          </p>
+          <Alert tone={message.tone} className="rounded-xl">
+            {message.tone === "success" ? (
+              <CheckCircle2 aria-hidden="true" />
+            ) : (
+              <CircleAlert aria-hidden="true" />
+            )}
+            <AlertDescription className="text-sm">
+              {message.text}
+            </AlertDescription>
+          </Alert>
         )}
 
         {needsReview && (
-          <section className="rounded-2xl bg-amber-50 p-5 ring-1 ring-amber-200">
-            <div className="flex items-start gap-3">
-              <ClipboardCheck
-                aria-hidden="true"
-                className="mt-0.5 shrink-0 text-amber-700"
-                size={19}
-              />
-              <div>
-                <h2 className="text-sm font-semibold text-amber-950">
-                  {isDraft
-                    ? "What to review before publishing"
-                    : "Source review remains open"}
-                </h2>
-                {isDraft ? (
-                  <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-6 text-amber-900">
-                    <li>
-                      Open the ANU source and compare the title, units, school,
-                      delivery and description below.
-                    </li>
-                    <li>
-                      Check each offering and requisite wording against that
-                      source, especially any item marked Source review.
-                    </li>
-                    <li>
-                      Correct draft fields if needed, then save with the review
-                      decision set to Verified.
-                    </li>
-                  </ol>
-                ) : (
-                  <p className="mt-2 text-sm leading-6 text-amber-900">
-                    This version is already visible to students. Its original
-                    imported wording and source record remain available below
-                    for an administrator to assess and follow up.
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
+          <Alert tone="warning" className="rounded-xl p-5">
+            <ClipboardCheck aria-hidden="true" />
+            <h2 className="col-start-2 text-sm leading-5 font-semibold">
+              {isDraft
+                ? "What to review before publishing"
+                : "Source review remains open"}
+            </h2>
+            <AlertDescription className="text-sm text-amber-900">
+              {isDraft ? (
+                <ol className="mt-1.5 list-decimal space-y-1 pl-5 leading-6">
+                  <li>
+                    Open the ANU source and compare the title, units, school,
+                    delivery and description below.
+                  </li>
+                  <li>
+                    Check each offering and requisite wording against that
+                    source, especially any item marked Source review.
+                  </li>
+                  <li>
+                    Correct draft fields if needed, then save with the review
+                    decision set to Verified.
+                  </li>
+                </ol>
+              ) : (
+                <p className="mt-1.5 leading-6">
+                  This version is already visible to students. Its original
+                  imported wording and source record remain available below for
+                  an administrator to assess and follow up.
+                </p>
+              )}
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
