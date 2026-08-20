@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import { useCoursemap } from "@/app/providers";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { Modal } from "@/components/ui/overlay";
-import { IconButton } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button, IconButton } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function TermChooser({
   course,
@@ -78,24 +80,40 @@ export function TermChooser({
       </header>
       <div className="max-h-[70vh] overflow-y-auto p-2">
         {error ? (
-          <p className="px-3 py-6 text-center text-sm text-zinc-600">{error}</p>
+          <Alert tone="danger" role="alert" className="m-3 w-auto">
+            <X />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : terms.length === 0 ? (
-          <p className="px-3 py-6 text-center text-sm text-zinc-500">
-            Loading available semesters...
-          </p>
+          <div className="space-y-2 p-2" aria-busy="true">
+            <span className="sr-only">Loading available semesters</span>
+            {Array.from({ length: 3 }, (_, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 rounded-lg px-3 py-3"
+              >
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-32" />
+                  <Skeleton className="h-3 w-44" />
+                </div>
+                <Skeleton className="h-5 w-16" />
+              </div>
+            ))}
+          </div>
         ) : (
           terms.map((term) => {
             const available = course.sessions.includes(term.name);
             return (
-              <button
+              <Button
                 key={term.id}
-                type="button"
+                variant="ghost"
+                fullWidth
                 onClick={async () => {
                   const result = await addCourse(course.code, term.id);
                   notify(result.message, result.ok ? "success" : "warning");
                   if (result.ok) onClose();
                 }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-zinc-50"
+                className="h-auto justify-start rounded-lg px-3 py-3 text-left"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-semibold text-zinc-900">
@@ -109,7 +127,7 @@ export function TermChooser({
                   {available ? "Offered" : "Not listed"}
                 </Badge>
                 <ArrowRight size={16} className="text-zinc-300" />
-              </button>
+              </Button>
             );
           })
         )}
