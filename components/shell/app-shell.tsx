@@ -10,6 +10,8 @@ export type AppShellProps = {
   actions?: ReactNode;
   /** Section tab links rendered in a full-width bar below the breadcrumbs. */
   tabs?: ReactNode;
+  /** Replaces the final generated breadcrumb label when the route needs richer context. */
+  currentBreadcrumbLabel?: string;
   admin?: boolean;
   /** Removes the default page padding + max width (used by the plan board). */
   fullBleed?: boolean;
@@ -19,6 +21,7 @@ export function AppShell({
   children,
   actions,
   tabs,
+  currentBreadcrumbLabel,
   admin = false,
   fullBleed = false,
 }: AppShellProps) {
@@ -33,7 +36,11 @@ export function AppShell({
       />
 
       <div className="min-w-0 lg:pl-64">
-        <Topbar actions={actions} onOpenNav={() => setMobileOpen(true)} />
+        <Topbar
+          actions={actions}
+          currentBreadcrumbLabel={currentBreadcrumbLabel}
+          onOpenNav={() => setMobileOpen(true)}
+        />
         {tabs && (
           <div className="border-b border-zinc-200 bg-white px-4 sm:px-6">
             <nav aria-label="Page sections" className="flex items-center gap-1">

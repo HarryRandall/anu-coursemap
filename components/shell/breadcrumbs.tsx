@@ -25,6 +25,7 @@ const labels: Record<string, string> = {
   "study-calendar": "Use the study calendar",
   "academic-record": "Read your academic record",
   timetable: "Timetable",
+  activity: "Activity",
   history: "History",
   profile: "Profile",
   admin: "Admin",
@@ -48,7 +49,9 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     const label =
       admin && segments[1] === "users" && index === 2
         ? "User"
-        : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
+        : admin && segments[1] === "sync" && segment === "history"
+          ? "Historical changes"
+          : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
     crumbs.push({
       label,
       href: isLast
@@ -65,28 +68,38 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   return { crumbs, admin };
 }
 
-export function Breadcrumbs() {
+export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
   const pathname = usePathname();
   const { crumbs } = buildCrumbs(pathname);
+  const visibleCrumbs = currentLabel
+    ? crumbs.map((crumb, index) =>
+        index === crumbs.length - 1 ? { ...crumb, label: currentLabel } : crumb,
+      )
+    : crumbs;
 
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
       <ol className="flex min-w-0 items-center gap-1.5">
-        {crumbs.map((crumb, index) => (
+        {visibleCrumbs.map((crumb, index) => (
           <Fragment key={index}>
             {index > 0 && (
-              <ChevronRight size={14} className="shrink-0 text-zinc-300" />
+              <ChevronRight
+                size={14}
+                className={`shrink-0 text-zinc-300 ${currentLabel ? "hidden sm:block" : ""}`}
+              />
             )}
-            <li className="min-w-0">
+            <li
+              className={`min-w-0 ${currentLabel && index < visibleCrumbs.length - 1 ? "hidden sm:block" : ""}`}
+            >
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="truncate text-[13px] font-medium text-zinc-500 transition hover:text-zinc-800"
+                  className="block truncate text-[13px] font-medium text-zinc-500 transition hover:text-zinc-800"
                 >
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="truncate text-[13px] font-semibold text-zinc-900">
+                <span className="block truncate text-[13px] font-semibold text-zinc-900">
                   {crumb.label}
                 </span>
               )}
