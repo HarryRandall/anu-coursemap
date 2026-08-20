@@ -1,38 +1,35 @@
 import { cn } from "@/lib/cn";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { DataTableShell } from "@/components/ui/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function UserDirectoryLoadingSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5">
-      <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs">
-        <div className="overflow-x-hidden">
-          <div className="grid h-10 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-zinc-200/80 bg-zinc-50/70 px-4">
-            {["w-10", "w-9", "w-11", "w-12"].map((width, index) => (
-              <Skeleton key={index} className={cn("h-2.5", width)} />
-            ))}
-          </div>
-          {Array.from({ length: 5 }, (_, index) => (
-            <div
-              key={index}
-              className="grid min-h-14 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-zinc-200/80 px-4 last:border-b-0"
-            >
-              <div className="flex items-center gap-2.5">
-                <Skeleton className="size-7 shrink-0 rounded-full" />
-                <span className="space-y-1.5">
-                  <Skeleton className="h-3 w-28" />
-                  <Skeleton className="h-2.5 w-40" />
-                </span>
-              </div>
-              <Skeleton className="h-6 w-32 rounded-full" />
-              <Skeleton className="h-2.5 w-20" />
-              <Skeleton className="h-2.5 w-20" />
-            </div>
+      <DataTableShell footer={<Skeleton className="h-2.5 w-32" />}>
+        <div className="grid h-10 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-zinc-200/80 bg-zinc-50/70 px-4">
+          {["w-10", "w-9", "w-11", "w-12"].map((width, index) => (
+            <Skeleton key={index} className={cn("h-2.5", width)} />
           ))}
         </div>
-        <div className="border-t border-zinc-200/80 bg-zinc-50/40 px-4 py-2.5">
-          <Skeleton className="h-2.5 w-32" />
-        </div>
-      </div>
+        {Array.from({ length: 5 }, (_, index) => (
+          <div
+            key={index}
+            className="grid min-h-14 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-zinc-200/80 px-4 last:border-b-0"
+          >
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="size-7 shrink-0 rounded-full" />
+              <span className="space-y-1.5">
+                <Skeleton className="h-3 w-28" />
+                <Skeleton className="h-2.5 w-40" />
+              </span>
+            </div>
+            <Skeleton className="h-6 w-32 rounded-full" />
+            <Skeleton className="h-2.5 w-20" />
+            <Skeleton className="h-2.5 w-20" />
+          </div>
+        ))}
+      </DataTableShell>
     </div>
   );
 }
@@ -40,7 +37,7 @@ export function UserDirectoryLoadingSkeleton() {
 export function RoleMatrixLoadingSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5">
-      <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs">
+      <DataTableShell>
         <div className="grid h-10 min-w-[800px] grid-cols-[minmax(500px,1fr)_150px_150px] items-center border-b border-zinc-200/80 bg-zinc-50/70 px-4">
           <Skeleton className="h-2.5 w-20" />
           <Skeleton className="mx-auto h-3 w-28" />
@@ -62,7 +59,7 @@ export function RoleMatrixLoadingSkeleton() {
             </div>
           </div>
         ))}
-      </div>
+      </DataTableShell>
     </div>
   );
 }
@@ -78,15 +75,14 @@ export function UserDetailLoadingSkeleton() {
           <Skeleton className="h-2.5 w-44" />
         </span>
       </div>
-      <div className="overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
-          <span className="space-y-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-2.5 w-48" />
-          </span>
-          <Skeleton className="h-9 w-44 rounded-lg" />
-        </div>
-        <div className="space-y-3 border-t border-zinc-200/80 px-4 py-4 sm:px-5">
+      <Card className="overflow-hidden">
+        <CardHeader
+          title={<Skeleton className="h-3 w-24" />}
+          description={<Skeleton className="h-2.5 w-48" />}
+          action={<Skeleton className="h-9 w-44 rounded-lg" />}
+          className="flex-wrap items-center"
+        />
+        <CardContent className="space-y-3 border-t border-zinc-200/80 pt-4">
           <Skeleton className="h-2.5 w-28" />
           <div className="grid gap-2 sm:grid-cols-2">
             {Array.from({ length: 4 }, (_, index) => (
@@ -102,8 +98,8 @@ export function UserDetailLoadingSkeleton() {
               </div>
             ))}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -3,6 +3,15 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LoaderCircle, ShieldCheck, UserRound } from "lucide-react";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { setAdminUserRole } from "@/lib/admin/actions";
 import type {
@@ -58,16 +67,16 @@ export function UserRoleEditor({
   };
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-xl border border-zinc-200/90 bg-white shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-5">
+    <Card className="min-w-0 overflow-hidden">
+      <CardHeader className="flex-wrap items-center">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-zinc-900">Account role</h2>
-          <p className="mt-0.5 text-xs text-zinc-500">
+          <CardTitle>Account role</CardTitle>
+          <CardDescription>
             Choose the level of access for this account.
-          </p>
+          </CardDescription>
         </div>
 
-        <div className="flex w-full items-center gap-2 sm:w-auto">
+        <CardAction className="w-full sm:w-auto">
           {isPending ? (
             <LoaderCircle
               size={16}
@@ -89,10 +98,10 @@ export function UserRoleEditor({
               })
               .map((role) => ({ value: role.key, label: role.name }))}
           />
-        </div>
-      </div>
+        </CardAction>
+      </CardHeader>
 
-      <div className="border-t border-zinc-200/80 px-4 py-4 sm:px-5">
+      <CardContent className="border-t border-zinc-200/80 pt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
             Permissions
@@ -138,22 +147,34 @@ export function UserRoleEditor({
             </span>
           </div>
         )}
+      </CardContent>
 
-        {isOwnAdmin ? (
-          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-zinc-500">
-            <ShieldCheck size={13} aria-hidden="true" />
-            Another admin must change your role.
-          </p>
-        ) : null}
+      {isOwnAdmin || isError ? (
+        <CardFooter className="flex-col items-start">
+          {isOwnAdmin ? (
+            <p className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+              <ShieldCheck size={13} aria-hidden="true" />
+              Another admin must change your role.
+            </p>
+          ) : null}
 
-        <p
-          role={isError ? "alert" : "status"}
-          aria-live="polite"
-          className={isError ? "mt-3 text-xs text-rose-700" : "sr-only"}
-        >
+          {isError ? (
+            <p
+              role="alert"
+              aria-live="polite"
+              className="text-xs text-rose-700"
+            >
+              {feedback}
+            </p>
+          ) : null}
+        </CardFooter>
+      ) : null}
+
+      {!isError ? (
+        <p role="status" aria-live="polite" className="sr-only">
           {feedback}
         </p>
-      </div>
-    </section>
+      ) : null}
+    </Card>
   );
 }
