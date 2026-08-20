@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment } from "react";
+import { Fragment, useEffect } from "react";
 import {
   BookOpen,
   CalendarDays,
@@ -30,6 +30,12 @@ import { useCoursemap } from "@/app/providers";
 import { BrandMark } from "@/components/brand-mark";
 import { CourseFind } from "@/components/course-find";
 import { IconButton } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 type NavItem = {
   href: string;
@@ -134,14 +140,14 @@ function NavLink({
   );
 }
 
-export function Sidebar({
+function SidebarContent({
   admin,
-  mobileOpen,
-  onClose,
+  mobile,
+  onNavigate,
 }: {
   admin: boolean;
-  mobileOpen: boolean;
-  onClose: () => void;
+  mobile: boolean;
+  onNavigate: () => void;
 }) {
   const { state, canAccessAdmin } = useCoursemap();
   const initials =
@@ -154,131 +160,179 @@ export function Sidebar({
 
   return (
     <>
-      {mobileOpen && (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-zinc-950/35 lg:hidden"
-        />
-      )}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 pt-5 pb-3 backdrop-blur transition-transform lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex items-center justify-between px-3">
-          <Brand />
+      <div className="flex items-center justify-between px-3">
+        <Brand />
+        {mobile ? (
           <IconButton
             label="Close navigation"
             variant="ghost"
-            onClick={onClose}
-            className="lg:hidden"
+            onClick={onNavigate}
           >
             <X size={18} aria-hidden="true" />
           </IconButton>
-        </div>
+        ) : null}
+      </div>
 
-        {!admin && (
-          <div className="px-3">
-            <CourseFind onNavigate={onClose} />
+      {!admin && (
+        <div className="px-3">
+          <CourseFind onNavigate={onNavigate} />
+        </div>
+      )}
+
+      <nav
+        aria-label={admin ? "Admin navigation" : "Student navigation"}
+        className="mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+      >
+        {admin ? (
+          <div className="flex flex-col gap-1">
+            {adminNav.map((item) => (
+              <NavLink
+                key={item.href}
+                item={item}
+                admin
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {studentNav.map((item) => (
+              <Fragment key={item.href}>
+                <NavLink item={item} admin={false} onNavigate={onNavigate} />
+                {item.dividerAfter && (
+                  <div
+                    aria-hidden="true"
+                    className="my-1.5 border-t border-zinc-200/80"
+                  />
+                )}
+              </Fragment>
+            ))}
           </div>
         )}
 
-        <nav
-          aria-label={admin ? "Admin navigation" : "Student navigation"}
-          className="mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
-        >
-          {admin ? (
-            <div className="flex flex-col gap-1">
-              {adminNav.map((item) => (
-                <NavLink
-                  key={item.href}
-                  item={item}
-                  admin
-                  onNavigate={onClose}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {studentNav.map((item) => (
-                <Fragment key={item.href}>
-                  <NavLink item={item} admin={false} onNavigate={onClose} />
-                  {item.dividerAfter && (
-                    <div
-                      aria-hidden="true"
-                      className="my-1.5 border-t border-zinc-200/80"
-                    />
-                  )}
-                </Fragment>
-              ))}
-            </div>
-          )}
-
-          {!admin && canAccessAdmin && (
-            <>
-              <div
-                aria-hidden="true"
-                className="my-1.5 border-t border-zinc-200/80"
-              />
-              <Link
-                href="/admin/dashboard"
-                onClick={onClose}
-                className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
-              >
-                <Wrench size={17} strokeWidth={1.9} />
-                <span>Admin console</span>
-              </Link>
-            </>
-          )}
-        </nav>
-
-        {admin && (
+        {!admin && canAccessAdmin && (
           <>
-            <div className="mb-1.5 border-t border-zinc-200/80" />
+            <div
+              aria-hidden="true"
+              className="my-1.5 border-t border-zinc-200/80"
+            />
             <Link
-              href="/dashboard"
-              onClick={onClose}
+              href="/admin/dashboard"
+              onClick={onNavigate}
               className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >
-              <Map size={17} strokeWidth={1.9} />
-              <span>Back to student home</span>
+              <Wrench size={17} strokeWidth={1.9} />
+              <span>Admin console</span>
             </Link>
           </>
         )}
+      </nav>
 
-        {!admin && (
+      {admin && (
+        <>
+          <div className="mb-1.5 border-t border-zinc-200/80" />
           <Link
-            href="/help"
-            onClick={onClose}
-            className="mx-3 mt-1 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+            href="/dashboard"
+            onClick={onNavigate}
+            className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
           >
-            <LifeBuoy size={17} strokeWidth={1.9} />
-            <span>Help &amp; support</span>
+            <Map size={17} strokeWidth={1.9} />
+            <span>Back to student home</span>
           </Link>
-        )}
+        </>
+      )}
 
+      {!admin && (
         <Link
-          href="/profile"
-          onClick={onClose}
-          className="mx-3 mt-1 flex items-center gap-3 rounded-xl p-2 transition hover:bg-zinc-100"
+          href="/help"
+          onClick={onNavigate}
+          className="mx-3 mt-1 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
         >
-          <span className="grid size-9 place-items-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
-            {initials}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-semibold text-zinc-900">
-              {state.profile.name || "Set up profile"}
-            </span>
-            <span className="block truncate text-[11px] text-zinc-500">
-              {state.profile.studentId || "Add student ID"}
-            </span>
-          </span>
-          <UserRound size={15} className="text-zinc-400" />
+          <LifeBuoy size={17} strokeWidth={1.9} />
+          <span>Help &amp; support</span>
         </Link>
+      )}
+
+      <Link
+        href="/profile"
+        onClick={onNavigate}
+        className="mx-3 mt-1 flex items-center gap-3 rounded-xl p-2 transition hover:bg-zinc-100"
+      >
+        <span className="grid size-9 place-items-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
+          {initials}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-semibold text-zinc-900">
+            {state.profile.name || "Set up profile"}
+          </span>
+          <span className="block truncate text-[11px] text-zinc-500">
+            {state.profile.studentId || "Add student ID"}
+          </span>
+        </span>
+        <UserRound size={15} className="text-zinc-400" />
+      </Link>
+    </>
+  );
+}
+
+export function Sidebar({
+  admin,
+  mobileOpen,
+  onClose,
+}: {
+  admin: boolean;
+  mobileOpen: boolean;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeAtDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) onClose();
+    };
+
+    if (desktop.matches) {
+      onClose();
+      return;
+    }
+
+    desktop.addEventListener("change", closeAtDesktop);
+    return () => desktop.removeEventListener("change", closeAtDesktop);
+  }, [mobileOpen, onClose]);
+
+  return (
+    <>
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 pt-5 pb-3 backdrop-blur lg:flex">
+        <SidebarContent admin={admin} mobile={false} onNavigate={onClose} />
       </aside>
+
+      <Sheet
+        open={mobileOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <SheetContent
+          side="left"
+          showCloseButton={false}
+          overlayClassName="lg:hidden"
+          className="w-64 max-w-none bg-zinc-50/95 pt-5 pb-3 backdrop-blur lg:hidden"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const trigger = document.getElementById(
+              "mobile-navigation-trigger",
+            );
+            if (trigger?.getClientRects().length) trigger.focus();
+          }}
+        >
+          <SheetTitle className="sr-only">Coursemap navigation</SheetTitle>
+          <SheetDescription className="sr-only">
+            Navigate Coursemap pages and account settings.
+          </SheetDescription>
+          <SidebarContent admin={admin} mobile onNavigate={onClose} />
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

@@ -27,21 +27,23 @@ export function SheetContent({
   children,
   showCloseButton = true,
   side = "right",
+  overlayClassName,
   ...props
 }: ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   side?: "left" | "right";
+  overlayClassName?: string;
 }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogOverlay className="bg-zinc-950/35" />
+      <DialogOverlay className={cn("bg-zinc-950/35", overlayClassName)} />
       <DialogPrimitive.Content
         data-slot="sheet-content"
         className={cn(
           "fixed inset-y-0 z-[100] flex h-dvh w-full max-w-md flex-col bg-white text-sm text-zinc-950 shadow-lg outline-none motion-reduce:animate-none",
           side === "right"
-            ? "right-0 animate-drawer-in border-l border-zinc-200"
-            : "left-0 animate-drawer-in border-r border-zinc-200",
+            ? "right-0 border-l border-zinc-200 data-[state=closed]:animate-drawer-out-right data-[state=open]:animate-drawer-in-right"
+            : "left-0 border-r border-zinc-200 data-[state=closed]:animate-drawer-out-left data-[state=open]:animate-drawer-in-left",
           className,
         )}
         {...props}

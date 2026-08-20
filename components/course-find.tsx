@@ -171,6 +171,9 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
       if (event.defaultPrevented || (isTyping && !isCommandKey)) return;
       if (!isFindKey && !isCommandKey) return;
 
+      const trigger = triggerRef.current;
+      if (!trigger || trigger.getClientRects().length === 0) return;
+
       event.preventDefault();
       if (open) hideFind();
       else showFind();
