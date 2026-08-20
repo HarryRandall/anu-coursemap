@@ -319,7 +319,7 @@ test("server-renders admin and course-detail routes", async () => {
     render("/admin/roles"),
     render("/admin/relations"),
     render("/courses/COMP2100"),
-    render("/courses/COMP3670"),
+    render("/courses/COMP3670?tab=requisites"),
     render("/courses/COMP3600?tab=requisites"),
   ]);
   assert.equal(adminResponse.status, 200);
@@ -366,7 +366,8 @@ test("server-renders admin and course-detail routes", async () => {
   );
   const courseHtml = await courseResponse.text();
   assert.match(courseHtml, /Software Design Methodologies/i);
-  assert.match(courseHtml, /Requisites and compatibility/i);
+  assert.match(courseHtml, /About this course/i);
+  assert.match(courseHtml, /Course essentials/i);
   assert.doesNotMatch(courseHtml, /Back to courses/i);
   const chainHtml = await chainResponse.text();
   assert.match(chainHtml, /Prerequisite chain and unlocks/i);
