@@ -12,8 +12,22 @@ import {
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
+import {
+  DataList,
+  DataListActions,
+  DataListContent,
+  DataListDescription,
+  DataListIcon,
+  DataListItem,
+  DataListMeta,
+  DataListTitle,
+} from "@/components/ui/data-list";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StatTile } from "@/components/ui/stat-tile";
 
 type Preview = {
   programmes: number | null;
@@ -44,20 +58,77 @@ type ActivityRow = {
   sourceUrl?: string;
 };
 
+const activityPresentation = {
+  created: {
+    iconClass: "border-emerald-100 bg-emerald-50 text-emerald-700",
+    label: "Created",
+    tone: "success",
+  },
+  updated: {
+    iconClass: "border-emerald-100 bg-emerald-50 text-emerald-700",
+    label: "Updated",
+    tone: "success",
+  },
+  unchanged: {
+    iconClass: "border-zinc-200 bg-zinc-50 text-zinc-600",
+    label: "Unchanged",
+    tone: "neutral",
+  },
+  failed: {
+    iconClass: "border-rose-100 bg-rose-50 text-rose-700",
+    label: "Failed",
+    tone: "danger",
+  },
+  fetching: {
+    iconClass: "border-brand-100 bg-brand-50 text-brand-700",
+    label: "Fetching",
+    tone: "brand",
+  },
+} satisfies Record<
+  ActivityRow["action"],
+  {
+    iconClass: string;
+    label: string;
+    tone: "brand" | "danger" | "neutral" | "success";
+  }
+>;
+
 const MAX_WEB_COURSE_IMPORTS = 100;
 const COURSE_SYNC_CONCURRENCY = 4;
 
 export default function AdminSyncPreviewPage() {
   return (
-    <Suspense
-      fallback={
-        <AppShell admin>
-          <div className="w-full" />
-        </AppShell>
-      }
-    >
+    <Suspense fallback={<SyncPreviewSkeleton />}>
       <SyncPreview />
     </Suspense>
+  );
+}
+
+function SyncPreviewSkeleton() {
+  return (
+    <AppShell admin>
+      <div aria-busy="true" className="w-full">
+        <span className="sr-only" role="status">
+          Loading sync preview.
+        </span>
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="mt-5 h-9 w-40" />
+        <Skeleton className="mt-2 h-4 w-64 max-w-full" />
+        <div className="mt-10 grid gap-3 lg:grid-cols-3">
+          {[
+            "Course pages found",
+            "Already in Coursemap",
+            "New course pages",
+          ].map((label) => (
+            <StatTile
+              key={label}
+              label={label}
+              value={<Skeleton className="h-6 w-14" />}
+            />
+          ))}
+        </div>
+      </div>
+    </AppShell>
   );
 }
 
@@ -102,6 +173,18 @@ function SyncPreview() {
     hasCatalogueYear &&
     selectedProgrammeCodes.length === 1 &&
     !importing;
+  const courseRunComplete =
+    target === "courses" &&
+    !importing &&
+    importResult !== null &&
+    activityRows.length > 0 &&
+    activityRows.every((row) => row.action !== "fetching");
+  const activityComplete =
+    !importing && (programmeRunComplete || courseRunComplete);
+  const previewUnavailable = error !== null || !hasCatalogueYear;
+  const pendingActivityCount = activityRows.filter(
+    (row) => row.action === "fetching",
+  ).length;
 
   useEffect(() => {
     if (!hasCatalogueYear) return;
@@ -346,67 +429,122 @@ function SyncPreview() {
                 : `${programmes.split(",").length} selected programme${programmes.includes(",") ? "s" : ""} from ${year}`}
         </p>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-3">
-          <Card className="p-5">
-            <p className="text-sm text-zinc-500">Course pages found</p>
-            <p className="mt-2 text-3xl font-semibold text-zinc-950">
-              {preview
-                ? `${preview.isLowerBound ? "at least " : ""}${preview.coursePages}`
-                : "…"}
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-sm text-zinc-500">Already in Coursemap</p>
-            <p className="mt-2 text-3xl font-semibold text-zinc-950">
-              {preview ? preview.existingCourses : "…"}
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-sm text-zinc-500">New course pages</p>
-            <p className="mt-2 text-3xl font-semibold text-zinc-950">
-              {preview ? preview.newCourses : "…"}
-            </p>
-          </Card>
+        <div
+          aria-busy={hasCatalogueYear && !preview && !error}
+          className="mt-10 grid gap-3 lg:grid-cols-3"
+        >
+          {hasCatalogueYear && !preview && !error ? (
+            <span className="sr-only" role="status">
+              Loading sync preview.
+            </span>
+          ) : null}
+          <StatTile
+            label="Course pages found"
+            value={
+              preview ? (
+                `${preview.isLowerBound ? "At least " : ""}${preview.coursePages}`
+              ) : previewUnavailable ? (
+                <span className="text-sm font-medium text-zinc-500">
+                  Unavailable
+                </span>
+              ) : (
+                <Skeleton className="h-6 w-14" />
+              )
+            }
+          />
+          <StatTile
+            label="Already in Coursemap"
+            value={
+              preview ? (
+                preview.existingCourses
+              ) : previewUnavailable ? (
+                <span className="text-sm font-medium text-zinc-500">
+                  Unavailable
+                </span>
+              ) : (
+                <Skeleton className="h-6 w-14" />
+              )
+            }
+          />
+          <StatTile
+            label="New course pages"
+            value={
+              preview ? (
+                preview.newCourses
+              ) : previewUnavailable ? (
+                <span className="text-sm font-medium text-zinc-500">
+                  Unavailable
+                </span>
+              ) : (
+                <Skeleton className="h-6 w-14" />
+              )
+            }
+          />
         </div>
 
-        {preview?.isLowerBound && (
-          <p className="mt-4 text-sm text-zinc-500">
-            The ANU search endpoint returns its first 500 course results. Full
-            discovery runs before an all-programmes sync.
-          </p>
-        )}
-        {preview?.comparison === "demo" && (
-          <p className="mt-4 text-sm text-zinc-500">
-            Local demo comparison against the catalogue bundled with this app.
-          </p>
-        )}
-        {error && (
-          <div className="mt-6 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            <CircleAlert size={16} /> {error}
+        {preview?.isLowerBound || preview?.comparison === "demo" ? (
+          <div className="mt-4 space-y-2">
+            {preview.isLowerBound ? (
+              <Alert role="note" tone="neutral">
+                <CircleAlert aria-hidden="true" />
+                <AlertDescription>
+                  The ANU search endpoint returns its first 500 course results.
+                  Full discovery runs before an all-programmes sync.
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            {preview.comparison === "demo" ? (
+              <Alert role="note" tone="neutral">
+                <CircleAlert aria-hidden="true" />
+                <AlertDescription>
+                  Local demo comparison against the catalogue bundled with this
+                  app.
+                </AlertDescription>
+              </Alert>
+            ) : null}
           </div>
-        )}
-        {!hasCatalogueYear && (
-          <div className="mt-6 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            <CircleAlert size={16} /> Choose a catalogue year before previewing
-            an import.
-          </div>
-        )}
-        {importError && (
-          <div
-            role="alert"
-            className="mt-6 flex items-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700"
-          >
-            <CircleAlert size={16} /> {importError}
-          </div>
-        )}
-        {importResult && (
-          <div className="mt-6 flex flex-col gap-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 sm:flex-row sm:items-center sm:justify-between">
-            <p role="status">
-              Import {importResult.status}. {importResult.counts.added} added,{" "}
-              {importResult.counts.changed} changed and{" "}
-              {importResult.counts.unchanged} unchanged. Imported records remain
-              drafts until an administrator publishes them.
-            </p>
+        ) : null}
+        {error ? (
+          <Alert className="mt-6" role="alert" tone="danger">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Preview unavailable</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+        {!hasCatalogueYear ? (
+          <Alert className="mt-6" role="alert" tone="danger">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Catalogue year required</AlertTitle>
+            <AlertDescription>
+              Choose a catalogue year before previewing an import.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {importError ? (
+          <Alert className="mt-6" role="alert" tone="danger">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Sync needs attention</AlertTitle>
+            <AlertDescription>{importError}</AlertDescription>
+          </Alert>
+        ) : null}
+        {importResult ? (
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Alert
+              className="flex-1"
+              tone={importResult.status === "succeeded" ? "success" : "danger"}
+            >
+              {importResult.status === "succeeded" ? (
+                <Check aria-hidden="true" />
+              ) : (
+                <CircleAlert aria-hidden="true" />
+              )}
+              <AlertTitle>Import {importResult.status}</AlertTitle>
+              <AlertDescription>
+                {importResult.counts.added} added, {importResult.counts.changed}{" "}
+                changed and {importResult.counts.unchanged} unchanged. Imported
+                records remain drafts until an administrator publishes them.
+              </AlertDescription>
+            </Alert>
             <ButtonLink
               href={
                 target === "courses" || target === "all-courses"
@@ -419,66 +557,78 @@ function SyncPreview() {
               Review and publish
             </ButtonLink>
           </div>
-        )}
-        {activityRows.length > 0 && (
-          <section className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white">
-            <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-4 py-3">
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-950">
-                  Import activity
-                </h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  {programmeRunComplete
-                    ? "Completed. Each imported page remains linked to its ANU source."
-                    : "Updates appear as each page is saved."}
-                </p>
-              </div>
-              <span className="text-xs font-medium text-zinc-500">
-                {activityRows.length} pages
-              </span>
-            </div>
-            <div className="divide-y divide-zinc-100">
-              {activityRows.map((row) => (
-                <div
-                  key={`${row.kind}-${row.code}`}
-                  className="flex items-center gap-3 px-4 py-3 text-sm"
-                >
-                  {row.action === "fetching" ? (
-                    <LoaderCircle
-                      size={15}
-                      className="shrink-0 animate-spin text-violet-600"
-                    />
-                  ) : row.action === "failed" ? (
-                    <CircleAlert size={15} className="shrink-0 text-rose-600" />
-                  ) : (
-                    <Check size={15} className="shrink-0 text-emerald-600" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-mono text-xs font-semibold text-zinc-900">
-                      {row.code}
-                    </p>
-                    <p className="mt-0.5 truncate text-xs text-zinc-500">
-                      {row.message}
-                    </p>
-                  </div>
-                  <span className="hidden text-xs text-zinc-400 capitalize sm:block">
-                    {row.kind}
+        ) : null}
+        {activityRows.length > 0 ? (
+          <Card className="mt-6 overflow-hidden">
+            <CardHeader
+              action={
+                <div className="flex items-center gap-2">
+                  <Badge tone={activityComplete ? "success" : "neutral"}>
+                    {activityRows.length} pages
+                  </Badge>
+                  <span aria-live="polite" className="sr-only">
+                    {activityComplete
+                      ? `Import activity complete for ${activityRows.length} pages.`
+                      : `${pendingActivityCount} of ${activityRows.length} pages still fetching.`}
                   </span>
-                  {row.sourceUrl && (
-                    <a
-                      href={row.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-violet-700 hover:text-violet-900"
-                    >
-                      Source <ExternalLink size={12} />
-                    </a>
-                  )}
                 </div>
-              ))}
-            </div>
-          </section>
-        )}
+              }
+              className="border-b border-zinc-100"
+              description={
+                activityComplete
+                  ? "Completed. Each imported page remains linked to its ANU source."
+                  : "Updates appear as each page is saved."
+              }
+              title="Import activity"
+            />
+            <DataList>
+              {activityRows.map((row) => {
+                const presentation = activityPresentation[row.action];
+                return (
+                  <DataListItem key={`${row.kind}-${row.code}`}>
+                    <DataListIcon className={presentation.iconClass}>
+                      {row.action === "fetching" ? (
+                        <LoaderCircle className="animate-spin motion-reduce:animate-none" />
+                      ) : row.action === "failed" ? (
+                        <CircleAlert />
+                      ) : (
+                        <Check />
+                      )}
+                    </DataListIcon>
+                    <DataListContent>
+                      <DataListMeta>
+                        <Badge tone={presentation.tone}>
+                          {presentation.label}
+                        </Badge>
+                        <Badge tone="neutral">{row.kind}</Badge>
+                      </DataListMeta>
+                      <DataListTitle className="font-mono">
+                        {row.code}
+                      </DataListTitle>
+                      <DataListDescription className="line-clamp-2 whitespace-normal">
+                        {row.message}
+                      </DataListDescription>
+                    </DataListContent>
+                    {row.sourceUrl ? (
+                      <DataListActions>
+                        <a
+                          href={row.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-900"
+                        >
+                          Source
+                          <span className="sr-only"> (opens in a new tab)</span>
+                          <ExternalLink aria-hidden="true" size={12} />
+                        </a>
+                      </DataListActions>
+                    ) : null}
+                  </DataListItem>
+                );
+              })}
+            </DataList>
+          </Card>
+        ) : null}
 
         <section className="mt-10 border-t border-zinc-200 pt-6">
           <h2 className="text-lg font-semibold text-zinc-950">
@@ -513,16 +663,22 @@ function SyncPreview() {
         <div className="mt-10 flex flex-col items-end gap-3">
           {target === "courses" &&
             selectedCourseCodes.length > MAX_WEB_COURSE_IMPORTS && (
-              <p className="text-sm text-zinc-500">
-                Run selected course pages in batches of {MAX_WEB_COURSE_IMPORTS}
-                .
-              </p>
+              <Alert className="max-w-2xl" tone="warning">
+                <CircleAlert aria-hidden="true" />
+                <AlertDescription>
+                  Run selected course pages in batches of{" "}
+                  {MAX_WEB_COURSE_IMPORTS}.
+                </AlertDescription>
+              </Alert>
             )}
           {target === "selected" && selectedProgrammeCodes.length !== 1 && (
-            <p className="text-sm text-zinc-500">
-              Choose one programme to run it locally. Multiple programmes can
-              still be reviewed together.
-            </p>
+            <Alert className="max-w-2xl" tone="neutral">
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription>
+                Choose one programme to run it locally. Multiple programmes can
+                still be reviewed together.
+              </AlertDescription>
+            </Alert>
           )}
           <Button
             disabled={!canRunSelectedCourses && !canRunSelectedProgramme}
@@ -534,13 +690,16 @@ function SyncPreview() {
             }
           >
             {importing ? (
-              <LoaderCircle size={16} className="animate-spin" />
+              <LoaderCircle
+                size={16}
+                className="animate-spin motion-reduce:animate-none"
+              />
             ) : (
-              <RefreshCw size={16} />
+              <RefreshCw aria-hidden="true" size={16} />
             )}
             {importing
               ? "Syncing"
-              : programmeRunComplete
+              : activityComplete
                 ? "Sync again"
                 : "Sync now"}
           </Button>

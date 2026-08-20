@@ -6,9 +6,15 @@ import { useCoursemap } from "@/app/providers";
 import { CourseDrawer } from "@/components/overlays";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { StatTile } from "@/components/ui/stat-tile";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { planningCourseByCode } from "@/lib/planner";
 
@@ -27,12 +33,6 @@ function weightedAverage(entries: Array<{ mark?: number; units: number }>) {
 export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
   const { state } = useCoursemap();
   const [selectedAttempt, setSelectedAttempt] = useState<string | null>(null);
-  const degree = catalogue.degrees.find(
-    (item) => item.code === state.profile.degreeCode,
-  );
-  const major = catalogue.majors.find(
-    (item) => item.code === state.profile.majorCode,
-  );
   const entries = useMemo(() => {
     const termOrder = new Map(
       catalogue.terms.map((term, index) => [term.id, index]),
@@ -78,23 +78,7 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">
-              Your study record
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-              Academic overview
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {degree ? degree.name : "Choose a degree in onboarding"}
-              {major ? ` · ${major.name}` : ""}
-            </p>
-          </div>
-          <ButtonLink href="/profile" size="sm" variant="secondary">
-            Edit study details
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">Academic overview</h1>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
@@ -111,17 +95,12 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
             { icon: GraduationCap, label: "Units earned", value: earned },
             { icon: FileClock, label: "Failed attempts", value: failed },
           ].map(({ icon: Icon, label, value }) => (
-            <Card key={label} className="flex items-center gap-3 p-4">
-              <span className="grid size-9 place-items-center rounded-lg bg-brand-50 text-brand-700">
-                <Icon size={17} />
-              </span>
-              <div>
-                <p className="text-xl font-bold tracking-tight text-zinc-900">
-                  {value}
-                </p>
-                <p className="text-[11px] text-zinc-500">{label}</p>
-              </div>
-            </Card>
+            <StatTile
+              key={label}
+              icon={<Icon aria-hidden="true" />}
+              label={label}
+              value={value}
+            />
           ))}
         </div>
 
@@ -132,15 +111,20 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
             title="Course history"
           />
           {entries.length === 0 ? (
-            <div className="px-5 py-12 text-center text-sm text-zinc-500">
-              No course attempts recorded yet.
-            </div>
+            <Empty className="rounded-none px-5 py-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <BookCheck aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>No course attempts recorded yet</EmptyTitle>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="divide-y divide-zinc-100">
               {entries.map(({ attempt, course, term }) => (
                 <button
                   key={attempt.id}
-                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition hover:bg-zinc-50"
+                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors outline-none hover:bg-zinc-50 focus-visible:bg-brand-50 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset motion-reduce:transition-none"
                   onClick={() => setSelectedAttempt(attempt.id)}
                   type="button"
                 >

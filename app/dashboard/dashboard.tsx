@@ -16,8 +16,24 @@ import { UnitsTrendChart } from "@/components/dashboard/units-trend-chart";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { StatTile } from "@/components/ui/stat-tile";
 import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
@@ -40,9 +56,6 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   const { state } = useCoursemap();
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
-  );
-  const major = catalogue.majors.find(
-    (item) => item.code === state.profile.majorCode,
   );
   const timelineYears = planTimelineYears({
     degree,
@@ -123,19 +136,23 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   if (!degree) {
     return (
       <AppShell>
-        <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center ring-1 ring-zinc-200">
-          <GraduationCap className="mx-auto text-brand-600" size={28} />
-          <h1 className="mt-4 text-xl font-semibold text-zinc-950">
-            Set up your plan first
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-600">
-            Choose a published degree before Coursemap can calculate your
-            progress.
-          </p>
-          <ButtonLink className="mt-5" href="/onboarding">
-            Start onboarding
-          </ButtonLink>
-        </div>
+        <Card className="mx-auto w-full max-w-xl">
+          <Empty className="min-h-64">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <GraduationCap aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>Set up your plan first</EmptyTitle>
+              <EmptyDescription>
+                Choose a published degree before Coursemap can calculate your
+                progress.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <ButtonLink href="/onboarding">Start onboarding</ButtonLink>
+            </EmptyContent>
+          </Empty>
+        </Card>
       </AppShell>
     );
   }
@@ -143,98 +160,65 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <div className="mx-auto max-w-6xl space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">
-              Welcome back
-              {state.profile.name
-                ? `, ${state.profile.name.split(" ")[0]}`
-                : ""}
-            </p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-              {degree.name}
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {degree.code} · {state.profile.catalogueYear} catalogue
-              {major ? ` · ${major.name}` : ""}
-            </p>
-          </div>
-          <ButtonLink href="/plan" size="sm">
-            <Map size={15} /> Open plan
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">{degree.name}</h1>
 
-        <Card className="overflow-hidden p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex-col items-stretch p-5 sm:flex-row sm:items-start sm:p-6">
             <div>
-              <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <CardTitle className="text-xs tracking-wide text-zinc-500 uppercase">
                 Degree progress
-              </p>
+              </CardTitle>
               <p className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
                 {progress.percent}% complete
               </p>
-              <p className="mt-1 text-sm text-zinc-500">
+              <CardDescription className="mt-1 text-sm">
                 {progress.completed} of {progress.total} units completed
-              </p>
+              </CardDescription>
             </div>
-            <ButtonLink href="/plan" size="sm" variant="secondary">
-              <Map size={15} /> Edit plan
-            </ButtonLink>
-          </div>
-          <div className="mt-5">
+            <CardAction>
+              <ButtonLink href="/plan" size="sm" variant="secondary">
+                <Map size={15} /> Edit plan
+              </ButtonLink>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="sm:px-6 sm:pb-6">
             <DegreeProgressBar progress={progress} compact />
-          </div>
-          {!catalogue.programmeRequirementsImported && (
-            <p className="mt-4 text-xs leading-5 text-zinc-500">
-              Programme rule coverage will appear once the official source is
-              imported and reviewed.
-            </p>
-          )}
+            {!catalogue.programmeRequirementsImported && (
+              <p className="mt-4 text-xs leading-5 text-zinc-500">
+                Programme rule coverage will appear once the official source is
+                imported and reviewed.
+              </p>
+            )}
+          </CardContent>
         </Card>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">Degree progress</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {progress.percent}%
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              {progress.completed} completed · {progress.planned} planned ·{" "}
-              {progress.total} units total
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">
-              Courses in your plan
-            </p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {planned.length}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Only published catalogue courses are shown.
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">
-              Prerequisite alerts
-            </p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {blocked.length}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Based on imported requisite references.
-            </p>
-          </Card>
-          <Card className="p-5">
-            <p className="text-xs font-medium text-zinc-500">Scheduled load</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-              {plannedUnits}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              units across {termLoads.filter((term) => term.units > 0).length}{" "}
-              planned semesters
-            </p>
-          </Card>
+          <StatTile
+            description={`${progress.completed} completed · ${progress.planned} planned · ${progress.total} units total`}
+            icon={<GraduationCap aria-hidden="true" />}
+            label="Degree progress"
+            unit="%"
+            value={progress.percent}
+          />
+          <StatTile
+            description="Only published catalogue courses are shown."
+            icon={<BookOpen aria-hidden="true" />}
+            label="Courses in your plan"
+            value={planned.length}
+          />
+          <StatTile
+            description="Based on imported requisite references."
+            icon={<AlertTriangle aria-hidden="true" />}
+            label="Prerequisite alerts"
+            value={blocked.length}
+          />
+          <StatTile
+            description={`Across ${termLoads.filter((term) => term.units > 0).length} planned semesters`}
+            icon={<Map aria-hidden="true" />}
+            label="Scheduled load"
+            unit="units"
+            value={plannedUnits}
+          />
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
@@ -248,29 +232,28 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
         <div className="grid gap-5 lg:grid-cols-3">
           <TermLoadChart terms={termLoads} currentTermId={currentTermId} />
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4">
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-900">
-                  Next in your plan
-                </h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  Your next scheduled courses, drawn from the saved plan.
-                </p>
-              </div>
-              <ButtonLink href="/plan" size="sm" variant="secondary">
-                Edit plan
-              </ButtonLink>
-            </div>
+            <CardHeader
+              className="items-center border-b border-zinc-100"
+              title="Next in your plan"
+              description="Your next scheduled courses, drawn from the saved plan."
+              action={
+                <ButtonLink href="/plan" size="sm" variant="secondary">
+                  Edit plan
+                </ButtonLink>
+              }
+            />
             {nextCourses.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <BookOpen className="mx-auto text-zinc-300" size={24} />
-                <p className="mt-3 text-sm font-medium text-zinc-700">
-                  No courses planned yet
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Choose a course from your plan board to get started.
-                </p>
-              </div>
+              <Empty className="rounded-none px-5 py-12">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <BookOpen aria-hidden="true" />
+                  </EmptyMedia>
+                  <EmptyTitle>No courses planned yet</EmptyTitle>
+                  <EmptyDescription>
+                    Choose a course from your plan board to get started.
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
               <div className="divide-y divide-zinc-100">
                 {nextCourses.map(({ attempt, course, term }) => {
@@ -314,30 +297,30 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
               </div>
             )}
           </Card>
-          <Card className="p-5">
-            <div className="flex items-start gap-3">
-              <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-600">
-                <ListChecks size={17} />
-              </span>
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-900">
-                  Plan checks
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">
-                  {blocked.length === 0
-                    ? "No prerequisite conflicts are currently detected in imported course data."
-                    : `${blocked.length} ${blocked.length === 1 ? "course needs" : "courses need"} a prerequisite check before enrolment.`}
-                </p>
-                <ButtonLink
-                  href="/requirements"
-                  size="sm"
-                  variant="secondary"
-                  className="mt-3"
-                >
-                  Review requirements
-                </ButtonLink>
+          <Card>
+            <CardHeader className="p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-600">
+                  <ListChecks size={17} aria-hidden="true" />
+                </span>
+                <div>
+                  <CardTitle>Plan checks</CardTitle>
+                  <CardDescription className="mt-1 leading-5">
+                    {blocked.length === 0
+                      ? "No prerequisite conflicts are currently detected in imported course data."
+                      : `${blocked.length} ${blocked.length === 1 ? "course needs" : "courses need"} a prerequisite check before enrolment.`}
+                  </CardDescription>
+                  <ButtonLink
+                    href="/requirements"
+                    size="sm"
+                    variant="secondary"
+                    className="mt-3"
+                  >
+                    Review requirements
+                  </ButtonLink>
+                </div>
               </div>
-            </div>
+            </CardHeader>
           </Card>
         </div>
       </div>

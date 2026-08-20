@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import { toast } from "sonner";
 import {
   createContext,
   useCallback,
@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
+import { Toaster } from "@/components/ui/sonner";
 import type { AuthViewer } from "@/lib/auth/viewer";
 import type { Attempt, AttemptStatus } from "@/lib/coursemap/types";
 import {
@@ -41,7 +42,6 @@ export type AppState = {
 };
 
 type ToastTone = "success" | "warning" | "info";
-type Toast = { message: string; tone: ToastTone };
 
 type AppContextValue = {
   state: AppState;
@@ -70,7 +70,6 @@ type AppContextValue = {
   togglePermission: (attemptId: string) => void;
   toggleOverloadApproval: (attemptId: string) => void;
   resetDemo: () => void;
-  toast: Toast | null;
   notify: (message: string, tone?: ToastTone) => void;
 };
 
@@ -197,7 +196,6 @@ export function AppProvider({
   );
   const [state, setState] = useState<AppState>(initialState);
   const [ready, setReady] = useState(false);
-  const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,14 +256,10 @@ export function AppProvider({
   }, [viewer]);
 
   const notify = useCallback((message: string, tone: ToastTone = "success") => {
-    setToast({ message, tone });
+    if (tone === "warning") toast.warning(message);
+    else if (tone === "info") toast.info(message);
+    else toast.success(message);
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timeout = window.setTimeout(() => setToast(null), 3600);
-    return () => window.clearTimeout(timeout);
-  }, [toast]);
 
   const updateProfile = useCallback(
     async (profile: Partial<Profile>) => {
@@ -493,7 +487,6 @@ export function AppProvider({
       togglePermission,
       toggleOverloadApproval,
       resetDemo,
-      toast,
       notify,
     }),
     [
@@ -510,7 +503,6 @@ export function AppProvider({
       togglePermission,
       toggleOverloadApproval,
       resetDemo,
-      toast,
       notify,
     ],
   );
@@ -518,52 +510,7 @@ export function AppProvider({
   return (
     <AppContext.Provider value={value}>
       {children}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed top-4 right-4 z-[200] flex w-[min(24rem,calc(100vw-2rem))] animate-toast-in items-start gap-3 rounded-xl bg-white p-3.5 text-zinc-900 shadow-lg ring-1 ring-zinc-200 sm:top-6 sm:right-6"
-        >
-          <span
-            aria-hidden="true"
-            className={
-              toast.tone === "warning"
-                ? "grid size-8 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100 ring-inset"
-                : toast.tone === "info"
-                  ? "grid size-8 shrink-0 place-items-center rounded-lg bg-sky-50 text-sky-600 ring-1 ring-sky-100 ring-inset"
-                  : "grid size-8 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 ring-inset"
-            }
-          >
-            {toast.tone === "warning" ? (
-              <AlertTriangle size={17} />
-            ) : toast.tone === "info" ? (
-              <Info size={17} />
-            ) : (
-              <CheckCircle2 size={17} />
-            )}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold">
-              {toast.tone === "warning"
-                ? "Action needed"
-                : toast.tone === "info"
-                  ? "Coming soon"
-                  : "Plan updated"}
-            </span>
-            <span className="mt-0.5 block text-[11px] leading-relaxed text-zinc-500">
-              {toast.message}
-            </span>
-          </span>
-          <button
-            type="button"
-            aria-label="Dismiss notification"
-            onClick={() => setToast(null)}
-            className="grid size-7 shrink-0 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
+      <Toaster />
     </AppContext.Provider>
   );
 }

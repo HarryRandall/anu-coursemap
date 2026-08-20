@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LoaderCircle, Minus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { setAdminRolePermission } from "@/lib/admin/actions";
 import { cn } from "@/lib/cn";
 
@@ -33,19 +34,23 @@ export function RolePermissionToggle({
   if (required || unavailable) {
     return (
       <span
-        className={cn(
-          "grid size-7 place-items-center rounded-md ring-1 ring-inset",
-          required
-            ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-            : "bg-zinc-50 text-zinc-400 ring-zinc-200",
-        )}
+        className="grid size-11 place-items-center"
         title={required ? "Required for Admin" : "Not available for User"}
       >
-        {required ? (
-          <Check size={14} strokeWidth={2.5} aria-hidden="true" />
-        ) : (
-          <Minus size={14} aria-hidden="true" />
-        )}
+        <span
+          className={cn(
+            "grid size-7 place-items-center rounded-md border",
+            required
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-zinc-200 bg-zinc-50 text-zinc-400",
+          )}
+        >
+          {required ? (
+            <Check size={14} strokeWidth={2.5} aria-hidden="true" />
+          ) : (
+            <Minus size={14} aria-hidden="true" />
+          )}
+        </span>
         <span className="sr-only">
           {required ? "Required" : "Not available"}
         </span>
@@ -53,9 +58,8 @@ export function RolePermissionToggle({
     );
   }
 
-  const onToggle = () => {
+  const onToggle = (next: boolean) => {
     if (isPending) return;
-    const next = !enabled;
     const previous = enabled;
     setEnabled(next);
     setFeedback("");
@@ -69,32 +73,34 @@ export function RolePermissionToggle({
 
   return (
     <span>
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={enabled}
-        aria-busy={isPending}
-        aria-label={`${enabled ? "Remove" : "Grant"} ${permissionName} ${enabled ? "from" : "to"} ${roleName}`}
-        title={`${enabled ? "Granted to" : "Not granted to"} ${roleName}`}
-        disabled={isPending}
-        onClick={onToggle}
-        className={cn(
-          "grid size-7 cursor-pointer place-items-center rounded-md border transition-[background-color,border-color,color,box-shadow] duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 disabled:cursor-wait motion-reduce:transition-none",
-          enabled
-            ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-100"
-            : "border-zinc-300 bg-white text-transparent hover:border-brand-300 hover:bg-brand-50",
-        )}
-      >
+      <span className="relative grid size-11 place-items-center rounded-lg hover:bg-zinc-100">
+        <Checkbox
+          checked={enabled}
+          aria-busy={isPending}
+          aria-label={`${enabled ? "Remove" : "Grant"} ${permissionName} ${enabled ? "from" : "to"} ${roleName}`}
+          title={`${enabled ? "Granted to" : "Not granted to"} ${roleName}`}
+          disabled={isPending}
+          onCheckedChange={(checked) => onToggle(checked === true)}
+          className={cn(
+            "size-7",
+            enabled &&
+              "border-emerald-300 bg-emerald-600 hover:border-emerald-400 hover:bg-emerald-700 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:hover:border-emerald-700 data-[state=checked]:hover:bg-emerald-700",
+          )}
+        />
         {isPending ? (
-          <LoaderCircle
-            size={14}
-            className="animate-spin text-zinc-500 motion-reduce:animate-none"
+          <span
             aria-hidden="true"
-          />
-        ) : (
-          <Check size={14} strokeWidth={2.5} aria-hidden="true" />
-        )}
-      </button>
+            className="pointer-events-none absolute inset-0 grid place-items-center"
+          >
+            <span className="grid size-7 place-items-center rounded-[5px] bg-white/85 text-zinc-500">
+              <LoaderCircle
+                size={14}
+                className="animate-spin motion-reduce:animate-none"
+              />
+            </span>
+          </span>
+        ) : null}
+      </span>
       <span className="sr-only" role="status" aria-live="polite">
         {feedback}
       </span>

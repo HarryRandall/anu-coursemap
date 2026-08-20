@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { CircleCheck, TriangleAlert } from "lucide-react";
 import { AuthShell } from "@/app/auth/auth-shell";
 import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
 import { SocialSignIn } from "@/app/auth/social-sign-in";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 
@@ -34,19 +36,20 @@ export default async function LoginPage({
       </p>
 
       {signedOut && (
-        <p className="mt-5 rounded-lg bg-zinc-50 px-3 py-2.5 text-xs text-zinc-600 ring-1 ring-zinc-200">
-          You have been signed out.
-        </p>
+        <Alert className="mt-5">
+          <CircleCheck aria-hidden="true" />
+          <AlertDescription>You have been signed out.</AlertDescription>
+        </Alert>
       )}
 
       {(!configured || configurationMissing) && (
-        <p
-          role="alert"
-          className="mt-5 rounded-lg bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-800 ring-1 ring-amber-200"
-        >
-          Local Supabase is not configured. Copy .env.example to .env.local, add
-          the values from `supabase status`, then restart Next.js.
-        </p>
+        <Alert className="mt-5" role="alert" tone="warning">
+          <TriangleAlert aria-hidden="true" />
+          <AlertDescription>
+            Local Supabase is not configured. Copy .env.example to .env.local,
+            add the values from `supabase status`, then restart Next.js.
+          </AlertDescription>
+        </Alert>
       )}
 
       <div className="mt-7">

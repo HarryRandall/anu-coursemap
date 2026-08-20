@@ -58,18 +58,14 @@ export function RoadmapTimeline({
 
   return (
     <section
-      aria-label="Product direction"
+      aria-label="Coursemap roadmap"
       className="mx-auto w-full max-w-[1500px]"
     >
-      <p className="mb-6 px-1 text-[10px] font-semibold tracking-[0.2em] text-brand-500 uppercase sm:px-2">
-        Product direction
-      </p>
-
       <div className="relative">
         <div
           ref={viewportRef}
           tabIndex={0}
-          aria-label="Coursemap product roadmap"
+          aria-label="Coursemap roadmap timeline"
           onKeyDown={(event) => {
             if (event.key === "ArrowLeft") {
               event.preventDefault();

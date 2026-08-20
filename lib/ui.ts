@@ -52,12 +52,12 @@ export type Tone =
   "neutral" | "brand" | "success" | "warning" | "danger" | "info";
 
 export const toneClasses: Record<Tone, string> = {
-  neutral: "bg-zinc-100 text-zinc-600 ring-zinc-200",
-  brand: "bg-brand-50 text-brand-700 ring-brand-200",
-  success: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  warning: "bg-amber-50 text-amber-700 ring-amber-200",
-  danger: "bg-rose-50 text-rose-700 ring-rose-200",
-  info: "bg-sky-50 text-sky-700 ring-sky-200",
+  neutral: "border-zinc-200 bg-zinc-50 text-zinc-600",
+  brand: "border-brand-200 bg-brand-50 text-brand-700",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  warning: "border-amber-200 bg-amber-50 text-amber-700",
+  danger: "border-rose-200 bg-rose-50 text-rose-700",
+  info: "border-sky-200 bg-sky-50 text-sky-700",
 };
 
 /** Map an effective plan status to a tone + label. */

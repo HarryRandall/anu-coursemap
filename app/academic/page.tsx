@@ -1,3 +1,4 @@
+import { PlanningCatalogueError } from "@/components/plan/planning-catalogue-error";
 import { loadCurrentUserPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { AcademicRecord } from "./academic-record";
 
@@ -8,13 +9,12 @@ export default async function AcademicPage() {
   try {
     catalogue = await loadCurrentUserPlanCatalogue();
   } catch {
-    catalogue = {
-      courses: [],
-      degrees: [],
-      majors: [],
-      programmeRequirementsImported: false,
-      terms: [],
-    };
+    return (
+      <PlanningCatalogueError
+        pageTitle="Academic overview"
+        retryHref="/academic"
+      />
+    );
   }
   return <AcademicRecord catalogue={catalogue} />;
 }

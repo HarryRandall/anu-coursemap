@@ -3,6 +3,7 @@
 import { Menu } from "lucide-react";
 import type { ReactNode } from "react";
 import { Breadcrumbs } from "@/components/shell/breadcrumbs";
+import { IconButton } from "@/components/ui/button";
 
 export function Topbar({
   actions,
@@ -14,14 +15,15 @@ export function Topbar({
   return (
     <header className="relative flex min-h-14 items-center justify-between gap-3 bg-white px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-zinc-200 after:content-[''] sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
-        <button
-          type="button"
-          aria-label="Open navigation"
+        <IconButton
+          id="mobile-navigation-trigger"
+          label="Open navigation"
+          variant="ghost"
           onClick={onOpenNav}
-          className="grid size-9 shrink-0 place-items-center rounded-lg text-zinc-600 hover:bg-zinc-100 lg:hidden"
+          className="shrink-0 lg:hidden"
         >
-          <Menu size={20} />
-        </button>
+          <Menu size={20} aria-hidden="true" />
+        </IconButton>
         <Breadcrumbs />
       </div>
 

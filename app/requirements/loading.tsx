@@ -7,14 +7,6 @@ export default function RequirementsLoading() {
     <AppShell>
       <div aria-busy="true" className="mx-auto max-w-5xl space-y-5">
         <span className="sr-only">Loading degree requirements</span>
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-3.5 w-24" />
-            <Skeleton className="h-7 w-48 max-w-full" />
-            <Skeleton className="h-3.5 w-64 max-w-full" />
-          </div>
-          <Skeleton className="h-8 w-24 rounded-lg" />
-        </header>
         <Card className="space-y-4 p-5">
           <div className="space-y-2">
             <Skeleton className="h-3.5 w-40" />

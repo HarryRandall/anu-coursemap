@@ -239,9 +239,10 @@ export function CourseDrawer({
                   <p className="mt-0.5 text-xs text-zinc-500">
                     {course.permissionText}
                   </p>
-                  <button
-                    type="button"
-                    className="mt-1.5 text-[11px] font-semibold text-brand-600 hover:text-brand-700"
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="mt-1 -ml-2 h-7 px-2 text-[11px] text-brand-600 hover:text-brand-700"
                     onClick={() => {
                       togglePermission(attempt.id);
                       notify(
@@ -254,7 +255,7 @@ export function CourseDrawer({
                     {attempt.permissionApproved
                       ? "Remove approval"
                       : "Record approval"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

@@ -7,6 +7,7 @@ import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-catalogue
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { getAuthViewer } from "@/lib/auth/viewer";
 import { createClient } from "@/lib/supabase/server";
+import { collectPlanCatalogueCourseIds } from "@/lib/coursemap/plan-course-ids";
 
 export type PlanCatalogue = {
   courses: Course[];
@@ -241,12 +242,20 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
     .maybeSingle();
   if (yearError || !year) return loadPublishedPlanCatalogue();
 
-  const { data: items, error: itemsError } = await supabase
-    .from("plan_items")
-    .select("course_id")
-    .eq("plan_id", plan.id);
-  if (itemsError) return loadPublishedPlanCatalogue(year.year);
-  const courseIds = [...new Set((items ?? []).map((item) => item.course_id))];
+  const [itemsResult, attemptsResult] = await Promise.all([
+    supabase.from("plan_items").select("course_id").eq("plan_id", plan.id),
+    supabase
+      .from("course_attempts")
+      .select("course_id")
+      .eq("owner_id", viewer.id),
+  ]);
+  if (itemsResult.error || attemptsResult.error) {
+    return loadPublishedPlanCatalogue(year.year);
+  }
+  const courseIds = collectPlanCatalogueCourseIds(
+    itemsResult.data ?? [],
+    attemptsResult.data ?? [],
+  );
   const { data: courses, error: coursesError } = courseIds.length
     ? await supabase.from("courses").select("code").in("id", courseIds)
     : { data: [], error: null };

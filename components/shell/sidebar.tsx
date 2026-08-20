@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Fragment, useEffect } from "react";
 import {
   BookOpen,
   CalendarDays,
@@ -17,7 +18,6 @@ import {
   MapPin,
   RefreshCw,
   Route,
-  Search as SearchIcon,
   Table2,
   UserRound,
   UsersRound,
@@ -28,46 +28,47 @@ import {
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { BrandMark } from "@/components/brand-mark";
+import { CourseFind } from "@/components/course-find";
+import { IconButton } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   badge?: string;
+  dividerAfter?: boolean;
 };
 
-const studentNavGroups: Array<{ label: string; items: NavItem[] }> = [
+const studentNav: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: House },
+  { href: "/plan", label: "Plan", icon: Map },
+  { href: "/courses", label: "Courses", icon: BookOpen },
   {
-    label: "Overview",
-    items: [{ href: "/dashboard", label: "Home", icon: House }],
+    href: "/requirements",
+    label: "Requirements",
+    icon: ListChecks,
+    dividerAfter: true,
   },
+  { href: "/academic", label: "Academic", icon: GraduationCap },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   {
-    label: "Planning",
-    items: [
-      { href: "/plan", label: "Plan", icon: Map },
-      { href: "/courses", label: "Courses", icon: BookOpen },
-      { href: "/requirements", label: "Requirements", icon: ListChecks },
-    ],
+    href: "/key-dates",
+    label: "Key dates",
+    icon: CalendarRange,
+    dividerAfter: true,
   },
+  { href: "/roadmap", label: "Roadmap", icon: Route },
   {
-    label: "Your study",
-    items: [
-      { href: "/academic", label: "Academic", icon: GraduationCap },
-      { href: "/calendar", label: "Calendar", icon: CalendarDays },
-      { href: "/key-dates", label: "Key dates", icon: CalendarRange },
-    ],
-  },
-  {
-    label: "More",
-    items: [
-      { href: "/roadmap", label: "Roadmap", icon: Route },
-      {
-        href: "/rooms",
-        label: "Room finder",
-        icon: MapPin,
-        badge: "Soon",
-      },
-    ],
+    href: "/rooms",
+    label: "Room finder",
+    icon: MapPin,
+    badge: "Soon",
   },
 ];
 
@@ -115,7 +116,7 @@ function NavLink({
       onClick={onNavigate}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "relative flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition",
+        "relative mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition",
         isActive
           ? admin
             ? "bg-brand-50 text-brand-700"
@@ -139,16 +140,14 @@ function NavLink({
   );
 }
 
-export function Sidebar({
+function SidebarContent({
   admin,
-  mobileOpen,
-  onClose,
-  onOpenSearch,
+  mobile,
+  onNavigate,
 }: {
   admin: boolean;
-  mobileOpen: boolean;
-  onClose: () => void;
-  onOpenSearch: () => void;
+  mobile: boolean;
+  onNavigate: () => void;
 }) {
   const { state, canAccessAdmin } = useCoursemap();
   const initials =
@@ -161,144 +160,179 @@ export function Sidebar({
 
   return (
     <>
-      {mobileOpen && (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-zinc-950/35 lg:hidden"
-        />
-      )}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 px-3 pt-5 pb-3 backdrop-blur transition-transform lg:translate-x-0",
-          mobileOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <div className="flex items-center justify-between">
-          <Brand />
-          <button
-            type="button"
-            aria-label="Close navigation"
-            onClick={onClose}
-            className="grid size-9 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-200/60 lg:hidden"
+      <div className="flex items-center justify-between px-3">
+        <Brand />
+        {mobile ? (
+          <IconButton
+            label="Close navigation"
+            variant="ghost"
+            onClick={onNavigate}
           >
-            <X size={18} />
-          </button>
+            <X size={18} aria-hidden="true" />
+          </IconButton>
+        ) : null}
+      </div>
+
+      {!admin && (
+        <div className="px-3">
+          <CourseFind onNavigate={onNavigate} />
         </div>
+      )}
 
-        {!admin && (
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            aria-label="Search courses"
-            className="mt-5 flex h-9 w-full items-center gap-2 rounded-lg bg-white px-2.5 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:ring-zinc-300"
-          >
-            <SearchIcon size={15} />
-            <span className="flex-1 text-left text-xs">Search courses</span>
-            <kbd className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
-              ⌘K
-            </kbd>
-          </button>
+      <nav
+        aria-label={admin ? "Admin navigation" : "Student navigation"}
+        className="mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+      >
+        {admin ? (
+          <div className="flex flex-col gap-1">
+            {adminNav.map((item) => (
+              <NavLink
+                key={item.href}
+                item={item}
+                admin
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {studentNav.map((item) => (
+              <Fragment key={item.href}>
+                <NavLink item={item} admin={false} onNavigate={onNavigate} />
+                {item.dividerAfter && (
+                  <div
+                    aria-hidden="true"
+                    className="my-1.5 border-t border-zinc-200/80"
+                  />
+                )}
+              </Fragment>
+            ))}
+          </div>
         )}
 
-        <nav
-          aria-label={admin ? "Admin navigation" : "Student navigation"}
-          className="mt-5 min-h-0 flex-1 overflow-y-auto pr-0.5"
-        >
-          {admin ? (
-            <div className="flex flex-col gap-1">
-              <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                Catalogue
-              </p>
-              {adminNav.map((item) => (
-                <NavLink
-                  key={item.href}
-                  item={item}
-                  admin
-                  onNavigate={onClose}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {studentNavGroups.map((group) => (
-                <div key={group.label} className="flex flex-col gap-1">
-                  <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                    {group.label}
-                  </p>
-                  {group.items.map((item) => (
-                    <NavLink
-                      key={item.href}
-                      item={item}
-                      admin={false}
-                      onNavigate={onClose}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!admin && canAccessAdmin && (
-            <>
-              <div className="my-1.5 border-t border-zinc-200/80" />
-              <Link
-                href="/admin/dashboard"
-                onClick={onClose}
-                className="flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
-              >
-                <Wrench size={17} strokeWidth={1.9} />
-                <span>Admin console</span>
-              </Link>
-            </>
-          )}
-        </nav>
-
-        {admin && (
+        {!admin && canAccessAdmin && (
           <>
-            <div className="-mx-3 mb-1.5 border-t border-zinc-200/80" />
+            <div
+              aria-hidden="true"
+              className="my-1.5 border-t border-zinc-200/80"
+            />
             <Link
-              href="/dashboard"
-              onClick={onClose}
-              className="flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+              href="/admin/dashboard"
+              onClick={onNavigate}
+              className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >
-              <Map size={17} strokeWidth={1.9} />
-              <span>Back to student home</span>
+              <Wrench size={17} strokeWidth={1.9} />
+              <span>Admin console</span>
             </Link>
           </>
         )}
+      </nav>
 
-        {!admin && (
+      {admin && (
+        <>
+          <div className="mb-1.5 border-t border-zinc-200/80" />
           <Link
-            href="/help"
-            onClick={onClose}
-            className="mt-1 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+            href="/dashboard"
+            onClick={onNavigate}
+            className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
           >
-            <LifeBuoy size={17} strokeWidth={1.9} />
-            <span>Help &amp; support</span>
+            <Map size={17} strokeWidth={1.9} />
+            <span>Back to student home</span>
           </Link>
-        )}
+        </>
+      )}
 
+      {!admin && (
         <Link
-          href="/profile"
-          onClick={onClose}
-          className="mt-1 flex items-center gap-3 rounded-xl p-2 transition hover:bg-zinc-100"
+          href="/help"
+          onClick={onNavigate}
+          className="mx-3 mt-1 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
         >
-          <span className="grid size-9 place-items-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
-            {initials}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-semibold text-zinc-900">
-              {state.profile.name || "Set up profile"}
-            </span>
-            <span className="block truncate text-[11px] text-zinc-500">
-              {state.profile.studentId || "Add student ID"}
-            </span>
-          </span>
-          <UserRound size={15} className="text-zinc-400" />
+          <LifeBuoy size={17} strokeWidth={1.9} />
+          <span>Help &amp; support</span>
         </Link>
+      )}
+
+      <Link
+        href="/profile"
+        onClick={onNavigate}
+        className="mx-3 mt-1 flex items-center gap-3 rounded-xl p-2 transition hover:bg-zinc-100"
+      >
+        <span className="grid size-9 place-items-center rounded-full bg-brand-100 text-[11px] font-bold text-brand-700">
+          {initials}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-semibold text-zinc-900">
+            {state.profile.name || "Set up profile"}
+          </span>
+          <span className="block truncate text-[11px] text-zinc-500">
+            {state.profile.studentId || "Add student ID"}
+          </span>
+        </span>
+        <UserRound size={15} className="text-zinc-400" />
+      </Link>
+    </>
+  );
+}
+
+export function Sidebar({
+  admin,
+  mobileOpen,
+  onClose,
+}: {
+  admin: boolean;
+  mobileOpen: boolean;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const closeAtDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) onClose();
+    };
+
+    if (desktop.matches) {
+      onClose();
+      return;
+    }
+
+    desktop.addEventListener("change", closeAtDesktop);
+    return () => desktop.removeEventListener("change", closeAtDesktop);
+  }, [mobileOpen, onClose]);
+
+  return (
+    <>
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r border-zinc-200 bg-zinc-50/80 pt-5 pb-3 backdrop-blur lg:flex">
+        <SidebarContent admin={admin} mobile={false} onNavigate={onClose} />
       </aside>
+
+      <Sheet
+        open={mobileOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+      >
+        <SheetContent
+          side="left"
+          showCloseButton={false}
+          overlayClassName="lg:hidden"
+          className="w-64 max-w-none bg-zinc-50/95 pt-5 pb-3 backdrop-blur lg:hidden"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            const trigger = document.getElementById(
+              "mobile-navigation-trigger",
+            );
+            if (trigger?.getClientRects().length) trigger.focus();
+          }}
+        >
+          <SheetTitle className="sr-only">Coursemap navigation</SheetTitle>
+          <SheetDescription className="sr-only">
+            Navigate Coursemap pages and account settings.
+          </SheetDescription>
+          <SidebarContent admin={admin} mobile onNavigate={onClose} />
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { PlanningCatalogueError } from "@/components/plan/planning-catalogue-error";
 import { loadCurrentUserPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { Requirements } from "./requirements";
 
@@ -8,13 +9,12 @@ export default async function RequirementsPage() {
   try {
     catalogue = await loadCurrentUserPlanCatalogue();
   } catch {
-    catalogue = {
-      courses: [],
-      degrees: [],
-      majors: [],
-      programmeRequirementsImported: false,
-      terms: [],
-    };
+    return (
+      <PlanningCatalogueError
+        pageTitle="Requirements"
+        retryHref="/requirements"
+      />
+    );
   }
   return <Requirements catalogue={catalogue} />;
 }

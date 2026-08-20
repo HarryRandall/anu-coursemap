@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Button, IconButton } from "@/components/ui/button";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { Modal } from "@/components/ui/overlay";
 import { helpEmailReasons } from "@/lib/help";
 
@@ -54,18 +54,15 @@ export function EmailSupportDialog({
         aria-describedby={noticeId}
       >
         <Field label="What is this about?">
-          <select
-            name="reason"
+          <Select
             value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            className="h-10 w-full rounded-lg bg-white px-3 text-[13px] text-zinc-900 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:ring-zinc-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-          >
-            {helpEmailReasons.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            onChange={setReason}
+            aria-label="What is this about?"
+            options={helpEmailReasons.map((option) => ({
+              value: option.id,
+              label: option.label,
+            }))}
+          />
         </Field>
         <Field label="Your email">
           <Input

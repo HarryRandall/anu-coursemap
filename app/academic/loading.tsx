@@ -7,14 +7,6 @@ export default function AcademicLoading() {
     <AppShell>
       <div aria-busy="true" className="mx-auto max-w-6xl space-y-5">
         <span className="sr-only">Loading academic overview</span>
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-3.5 w-32" />
-            <Skeleton className="h-7 w-56 max-w-full" />
-            <Skeleton className="h-3.5 w-64 max-w-full" />
-          </div>
-          <Skeleton className="h-8 w-32 rounded-lg" />
-        </header>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => (
             <Card key={index} className="flex items-center gap-3 p-4">

@@ -1,5 +1,6 @@
 import { ArrowRight, Search } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { Input } from "@/components/ui/field";
 
 const popularSearches = ["COMP2100", "Machine learning", "MATH1013"] as const;
 
@@ -21,18 +22,18 @@ export function LandingHero({ canOpenPlan }: { canOpenPlan: boolean }) {
         action="/courses"
         className="mx-auto mt-10 flex max-w-2xl flex-col gap-3 rounded-[28px] bg-white p-2 shadow-md ring-1 ring-zinc-200/80 sm:flex-row sm:items-center"
       >
-        <label className="flex min-h-12 min-w-0 flex-1 items-center gap-3 px-3">
+        <label className="flex min-h-12 min-w-0 flex-1 items-center gap-3 rounded-3xl px-3 transition focus-within:ring-3 focus-within:ring-brand-500/20">
           <Search
             className="size-5 shrink-0 text-zinc-400"
             aria-hidden="true"
           />
           <span className="sr-only">Search courses</span>
-          <input
+          <Input
             type="search"
             name="q"
             maxLength={120}
             placeholder="Search COMP2100, software design, or a major"
-            className="min-h-11 w-full bg-transparent text-[15px] text-zinc-900 outline-none placeholder:text-zinc-400"
+            className="h-11 min-h-11 border-0 bg-transparent px-0 text-[15px] shadow-none hover:border-transparent focus-visible:border-transparent focus-visible:ring-0"
           />
         </label>
         <Button

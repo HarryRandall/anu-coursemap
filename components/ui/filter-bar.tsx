@@ -4,7 +4,12 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ListFilter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/field";
+import { FieldLabel, Input, Select } from "@/components/ui/field";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export type FilterConfig = {
   key: string;
@@ -24,21 +29,30 @@ export function FilterBar({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const filterMenu = useRef<HTMLDivElement | null>(null);
+  const paramsRef = useRef(searchParams.toString());
 
-  const update = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (key !== "page") params.delete("page");
-    if (value) params.set(key, value);
-    else params.delete(key);
+  const replaceParams = (mutate: (params: URLSearchParams) => void) => {
+    const params = new URLSearchParams(paramsRef.current);
+    const currentQuery = query.trim();
+    if (currentQuery) params.set("q", currentQuery);
+    else params.delete("q");
+    mutate(params);
+    params.delete("page");
+    const next = params.toString();
+    paramsRef.current = next;
     startTransition(() => {
-      const next = params.toString();
       router.replace(next ? `${pathname}?${next}` : pathname, {
         scroll: false,
       });
+    });
+  };
+
+  const update = (key: string, value: string) => {
+    replaceParams((params) => {
+      if (value) params.set(key, value);
+      else params.delete(key);
     });
   };
 
@@ -50,38 +64,15 @@ export function FilterBar({
   );
 
   useEffect(() => {
-    if (!filterOpen) return;
+    paramsRef.current = searchParams.toString();
+  }, [searchParams]);
 
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setFilterOpen(false);
-    };
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      if (
-        filterMenu.current &&
-        !filterMenu.current.contains(event.target as Node)
-      ) {
-        setFilterOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", closeOnEscape);
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => {
-      document.removeEventListener("keydown", closeOnEscape);
-      document.removeEventListener("mousedown", closeOnOutsideClick);
-    };
-  }, [filterOpen]);
-
-  const hasActiveFilters = filters.some((filter) =>
-    searchParams.has(filter.key),
+  const activeFilterCount = filters.filter((filter) =>
+    Boolean(searchParams.get(filter.key)),
   );
 
   return (
-    <div
-      ref={filterMenu}
-      className="relative flex flex-col gap-3"
-      aria-busy={isPending}
-    >
+    <div className="flex flex-col gap-3" aria-busy={isPending}>
       <div className="flex items-center gap-2">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">Search</span>
@@ -104,55 +95,64 @@ export function FilterBar({
           />
         </label>
         {filters.length > 0 ? (
-          <Button
-            size="md"
-            variant="secondary"
-            className="h-10"
-            aria-expanded={filterOpen}
-            onClick={() => setFilterOpen((open) => !open)}
-          >
-            <ListFilter size={16} aria-hidden="true" />
-            Filter
-            {hasActiveFilters ? (
-              <span className="size-1.5 rounded-full bg-brand-600" />
-            ) : null}
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button size="md" variant="secondary" className="h-10">
+                <ListFilter size={16} aria-hidden="true" />
+                Filters
+                {activeFilterCount.length > 0 ? (
+                  <span className="grid min-w-5 place-items-center rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 tabular-nums">
+                    {activeFilterCount.length}
+                  </span>
+                ) : null}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium text-zinc-950">Filter courses</p>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    Narrow the published catalogue.
+                  </p>
+                </div>
+                {activeFilterCount.length > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      replaceParams((params) => {
+                        filters.forEach((filter) => params.delete(filter.key));
+                      })
+                    }
+                  >
+                    <X size={14} aria-hidden="true" />
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+              <div className="space-y-4">
+                {filters.map((filter) => (
+                  <div key={filter.key} className="space-y-1.5">
+                    <FieldLabel>{filter.label}</FieldLabel>
+                    <Select
+                      value={searchParams.get(filter.key) ?? ""}
+                      onChange={(value) => update(filter.key, value)}
+                      aria-label={filter.label}
+                      options={[
+                        {
+                          value: "",
+                          label: `All ${filter.label.toLowerCase()}`,
+                        },
+                        ...filter.options,
+                      ]}
+                    />
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         ) : null}
       </div>
-
-      {filterOpen ? (
-        <div className="absolute top-13 right-0 z-30 w-[min(22rem,calc(100vw-2rem))] rounded-lg border border-zinc-200 bg-white p-3 shadow-md">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-medium text-zinc-900">Filters</span>
-            <button
-              type="button"
-              aria-label="Close filters"
-              onClick={() => setFilterOpen(false)}
-              className="grid size-8 place-items-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
-            >
-              <X size={15} aria-hidden="true" />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {filters.map((filter) => (
-              <label key={filter.key} className="block">
-                <span className="mb-1.5 block text-xs font-medium text-zinc-600">
-                  {filter.label}
-                </span>
-                <Select
-                  value={searchParams.get(filter.key) ?? ""}
-                  onChange={(value) => update(filter.key, value)}
-                  aria-label={filter.label}
-                  options={[
-                    { value: "", label: `All ${filter.label.toLowerCase()}` },
-                    ...filter.options,
-                  ]}
-                />
-              </label>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

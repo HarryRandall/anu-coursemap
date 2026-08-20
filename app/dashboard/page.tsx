@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { PlanningCatalogueError } from "@/components/plan/planning-catalogue-error";
 import { getAuthViewer } from "@/lib/auth/viewer";
 import { loadCurrentUserPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { hasPrimaryPlan } from "@/lib/coursemap/state";
@@ -19,13 +20,7 @@ export default async function DashboardPage() {
   try {
     catalogue = await loadCurrentUserPlanCatalogue();
   } catch {
-    catalogue = {
-      courses: [],
-      degrees: [],
-      majors: [],
-      programmeRequirementsImported: false,
-      terms: [],
-    };
+    return <PlanningCatalogueError pageTitle="Home" retryHref="/dashboard" />;
   }
   return <Dashboard catalogue={catalogue} />;
 }

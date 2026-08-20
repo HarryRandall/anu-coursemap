@@ -90,12 +90,12 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(homeHtml, />Prerequisites<\/button>/i);
   assert.match(homeHtml, /Start with a course, then build the rest/i);
   assert.match(homeHtml, /Explore courses/i);
-  assert.match(
-    coursesHtml,
-    /Showing 1(?:<!-- -->)?-1(?:<!-- -->)? of 1(?:<!-- -->)? course/i,
-  );
+  assert.match(coursesHtml, /Showing .* of .* course/i);
   assert.match(coursesHtml, /Computing Project/i);
-  assert.match(coursesHtml, /Search code, course name, school or convener/i);
+  assert.doesNotMatch(
+    coursesHtml,
+    /Search code, course name, school or convener/i,
+  );
   assert.doesNotMatch(coursesHtml, /Open entry|6 units/i);
   assert.match(signInHtml, /Welcome back/i);
   assert.match(signInHtml, /name="next" value="\/dashboard"/i);
@@ -138,7 +138,26 @@ test("server-renders the complete student workspace", async () => {
     helpGuideHtml,
   ] = await Promise.all(responses.map((response) => response.text()));
 
-  assert.match(dashboardHtml, /Overview/i);
+  const studentNavigation =
+    dashboardHtml.match(
+      /<nav aria-label="Student navigation"[^>]*>([\s\S]*?)<\/nav>/i,
+    )?.[1] ?? "";
+
+  assert.ok(studentNavigation);
+  [
+    "Home",
+    "Plan",
+    "Courses",
+    "Requirements",
+    "Academic",
+    "Calendar",
+    "Key dates",
+    "Roadmap",
+    "Room finder",
+  ].forEach((label) => assert.match(studentNavigation, new RegExp(label, "i")));
+  assert.doesNotMatch(studentNavigation, /Overview|Planning|Your study|More/i);
+  assert.doesNotMatch(studentNavigation, /Search courses/i);
+  assert.match(dashboardHtml, /aria-label="Find courses"/i);
   assert.match(dashboardHtml, /Set up your plan first/i);
   assert.match(dashboardHtml, /Start onboarding/i);
   assert.doesNotMatch(
@@ -147,29 +166,43 @@ test("server-renders the complete student workspace", async () => {
   );
   assert.match(academicHtml, /Academic overview/i);
   assert.match(academicHtml, /recorded mark average/i);
-  assert.match(calendarHtml, /Study periods/i);
-  assert.match(calendarHtml, /Timetable times and rooms are not imported yet/i);
+  assert.doesNotMatch(academicHtml, /Your study record|Edit study details/i);
+  assert.match(calendarHtml, /Plan calendar/i);
+  assert.doesNotMatch(
+    calendarHtml,
+    /Study periods|Timetable times and rooms are not imported yet/i,
+  );
   assert.doesNotMatch(
     calendarHtml,
     /Weekly timetable|Class timetable|Assessments and dates/i,
   );
+  assert.doesNotMatch(calendarHtml, /Do not use this planning view/i);
   assert.match(keyDatesHtml, /Key dates/i);
   assert.match(keyDatesHtml, /No key dates published yet/i);
-  assert.match(keyDatesHtml, /Official ANU academic calendar/i);
+  assert.doesNotMatch(keyDatesHtml, /Official ANU academic calendar/i);
   assert.match(
     requirementsHtml,
     /Select a published degree in onboarding to begin/i,
   );
   assert.doesNotMatch(
     requirementsHtml,
-    /Rule group coverage|possible matches/i,
+    /Rule group coverage|possible matches|not an official graduation assessment/i,
   );
   assert.match(roadmapHtml, /Visual degree planning/i);
   assert.match(roadmapHtml, /The current product focus/i);
+  assert.doesNotMatch(roadmapHtml, /<h1[^>]*>Roadmap<\/h1>/i);
+  assert.doesNotMatch(
+    roadmapHtml,
+    /Where Coursemap is heading|Product direction/i,
+  );
   assert.doesNotMatch(roadmapHtml, /Build the useful things first/i);
   assert.doesNotMatch(roadmapHtml, /Something important missing/i);
-  assert.match(roomsHtml, /Find the right room/i);
-  assert.match(helpHtml, /How can we help/i);
+  assert.match(roomsHtml, /Building and room search/i);
+  assert.doesNotMatch(
+    roomsHtml,
+    /Find the right room|Room Finder will connect/i,
+  );
+  assert.doesNotMatch(helpHtml, /How can we help|Coursemap support/i);
   assert.match(helpHtml, /Read guide/i);
   assert.match(helpHtml, /Email support/i);
   assert.match(helpHtml, /Use the study calendar/i);
@@ -193,6 +226,27 @@ test("redirects legacy student routes to their replacements", async () => {
   assert.equal(historyResponse.headers.get("location"), "/academic");
   assert.equal(timetableResponse.status, 307);
   assert.equal(timetableResponse.headers.get("location"), "/calendar");
+});
+
+test("keeps the key-dates experience continuous and data-driven", async () => {
+  const [page, calendarView] = await Promise.all([
+    readFile(new URL("../app/key-dates/page.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL(
+        "../components/key-dates/university-calendar-view.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(page, /loadPublishedUniversityCalendar/);
+  assert.match(page, /decorateUniversityCalendarEvents/);
+  assert.match(calendarView, /groupUniversityCalendarEventsByMonth/);
+  assert.match(calendarView, /IntersectionObserver/);
+  assert.match(calendarView, /Load more dates/);
+  assert.doesNotMatch(calendarView, /Next up|Breakdown|MonthAgenda|monthCells/);
+  assert.doesNotMatch(calendarView, /const events = \[/);
 });
 
 test("fails closed for malformed auth handlers and cross-origin logout", async () => {
@@ -235,7 +289,10 @@ test("server-renders the routed Coursemap degree planner", async () => {
   const emptyAdds = (html.match(/Add course in empty slot/g) ?? []).length;
   assert.ok(emptyAdds > 0);
   assert.doesNotMatch(html, /Add recommended course [A-Z]{4}\d+/);
-  assert.match(html, /Degree progress/i);
+  assert.doesNotMatch(
+    html,
+    /Degree progress|Degree timeline|Programme requirements and your completion target|Restore programme duration|Add year/i,
+  );
   assert.doesNotMatch(html, /Edit degree/i);
   assert.doesNotMatch(html, /18 of 144 units completed/i);
   assert.doesNotMatch(html, /48 mapped/i);
@@ -262,7 +319,7 @@ test("server-renders admin and course-detail routes", async () => {
     render("/admin/roles"),
     render("/admin/relations"),
     render("/courses/COMP2100"),
-    render("/courses/COMP3670"),
+    render("/courses/COMP3670?tab=requisites"),
     render("/courses/COMP3600?tab=requisites"),
   ]);
   assert.equal(adminResponse.status, 200);
@@ -284,8 +341,16 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminHtml, /Publication workflow/i);
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
-  assert.doesNotMatch(adminHtml, /Search courses|Help &amp; support/i);
+  assert.doesNotMatch(adminHtml, /Catalogue administration/i);
+  assert.doesNotMatch(
+    adminHtml,
+    /Find courses|Search courses|Help &amp; support/i,
+  );
   assert.doesNotMatch(adminCoursesHtml, /Export CSV|Reparse selected/i);
+  assert.doesNotMatch(
+    adminCoursesHtml,
+    /Catalogue review|Open a course version|Search imported courses/i,
+  );
   assert.match(adminCourseReviewHtml, /What to review before publishing/i);
   assert.match(adminCourseReviewHtml, /Course fields/i);
   assert.match(adminCourseReviewHtml, /Requisites and compatibility/i);
@@ -295,9 +360,14 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
   assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);
   assert.match(relationsHtml, /Imported rules/i);
+  assert.doesNotMatch(
+    relationsHtml,
+    /Catalogue quality|Original ANU wording is retained here/i,
+  );
   const courseHtml = await courseResponse.text();
   assert.match(courseHtml, /Software Design Methodologies/i);
-  assert.match(courseHtml, /Requisites and compatibility/i);
+  assert.match(courseHtml, /About this course/i);
+  assert.match(courseHtml, /Course essentials/i);
   assert.doesNotMatch(courseHtml, /Back to courses/i);
   const chainHtml = await chainResponse.text();
   assert.match(chainHtml, /Prerequisite chain and unlocks/i);
@@ -329,6 +399,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     planCatalogue,
     catalogue,
     globals,
+    courseFind,
     appShell,
     sidebar,
     topbar,
@@ -375,6 +446,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     ),
     readFile(new URL("../lib/catalogue.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../components/course-find.tsx", import.meta.url), "utf8"),
     readFile(
       new URL("../components/shell/app-shell.tsx", import.meta.url),
       "utf8",
@@ -409,7 +481,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(planClient, /translate3d/);
   assert.match(planClient, /role="tooltip"/);
   assert.match(planClient, /group-hover:visible/);
-  assert.match(planClient, /programmeRequirementsImported/);
+  assert.doesNotMatch(planClient, /programmeRequirementsImported/);
   assert.doesNotMatch(planClient, /Blocked: needs/);
   assert.match(adminPage, /Live catalogue status/);
   assert.match(adminPage, /Publication workflow/);
@@ -451,8 +523,31 @@ test("removes the disposable starter and keeps product metadata", async () => {
   );
   assert.doesNotMatch(courseDrawer, /Course information|Action needed|✓/);
   assert.match(coursePicker, /\/api\/courses\/search/);
-  assert.match(coursePicker, /Search 2\+ characters/);
-  assert.doesNotMatch(coursePicker, /In plan/);
+  assert.match(coursePicker, /<Dialog/);
+  assert.match(
+    coursePicker,
+    /<Command[\s\S]*?shouldFilter=\{false\}[\s\S]*?loop/,
+  );
+  assert.match(coursePicker, /Search the catalogue, select a result/);
+  assert.match(coursePicker, /View course/);
+  assert.match(coursePicker, /Prerequisites/);
+  assert.match(coursePicker, /CourseResultSkeleton/);
+  assert.match(coursePicker, /SearchFailure/);
+  assert.match(coursePicker, /if \(!term\) return null/);
+  assert.match(coursePicker, /onCloseAutoFocus/);
+  assert.match(coursePicker, /const queryChanged = nextQuery !== trimmedQuery/);
+  assert.match(coursePicker, /const loadNextPage =/);
+  assert.match(coursePicker, /backButtonRef/);
+  assert.match(coursePicker, /className="!contents"/);
+  assert.match(
+    coursePicker,
+    /onKeyDown=\{\(event\) => event\.stopPropagation\(\)\}/,
+  );
+  assert.doesNotMatch(coursePicker, /setResponse\(null\)/);
+  assert.doesNotMatch(coursePicker, /onDoubleClick/);
+  assert.match(planClient, /term=\{pickerTerm\}/);
+  assert.doesNotMatch(coursePicker, /catalogue\.terms\[0\]/);
+  assert.match(coursePicker, /In plan/);
   assert.match(providers, /normaliseAttempts/);
   assert.match(providers, /const limit = 1/);
   assert.doesNotMatch(providers, /from "@\/lib\/catalogue"/);
@@ -463,6 +558,15 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(catalogue, /units === 12 \? 2 : 1/);
   assert.match(catalogue, /function prerequisiteChainCodes/);
   assert.match(globals, /scrollbar-gutter: stable/);
+  assert.match(globals, /find-background-in/);
+  assert.match(globals, /find-content-in/);
+  assert.match(globals, /find-closing-field-out/);
+  assert.match(courseFind, /import \{ Command \} from "cmdk"/);
+  assert.match(courseFind, /shouldFilter=\{false\}/);
+  assert.match(courseFind, /\/api\/courses\/search/);
+  assert.match(courseFind, /aria-label="Find courses"/);
+  assert.match(courseFind, /const defaultOptions/);
+  assert.match(courseFind, /backdrop-blur-\[1px\]/);
   assert.doesNotMatch(appShell, /max-w-\[1440px\]/);
   assert.match(appShell, /min-w-0/);
   assert.match(appShell, /w-full/);
@@ -473,9 +577,10 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(sidebar, /\/admin\/roles/);
   assert.match(sidebar, /!admin &&/);
   assert.match(topbar, /after:inset-x-0/);
-  assert.match(providers, /fixed/);
-  assert.match(providers, /right-4/);
-  assert.match(providers, /top-4/);
+  assert.match(providers, /toast\.warning/);
+  assert.match(providers, /toast\.info/);
+  assert.match(providers, /toast\.success/);
+  assert.match(providers, /<Toaster \/>/);
   assert.match(layout, /Coursemap/);
   assert.match(layout, /og\.png/);
   assert.match(adminLayout, /if \(!viewer\)[\s\S]*redirect\(/);

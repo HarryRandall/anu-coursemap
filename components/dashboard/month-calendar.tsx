@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
+import { IconButton } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { DashboardCalendarEvent } from "@/lib/coursemap/dashboard-series";
 import { cn } from "@/lib/cn";
@@ -134,22 +135,22 @@ export function MonthCalendar({
           </p>
         </div>
         <div className="flex items-center">
-          <button
-            type="button"
-            aria-label="Previous month"
+          <IconButton
+            label="Previous month"
+            variant="ghost"
             onClick={() => setFocus((current) => shiftMonth(current, -1))}
-            className="grid size-11 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className="size-11"
           >
             <ChevronLeft size={16} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            aria-label="Next month"
+          </IconButton>
+          <IconButton
+            label="Next month"
+            variant="ghost"
             onClick={() => setFocus((current) => shiftMonth(current, 1))}
-            className="grid size-11 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className="size-11"
           >
             <ChevronRight size={16} aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       </div>
       <p className="mt-3 text-sm font-medium text-zinc-800">

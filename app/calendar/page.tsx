@@ -1,3 +1,4 @@
+import { PlanningCatalogueError } from "@/components/plan/planning-catalogue-error";
 import { loadCurrentUserPlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { PlanCalendar } from "./plan-calendar";
 
@@ -8,13 +9,9 @@ export default async function CalendarPage() {
   try {
     catalogue = await loadCurrentUserPlanCatalogue();
   } catch {
-    catalogue = {
-      courses: [],
-      degrees: [],
-      majors: [],
-      programmeRequirementsImported: false,
-      terms: [],
-    };
+    return (
+      <PlanningCatalogueError pageTitle="Plan calendar" retryHref="/calendar" />
+    );
   }
   return <PlanCalendar catalogue={catalogue} />;
 }

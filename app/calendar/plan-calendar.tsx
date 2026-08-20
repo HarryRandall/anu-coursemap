@@ -1,12 +1,19 @@
 "use client";
 
-import { CalendarDays, ExternalLink, MapPin } from "lucide-react";
+import { CalendarDays, ExternalLink } from "lucide-react";
 import { useMemo } from "react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import { planningCourseByCode } from "@/lib/planner";
 
@@ -40,47 +47,39 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <div className="mx-auto max-w-5xl space-y-5">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-brand-700">Study periods</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-              Plan calendar
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              Coursemap shows confirmed course offerings. Timetable times and
-              rooms are not imported yet.
-            </p>
-          </div>
-          <ButtonLink href="/plan" size="sm" variant="secondary">
-            Edit plan
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">Plan calendar</h1>
 
         {groups.length === 0 ? (
-          <Card className="p-10 text-center">
-            <CalendarDays className="mx-auto text-zinc-300" size={28} />
-            <p className="mt-4 text-sm font-medium text-zinc-700">
-              No courses scheduled in a published study period
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Add courses to your plan to see their published offerings here.
-            </p>
+          <Card>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <CalendarDays aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>
+                  No courses scheduled in a published study period
+                </EmptyTitle>
+                <EmptyDescription>
+                  Add courses to your plan to see their published offerings
+                  here.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           </Card>
         ) : (
           <div className="space-y-4">
             {groups.map(({ term, courses }) => (
               <Card key={term.id} className="overflow-hidden">
-                <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4">
-                  <div>
-                    <h2 className="text-sm font-semibold text-zinc-900">
-                      {term.name} {term.year}
-                    </h2>
-                    <p className="mt-0.5 text-xs text-zinc-500">{term.dates}</p>
-                  </div>
-                  <span className="text-xs text-zinc-500">
-                    {courses.length} course{courses.length === 1 ? "" : "s"}
-                  </span>
-                </div>
+                <CardHeader
+                  className="items-center border-b border-zinc-100"
+                  title={`${term.name} ${term.year}`}
+                  description={term.dates}
+                  action={
+                    <span className="text-xs text-zinc-500">
+                      {courses.length} course{courses.length === 1 ? "" : "s"}
+                    </span>
+                  }
+                />
                 <div className="divide-y divide-zinc-100">
                   {courses.map(({ attempt, course }) => (
                     <div
@@ -114,11 +113,6 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
             ))}
           </div>
         )}
-
-        <p className="flex items-center gap-2 text-xs text-zinc-400">
-          <MapPin size={14} /> Do not use this planning view as a live ANU
-          timetable.
-        </p>
       </div>
     </AppShell>
   );

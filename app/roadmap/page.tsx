@@ -136,7 +136,7 @@ const stages: RoadmapStage[] = [
 
 export default function RoadmapPage() {
   return (
-    <AppShell title="Roadmap" subtitle="Where Coursemap is heading">
+    <AppShell>
       <div className="py-2 sm:py-6">
         <RoadmapTimeline stages={stages} currentStage={currentStage} />
       </div>

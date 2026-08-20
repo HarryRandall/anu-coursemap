@@ -1,7 +1,8 @@
 "use client";
 
-import { LockKeyhole, Mail } from "lucide-react";
+import { CircleAlert, LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { createClient } from "@/lib/supabase/browser";
@@ -97,12 +98,10 @@ export function SignInForm({
       </Field>
 
       {errorMessage && (
-        <p
-          role="alert"
-          className="rounded-lg bg-rose-50 px-3 py-2.5 text-xs leading-relaxed text-rose-700 ring-1 ring-rose-200"
-        >
-          {errorMessage}
-        </p>
+        <Alert tone="danger" role="alert">
+          <CircleAlert />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
       )}
 
       <Button
@@ -110,7 +109,7 @@ export function SignInForm({
         variant="primary"
         fullWidth
         disabled={!configured || submitting}
-        className="min-h-11 !rounded-xl"
+        className="min-h-11"
       >
         {submitting ? "Signing in..." : "Sign in"}
       </Button>

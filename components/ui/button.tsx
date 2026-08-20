@@ -1,35 +1,46 @@
 import Link from "next/link";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
 export type ButtonVariant =
   "primary" | "secondary" | "ghost" | "subtle" | "danger";
-export type ButtonSize = "sm" | "md" | "lg";
+export type ButtonSize = "sm" | "md" | "lg" | "icon-sm" | "icon";
 
-const base =
-  "inline-flex select-none items-center justify-center gap-2 rounded-lg font-semibold whitespace-nowrap transition-[background,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400";
-
-const sizes: Record<ButtonSize, string> = {
-  sm: "h-8 px-2.5 text-xs",
-  md: "h-10 px-3.5 text-[13px]",
-  lg: "h-12 px-5 text-sm",
-};
-
-const variants: Record<ButtonVariant, string> = {
-  primary:
-    "bg-brand-700 text-white shadow-sm hover:bg-brand-800 ring-1 ring-inset ring-brand-700",
-  secondary:
-    "bg-white text-zinc-700 shadow-xs ring-1 ring-inset ring-zinc-200 hover:bg-zinc-50 hover:ring-zinc-300",
-  subtle:
-    "bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-100 hover:bg-brand-100",
-  ghost: "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900",
-  danger:
-    "bg-white text-rose-600 shadow-xs ring-1 ring-inset ring-rose-200 hover:bg-rose-50",
-};
+const buttonVariants = cva(
+  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-md border border-transparent text-sm font-medium transition-colors outline-none active:translate-y-px disabled:pointer-events-none disabled:opacity-50 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 motion-reduce:transition-none motion-reduce:active:translate-y-0 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        primary:
+          "border-brand-600 bg-brand-600 text-white shadow-xs hover:border-brand-700 hover:bg-brand-700",
+        secondary:
+          "border-zinc-200 bg-white text-zinc-700 shadow-xs hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950",
+        subtle:
+          "border-brand-100 bg-brand-50 text-brand-700 hover:border-brand-200 hover:bg-brand-100",
+        ghost:
+          "bg-transparent text-zinc-600 shadow-none hover:bg-zinc-100 hover:text-zinc-950",
+        danger:
+          "border-rose-600 bg-rose-600 text-white shadow-xs hover:border-rose-700 hover:bg-rose-700",
+      },
+      size: {
+        sm: "h-8 gap-1.5 px-3 text-xs",
+        md: "h-9 px-3.5",
+        lg: "h-10 px-4",
+        "icon-sm": "size-8 p-0",
+        icon: "size-9 p-0",
+      },
+    },
+    defaultVariants: {
+      variant: "secondary",
+      size: "md",
+    },
+  },
+);
 
 type CommonProps = {
-  variant?: ButtonVariant;
-  size?: ButtonSize;
+  variant?: NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
+  size?: NonNullable<VariantProps<typeof buttonVariants>["size"]>;
   fullWidth?: boolean;
   className?: string;
   children: ReactNode;
@@ -42,9 +53,7 @@ export function buttonClasses({
   className,
 }: Omit<CommonProps, "children">) {
   return cn(
-    base,
-    sizes[size],
-    variants[variant],
+    buttonVariants({ variant, size }),
     fullWidth && "w-full",
     className,
   );
@@ -64,6 +73,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
+      data-slot="button"
       type={type}
       className={buttonClasses({ variant, size, fullWidth, className })}
       {...rest}
@@ -86,6 +96,7 @@ export function ButtonLink({
 }: ButtonLinkProps) {
   return (
     <Link
+      data-slot="button"
       className={buttonClasses({ variant, size, fullWidth, className })}
       {...rest}
     >
@@ -96,6 +107,8 @@ export function ButtonLink({
 
 type IconButtonProps = {
   label: string;
+  variant?: ButtonVariant;
+  size?: "icon-sm" | "icon";
   className?: string;
   children: ReactNode;
 } & Omit<
@@ -105,6 +118,8 @@ type IconButtonProps = {
 
 export function IconButton({
   label,
+  variant = "secondary",
+  size = "icon",
   className,
   children,
   type = "button",
@@ -112,13 +127,11 @@ export function IconButton({
 }: IconButtonProps) {
   return (
     <button
+      data-slot="button"
       type={type}
       aria-label={label}
       title={label}
-      className={cn(
-        "inline-grid size-9 place-items-center rounded-lg bg-white text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:bg-zinc-50 hover:text-zinc-800 hover:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50",
-        className,
-      )}
+      className={buttonClasses({ variant, size, className })}
       {...rest}
     >
       {children}

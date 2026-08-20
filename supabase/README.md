@@ -30,9 +30,13 @@ regenerate `types/database.ts`, run the database gates, then run
 `npm run verify`. Applying migrations to the hosted project requires explicit
 approval and is a separate step.
 
-`seed.sql` intentionally contains no catalogue or user fixtures. Authoritative
-catalogue data must be imported with source URLs, retrieval metadata and
-content hashes.
+`seed.sql` intentionally contains no catalogue or user fixtures. `npm run
+db:reset` performs an explicitly local reset, then applies the separate preview
+fixture through a database client that refuses every non-loopback connection.
+Reapply it to an already running local stack with `npm run db:seed:preview`.
+The demonstration catalogue uses explicit mock provenance and separate
+`DEMO-*` structure codes. Authoritative catalogue data must still be imported
+with source URLs, retrieval metadata and content hashes.
 
 ## Administrator access
 

@@ -1,18 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
-import { SearchDialog } from "@/components/search-dialog";
-import { PageHeader } from "@/components/ui/page-header";
 
 export type AppShellProps = {
   children: ReactNode;
-  /** Page heading rendered above the content. */
-  title?: string;
-  /** Muted line rendered under the title. */
-  subtitle?: string;
   actions?: ReactNode;
   /** Section tab links rendered in a full-width bar below the breadcrumbs. */
   tabs?: ReactNode;
@@ -23,27 +17,12 @@ export type AppShellProps = {
 
 export function AppShell({
   children,
-  title,
-  subtitle,
   actions,
   tabs,
   admin = false,
   fullBleed = false,
 }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-
-  useEffect(() => {
-    if (admin) return;
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setSearchOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [admin]);
 
   return (
     <div className="min-h-dvh bg-white">
@@ -51,7 +30,6 @@ export function AppShell({
         admin={admin}
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
-        onOpenSearch={() => setSearchOpen(true)}
       />
 
       <div className="min-w-0 lg:pl-64">
@@ -69,16 +47,9 @@ export function AppShell({
             !fullBleed && "px-4 py-6 sm:px-6 sm:py-7",
           )}
         >
-          {title && (
-            <PageHeader title={title} meta={subtitle} className="mb-5" />
-          )}
           {children}
         </main>
       </div>
-
-      {!admin && searchOpen && (
-        <SearchDialog onClose={() => setSearchOpen(false)} />
-      )}
     </div>
   );
 }

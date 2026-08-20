@@ -5,7 +5,7 @@ import { GraduationCap, LogOut, Save, UserRound } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import type { OnboardingCatalogue } from "@/lib/coursemap/onboarding-catalogue";
 
@@ -78,27 +78,22 @@ export function ProfileEditor({
         ) : undefined
       }
     >
-      <form className="mx-auto max-w-3xl space-y-5" onSubmit={save}>
-        <header>
-          <p className="text-sm font-medium text-brand-700">Your plan</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-            Profile and study details
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">
-            These choices use the published catalogue, not a local sample plan.
-          </p>
-        </header>
+      <form className="w-full space-y-5" onSubmit={save}>
+        <h1 className="sr-only">Profile and study details</h1>
 
         <Card className="overflow-hidden">
-          <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
-            <UserRound size={18} className="text-brand-600" />
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-900">About you</h2>
-              <p className="text-xs text-zinc-500">
-                Keep your saved plan identifiable.
-              </p>
-            </div>
-          </div>
+          <CardHeader
+            className="border-b border-zinc-100"
+            icon={
+              <UserRound
+                size={18}
+                className="text-brand-600"
+                aria-hidden="true"
+              />
+            }
+            title="About you"
+            description="Keep your saved plan identifiable."
+          />
           <div className="grid gap-5 p-5 sm:grid-cols-2">
             <Field className="sm:col-span-2" label="Name">
               <Input
@@ -136,17 +131,18 @@ export function ProfileEditor({
         </Card>
 
         <Card className="overflow-hidden">
-          <div className="flex items-center gap-3 border-b border-zinc-100 px-5 py-4">
-            <GraduationCap size={18} className="text-brand-600" />
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-900">
-                Course of study
-              </h2>
-              <p className="text-xs text-zinc-500">
-                Only administrator-published degrees and majors appear here.
-              </p>
-            </div>
-          </div>
+          <CardHeader
+            className="border-b border-zinc-100"
+            icon={
+              <GraduationCap
+                size={18}
+                className="text-brand-600"
+                aria-hidden="true"
+              />
+            }
+            title="Course of study"
+            description="Only administrator-published degrees and majors appear here."
+          />
           <div className="grid gap-5 p-5 sm:grid-cols-2">
             <Field label="Catalogue year">
               <Select

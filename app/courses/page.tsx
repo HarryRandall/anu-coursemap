@@ -1,9 +1,10 @@
 import { CircleAlert } from "lucide-react";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { FilterBar } from "@/components/ui/filter-bar";
 import {
-  loadPublishedCourseFilterOptions,
   loadPublishedCoursePage,
   type PublishedCoursePage,
 } from "@/lib/coursemap/published-catalogue";
@@ -11,7 +12,6 @@ import { CourseDirectory } from "./course-directory";
 
 type CoursesSearchParams = {
   q?: string | string[];
-  subject?: string | string[];
   level?: string | string[];
   session?: string | string[];
   page?: string | string[];
@@ -28,40 +28,31 @@ export default async function CoursesPage({
 }) {
   const params = await searchParams;
   const page = Math.max(1, Number(firstParam(params.page)) || 1);
+  const query = firstParam(params.q).slice(0, 100);
+  const levelParam = firstParam(params.level);
+  const level = ["1", "2", "3", "4"].includes(levelParam) ? levelParam : "";
+  const sessionParam = firstParam(params.session);
+  const session = ["Semester 1", "Semester 2"].includes(sessionParam)
+    ? sessionParam
+    : "";
+  const filters = { query, level, session };
   let result: PublishedCoursePage = {
     courses: [],
     page,
     pageSize: 24,
     total: 0,
   };
-  let options: Awaited<ReturnType<typeof loadPublishedCourseFilterOptions>> = {
-    subjects: [],
-    levels: [],
-    sessions: [],
-  };
   let catalogueUnavailable = false;
   try {
-    [result, options] = await Promise.all([
-      loadPublishedCoursePage({
-        filters: {
-          query: firstParam(params.q),
-          subject: firstParam(params.subject),
-          level: firstParam(params.level),
-          session: firstParam(params.session),
-        },
-        page,
-      }),
-      loadPublishedCourseFilterOptions(),
-    ]);
+    result = await loadPublishedCoursePage({ page, filters });
   } catch {
     // Show an explicit outage state rather than an empty catalogue.
     catalogueUnavailable = true;
   }
   const paginationSearchParams = {
-    q: firstParam(params.q) || undefined,
-    subject: firstParam(params.subject) || undefined,
-    level: firstParam(params.level) || undefined,
-    session: firstParam(params.session) || undefined,
+    q: query || undefined,
+    level: level || undefined,
+    session: session || undefined,
   };
 
   if (catalogueUnavailable) {
@@ -75,23 +66,21 @@ export default async function CoursesPage({
       : "/courses";
     return (
       <AppShell>
-        <div className="mx-auto flex min-h-64 max-w-xl flex-col items-center justify-center rounded-2xl bg-white p-8 text-center ring-1 ring-zinc-200">
-          <CircleAlert className="text-amber-500" size={28} />
-          <h1 className="mt-4 text-lg font-semibold text-zinc-900">
-            Course catalogue temporarily unavailable
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-            Courses could not be loaded. Please try again shortly.
-          </p>
-          <ButtonLink
-            className="mt-5"
-            href={retryHref}
-            size="sm"
-            variant="secondary"
-          >
-            Try again
-          </ButtonLink>
-        </div>
+        <h1 className="sr-only">Courses</h1>
+        <Card className="mx-auto max-w-xl p-4 sm:p-5">
+          <Alert tone="warning" role="alert">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Course catalogue temporarily unavailable</AlertTitle>
+            <AlertDescription>
+              Courses could not be loaded. Please try again shortly.
+            </AlertDescription>
+          </Alert>
+          <div className="mt-4">
+            <ButtonLink href={retryHref} size="sm" variant="primary">
+              Try again
+            </ButtonLink>
+          </div>
+        </Card>
       </AppShell>
     );
   }
@@ -101,31 +90,26 @@ export default async function CoursesPage({
       <h1 className="sr-only">Courses</h1>
       <div className="mx-auto flex min-h-0 w-full max-w-[1280px] flex-1 flex-col gap-5">
         <FilterBar
-          searchPlaceholder="Search code, course name, school or convener…"
+          key={query}
+          searchPlaceholder="Search by course code, name or school"
           filters={[
-            {
-              key: "subject",
-              label: "Subject",
-              options: options.subjects.map((item) => ({
-                value: item,
-                label: item,
-              })),
-            },
             {
               key: "level",
               label: "Level",
-              options: options.levels.map((item) => ({
-                value: String(item),
-                label: `Level ${item}`,
-              })),
+              options: [
+                { value: "1", label: "1000 level" },
+                { value: "2", label: "2000 level" },
+                { value: "3", label: "3000 level" },
+                { value: "4", label: "4000 level" },
+              ],
             },
             {
               key: "session",
-              label: "Session",
-              options: options.sessions.map((item) => ({
-                value: item,
-                label: item,
-              })),
+              label: "Teaching period",
+              options: [
+                { value: "Semester 1", label: "Semester 1" },
+                { value: "Semester 2", label: "Semester 2" },
+              ],
             },
           ]}
         />
@@ -134,6 +118,7 @@ export default async function CoursesPage({
           page={result.page}
           pageSize={result.pageSize}
           total={result.total}
+          filtered={Boolean(query || level || session)}
           searchParams={paginationSearchParams}
         />
       </div>
