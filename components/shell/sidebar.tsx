@@ -29,6 +29,7 @@ import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { BrandMark } from "@/components/brand-mark";
 import { CourseFind } from "@/components/course-find";
+import { IconButton } from "@/components/ui/button";
 
 type NavItem = {
   href: string;
@@ -169,14 +170,14 @@ export function Sidebar({
       >
         <div className="flex items-center justify-between px-3">
           <Brand />
-          <button
-            type="button"
-            aria-label="Close navigation"
+          <IconButton
+            label="Close navigation"
+            variant="ghost"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-lg text-zinc-500 hover:bg-zinc-200/60 lg:hidden"
+            className="lg:hidden"
           >
-            <X size={18} />
-          </button>
+            <X size={18} aria-hidden="true" />
+          </IconButton>
         </div>
 
         {!admin && (
