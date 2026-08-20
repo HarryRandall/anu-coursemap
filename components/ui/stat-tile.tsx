@@ -8,6 +8,7 @@ export function StatTile({
   unit,
   icon,
   description,
+  action,
   className,
 }: {
   label: string;
@@ -15,6 +16,7 @@ export function StatTile({
   unit?: ReactNode;
   icon?: ReactNode;
   description?: ReactNode;
+  action?: ReactNode;
   className?: string;
 }) {
   return (
@@ -49,6 +51,7 @@ export function StatTile({
           {description}
         </p>
       ) : null}
+      {action ? <div className="mt-3">{action}</div> : null}
     </div>
   );
 }
