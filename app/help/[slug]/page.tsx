@@ -5,6 +5,12 @@ import { ArticleToc } from "@/components/help/article-toc";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import {
   adjacentHelpArticles,
   helpArticleBySlug,
   helpArticles,
@@ -38,28 +44,30 @@ export default async function HelpArticlePage({
       <div className="mx-auto grid max-w-5xl items-start gap-8 px-1 py-2 sm:py-6 md:grid-cols-[minmax(0,1fr)_11rem] lg:grid-cols-[minmax(0,1fr)_12rem] lg:gap-10">
         <article className="max-w-3xl min-w-0">
           <h1 className="sr-only">{article.title}</h1>
-          <div className="space-y-10">
-            {article.sections.map((section) => (
-              <section
-                key={section.heading}
-                id={helpSectionId(section.heading)}
-                className="scroll-mt-24"
-              >
-                <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
-                  {section.heading}
-                </h2>
-                <p className="mt-3 max-w-prose text-base leading-7 text-zinc-600">
-                  {section.body}
-                </p>
-              </section>
-            ))}
-          </div>
-
-          <div className="mt-10">
-            <ButtonLink href={article.productHref} variant="primary">
-              {article.productLabel} <ArrowRight size={16} />
-            </ButtonLink>
-          </div>
+          <Card>
+            <CardContent className="space-y-10 pt-5 sm:pt-6">
+              {article.sections.map((section) => (
+                <section
+                  key={section.heading}
+                  id={helpSectionId(section.heading)}
+                  className="scroll-mt-24"
+                >
+                  <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
+                    {section.heading}
+                  </h2>
+                  <p className="mt-3 max-w-prose text-base leading-7 text-zinc-600">
+                    {section.body}
+                  </p>
+                </section>
+              ))}
+            </CardContent>
+            <CardFooter className="justify-start">
+              <ButtonLink href={article.productHref} variant="primary">
+                {article.productLabel}
+                <ArrowRight size={16} aria-hidden="true" />
+              </ButtonLink>
+            </CardFooter>
+          </Card>
 
           {(previous || next) && (
             <nav
@@ -70,42 +78,52 @@ export default async function HelpArticlePage({
                 <Link
                   rel="prev"
                   href={`/help/${previous.slug}`}
-                  className="group flex flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200/70 transition hover:shadow-md hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                  className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
                 >
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                    <ArrowLeft
-                      size={13}
-                      className="transition-transform group-hover:-translate-x-0.5 motion-reduce:transition-none"
-                    />
-                    Previous
-                  </span>
-                  <span className="mt-2 text-sm font-semibold tracking-tight text-zinc-900">
-                    {previous.title}
-                  </span>
-                  <span className="mt-1 text-[13px] leading-relaxed text-zinc-500">
-                    {previous.description}
-                  </span>
+                  <Card className="h-full transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                    <CardHeader className="h-full flex-col items-start justify-start gap-0">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                        <ArrowLeft
+                          size={13}
+                          aria-hidden="true"
+                          className="transition-transform group-hover:-translate-x-0.5 motion-reduce:transition-none"
+                        />
+                        Previous
+                      </span>
+                      <h2 className="mt-2 text-sm font-semibold tracking-tight text-zinc-900">
+                        {previous.title}
+                      </h2>
+                      <span className="mt-1 text-[13px] leading-relaxed text-zinc-500">
+                        {previous.description}
+                      </span>
+                    </CardHeader>
+                  </Card>
                 </Link>
               )}
               {next && (
                 <Link
                   rel="next"
                   href={`/help/${next.slug}`}
-                  className="group flex flex-col rounded-2xl bg-white p-5 text-right shadow-sm ring-1 ring-zinc-200/70 transition hover:shadow-md hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 sm:col-start-2"
+                  className="group block h-full rounded-xl text-right focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 sm:col-start-2"
                 >
-                  <span className="inline-flex items-center justify-end gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                    Next
-                    <ArrowRight
-                      size={13}
-                      className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-                    />
-                  </span>
-                  <span className="mt-2 text-sm font-semibold tracking-tight text-zinc-900">
-                    {next.title}
-                  </span>
-                  <span className="mt-1 text-[13px] leading-relaxed text-zinc-500">
-                    {next.description}
-                  </span>
+                  <Card className="h-full transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                    <CardHeader className="h-full flex-col items-end justify-start gap-0">
+                      <span className="inline-flex items-center justify-end gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                        Next
+                        <ArrowRight
+                          size={13}
+                          aria-hidden="true"
+                          className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                        />
+                      </span>
+                      <h2 className="mt-2 text-sm font-semibold tracking-tight text-zinc-900">
+                        {next.title}
+                      </h2>
+                      <span className="mt-1 text-[13px] leading-relaxed text-zinc-500">
+                        {next.description}
+                      </span>
+                    </CardHeader>
+                  </Card>
                 </Link>
               )}
             </nav>
@@ -124,36 +142,46 @@ export default async function HelpArticlePage({
                   <Link
                     rel="next"
                     href={`/help/${next.slug}`}
-                    className="group block rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200/70 transition hover:shadow-md hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                    className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
                   >
-                    <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                      Up next
-                    </span>
-                    <span className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-zinc-900 transition-colors group-hover:text-brand-700">
-                      {next.title}
-                      <ArrowRight
-                        size={13}
-                        className="mt-0.5 shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
-                      />
-                    </span>
+                    <Card className="transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                      <CardHeader className="flex-col items-start justify-start gap-0 p-4">
+                        <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                          Up next
+                        </span>
+                        <h2 className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-zinc-900 transition-colors group-hover:text-brand-700">
+                          {next.title}
+                          <ArrowRight
+                            size={13}
+                            aria-hidden="true"
+                            className="mt-0.5 shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                          />
+                        </h2>
+                      </CardHeader>
+                    </Card>
                   </Link>
                 )}
                 {previous && (
                   <Link
                     rel="prev"
                     href={`/help/${previous.slug}`}
-                    className="group block rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200/70 transition hover:shadow-md hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                    className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
                   >
-                    <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                      Previous
-                    </span>
-                    <span className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-zinc-900 transition-colors group-hover:text-brand-700">
-                      <ArrowLeft
-                        size={13}
-                        className="mt-0.5 shrink-0 transition-transform group-hover:-translate-x-0.5 motion-reduce:transition-none"
-                      />
-                      {previous.title}
-                    </span>
+                    <Card className="transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                      <CardHeader className="flex-col items-start justify-start gap-0 p-4">
+                        <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                          Previous
+                        </span>
+                        <h2 className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-zinc-900 transition-colors group-hover:text-brand-700">
+                          <ArrowLeft
+                            size={13}
+                            aria-hidden="true"
+                            className="mt-0.5 shrink-0 transition-transform group-hover:-translate-x-0.5 motion-reduce:transition-none"
+                          />
+                          {previous.title}
+                        </h2>
+                      </CardHeader>
+                    </Card>
                   </Link>
                 )}
               </nav>

@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen } from "lucide-react";
 import { HelpContactCard } from "@/components/help/help-contact-card";
 import { helpTopicIcons } from "@/components/help/topic-icons";
 import { AppShell } from "@/components/shell";
+import { Card, CardFooter, CardHeader } from "@/components/ui/card";
 import { helpArticles } from "@/lib/help";
 
 export default function HelpPage() {
@@ -22,24 +23,30 @@ export default function HelpPage() {
                 <Link
                   key={topic.slug}
                   href={`/help/${topic.slug}`}
-                  className="group flex flex-col rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200/70 transition hover:shadow-md hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                  className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
                 >
-                  <span className="grid size-9 place-items-center rounded-lg bg-brand-50 text-brand-600 transition group-hover:bg-brand-100">
-                    <Icon size={17} />
-                  </span>
-                  <h2 className="mt-3 text-[15px] leading-snug font-semibold tracking-tight text-zinc-900">
-                    {topic.title}
-                  </h2>
-                  <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">
-                    {topic.description}
-                  </p>
-                  <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-[13px] font-semibold text-brand-700">
-                    Read guide
-                    <ArrowRight
-                      size={14}
-                      className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                  <Card className="flex h-full flex-col overflow-hidden transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                    <CardHeader
+                      className="flex-1"
+                      icon={
+                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 transition group-hover:bg-brand-100 motion-reduce:transition-none">
+                          <Icon size={17} aria-hidden="true" />
+                        </span>
+                      }
+                      title={topic.title}
+                      description={topic.description}
                     />
-                  </span>
+                    <CardFooter className="text-[13px] font-semibold text-brand-700">
+                      <span className="inline-flex items-center gap-1.5">
+                        Read guide
+                        <ArrowRight
+                          size={14}
+                          aria-hidden="true"
+                          className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+                        />
+                      </span>
+                    </CardFooter>
+                  </Card>
                 </Link>
               );
             })}

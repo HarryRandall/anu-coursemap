@@ -4,7 +4,12 @@ import { useState } from "react";
 import { Bug, Database, Lightbulb, Mail } from "lucide-react";
 import { EmailSupportDialog } from "@/components/help/email-support-dialog";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { helpContactReasons } from "@/lib/help";
 
 const reasonIcons = {
@@ -19,36 +24,40 @@ export function HelpContactCard() {
   return (
     <>
       <Card className="overflow-hidden lg:sticky lg:top-20 lg:self-start">
-        <h2 className="px-5 pt-5 text-[13px] font-semibold tracking-wide text-zinc-500 uppercase">
-          Contact us
-        </h2>
-        <div className="mt-3 divide-y divide-zinc-100 border-y border-zinc-100">
-          {helpContactReasons.map((contact) => {
-            const Icon =
-              reasonIcons[contact.id as keyof typeof reasonIcons] ?? Mail;
-            return (
-              <Button
-                key={contact.id}
-                variant="ghost"
-                className="h-auto w-full justify-start rounded-none px-5 py-3.5 text-left !whitespace-normal"
-                aria-haspopup="dialog"
-                aria-expanded={reasonId === contact.id}
-                onClick={() => setReasonId(contact.id)}
-              >
-                <Icon size={17} className="mt-0.5 shrink-0 text-brand-600" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[13px] font-semibold text-zinc-900">
-                    {contact.label}
+        <CardHeader title="Contact us" />
+        <CardContent className="border-t border-zinc-100 px-0 pb-0">
+          <div className="divide-y divide-zinc-100">
+            {helpContactReasons.map((contact) => {
+              const Icon =
+                reasonIcons[contact.id as keyof typeof reasonIcons] ?? Mail;
+              return (
+                <Button
+                  key={contact.id}
+                  variant="ghost"
+                  className="h-auto w-full justify-start rounded-none px-5 py-3.5 text-left whitespace-normal"
+                  aria-haspopup="dialog"
+                  aria-expanded={reasonId === contact.id}
+                  onClick={() => setReasonId(contact.id)}
+                >
+                  <Icon
+                    size={17}
+                    aria-hidden="true"
+                    className="mt-0.5 shrink-0 text-brand-600"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-semibold text-zinc-900">
+                      {contact.label}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-relaxed font-normal whitespace-normal text-zinc-500">
+                      {contact.description}
+                    </span>
                   </span>
-                  <span className="mt-0.5 block text-xs leading-relaxed font-normal !whitespace-normal text-zinc-500">
-                    {contact.description}
-                  </span>
-                </span>
-              </Button>
-            );
-          })}
-        </div>
-        <div className="p-5">
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+        <CardFooter>
           <Button
             variant="secondary"
             fullWidth
@@ -56,9 +65,9 @@ export function HelpContactCard() {
             aria-expanded={reasonId === "other"}
             onClick={() => setReasonId("other")}
           >
-            <Mail size={15} /> Email support
+            <Mail size={15} aria-hidden="true" /> Email support
           </Button>
-        </div>
+        </CardFooter>
       </Card>
       {reasonId ? (
         <EmailSupportDialog
