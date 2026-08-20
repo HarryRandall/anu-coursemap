@@ -1,3 +1,4 @@
+import { PlanningCatalogueError } from "@/components/plan/planning-catalogue-error";
 import { loadOnboardingCatalogue } from "@/lib/coursemap/onboarding-catalogue";
 import { ProfileEditor } from "./profile-editor";
 
@@ -8,7 +9,12 @@ export default async function ProfilePage() {
   try {
     catalogue = await loadOnboardingCatalogue();
   } catch {
-    catalogue = { catalogueYears: [], degrees: [], majors: [] };
+    return (
+      <PlanningCatalogueError
+        pageTitle="Profile and study details"
+        retryHref="/profile"
+      />
+    );
   }
   return <ProfileEditor catalogue={catalogue} />;
 }

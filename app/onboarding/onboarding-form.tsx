@@ -7,10 +7,12 @@ import {
   Check,
   GraduationCap,
   Sparkles,
+  TriangleAlert,
   UserRound,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { BrandMark } from "@/components/brand-mark";
@@ -189,12 +191,15 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
 
           {unavailable ? (
             <div className="p-6 sm:p-9">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-                A degree has not been published for the{" "}
-                {catalogueYear || "current"} catalogue yet. An administrator
-                needs to review and publish an imported programme before
-                students can begin onboarding.
-              </div>
+              <Alert tone="warning">
+                <TriangleAlert aria-hidden="true" />
+                <AlertDescription>
+                  A degree has not been published for the{" "}
+                  {catalogueYear || "current"} catalogue yet. An administrator
+                  needs to review and publish an imported programme before
+                  students can begin onboarding.
+                </AlertDescription>
+              </Alert>
             </div>
           ) : (
             <form className="p-6 sm:p-9" onSubmit={submit}>
@@ -370,12 +375,10 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
               )}
 
               {message && (
-                <p
-                  role="alert"
-                  className="mt-5 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-950 ring-1 ring-amber-200"
-                >
-                  {message}
-                </p>
+                <Alert className="mt-5" role="alert" tone="warning">
+                  <TriangleAlert aria-hidden="true" />
+                  <AlertDescription>{message}</AlertDescription>
+                </Alert>
               )}
 
               <div className="mt-7 flex items-center justify-between gap-3 border-t border-zinc-100 pt-6">
