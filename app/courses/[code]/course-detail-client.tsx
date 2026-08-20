@@ -21,7 +21,19 @@ import { PrereqGraph } from "@/components/prereq-graph";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import {
@@ -428,45 +440,39 @@ export function CourseDetailClient({
 
           <TabsContent value="overview" className="flex flex-col gap-4">
             <Card>
-              <div className="border-b border-zinc-100 px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-zinc-900">
-                  About this course
-                </h2>
-              </div>
-              <div className="p-5">
+              <CardHeader title="About this course" />
+              <CardContent className="border-t border-zinc-100 pt-5">
                 <p className="max-w-4xl text-[13px] leading-relaxed text-zinc-600">
                   {course.description}
                 </p>
-              </div>
+              </CardContent>
             </Card>
             <Card>
-              <div className="border-b border-zinc-100 px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-zinc-900">
-                  Course essentials
-                </h2>
-              </div>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-4 p-5 sm:grid-cols-3">
-                {[
-                  ["Course subject", course.subject],
-                  ["School", course.school],
-                  ["Convener", course.convener],
-                  ["Delivery", course.delivery],
-                  [
-                    "Last source update",
-                    formatUpdatedAt(course.sourceUpdatedAt),
-                  ],
-                ].map(([label, value]) => (
-                  <div key={label} className="min-w-0">
-                    <dt className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
-                      {label}
-                    </dt>
-                    <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-zinc-700">
-                      {value}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="border-t border-zinc-100 px-5 py-4">
+              <CardHeader title="Course essentials" />
+              <CardContent className="border-t border-zinc-100 pt-5">
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+                  {[
+                    ["Course subject", course.subject],
+                    ["School", course.school],
+                    ["Convener", course.convener],
+                    ["Delivery", course.delivery],
+                    [
+                      "Last source update",
+                      formatUpdatedAt(course.sourceUpdatedAt),
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
+                        {label}
+                      </dt>
+                      <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-zinc-700">
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </CardContent>
+              <CardFooter>
                 <a
                   href={course.sourceUrl}
                   target="_blank"
@@ -475,73 +481,65 @@ export function CourseDetailClient({
                 >
                   View the ANU course source
                 </a>
-              </div>
+              </CardFooter>
             </Card>
           </TabsContent>
 
           <TabsContent value="requisites" className="flex flex-col gap-4">
             <Card>
-              <div className="border-b border-zinc-100 px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-zinc-900">
-                  Prerequisite chain and unlocks
-                </h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  Detected course references stay visible even before their
-                  course records are imported.
-                </p>
-              </div>
-              <div className="pt-5">
+              <CardHeader
+                title="Prerequisite chain and unlocks"
+                description="Detected course references stay visible even before their course records are imported."
+              />
+              <CardContent className="border-t border-zinc-100 px-0 pt-5 pb-0">
                 <PrereqGraph
                   code={course.code}
                   prerequisiteEdges={course.prerequisiteEdges}
                   completedCodes={completedCodes}
                   plannedCodes={plannedCodes}
                 />
-              </div>
+              </CardContent>
             </Card>
 
             <Card>
-              <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-[15px] font-semibold text-zinc-900">
-                    Requisites and compatibility
-                  </h2>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+              <CardHeader
+                title="Requisites and compatibility"
+                description={
+                  <>
                     An exact Coursemap summary is shown when the wording can be
                     read safely. The official wording remains alongside it.
-                  </p>
-                </div>
-                <Badge
-                  tone={
-                    structuredRule ||
-                    requisiteSummary ||
-                    course.reviewState === "verified"
-                      ? "success"
-                      : "warning"
-                  }
-                >
-                  {structuredRule
-                    ? requisiteCompletion.isAuthenticated
-                      ? "Eligibility checked"
-                      : "Structured rule"
-                    : requisiteSummary
-                      ? "Structured summary"
-                      : course.reviewState === "verified"
-                        ? "Source reviewed"
-                        : "Rule logic unknown"}
-                </Badge>
-              </div>
-              <div className="space-y-5 p-5 text-[13px] leading-relaxed text-zinc-700">
-                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-                  <div className="flex gap-2">
-                    <CircleHelp
-                      size={16}
-                      className="mt-0.5 shrink-0 text-amber-700"
-                      aria-hidden="true"
-                    />
-                    <p className="text-[12px] text-amber-900">{ruleStatus}</p>
-                  </div>
-                </div>
+                  </>
+                }
+                action={
+                  <Badge
+                    tone={
+                      structuredRule ||
+                      requisiteSummary ||
+                      course.reviewState === "verified"
+                        ? "success"
+                        : "warning"
+                    }
+                  >
+                    {structuredRule
+                      ? requisiteCompletion.isAuthenticated
+                        ? "Eligibility checked"
+                        : "Structured rule"
+                      : requisiteSummary
+                        ? "Structured summary"
+                        : course.reviewState === "verified"
+                          ? "Source reviewed"
+                          : "Rule logic unknown"}
+                  </Badge>
+                }
+                className="flex-col gap-3 sm:flex-row"
+              />
+              <CardContent className="space-y-5 border-t border-zinc-100 pt-5 text-[13px] leading-relaxed text-zinc-700">
+                <Alert tone="warning" className="rounded-xl p-4">
+                  <CircleHelp aria-hidden="true" />
+                  <AlertDescription className="text-amber-900">
+                    {ruleStatus}
+                  </AlertDescription>
+                </Alert>
                 {requisiteProgress && requisiteCompletion.isAuthenticated ? (
                   <div>
                     <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
@@ -598,59 +596,60 @@ export function CourseDetailClient({
                     </p>
                   </div>
                 ) : null}
-              </div>
+              </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="offerings" className="flex flex-col gap-4">
             <Card>
-              <div className="border-b border-zinc-100 px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-zinc-900">
-                  Available study periods
-                </h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  Imported from ANU class information. Confirm enrolment dates
-                  in the official source.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 p-5">
-                {course.sessions.length ? (
-                  course.sessions.map((session) => (
+              <CardHeader
+                title="Available study periods"
+                description="Imported from ANU class information. Confirm enrolment dates in the official source."
+              />
+              {course.sessions.length ? (
+                <CardContent className="flex flex-wrap gap-2 border-t border-zinc-100 pt-5">
+                  {course.sessions.map((session) => (
                     <Badge key={session} tone="neutral">
                       {session}
                     </Badge>
-                  ))
-                ) : (
-                  <p className="text-[13px] text-zinc-500">
-                    No course offering is listed in the imported catalogue yet.
-                  </p>
-                )}
-              </div>
+                  ))}
+                </CardContent>
+              ) : (
+                <CardContent className="border-t border-zinc-100 p-0">
+                  <Empty>
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <CalendarClock aria-hidden="true" />
+                      </EmptyMedia>
+                      <EmptyTitle>
+                        No course offering is listed in the imported catalogue
+                        yet.
+                      </EmptyTitle>
+                    </EmptyHeader>
+                  </Empty>
+                </CardContent>
+              )}
             </Card>
           </TabsContent>
 
           <TabsContent value="student-review" className="flex flex-col gap-4">
             <Card>
-              <div className="border-b border-zinc-100 px-5 py-4">
-                <h2 className="text-[15px] font-semibold text-zinc-900">
-                  Student experience and self-review
-                </h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  Shared placeholder while course-specific SELT and student
-                  feedback are imported.
-                </p>
-              </div>
-              <div className="space-y-5 p-5">
-                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                  <p className="text-[13px] font-semibold text-zinc-800">
+              <CardHeader
+                title="Student experience and self-review"
+                description="Shared placeholder while course-specific SELT and student feedback are imported."
+              />
+              <CardContent className="space-y-5 border-t border-zinc-100 pt-5">
+                <Alert tone="neutral" className="rounded-xl p-4">
+                  <MessageSquareText aria-hidden="true" />
+                  <AlertTitle className="text-[13px]">
                     No course-specific ratings are shown yet
-                  </p>
-                  <p className="mt-1 text-[13px] leading-relaxed text-zinc-600">
+                  </AlertTitle>
+                  <AlertDescription className="text-[13px] text-zinc-600">
                     This is deliberately not a made-up score. Once authorised
                     source data is imported, it will appear here with its year
                     and provenance.
-                  </p>
-                </div>
+                  </AlertDescription>
+                </Alert>
                 <div>
                   <h3 className="text-[13px] font-semibold text-zinc-900">
                     A useful self-review after taking the course
@@ -689,7 +688,7 @@ export function CourseDetailClient({
                     ))}
                   </div>
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </TabsContent>
         </div>

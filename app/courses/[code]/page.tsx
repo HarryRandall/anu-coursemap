@@ -1,5 +1,16 @@
+import { CloudOff } from "lucide-react";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/shell";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { loadPublishedCourse } from "@/lib/coursemap/published-catalogue";
 import {
   loadCurrentUserRequisiteCompletion,
@@ -31,13 +42,30 @@ export default async function CoursePage({
   if (unavailable) {
     return (
       <AppShell>
-        <div className="mx-auto max-w-2xl py-16 text-center">
-          <h1 className="text-xl font-semibold text-zinc-900">
-            Course catalogue temporarily unavailable
-          </h1>
-          <p className="mt-2 text-sm text-zinc-600">
-            Please try again shortly.
-          </p>
+        <div className="mx-auto w-full max-w-2xl">
+          <h1 className="sr-only">Course catalogue temporarily unavailable</h1>
+          <Card>
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="error">
+                  <CloudOff aria-hidden="true" />
+                </EmptyMedia>
+                <EmptyTitle>
+                  Course catalogue temporarily unavailable
+                </EmptyTitle>
+                <EmptyDescription>Please try again shortly.</EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                <ButtonLink
+                  href={`/courses/${encodeURIComponent(code)}`}
+                  size="sm"
+                  variant="primary"
+                >
+                  Try again
+                </ButtonLink>
+              </EmptyContent>
+            </Empty>
+          </Card>
         </div>
       </AppShell>
     );
