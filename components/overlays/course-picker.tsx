@@ -1,13 +1,21 @@
 "use client";
 
-import { ArrowRight, BookMarked, Plus, Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/cn";
+import { LoaderCircle, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useCoursemap } from "@/app/providers";
 import type { Course, Term } from "@/lib/coursemap/types";
-import { Modal } from "@/components/ui/overlay";
-import { Button, ButtonLink, IconButton } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from "@/components/ui/command";
 import { CourseToken } from "@/components/ui/course-token";
+import { Modal } from "@/components/ui/overlay";
 
 type CourseSearchResponse = {
   courses: Course[];
@@ -22,31 +30,32 @@ export function CoursePicker({
   intent = "all",
   onClose,
 }: {
-  term: Term;
+  term?: Term;
   intent?: "all" | "recommended";
   onClose: () => void;
 }) {
   const { state, addCourse, notify } = useCoursemap();
   const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
   const [response, setResponse] = useState<CourseSearchResponse | null>(null);
-  const [selected, setSelected] = useState<Course | null>(null);
-  const [loading, setLoading] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [loadingQuery, setLoadingQuery] = useState<string | null>(null);
+  const [addingCode, setAddingCode] = useState<string | null>(null);
+  const [errorQuery, setErrorQuery] = useState<string | null>(null);
   const trimmedQuery = query.trim();
-
-  useEffect(() => searchRef.current?.focus(), []);
+  const loading = trimmedQuery.length >= 2 && loadingQuery === trimmedQuery;
+  const searchError = trimmedQuery.length >= 2 && errorQuery === trimmedQuery;
 
   useEffect(() => {
     if (trimmedQuery.length < 2) return;
+
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
-      setLoading(true);
+      setLoadingQuery(trimmedQuery);
+      setErrorQuery(null);
       try {
         const params = new URLSearchParams({
           q: trimmedQuery,
-          page: String(page),
-          pageSize: "12",
+          page: "1",
+          pageSize: "20",
         });
         const result = await fetch(`/api/courses/search?${params}`, {
           signal: controller.signal,
@@ -60,16 +69,24 @@ export function CoursePicker({
           setResponse({ ...next, query: trimmedQuery });
         }
       } catch {
-        if (!controller.signal.aborted) setResponse(null);
+        if (!controller.signal.aborted) {
+          setResponse(null);
+          setErrorQuery(trimmedQuery);
+        }
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoadingQuery((current) =>
+            current === trimmedQuery ? null : current,
+          );
+        }
       }
     }, 180);
+
     return () => {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [page, trimmedQuery]);
+  }, [trimmedQuery]);
 
   const activeResponse =
     response?.query === trimmedQuery && trimmedQuery.length >= 2
@@ -83,11 +100,16 @@ export function CoursePicker({
     });
     return counts;
   }, [state.attempts]);
+
   const courses = (activeResponse?.courses ?? []).filter(
     (course) => (courseCounts.get(course.code) ?? 0) < 1,
   );
 
+  if (!term) return null;
+
   const choose = async (course: Course) => {
+    if (addingCode) return;
+    setAddingCode(course.code);
     const result = await addCourse(course.code, term.id);
     notify(
       result.ok
@@ -96,20 +118,33 @@ export function CoursePicker({
       result.ok ? "success" : "warning",
     );
     if (result.ok) onClose();
+    else setAddingCode(null);
   };
 
-  const hasNextPage = Boolean(
-    activeResponse &&
-    activeResponse.page * activeResponse.pageSize < activeResponse.total,
-  );
+  const emptyMessage = (() => {
+    if (trimmedQuery.length < 2) {
+      return "Type a course code or name to search the catalogue.";
+    }
+    if (loading) return "Searching the catalogue...";
+    if (searchError) return "Course search is unavailable. Try again.";
+    if ((activeResponse?.total ?? 0) > 0) {
+      return "Every matching course is already in your plan.";
+    }
+    return "No courses match that search.";
+  })();
+
+  const resultHeading = loading
+    ? "Searching"
+    : `${courses.length} ${courses.length === 1 ? "course" : "courses"}`;
 
   return (
     <Modal
       onClose={onClose}
       labelledBy="course-picker-title"
-      className="h-[min(46rem,calc(100dvh-3rem))] w-full max-w-4xl"
+      align="top"
+      className="max-w-2xl"
     >
-      <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4">
+      <div className="flex items-start justify-between gap-4 px-5 pt-5 pb-3">
         <div>
           <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
             {intent === "recommended" ? "Choose for" : "Add to"} {term.name}{" "}
@@ -127,183 +162,76 @@ export function CoursePicker({
         </IconButton>
       </div>
 
-      <div className="flex items-center gap-3 border-b border-zinc-100 px-5">
-        <Search size={18} className="shrink-0 text-zinc-400" />
-        <input
-          ref={searchRef}
+      <Command shouldFilter={false} loop>
+        <CommandInput
+          autoFocus
           value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setPage(1);
-            setSelected(null);
-          }}
+          onValueChange={setQuery}
           placeholder="Search by course code or name"
           aria-label="Search courses"
-          className="h-13 w-full bg-transparent text-[15px] placeholder:text-zinc-400 focus:outline-none"
         />
-        <span className="shrink-0 text-xs text-zinc-400">
-          {activeResponse
-            ? `${activeResponse.total} courses`
-            : "Search 2+ characters"}
-        </span>
-      </div>
-
-      <div className="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[minmax(0,1fr)_20rem]">
-        <div
-          className="overflow-y-auto p-2"
-          role="listbox"
-          aria-label="Course results"
-        >
-          {trimmedQuery.length < 2 ? (
-            <EmptyState
-              title="Search the catalogue"
-              detail="Type at least two characters to find an available course without loading the full catalogue."
-            />
-          ) : loading && !activeResponse ? (
-            <EmptyState
-              title="Searching courses"
-              detail="Finding matching courses..."
-            />
-          ) : courses.length === 0 ? (
-            <EmptyState
-              title="No courses match that search"
-              detail="Try a course code, title, subject or convener."
-            />
-          ) : (
-            <>
+        <CommandList className="min-h-60">
+          <CommandEmpty>{emptyMessage}</CommandEmpty>
+          {courses.length > 0 && (
+            <CommandGroup heading={resultHeading}>
               {courses.map((course) => {
                 const available =
                   course.sessions.includes(term.name) ||
                   term.id === "unscheduled";
+                const isAdding = addingCode === course.code;
+
                 return (
-                  <button
+                  <CommandItem
                     key={course.code}
-                    type="button"
-                    role="option"
-                    aria-selected={selected?.code === course.code}
-                    onClick={() => setSelected(course)}
-                    onDoubleClick={() => void choose(course)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition",
-                      selected?.code === course.code
-                        ? "bg-zinc-100 ring-1 ring-zinc-200 ring-inset"
-                        : "hover:bg-zinc-50",
-                    )}
+                    value={`${course.code} ${course.name} ${course.school}`}
+                    disabled={Boolean(addingCode)}
+                    onSelect={() => void choose(course)}
+                    className="py-2.5"
                   >
                     <CourseToken code={course.code} accent={course.accent} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-zinc-900">
+                      <span className="block truncate font-medium text-zinc-900">
                         {course.name}
                       </span>
                       <span className="block truncate text-xs text-zinc-500">
-                        {course.code} · {course.school}
+                        {course.code} · {course.school} · {course.units} units
                       </span>
                     </span>
                     <span
-                      className={cn(
-                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset",
+                      className={
                         available
-                          ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                          : "bg-amber-50 text-amber-700 ring-amber-200",
-                      )}
+                          ? "shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 ring-inset"
+                          : "shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 ring-inset"
+                      }
                     >
                       {available ? term.shortName : "Not offered"}
                     </span>
-                    <ArrowRight
-                      size={16}
-                      className="shrink-0 text-zinc-300"
-                      aria-hidden="true"
-                    />
-                  </button>
+                    <CommandShortcut aria-hidden="true">
+                      {isAdding ? (
+                        <LoaderCircle className="size-4 animate-spin" />
+                      ) : (
+                        <Plus className="size-4" />
+                      )}
+                    </CommandShortcut>
+                  </CommandItem>
                 );
               })}
-              {hasNextPage && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="mx-auto my-3 flex"
-                  onClick={() => setPage((current) => current + 1)}
-                  disabled={loading}
-                >
-                  {loading ? "Loading..." : "More results"}
-                </Button>
-              )}
-            </>
+            </CommandGroup>
           )}
-        </div>
+        </CommandList>
+      </Command>
 
-        <aside className="hidden overflow-y-auto border-l border-zinc-100 bg-zinc-50/70 p-5 sm:block">
-          {selected ? (
-            <>
-              <CourseToken
-                code={selected.code}
-                accent={selected.accent}
-                size="lg"
-              />
-              <p className="mt-4 text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-                {selected.code}
-              </p>
-              <h3 className="mt-1 text-lg leading-tight font-bold tracking-tight text-zinc-900">
-                {selected.name}
-              </h3>
-              <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">
-                {selected.description}
-              </p>
-              <dl className="my-5 divide-y divide-zinc-200 border-y border-zinc-200 text-[13px]">
-                {[
-                  ["Convener", selected.convener],
-                  ["Offered", selected.sessions.join(", ") || "Not listed"],
-                  ["Level", String(selected.level / 1000)],
-                  ["Requisite", selected.prerequisiteText],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="grid grid-cols-[5rem_1fr] gap-2 py-2.5"
-                  >
-                    <dt className="text-xs text-zinc-400">{label}</dt>
-                    <dd className="text-zinc-700">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => void choose(selected)}
-              >
-                <Plus size={16} /> Add to {term.shortName}
-              </Button>
-              <ButtonLink
-                variant="subtle"
-                fullWidth
-                href={`/courses/${selected.code}`}
-                className="mt-2"
-              >
-                View full course <ArrowRight size={15} />
-              </ButtonLink>
-            </>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-              <BookMarked size={24} className="text-zinc-300" />
-              <p className="text-sm font-medium text-zinc-700">
-                Select a course
-              </p>
-              <p className="max-w-[15rem] text-xs text-zinc-400">
-                See its convener, offering and prerequisites before adding it.
-              </p>
-            </div>
-          )}
-        </aside>
+      <div className="hidden items-center gap-4 border-t border-zinc-100 bg-zinc-50/70 px-4 py-2 text-[11px] text-zinc-400 sm:flex">
+        <span>
+          <kbd className="font-sans">↑↓</kbd> Navigate
+        </span>
+        <span>
+          <kbd className="font-sans">Enter</kbd> Add course
+        </span>
+        <span className="ml-auto">
+          <kbd className="font-sans">Esc</kbd> Close
+        </span>
       </div>
     </Modal>
-  );
-}
-
-function EmptyState({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-1 p-8 text-center">
-      <Search size={22} className="text-zinc-300" />
-      <p className="mt-2 text-sm font-medium text-zinc-700">{title}</p>
-      <p className="max-w-sm text-xs leading-relaxed text-zinc-400">{detail}</p>
-    </div>
   );
 }
