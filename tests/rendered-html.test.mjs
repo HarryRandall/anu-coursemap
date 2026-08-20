@@ -522,10 +522,31 @@ test("removes the disposable starter and keeps product metadata", async () => {
   );
   assert.doesNotMatch(courseDrawer, /Course information|Action needed|✓/);
   assert.match(coursePicker, /\/api\/courses\/search/);
-  assert.match(coursePicker, /Search 2\+ characters/);
+  assert.match(coursePicker, /<Dialog/);
+  assert.match(
+    coursePicker,
+    /<Command[\s\S]*?shouldFilter=\{false\}[\s\S]*?loop/,
+  );
+  assert.match(coursePicker, /Search the catalogue, select a result/);
+  assert.match(coursePicker, /View course/);
+  assert.match(coursePicker, /Prerequisites/);
+  assert.match(coursePicker, /CourseResultSkeleton/);
+  assert.match(coursePicker, /SearchFailure/);
+  assert.match(coursePicker, /if \(!term\) return null/);
+  assert.match(coursePicker, /onCloseAutoFocus/);
+  assert.match(coursePicker, /const queryChanged = nextQuery !== trimmedQuery/);
+  assert.match(coursePicker, /const loadNextPage =/);
+  assert.match(coursePicker, /backButtonRef/);
+  assert.match(coursePicker, /className="!contents"/);
+  assert.match(
+    coursePicker,
+    /onKeyDown=\{\(event\) => event\.stopPropagation\(\)\}/,
+  );
+  assert.doesNotMatch(coursePicker, /setResponse\(null\)/);
+  assert.doesNotMatch(coursePicker, /onDoubleClick/);
   assert.match(planClient, /term=\{pickerTerm\}/);
   assert.doesNotMatch(coursePicker, /catalogue\.terms\[0\]/);
-  assert.doesNotMatch(coursePicker, /In plan/);
+  assert.match(coursePicker, /In plan/);
   assert.match(providers, /normaliseAttempts/);
   assert.match(providers, /const limit = 1/);
   assert.doesNotMatch(providers, /from "@\/lib\/catalogue"/);
