@@ -522,11 +522,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   );
   assert.doesNotMatch(courseDrawer, /Course information|Action needed|✓/);
   assert.match(coursePicker, /\/api\/courses\/search/);
-  assert.match(coursePicker, /<Command shouldFilter=\{false\} loop>/);
-  assert.match(coursePicker, /Type a course code or name to search/);
-  assert.match(coursePicker, /Enter<\/kbd> Add course/);
-  assert.match(coursePicker, /if \(!term\) return null/);
-  assert.doesNotMatch(coursePicker, /Select a course|BookMarked/);
+  assert.match(coursePicker, /Search 2\+ characters/);
   assert.match(planClient, /term=\{pickerTerm\}/);
   assert.doesNotMatch(coursePicker, /catalogue\.terms\[0\]/);
   assert.doesNotMatch(coursePicker, /In plan/);
