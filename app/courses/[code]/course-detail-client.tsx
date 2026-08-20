@@ -22,7 +22,7 @@ import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/cn";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import {
   evaluateRequisiteExpression,
@@ -362,29 +362,20 @@ export function CourseDetailClient({
     window.history.pushState({}, "", `${url.pathname}${url.search}${url.hash}`);
   };
 
-  const tabLinks = tabs.map(({ id, label, icon: Icon }) => {
-    const active = activeTab === id;
-    return (
-      <button
-        key={id}
-        id={`course-tab-${id}`}
-        type="button"
-        role="tab"
-        aria-selected={active}
-        aria-controls={`course-panel-${id}`}
-        onClick={() => selectTab(id)}
-        className={cn(
-          "relative flex h-11 shrink-0 items-center gap-1.5 px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-400 motion-reduce:transition-none",
-          active
-            ? "text-zinc-950 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-brand-500 after:content-['']"
-            : "text-zinc-500 hover:text-zinc-900",
-        )}
-      >
-        <Icon size={15} aria-hidden="true" className="hidden sm:block" />
-        {label}
-      </button>
-    );
-  });
+  const tabLinks = (
+    <TabsList className="h-11 w-full gap-1 rounded-none bg-transparent p-0">
+      {tabs.map(({ id, label, icon: Icon }) => (
+        <TabsTrigger
+          key={id}
+          value={id}
+          className="relative h-11 flex-none gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-[13px] text-zinc-500 shadow-none hover:text-zinc-900 data-[state=active]:border-brand-500 data-[state=active]:bg-transparent data-[state=active]:text-zinc-950 data-[state=active]:shadow-none"
+        >
+          <Icon size={15} aria-hidden="true" className="hidden sm:block" />
+          {label}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  );
 
   const ruleStatus = !hasPrerequisiteWording
     ? "No prerequisite course codes were detected in the imported source."
@@ -401,335 +392,312 @@ export function CourseDetailClient({
             : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
 
   return (
-    <AppShell tabs={tabLinks}>
-      <div className="mx-auto max-w-6xl">
-        <header className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
-              {course.code} · {course.subject} · Level {course.level / 1000}
-            </p>
-            <h1 className="mt-1 text-2xl leading-tight font-bold tracking-tight text-zinc-900 sm:text-3xl">
-              {course.name}
-            </h1>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              <Badge tone="neutral">{course.units} units</Badge>
-              <Badge tone="neutral">
-                {course.sessions.length
-                  ? course.sessions.join(" · ")
-                  : "Offering not listed"}
-              </Badge>
-              <Badge tone="neutral">{course.delivery}</Badge>
-            </div>
-          </div>
-          <Button
-            variant="primary"
-            className="w-full shrink-0 sm:w-auto"
-            onClick={() => setPlanOpen(true)}
-          >
-            <Plus size={16} /> Add to plan
-          </Button>
-        </header>
-
-        <section
-          id="course-panel-overview"
-          role="tabpanel"
-          aria-labelledby="course-tab-overview"
-          className={cn(
-            "flex-col gap-4",
-            activeTab === "overview" ? "flex" : "hidden",
-          )}
-        >
-          <Card>
-            <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">
-                About this course
-              </h2>
-            </div>
-            <div className="p-5">
-              <p className="max-w-4xl text-[13px] leading-relaxed text-zinc-600">
-                {course.description}
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => selectTab(value as CourseTab)}
+      className="gap-0"
+    >
+      <AppShell tabs={tabLinks}>
+        <div className="mx-auto max-w-6xl">
+          <header className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                {course.code} · {course.subject} · Level {course.level / 1000}
               </p>
+              <h1 className="mt-1 text-2xl leading-tight font-bold tracking-tight text-zinc-900 sm:text-3xl">
+                {course.name}
+              </h1>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <Badge tone="neutral">{course.units} units</Badge>
+                <Badge tone="neutral">
+                  {course.sessions.length
+                    ? course.sessions.join(" · ")
+                    : "Offering not listed"}
+                </Badge>
+                <Badge tone="neutral">{course.delivery}</Badge>
+              </div>
             </div>
-          </Card>
-          <Card>
-            <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">
-                Course essentials
-              </h2>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 p-5 sm:grid-cols-3">
-              {[
-                ["Course subject", course.subject],
-                ["School", course.school],
-                ["Convener", course.convener],
-                ["Delivery", course.delivery],
-                ["Last source update", formatUpdatedAt(course.sourceUpdatedAt)],
-              ].map(([label, value]) => (
-                <div key={label} className="min-w-0">
-                  <dt className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
-                    {label}
-                  </dt>
-                  <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-zinc-700">
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <div className="border-t border-zinc-100 px-5 py-4">
-              <a
-                href={course.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-[13px] font-semibold text-brand-700 hover:text-brand-800"
-              >
-                View the ANU course source
-              </a>
-            </div>
-          </Card>
-        </section>
+            <Button
+              variant="primary"
+              className="w-full shrink-0 sm:w-auto"
+              onClick={() => setPlanOpen(true)}
+            >
+              <Plus size={16} /> Add to plan
+            </Button>
+          </header>
 
-        <section
-          id="course-panel-requisites"
-          role="tabpanel"
-          aria-labelledby="course-tab-requisites"
-          className={cn(
-            "flex-col gap-4",
-            activeTab === "requisites" ? "flex" : "hidden",
-          )}
-        >
-          <Card>
-            <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">
-                Prerequisite chain and unlocks
-              </h2>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Detected course references stay visible even before their course
-                records are imported.
-              </p>
-            </div>
-            <div className="pt-5">
-              <PrereqGraph
-                code={course.code}
-                prerequisiteEdges={course.prerequisiteEdges}
-                completedCodes={completedCodes}
-                plannedCodes={plannedCodes}
-              />
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
+          <TabsContent value="overview" className="flex flex-col gap-4">
+            <Card>
+              <div className="border-b border-zinc-100 px-5 py-4">
                 <h2 className="text-[15px] font-semibold text-zinc-900">
-                  Requisites and compatibility
+                  About this course
+                </h2>
+              </div>
+              <div className="p-5">
+                <p className="max-w-4xl text-[13px] leading-relaxed text-zinc-600">
+                  {course.description}
+                </p>
+              </div>
+            </Card>
+            <Card>
+              <div className="border-b border-zinc-100 px-5 py-4">
+                <h2 className="text-[15px] font-semibold text-zinc-900">
+                  Course essentials
+                </h2>
+              </div>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-4 p-5 sm:grid-cols-3">
+                {[
+                  ["Course subject", course.subject],
+                  ["School", course.school],
+                  ["Convener", course.convener],
+                  ["Delivery", course.delivery],
+                  [
+                    "Last source update",
+                    formatUpdatedAt(course.sourceUpdatedAt),
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label} className="min-w-0">
+                    <dt className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
+                      {label}
+                    </dt>
+                    <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-zinc-700">
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="border-t border-zinc-100 px-5 py-4">
+                <a
+                  href={course.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[13px] font-semibold text-brand-700 hover:text-brand-800"
+                >
+                  View the ANU course source
+                </a>
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="requisites" className="flex flex-col gap-4">
+            <Card>
+              <div className="border-b border-zinc-100 px-5 py-4">
+                <h2 className="text-[15px] font-semibold text-zinc-900">
+                  Prerequisite chain and unlocks
                 </h2>
                 <p className="mt-0.5 text-xs text-zinc-500">
-                  An exact Coursemap summary is shown when the wording can be
-                  read safely. The official wording remains alongside it.
+                  Detected course references stay visible even before their
+                  course records are imported.
                 </p>
               </div>
-              <Badge
-                tone={
-                  structuredRule ||
-                  requisiteSummary ||
-                  course.reviewState === "verified"
-                    ? "success"
-                    : "warning"
-                }
-              >
-                {structuredRule
-                  ? requisiteCompletion.isAuthenticated
-                    ? "Eligibility checked"
-                    : "Structured rule"
-                  : requisiteSummary
-                    ? "Structured summary"
-                    : course.reviewState === "verified"
-                      ? "Source reviewed"
-                      : "Rule logic unknown"}
-              </Badge>
-            </div>
-            <div className="space-y-5 p-5 text-[13px] leading-relaxed text-zinc-700">
-              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-                <div className="flex gap-2">
-                  <CircleHelp
-                    size={16}
-                    className="mt-0.5 shrink-0 text-amber-700"
-                    aria-hidden="true"
-                  />
-                  <p className="text-[12px] text-amber-900">{ruleStatus}</p>
-                </div>
-              </div>
-              {requisiteProgress && requisiteCompletion.isAuthenticated ? (
-                <div>
-                  <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                    Your completed-course progress
-                  </h3>
-                  <div className="mt-2">
-                    <RequisiteProgressSummary
-                      progress={requisiteProgress}
-                      availableCourseCodes={availableCourseCodes}
-                    />
-                  </div>
-                </div>
-              ) : null}
-              {requisiteSummary ? (
-                <div>
-                  <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                    {structuredRule
-                      ? "Imported requirement matrix"
-                      : "Coursemap summary"}
-                  </h3>
-                  <div className="mt-2">
-                    <RequisiteExpressionSummary
-                      expression={requisiteSummary}
-                      availableCourseCodes={availableCourseCodes}
-                    />
-                  </div>
-                </div>
-              ) : null}
-              <div>
-                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                  Prerequisites
-                </h3>
-                <p className="mt-2 whitespace-pre-line">
-                  <CourseReferenceText
-                    text={course.prerequisiteText}
-                    availableCourseCodes={availableCourseCodes}
-                  />
-                </p>
-                <CourseReferenceChips
-                  course={course}
-                  availableCourseCodes={availableCourseCodes}
+              <div className="pt-5">
+                <PrereqGraph
+                  code={course.code}
+                  prerequisiteEdges={course.prerequisiteEdges}
+                  completedCodes={completedCodes}
+                  plannedCodes={plannedCodes}
                 />
               </div>
-              {course.incompatibilityText ? (
-                <div className="border-t border-zinc-100 pt-5">
+            </Card>
+
+            <Card>
+              <div className="flex flex-col gap-3 border-b border-zinc-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-[15px] font-semibold text-zinc-900">
+                    Requisites and compatibility
+                  </h2>
+                  <p className="mt-0.5 text-xs text-zinc-500">
+                    An exact Coursemap summary is shown when the wording can be
+                    read safely. The official wording remains alongside it.
+                  </p>
+                </div>
+                <Badge
+                  tone={
+                    structuredRule ||
+                    requisiteSummary ||
+                    course.reviewState === "verified"
+                      ? "success"
+                      : "warning"
+                  }
+                >
+                  {structuredRule
+                    ? requisiteCompletion.isAuthenticated
+                      ? "Eligibility checked"
+                      : "Structured rule"
+                    : requisiteSummary
+                      ? "Structured summary"
+                      : course.reviewState === "verified"
+                        ? "Source reviewed"
+                        : "Rule logic unknown"}
+                </Badge>
+              </div>
+              <div className="space-y-5 p-5 text-[13px] leading-relaxed text-zinc-700">
+                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                  <div className="flex gap-2">
+                    <CircleHelp
+                      size={16}
+                      className="mt-0.5 shrink-0 text-amber-700"
+                      aria-hidden="true"
+                    />
+                    <p className="text-[12px] text-amber-900">{ruleStatus}</p>
+                  </div>
+                </div>
+                {requisiteProgress && requisiteCompletion.isAuthenticated ? (
+                  <div>
+                    <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                      Your completed-course progress
+                    </h3>
+                    <div className="mt-2">
+                      <RequisiteProgressSummary
+                        progress={requisiteProgress}
+                        availableCourseCodes={availableCourseCodes}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+                {requisiteSummary ? (
+                  <div>
+                    <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                      {structuredRule
+                        ? "Imported requirement matrix"
+                        : "Coursemap summary"}
+                    </h3>
+                    <div className="mt-2">
+                      <RequisiteExpressionSummary
+                        expression={requisiteSummary}
+                        availableCourseCodes={availableCourseCodes}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+                <div>
                   <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                    Incompatibilities
+                    Prerequisites
                   </h3>
                   <p className="mt-2 whitespace-pre-line">
                     <CourseReferenceText
-                      text={course.incompatibilityText}
+                      text={course.prerequisiteText}
                       availableCourseCodes={availableCourseCodes}
                     />
                   </p>
+                  <CourseReferenceChips
+                    course={course}
+                    availableCourseCodes={availableCourseCodes}
+                  />
                 </div>
-              ) : null}
-            </div>
-          </Card>
-        </section>
-
-        <section
-          id="course-panel-offerings"
-          role="tabpanel"
-          aria-labelledby="course-tab-offerings"
-          className={cn(
-            "flex-col gap-4",
-            activeTab === "offerings" ? "flex" : "hidden",
-          )}
-        >
-          <Card>
-            <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">
-                Available study periods
-              </h2>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Imported from ANU class information. Confirm enrolment dates in
-                the official source.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 p-5">
-              {course.sessions.length ? (
-                course.sessions.map((session) => (
-                  <Badge key={session} tone="neutral">
-                    {session}
-                  </Badge>
-                ))
-              ) : (
-                <p className="text-[13px] text-zinc-500">
-                  No course offering is listed in the imported catalogue yet.
-                </p>
-              )}
-            </div>
-          </Card>
-        </section>
-
-        <section
-          id="course-panel-student-review"
-          role="tabpanel"
-          aria-labelledby="course-tab-student-review"
-          className={cn(
-            "flex-col gap-4",
-            activeTab === "student-review" ? "flex" : "hidden",
-          )}
-        >
-          <Card>
-            <div className="border-b border-zinc-100 px-5 py-4">
-              <h2 className="text-[15px] font-semibold text-zinc-900">
-                Student experience and self-review
-              </h2>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Shared placeholder while course-specific SELT and student
-                feedback are imported.
-              </p>
-            </div>
-            <div className="space-y-5 p-5">
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-[13px] font-semibold text-zinc-800">
-                  No course-specific ratings are shown yet
-                </p>
-                <p className="mt-1 text-[13px] leading-relaxed text-zinc-600">
-                  This is deliberately not a made-up score. Once authorised
-                  source data is imported, it will appear here with its year and
-                  provenance.
-                </p>
-              </div>
-              <div>
-                <h3 className="text-[13px] font-semibold text-zinc-900">
-                  A useful self-review after taking the course
-                </h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                  {[
-                    [
-                      "Workload",
-                      "Were the weekly study hours manageable for the unit value?",
-                    ],
-                    [
-                      "Assessment",
-                      "Did the assessment types build the skills the course promised?",
-                    ],
-                    [
-                      "Teaching",
-                      "Were lectures, tutorials and feedback helpful when you needed them?",
-                    ],
-                  ].map(([title, description]) => (
-                    <div
-                      key={title}
-                      className="rounded-xl border border-zinc-200 p-4"
-                    >
-                      <ClipboardCheck
-                        size={17}
-                        className="text-brand-600"
-                        aria-hidden="true"
+                {course.incompatibilityText ? (
+                  <div className="border-t border-zinc-100 pt-5">
+                    <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                      Incompatibilities
+                    </h3>
+                    <p className="mt-2 whitespace-pre-line">
+                      <CourseReferenceText
+                        text={course.incompatibilityText}
+                        availableCourseCodes={availableCourseCodes}
                       />
-                      <h4 className="mt-2 text-[13px] font-semibold text-zinc-800">
-                        {title}
-                      </h4>
-                      <p className="mt-1 text-xs leading-relaxed text-zinc-600">
-                        {description}
-                      </p>
-                    </div>
-                  ))}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="offerings" className="flex flex-col gap-4">
+            <Card>
+              <div className="border-b border-zinc-100 px-5 py-4">
+                <h2 className="text-[15px] font-semibold text-zinc-900">
+                  Available study periods
+                </h2>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  Imported from ANU class information. Confirm enrolment dates
+                  in the official source.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 p-5">
+                {course.sessions.length ? (
+                  course.sessions.map((session) => (
+                    <Badge key={session} tone="neutral">
+                      {session}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-[13px] text-zinc-500">
+                    No course offering is listed in the imported catalogue yet.
+                  </p>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="student-review" className="flex flex-col gap-4">
+            <Card>
+              <div className="border-b border-zinc-100 px-5 py-4">
+                <h2 className="text-[15px] font-semibold text-zinc-900">
+                  Student experience and self-review
+                </h2>
+                <p className="mt-0.5 text-xs text-zinc-500">
+                  Shared placeholder while course-specific SELT and student
+                  feedback are imported.
+                </p>
+              </div>
+              <div className="space-y-5 p-5">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                  <p className="text-[13px] font-semibold text-zinc-800">
+                    No course-specific ratings are shown yet
+                  </p>
+                  <p className="mt-1 text-[13px] leading-relaxed text-zinc-600">
+                    This is deliberately not a made-up score. Once authorised
+                    source data is imported, it will appear here with its year
+                    and provenance.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-[13px] font-semibold text-zinc-900">
+                    A useful self-review after taking the course
+                  </h3>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    {[
+                      [
+                        "Workload",
+                        "Were the weekly study hours manageable for the unit value?",
+                      ],
+                      [
+                        "Assessment",
+                        "Did the assessment types build the skills the course promised?",
+                      ],
+                      [
+                        "Teaching",
+                        "Were lectures, tutorials and feedback helpful when you needed them?",
+                      ],
+                    ].map(([title, description]) => (
+                      <div
+                        key={title}
+                        className="rounded-xl border border-zinc-200 p-4"
+                      >
+                        <ClipboardCheck
+                          size={17}
+                          className="text-brand-600"
+                          aria-hidden="true"
+                        />
+                        <h4 className="mt-2 text-[13px] font-semibold text-zinc-800">
+                          {title}
+                        </h4>
+                        <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                          {description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          </Card>
-        </section>
-      </div>
+            </Card>
+          </TabsContent>
+        </div>
 
-      {planOpen ? (
-        <TermChooser course={course} onClose={() => setPlanOpen(false)} />
-      ) : null}
-    </AppShell>
+        {planOpen ? (
+          <TermChooser course={course} onClose={() => setPlanOpen(false)} />
+        ) : null}
+      </AppShell>
+    </Tabs>
   );
 }
