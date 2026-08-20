@@ -576,9 +576,10 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(sidebar, /\/admin\/roles/);
   assert.match(sidebar, /!admin &&/);
   assert.match(topbar, /after:inset-x-0/);
-  assert.match(providers, /fixed/);
-  assert.match(providers, /right-4/);
-  assert.match(providers, /top-4/);
+  assert.match(providers, /toast\.warning/);
+  assert.match(providers, /toast\.info/);
+  assert.match(providers, /toast\.success/);
+  assert.match(providers, /<Toaster \/>/);
   assert.match(layout, /Coursemap/);
   assert.match(layout, /og\.png/);
   assert.match(adminLayout, /if \(!viewer\)[\s\S]*redirect\(/);
