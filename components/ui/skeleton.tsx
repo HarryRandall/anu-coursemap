@@ -8,9 +8,10 @@ export function Skeleton({
 }: ComponentPropsWithoutRef<"div">) {
   return (
     <div
+      data-slot="skeleton"
       aria-hidden="true"
       className={cn(
-        "animate-pulse rounded-md bg-zinc-200/70 motion-reduce:animate-none",
+        "animate-pulse rounded-md bg-zinc-200/65 motion-reduce:animate-none",
         className,
       )}
       {...rest}

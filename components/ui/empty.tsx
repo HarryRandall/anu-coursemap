@@ -5,7 +5,7 @@ function Empty({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="empty"
       className={cn(
-        "flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl border-dashed p-6 text-center text-balance",
+        "flex w-full min-w-0 flex-col items-center justify-center gap-3 rounded-lg px-5 py-10 text-center text-balance",
         className,
       )}
       {...props}
@@ -17,7 +17,7 @@ function EmptyHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-header"
-      className={cn("flex max-w-sm flex-col items-center gap-2", className)}
+      className={cn("flex max-w-sm flex-col items-center gap-1.5", className)}
       {...props}
     />
   );
@@ -35,12 +35,12 @@ function EmptyMedia({
       data-slot="empty-icon"
       data-variant={variant}
       className={cn(
-        "mb-2 flex shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "mb-1.5 flex shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg]:shrink-0",
         variant === "default" && "bg-transparent",
         variant === "icon" &&
-          "size-9 rounded-lg bg-zinc-100 text-zinc-600 [&_svg:not([class*='size-'])]:size-4",
+          "size-9 rounded-md border border-zinc-200 bg-zinc-50 text-zinc-600 [&_svg:not([class*='size-'])]:size-4",
         variant === "error" &&
-          "size-9 rounded-lg bg-rose-50 text-rose-600 [&_svg:not([class*='size-'])]:size-4",
+          "size-9 rounded-md border border-rose-200 bg-rose-50 text-rose-600 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -52,7 +52,10 @@ function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-title"
-      className={cn("text-sm font-medium tracking-tight", className)}
+      className={cn(
+        "text-sm font-semibold tracking-tight text-zinc-950",
+        className,
+      )}
       {...props}
     />
   );
