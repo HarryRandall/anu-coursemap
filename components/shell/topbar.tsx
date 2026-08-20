@@ -7,9 +7,11 @@ import { IconButton } from "@/components/ui/button";
 
 export function Topbar({
   actions,
+  currentBreadcrumbLabel,
   onOpenNav,
 }: {
   actions?: ReactNode;
+  currentBreadcrumbLabel?: string;
   onOpenNav: () => void;
 }) {
   return (
@@ -24,7 +26,7 @@ export function Topbar({
         >
           <Menu size={20} aria-hidden="true" />
         </IconButton>
-        <Breadcrumbs />
+        <Breadcrumbs currentLabel={currentBreadcrumbLabel} />
       </div>
 
       {actions && (

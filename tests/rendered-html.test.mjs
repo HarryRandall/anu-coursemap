@@ -351,11 +351,16 @@ test("server-renders admin and course-detail routes", async () => {
     adminCoursesHtml,
     /Catalogue review|Open a course version|Search imported courses/i,
   );
-  assert.match(adminCourseReviewHtml, /What to review before publishing/i);
-  assert.match(adminCourseReviewHtml, /Course fields/i);
-  assert.match(adminCourseReviewHtml, /Requisites and compatibility/i);
-  assert.match(adminCourseReviewHtml, /24 units of COMP coded courses/i);
-  assert.match(adminCourseReviewHtml, /Imported condition matrix/i);
+  assert.match(adminCourseReviewHtml, /Changes/i);
+  assert.match(adminCourseReviewHtml, /All fields/i);
+  assert.match(adminCourseReviewHtml, /Source HTML/i);
+  assert.match(adminCourseReviewHtml, /Parsed output/i);
+  assert.match(adminCourseReviewHtml, /Prerequisites/i);
+  assert.match(adminCourseReviewHtml, /Student preview/i);
+  assert.doesNotMatch(
+    adminCourseReviewHtml,
+    /What to review before publishing/i,
+  );
   assert.match(adminUsersHtml, /User management is unavailable in demo mode/i);
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
   assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);

@@ -1,5 +1,5 @@
+import { ImportsActivity } from "@/components/admin/imports/imports-activity";
 import { ImportsNavigation } from "@/components/admin/imports/imports-navigation";
-import { ImportsOverview } from "@/components/admin/imports/imports-overview";
 import { loadImportsDashboard } from "@/components/admin/imports/imports-overview-data";
 import { AppShell } from "@/components/shell";
 
@@ -9,7 +9,7 @@ function value(input: string | string[] | undefined) {
   return Array.isArray(input) ? input[0] : input;
 }
 
-export default async function ImportsPage({
+export default async function ImportsActivityPage({
   searchParams,
 }: {
   searchParams: Promise<{
@@ -23,13 +23,13 @@ export default async function ImportsPage({
   ]);
   const query = (value(params.q) ?? "").trim().toLowerCase();
   const status = value(params.status) ?? "all";
-  const rows = data.review.filter((row) => {
+  const rows = data.activity.filter((row) => {
     const matchesQuery =
       !query ||
       row.code.toLowerCase().includes(query) ||
       row.title.toLowerCase().includes(query) ||
       String(row.year).includes(query);
-    const matchesStatus = status === "all" || row.status === status;
+    const matchesStatus = status === "all" || row.result === status;
     return matchesQuery && matchesStatus;
   });
 
@@ -38,12 +38,12 @@ export default async function ImportsPage({
       admin
       tabs={
         <ImportsNavigation
-          active="overview"
+          active="activity"
           historicalCount={data.historicalOpenCount}
         />
       }
     >
-      <ImportsOverview data={data} rows={rows} />
+      <ImportsActivity data={data} rows={rows} />
     </AppShell>
   );
 }
