@@ -64,6 +64,9 @@ jobs:
       - name: Start local database
         run: supabase db start
 
+      - name: Reset and seed local preview database
+        run: npm run db:reset
+
       - name: Run database tests
         run: supabase test db
 
