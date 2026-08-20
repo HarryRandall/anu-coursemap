@@ -1,18 +1,20 @@
 import type { CSSProperties } from "react";
 import {
+  DataTableEmpty,
   DataTableShell,
-  tableCellClasses,
-  tableClasses,
-  tableHeadClasses,
-  tableHeaderCellClasses,
-  tableRowClasses,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/data-table";
 import type {
   AdminPermission,
   AdminRole,
   AdminRolePermission,
 } from "@/lib/admin/users";
-import { cn } from "@/lib/cn";
 import { RolePermissionToggle } from "./role-permission-toggle";
 
 function permissionArea(category: string) {
@@ -63,60 +65,52 @@ export function RolePermissionMatrix({
 
   return (
     <DataTableShell>
-      <table
-        className={tableClasses()}
+      <Table
+        className="table-fixed"
         style={{ minWidth: `${tableMinWidth}px` } as CSSProperties}
       >
+        <TableCaption>Role permissions by Coursemap role</TableCaption>
         <colgroup>
           <col style={{ width: `${permissionColumnWidth}px` }} />
           {roles.map((role) => (
             <col key={role.id} style={{ width: `${roleColumnWidth}px` }} />
           ))}
         </colgroup>
-        <thead className={tableHeadClasses()}>
-          <tr>
-            <th className={tableHeaderCellClasses()}>Permission</th>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="sticky left-0 z-30 bg-zinc-50/95">
+              Permission
+            </TableHead>
             {roles.map((role) => (
-              <th
+              <TableHead
                 key={role.id}
-                className={tableHeaderCellClasses(
-                  "text-center tracking-normal whitespace-normal text-zinc-700 normal-case",
-                )}
-                title={role.description}
+                className="text-center tracking-normal whitespace-normal text-zinc-700 normal-case"
               >
-                <span className="text-xs font-semibold">{role.name}</span>
-              </th>
+                <span className="block text-xs font-semibold">{role.name}</span>
+                <span className="mt-0.5 line-clamp-2 block text-[10px] leading-3 font-normal text-zinc-500">
+                  {role.description}
+                </span>
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {groupedPermissions.length > 0 ? (
-            groupedPermissions.flatMap(([category, categoryPermissions]) => [
-              <tr
-                key={`category-${category}`}
-                className={tableRowClasses("bg-zinc-50 hover:bg-zinc-50")}
-              >
-                <th
+          </TableRow>
+        </TableHeader>
+        {groupedPermissions.length > 0 ? (
+          groupedPermissions.map(([category, categoryPermissions]) => (
+            <TableBody key={category}>
+              <TableRow className="bg-zinc-50/70 hover:bg-zinc-50/70">
+                <TableHead
                   scope="rowgroup"
                   colSpan={roles.length + 1}
-                  className={tableCellClasses(
-                    "py-1.5 text-left text-[10px] font-semibold tracking-[0.08em] whitespace-normal text-zinc-500 uppercase",
-                  )}
+                  className="h-8 py-1.5 text-left text-[10px] font-semibold tracking-[0.08em] whitespace-normal text-zinc-500 uppercase"
                 >
                   {permissionArea(category)}
-                </th>
-              </tr>,
-              ...categoryPermissions.map((permission) => (
-                <tr
-                  key={permission.id}
-                  className={tableRowClasses("hover:bg-zinc-50/60")}
-                >
-                  <th
+                </TableHead>
+              </TableRow>
+              {categoryPermissions.map((permission) => (
+                <TableRow key={permission.id} className="group">
+                  <TableHead
                     scope="row"
-                    className={cn(
-                      tableCellClasses("text-left whitespace-normal"),
-                      "align-middle font-normal",
-                    )}
+                    className="sticky left-0 z-10 h-auto bg-white py-3 text-left font-normal tracking-normal whitespace-normal normal-case group-hover:bg-zinc-50"
                   >
                     <div className="max-w-lg min-w-0 py-0.5">
                       <span className="text-[13px] font-medium text-zinc-900">
@@ -126,16 +120,13 @@ export function RolePermissionMatrix({
                         {permission.description}
                       </p>
                     </div>
-                  </th>
+                  </TableHead>
                   {roles.map((role) => {
                     const enabled = grantKeys.has(
                       `${role.id}:${permission.id}`,
                     );
                     return (
-                      <td
-                        key={role.id}
-                        className={tableCellClasses("text-center")}
-                      >
+                      <TableCell key={role.id} className="text-center">
                         <div className="flex justify-center">
                           <RolePermissionToggle
                             roleId={role.id}
@@ -147,26 +138,29 @@ export function RolePermissionMatrix({
                             initialEnabled={enabled}
                           />
                         </div>
-                      </td>
+                      </TableCell>
                     );
                   })}
-                </tr>
-              )),
-            ])
-          ) : (
-            <tr className={tableRowClasses()}>
-              <td
+                </TableRow>
+              ))}
+            </TableBody>
+          ))
+        ) : (
+          <TableBody>
+            <TableRow className="hover:bg-transparent">
+              <TableCell
                 colSpan={Math.max(1, roles.length + 1)}
-                className={tableCellClasses(
-                  "h-24 text-center whitespace-normal text-zinc-500",
-                )}
+                className="p-0"
               >
-                No permissions match the current filters.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                <DataTableEmpty
+                  title="No permissions"
+                  description="Permissions will appear here when roles are configured."
+                />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        )}
+      </Table>
     </DataTableShell>
   );
 }

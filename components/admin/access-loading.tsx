@@ -1,16 +1,5 @@
 import { cn } from "@/lib/cn";
-
-function Skeleton({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "block animate-pulse rounded-md bg-zinc-200/70 motion-reduce:animate-none",
-        className,
-      )}
-    />
-  );
-}
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function UserDirectoryLoadingSkeleton() {
   return (

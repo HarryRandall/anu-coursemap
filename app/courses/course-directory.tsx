@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { CourseToken } from "@/components/ui/course-token";
 import {
+  DataTableEmpty,
   DataTableShell,
-  tableCellClasses,
-  tableClasses,
-  tableHeadClasses,
-  tableHeaderCellClasses,
-  tableRowClasses,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/data-table";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { cn } from "@/lib/cn";
@@ -51,7 +54,8 @@ export function CourseDirectory({
         />
       }
     >
-      <table className={tableClasses("table-fixed")}>
+      <Table className="min-w-[680px] table-fixed">
+        <TableCaption>Published ANU courses</TableCaption>
         <colgroup>
           <col />
           <col className="w-[11rem]" />
@@ -59,44 +63,38 @@ export function CourseDirectory({
           <col className="w-[9rem]" />
           <col className="w-[4rem]" />
         </colgroup>
-        <thead className={tableHeadClasses()}>
-          <tr>
-            <th className={tableHeaderCellClasses()}>Course</th>
-            <th className={tableHeaderCellClasses()}>Subject</th>
-            <th className={tableHeaderCellClasses()}>Requisites</th>
-            <th className={tableHeaderCellClasses()}>Available</th>
-            <th className={tableHeaderCellClasses()}>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>Course</TableHead>
+            <TableHead>Subject</TableHead>
+            <TableHead>Requisites</TableHead>
+            <TableHead>Available</TableHead>
+            <TableHead>
               <span className="sr-only">Actions</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {courses.length === 0 ? (
-            <tr className={tableRowClasses()}>
-              <td
-                colSpan={5}
-                className={tableCellClasses(
-                  "py-12 text-center font-normal whitespace-normal text-zinc-500",
-                )}
-              >
-                No published courses are available yet.
-              </td>
-            </tr>
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={5} className="p-0">
+                <DataTableEmpty
+                  title="No published courses"
+                  description="Published courses will appear here when the catalogue is ready."
+                />
+              </TableCell>
+            </TableRow>
           ) : null}
           {courses.map((course) => {
             const href = `/courses/${course.code}`;
             return (
-              <tr
-                key={course.code}
-                className={tableRowClasses("group hover:bg-zinc-50/60")}
-              >
-                <td className={tableCellClasses("p-0")}>
-                  <div className="flex items-center gap-3 px-4 py-2.5">
-                    <Link
-                      href={href}
-                      className="shrink-0 rounded-[4px] focus-visible:ring-2 focus-visible:ring-brand-400"
-                      aria-label={`View ${course.code}`}
-                    >
+              <TableRow key={course.code} className="group">
+                <TableCell className="p-0">
+                  <Link
+                    href={href}
+                    className="flex items-center gap-3 rounded-sm px-4 py-3 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none focus-visible:ring-inset"
+                  >
+                    <span className="shrink-0">
                       <CourseToken
                         code={course.code}
                         accent={course.accent}
@@ -104,41 +102,32 @@ export function CourseDirectory({
                         shape="square"
                         className="ring-1 ring-black/5 ring-inset"
                       />
-                    </Link>
+                    </span>
                     <span className="min-w-0 flex-1">
-                      <Link
-                        href={href}
-                        className="block truncate text-[13px] font-medium text-zinc-900 hover:text-brand-700 focus:text-brand-700 focus:outline-none"
-                      >
+                      <span className="block truncate text-[13px] font-medium text-zinc-950 group-hover:text-brand-700">
                         {course.name}
-                      </Link>
-                      <Link
-                        href={href}
-                        className="mt-0.5 block truncate font-mono text-[11px] text-zinc-500 hover:text-zinc-700 focus:text-zinc-700 focus:outline-none"
-                      >
+                      </span>
+                      <span className="mt-0.5 block truncate font-mono text-[11px] text-zinc-500">
                         {course.code}
                         {course.publicationStatus === "draft"
                           ? " · Review needed"
                           : ""}
-                      </Link>
+                      </span>
                     </span>
-                  </div>
-                </td>
-                <td className={tableCellClasses("p-0")}>
-                  <Link
-                    href={href}
-                    className="flex min-h-12 flex-col justify-center px-4 py-2.5 focus:outline-none"
-                  >
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <div className="flex min-h-10 flex-col justify-center">
                     <span className="truncate text-[13px] text-zinc-700">
                       {course.subject}
                     </span>
                     <span className="mt-0.5 truncate text-[11px] text-zinc-500">
                       Level {course.level / 1000}
                     </span>
-                  </Link>
-                </td>
-                <td className={tableCellClasses("p-0")}>
-                  <div className="flex min-h-12 flex-wrap items-center gap-1 px-4 py-2.5">
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex min-h-10 flex-wrap items-center gap-1">
                     {course.prerequisiteCodes.length === 0 ? (
                       <span className="text-[13px] text-zinc-400">None</span>
                     ) : (
@@ -157,12 +146,9 @@ export function CourseDirectory({
                       ))
                     )}
                   </div>
-                </td>
-                <td className={tableCellClasses("p-0")}>
-                  <Link
-                    href={href}
-                    className="flex min-h-12 flex-wrap items-center gap-1 px-4 py-2.5 focus:outline-none"
-                  >
+                </TableCell>
+                <TableCell>
+                  <div className="flex min-h-10 flex-wrap items-center gap-1">
                     {course.sessions.length === 0 ? (
                       <span className="text-[13px] text-zinc-400">
                         Not listed
@@ -174,10 +160,10 @@ export function CourseDirectory({
                         </span>
                       ))
                     )}
-                  </Link>
-                </td>
-                <td className={tableCellClasses("p-0")}>
-                  <div className="flex min-h-12 items-center justify-end pr-3">
+                  </div>
+                </TableCell>
+                <TableCell className="p-0">
+                  <div className="flex min-h-12 items-center justify-end px-3">
                     <CourseRowActions
                       course={{
                         code: course.code,
@@ -187,12 +173,12 @@ export function CourseDirectory({
                       }}
                     />
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </DataTableShell>
   );
 }

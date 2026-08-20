@@ -5,13 +5,13 @@ import { cn } from "@/lib/cn";
 export function Skeleton({
   className,
   ...rest
-}: ComponentPropsWithoutRef<"div">) {
+}: ComponentPropsWithoutRef<"span">) {
   return (
-    <div
+    <span
       data-slot="skeleton"
       aria-hidden="true"
       className={cn(
-        "animate-pulse rounded-md bg-zinc-200/65 motion-reduce:animate-none",
+        "block animate-pulse rounded-md bg-zinc-200/65 motion-reduce:animate-none",
         className,
       )}
       {...rest}
