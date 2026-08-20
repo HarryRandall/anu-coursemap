@@ -33,12 +33,14 @@ export function CourseDirectory({
   page,
   pageSize,
   total,
+  filtered = false,
   searchParams,
 }: {
   courses: CatalogueCourse[];
   page: number;
   pageSize: number;
   total: number;
+  filtered?: boolean;
   searchParams: Record<string, string | undefined>;
 }) {
   return (
@@ -79,8 +81,14 @@ export function CourseDirectory({
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={5} className="p-0">
                 <DataTableEmpty
-                  title="No published courses"
-                  description="Published courses will appear here when the catalogue is ready."
+                  title={
+                    filtered ? "No matching courses" : "No published courses"
+                  }
+                  description={
+                    filtered
+                      ? "Try a different search or clear one of the filters."
+                      : "Published courses will appear here when the catalogue is ready."
+                  }
                 />
               </TableCell>
             </TableRow>
