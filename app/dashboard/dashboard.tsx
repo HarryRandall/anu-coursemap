@@ -16,7 +16,14 @@ import { UnitsTrendChart } from "@/components/dashboard/units-trend-chart";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
 import {
   Empty,
@@ -155,32 +162,34 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
       <div className="mx-auto max-w-6xl space-y-5">
         <h1 className="sr-only">{degree.name}</h1>
 
-        <Card className="overflow-hidden p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <Card className="overflow-hidden">
+          <CardHeader className="flex-col items-stretch p-5 sm:flex-row sm:items-start sm:p-6">
             <div>
-              <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <CardTitle className="text-xs tracking-wide text-zinc-500 uppercase">
                 Degree progress
-              </p>
+              </CardTitle>
               <p className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
                 {progress.percent}% complete
               </p>
-              <p className="mt-1 text-sm text-zinc-500">
+              <CardDescription className="mt-1 text-sm">
                 {progress.completed} of {progress.total} units completed
-              </p>
+              </CardDescription>
             </div>
-            <ButtonLink href="/plan" size="sm" variant="secondary">
-              <Map size={15} /> Edit plan
-            </ButtonLink>
-          </div>
-          <div className="mt-5">
+            <CardAction>
+              <ButtonLink href="/plan" size="sm" variant="secondary">
+                <Map size={15} /> Edit plan
+              </ButtonLink>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="sm:px-6 sm:pb-6">
             <DegreeProgressBar progress={progress} compact />
-          </div>
-          {!catalogue.programmeRequirementsImported && (
-            <p className="mt-4 text-xs leading-5 text-zinc-500">
-              Programme rule coverage will appear once the official source is
-              imported and reviewed.
-            </p>
-          )}
+            {!catalogue.programmeRequirementsImported && (
+              <p className="mt-4 text-xs leading-5 text-zinc-500">
+                Programme rule coverage will appear once the official source is
+                imported and reviewed.
+              </p>
+            )}
+          </CardContent>
         </Card>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -223,19 +232,16 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
         <div className="grid gap-5 lg:grid-cols-3">
           <TermLoadChart terms={termLoads} currentTermId={currentTermId} />
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4">
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-900">
-                  Next in your plan
-                </h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  Your next scheduled courses, drawn from the saved plan.
-                </p>
-              </div>
-              <ButtonLink href="/plan" size="sm" variant="secondary">
-                Edit plan
-              </ButtonLink>
-            </div>
+            <CardHeader
+              className="items-center border-b border-zinc-100"
+              title="Next in your plan"
+              description="Your next scheduled courses, drawn from the saved plan."
+              action={
+                <ButtonLink href="/plan" size="sm" variant="secondary">
+                  Edit plan
+                </ButtonLink>
+              }
+            />
             {nextCourses.length === 0 ? (
               <Empty className="rounded-none px-5 py-12">
                 <EmptyHeader>
@@ -291,30 +297,30 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
               </div>
             )}
           </Card>
-          <Card className="p-5">
-            <div className="flex items-start gap-3">
-              <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-600">
-                <ListChecks size={17} />
-              </span>
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-900">
-                  Plan checks
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">
-                  {blocked.length === 0
-                    ? "No prerequisite conflicts are currently detected in imported course data."
-                    : `${blocked.length} ${blocked.length === 1 ? "course needs" : "courses need"} a prerequisite check before enrolment.`}
-                </p>
-                <ButtonLink
-                  href="/requirements"
-                  size="sm"
-                  variant="secondary"
-                  className="mt-3"
-                >
-                  Review requirements
-                </ButtonLink>
+          <Card>
+            <CardHeader className="p-5">
+              <div className="flex items-start gap-3">
+                <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-600">
+                  <ListChecks size={17} aria-hidden="true" />
+                </span>
+                <div>
+                  <CardTitle>Plan checks</CardTitle>
+                  <CardDescription className="mt-1 leading-5">
+                    {blocked.length === 0
+                      ? "No prerequisite conflicts are currently detected in imported course data."
+                      : `${blocked.length} ${blocked.length === 1 ? "course needs" : "courses need"} a prerequisite check before enrolment.`}
+                  </CardDescription>
+                  <ButtonLink
+                    href="/requirements"
+                    size="sm"
+                    variant="secondary"
+                    className="mt-3"
+                  >
+                    Review requirements
+                  </ButtonLink>
+                </div>
               </div>
-            </div>
+            </CardHeader>
           </Card>
         </div>
       </div>

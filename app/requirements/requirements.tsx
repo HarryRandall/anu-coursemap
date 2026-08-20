@@ -6,7 +6,13 @@ import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
 import {
   Empty,
@@ -71,27 +77,27 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
           </Card>
         ) : (
           <>
-            <Card className="p-5">
-              <div className="flex items-start justify-between gap-6">
-                <div>
-                  <h2 className="text-sm font-semibold text-zinc-900">
-                    Overall unit progress
-                  </h2>
+            <Card>
+              <CardHeader className="px-5 pt-5 pb-4">
+                <CardTitle>Overall unit progress</CardTitle>
+                <CardAction>
+                  <strong className="text-2xl tracking-tight text-zinc-950">
+                    {progress.percent}%
+                  </strong>
+                </CardAction>
+              </CardHeader>
+              <CardContent>
+                <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                  <span
+                    className="block h-full bg-brand-700"
+                    style={{ width: `${Math.min(100, progress.percent)}%` }}
+                  />
                 </div>
-                <strong className="text-2xl tracking-tight text-zinc-950">
-                  {progress.percent}%
-                </strong>
-              </div>
-              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-zinc-100">
-                <span
-                  className="block h-full bg-brand-700"
-                  style={{ width: `${Math.min(100, progress.percent)}%` }}
-                />
-              </div>
-              <p className="mt-3 text-xs text-zinc-600">
-                {progress.completed} completed units · {progress.planned}{" "}
-                planned units · {progress.remaining} units still to plan
-              </p>
+                <p className="mt-3 text-xs text-zinc-600">
+                  {progress.completed} completed units · {progress.planned}{" "}
+                  planned units · {progress.remaining} units still to plan
+                </p>
+              </CardContent>
             </Card>
 
             {!catalogue.programmeRequirementsImported && (
@@ -110,14 +116,11 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
             )}
 
             <Card className="overflow-hidden">
-              <div className="border-b border-zinc-100 px-5 py-4">
-                <h2 className="text-sm font-semibold text-zinc-900">
-                  Courses currently in your plan
-                </h2>
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  Published course data only.
-                </p>
-              </div>
+              <CardHeader
+                className="border-b border-zinc-100"
+                title="Courses currently in your plan"
+                description="Published course data only."
+              />
               {courses.length === 0 ? (
                 <Empty className="rounded-none">
                   <EmptyHeader>

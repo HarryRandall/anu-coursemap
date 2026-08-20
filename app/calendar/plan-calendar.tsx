@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader } from "@/components/ui/card";
 import { CourseToken } from "@/components/ui/course-token";
 import {
   Empty,
@@ -70,17 +70,16 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
           <div className="space-y-4">
             {groups.map(({ term, courses }) => (
               <Card key={term.id} className="overflow-hidden">
-                <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4">
-                  <div>
-                    <h2 className="text-sm font-semibold text-zinc-900">
-                      {term.name} {term.year}
-                    </h2>
-                    <p className="mt-0.5 text-xs text-zinc-500">{term.dates}</p>
-                  </div>
-                  <span className="text-xs text-zinc-500">
-                    {courses.length} course{courses.length === 1 ? "" : "s"}
-                  </span>
-                </div>
+                <CardHeader
+                  className="items-center border-b border-zinc-100"
+                  title={`${term.name} ${term.year}`}
+                  description={term.dates}
+                  action={
+                    <span className="text-xs text-zinc-500">
+                      {courses.length} course{courses.length === 1 ? "" : "s"}
+                    </span>
+                  }
+                />
                 <div className="divide-y divide-zinc-100">
                   {courses.map(({ attempt, course }) => (
                     <div
