@@ -3,6 +3,7 @@
 import {
   Check,
   CheckCircle2,
+  ChevronRight,
   CircleAlert,
   ExternalLink,
   Pencil,
@@ -28,6 +29,7 @@ import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { JsonCode } from "@/components/ui/json-code";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 type DraftFields = Omit<CourseReviewDraftInput, "catalogueYear" | "code">;
@@ -637,13 +639,21 @@ export function CourseReview({
                   />
                 </dl>
               </div>
-              <details className="border-t border-zinc-200">
-                <summary className="cursor-pointer px-5 py-4 text-sm font-semibold text-zinc-800 outline-none focus-visible:ring-2 focus-visible:ring-brand-400 sm:px-6">
-                  JSON representation
+              <details className="group border-t border-zinc-200">
+                <summary className="flex min-h-13 cursor-pointer list-none items-center gap-3 px-5 py-3 text-sm font-semibold text-zinc-800 transition-colors outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-inset sm:px-6 [&::-webkit-details-marker]:hidden">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <ChevronRight
+                      aria-hidden="true"
+                      className="shrink-0 text-zinc-400 transition-transform group-open:rotate-90"
+                      size={16}
+                    />
+                    JSON representation
+                  </span>
                 </summary>
-                <pre className="max-h-[65vh] overflow-auto border-t border-zinc-200 bg-zinc-950 p-5 font-mono text-xs leading-6 text-zinc-100 sm:p-6">
-                  {JSON.stringify(parsedOutput, null, 2)}
-                </pre>
+                <JsonCode
+                  label="Parsed course data as JSON"
+                  value={parsedOutput}
+                />
               </details>
             </Panel>
           </TabsContent>
