@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type {
   AdminCourseRecord,
   PaginatedAdminResult,
@@ -9,8 +10,10 @@ import {
   AdminRecordTable,
   type AdminTableColumn,
 } from "@/components/admin/admin-record-table";
+import { AdminRowActions } from "@/components/admin/admin-row-actions";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FilterBar } from "@/components/ui/filter-bar";
 
 const columns: AdminTableColumn<AdminCourseRecord>[] = [
@@ -19,17 +22,14 @@ const columns: AdminTableColumn<AdminCourseRecord>[] = [
     label: "Course",
     required: true,
     cell: (record) => (
-      <Link
-        className="block rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-        href={`/admin/courses/${record.code}`}
-      >
+      <>
         <span className="block font-medium text-zinc-950 group-hover:text-brand-700">
           {record.title}
         </span>
         <span className="mt-0.5 block font-mono text-xs text-zinc-500">
           {record.code}
         </span>
-      </Link>
+      </>
     ),
   },
   {
@@ -96,6 +96,41 @@ export function AdminCourseList({
   searchParams: Record<string, string | undefined>;
   subjects: string[];
 }) {
+  const router = useRouter();
+  const [resyncing, setResyncing] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
+
+  async function resync(record: AdminCourseRecord) {
+    setResyncing(record.code);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/admin/catalogue/imports/courses", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          catalogueYear: record.year,
+          courseCodes: [record.code],
+        }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Resync failed.");
+      setNotice({ ok: true, text: `${record.code} was resynced from ANU.` });
+      router.refresh();
+    } catch (error) {
+      setNotice({
+        ok: false,
+        text:
+          error instanceof Error
+            ? error.message
+            : `${record.code} could not be resynced.`,
+      });
+    } finally {
+      setResyncing(null);
+    }
+  }
+
   return (
     <AppShell admin>
       <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
@@ -128,7 +163,27 @@ export function AdminCourseList({
           ]}
         />
 
+        {notice ? (
+          <Alert role="status" tone={notice.ok ? "success" : "danger"}>
+            <AlertDescription>{notice.text}</AlertDescription>
+          </Alert>
+        ) : null}
+
         <AdminRecordTable
+          actions={(record) => (
+            <AdminRowActions
+              label={record.code}
+              onResync={() => void resync(record)}
+              openHref={`/admin/courses/${record.code}`}
+              resyncing={resyncing === record.code}
+              sourceUrl={`https://programsandcourses.anu.edu.au/${record.year}/course/${record.code}`}
+              studentHref={
+                record.publicationStatus === "published"
+                  ? `/courses/${record.code}`
+                  : undefined
+              }
+            />
+          )}
           caption="Imported course versions"
           columns={columns}
           emptyDescription="Clear the search, choose a different filter, or run an import to bring course pages in from ANU."

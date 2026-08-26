@@ -76,7 +76,7 @@ export function Pagination({
           : `Viewing ${start.toLocaleString("en-AU")}–${end.toLocaleString("en-AU")} of ${total.toLocaleString("en-AU")} ${itemName}`}
       </p>
       {pageCount > 1 ? (
-        <div className="flex items-center gap-0.5">
+        <div className="ml-auto flex items-center gap-0.5">
           {safePage > 1 ? (
             <Link className={stepClasses} href={href(safePage - 1)}>
               <ChevronLeft aria-hidden="true" size={16} />

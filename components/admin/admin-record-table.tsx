@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, Settings2 } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useMemo, useSyncExternalStore, type ReactNode } from "react";
 import {
   DataTableEmpty,
@@ -79,6 +79,7 @@ function parseHidden(raw: string): string[] {
  * convenience, so a browser that refuses storage simply shows every column.
  */
 export function AdminRecordTable<Row>({
+  actions,
   caption,
   columns,
   emptyDescription,
@@ -94,6 +95,8 @@ export function AdminRecordTable<Row>({
   storageKey,
   total,
 }: {
+  /** Per-row menu rendered in the trailing column. */
+  actions?: (row: Row) => ReactNode;
   caption: string;
   columns: AdminTableColumn<Row>[];
   emptyDescription: string;
@@ -162,7 +165,7 @@ export function AdminRecordTable<Row>({
                     className="grid size-7 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-200/70 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
                     type="button"
                   >
-                    <Settings2 aria-hidden="true" size={15} />
+                    <Settings aria-hidden="true" size={15} />
                     <span className="sr-only">Choose columns</span>
                   </button>
                 </DropdownMenuTrigger>
@@ -198,8 +201,8 @@ export function AdminRecordTable<Row>({
             </TableRow>
           ) : (
             rows.map((row) => (
-              <TableRow className="group" key={rowKey(row)}>
-                {visible.map((column) => (
+              <TableRow className="group relative" key={rowKey(row)}>
+                {visible.map((column, index) => (
                   <TableCell
                     className={cn(
                       column.align === "right" && "text-right",
@@ -207,17 +210,22 @@ export function AdminRecordTable<Row>({
                     )}
                     key={column.id}
                   >
-                    {column.cell(row)}
+                    {index === 0 ? (
+                      // A stretched link makes the whole row clickable while
+                      // keeping one real anchor for keyboard and screen readers.
+                      <Link
+                        className="rounded-xs outline-none after:absolute after:inset-0 after:content-[''] focus-visible:ring-2 focus-visible:ring-brand-400"
+                        href={rowHref(row)}
+                      >
+                        {column.cell(row)}
+                      </Link>
+                    ) : (
+                      column.cell(row)
+                    )}
                   </TableCell>
                 ))}
-                <TableCell className="w-12 text-right">
-                  <Link
-                    aria-label={`Open ${rowKey(row)}`}
-                    className="ml-auto grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                    href={rowHref(row)}
-                  >
-                    <ChevronRight aria-hidden="true" size={16} />
-                  </Link>
+                <TableCell className="relative z-10 w-12 text-right">
+                  {actions ? actions(row) : null}
                 </TableCell>
               </TableRow>
             ))

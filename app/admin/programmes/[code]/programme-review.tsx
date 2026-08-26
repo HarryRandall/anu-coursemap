@@ -165,7 +165,7 @@ export function ProgrammeReview({
         ) : null
       }
       admin
-      currentBreadcrumbLabel={`${record.code} ${record.name}`}
+      currentBreadcrumbLabel={record.name}
     >
       <div className="mx-auto w-full max-w-5xl min-w-0 space-y-4 pb-10">
         <h1 className="sr-only">

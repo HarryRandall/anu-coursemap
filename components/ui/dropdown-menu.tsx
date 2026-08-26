@@ -62,14 +62,22 @@ export function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       checked={checked}
       className={cn(
-        "relative flex min-h-8 cursor-default items-center rounded-md py-1.5 pr-2.5 pl-8 text-sm text-zinc-700 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-zinc-100 data-[highlighted]:text-zinc-950",
+        "group/checkbox relative flex min-h-9 cursor-default items-center rounded-md py-1.5 pr-3 pl-9 text-sm font-medium text-zinc-800 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-zinc-100 data-[highlighted]:text-zinc-950",
         className,
       )}
       {...props}
     >
-      <span className="pointer-events-none absolute left-2 grid size-4 place-items-center">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute left-2.5 grid size-4 place-items-center rounded-full border text-white transition-colors",
+          checked
+            ? "border-zinc-900 bg-zinc-900"
+            : "border-zinc-300 bg-transparent",
+        )}
+      >
         <DropdownMenuPrimitive.ItemIndicator>
-          <Check size={14} aria-hidden="true" />
+          <Check size={11} strokeWidth={3.5} />
         </DropdownMenuPrimitive.ItemIndicator>
       </span>
       {children}

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type {
   AdminStructureRecord,
   PaginatedAdminResult,
@@ -9,6 +8,7 @@ import {
   AdminRecordTable,
   type AdminTableColumn,
 } from "@/components/admin/admin-record-table";
+import { AdminRowActions } from "@/components/admin/admin-row-actions";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/ui/filter-bar";
@@ -19,17 +19,14 @@ const columns: AdminTableColumn<AdminStructureRecord>[] = [
     label: "Programme",
     required: true,
     cell: (record) => (
-      <Link
-        className="block rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
-        href={`/admin/programmes/${record.code}`}
-      >
+      <>
         <span className="block font-medium text-zinc-950 group-hover:text-brand-700">
           {record.name}
         </span>
         <span className="mt-0.5 block font-mono text-xs text-zinc-500">
           {record.code}
         </span>
-      </Link>
+      </>
     ),
   },
   {
@@ -120,6 +117,13 @@ export function ProgrammeList({
         />
 
         <AdminRecordTable
+          actions={(record) => (
+            <AdminRowActions
+              label={record.code}
+              openHref={`/admin/programmes/${record.code}`}
+              sourceUrl={`https://programsandcourses.anu.edu.au/${record.year}/program/${record.code}`}
+            />
+          )}
           caption="Imported programme versions"
           columns={columns}
           emptyDescription="Clear the search, choose a different filter, or run an import to bring programmes in from ANU."

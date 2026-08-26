@@ -411,7 +411,7 @@ export function CourseReview({
           </>
         }
         admin
-        currentBreadcrumbLabel={`${record.code} ${record.title}`}
+        currentBreadcrumbLabel={record.title}
         tabs={<CourseReviewTabs />}
       >
         <div className="mx-auto w-full max-w-6xl min-w-0 pb-10">
