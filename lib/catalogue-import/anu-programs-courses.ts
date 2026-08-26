@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { load, type CheerioAPI } from "cheerio";
+import { load, type Cheerio, type CheerioAPI } from "cheerio";
+import type { AnyNode } from "domhandler";
 import {
   parseCatalogueManifest,
   type CatalogueAcademicPeriod,
@@ -361,11 +362,25 @@ function splitRequisiteText(rawText: string | null) {
   };
 }
 
+/**
+ * ANU wraps course codes in links, and a plain text() run glues the code to
+ * the word that follows it, producing wording such as "ACST4031and be
+ * enrolled". Links and block elements are separated before the text is read,
+ * then punctuation is pulled back onto the preceding word.
+ */
+function readRequisiteText($: CheerioAPI, root: Cheerio<AnyNode>) {
+  const clone = root.clone();
+  clone.find("a, br, p, li, div").each((_, element) => {
+    $(element).before(" ").after(" ");
+  });
+  return normaliseText(clone.text()).replace(/\s+([,.;:)])/gu, "$1");
+}
+
 function extractRequisites($: CheerioAPI, diagnostics: CatalogueDiagnostic[]) {
   const requisite = $("#incompatibility").nextAll(".requisite").first();
   const fallback = $(".requisite").first();
   const root = requisite.length > 0 ? requisite : fallback;
-  const extractedText = nullableText(root.text());
+  const extractedText = nullableText(readRequisiteText($, root));
   const observed = extractedText !== null;
   const rawText =
     extractedText && !/^none\.?$/i.test(extractedText) ? extractedText : null;

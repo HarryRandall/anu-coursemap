@@ -29,6 +29,7 @@ export type ImportActivityResult =
   "changed" | "unchanged" | "review" | "failed";
 
 export type ImportActivityRow = {
+  checkedAt: string;
   code: string;
   href: string;
   pageCount: number;
@@ -87,6 +88,7 @@ const DEMO_CHECKED_AT = "2026-08-20T02:21:00+10:00";
 export const DEMO_IMPORTS_DASHBOARD_FIXTURE: ImportsDashboardData = {
   activity: [
     {
+      checkedAt: DEMO_CHECKED_AT,
       code: "COMP1100",
       href: "/admin/courses/COMP1100",
       pageCount: 2,
@@ -97,6 +99,7 @@ export const DEMO_IMPORTS_DASHBOARD_FIXTURE: ImportsDashboardData = {
       year: 2026,
     },
     {
+      checkedAt: DEMO_CHECKED_AT,
       code: "COMP2100",
       href: "/admin/courses/COMP2100",
       pageCount: 2,
@@ -107,6 +110,7 @@ export const DEMO_IMPORTS_DASHBOARD_FIXTURE: ImportsDashboardData = {
       year: 2026,
     },
     {
+      checkedAt: DEMO_CHECKED_AT,
       code: "COMP3600",
       href: "/admin/courses/COMP3600",
       pageCount: 2,
@@ -117,6 +121,7 @@ export const DEMO_IMPORTS_DASHBOARD_FIXTURE: ImportsDashboardData = {
       year: 2026,
     },
     {
+      checkedAt: DEMO_CHECKED_AT,
       code: "COMP8430",
       href: "/admin/courses/COMP8430",
       pageCount: 2,
@@ -469,6 +474,7 @@ export async function loadImportsDashboard(): Promise<ImportsDashboardData> {
 
       if (run.id === latestRun.id) {
         activity.push({
+          checkedAt,
           code,
           href: `/admin/courses/${code}`,
           pageCount: uniqueNumbers(group.map((item) => item.source_document_id))

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type AdminCourseRecord = {
   code: string;
+  publicId: string;
   id: number;
   publicationStatus: string;
   reviewState: string;
@@ -16,6 +17,7 @@ export type AdminCourseRecord = {
 
 export type AdminStructureRecord = {
   code: string;
+  publicId: string;
   description: string;
   id: number;
   kind: string;
@@ -24,14 +26,6 @@ export type AdminStructureRecord = {
   reviewState: string;
   units: number;
   year: number;
-};
-
-export type AdminRuleRecord = {
-  code: string;
-  id: number;
-  kind: string;
-  reviewState: string;
-  sourceText: string;
 };
 
 export type PaginatedAdminResult<T> = {
@@ -72,6 +66,7 @@ export type AdminCourseReviewOffering = {
 
 export type AdminCourseReviewRecord = {
   code: string;
+  publicId: string;
   convener: string | null;
   deliverySummary: string | null;
   description: string;
@@ -104,7 +99,7 @@ type CourseVersionRow = {
   title: string;
   units: number;
 };
-type CourseRow = { code: string; id: number };
+type CourseRow = { code: string; id: number; public_id: string };
 type StructureVersionRow = {
   description: string;
   id: number;
@@ -114,13 +109,11 @@ type StructureVersionRow = {
   structure_id: number;
   units: number;
 };
-type StructureRow = { code: string; id: number; kind: string };
-type RuleRow = {
-  course_version_id: number;
+type StructureRow = {
+  code: string;
   id: number;
-  review_state: string;
-  rule_kind: string;
-  source_text: string;
+  kind: string;
+  public_id: string;
 };
 
 type CourseReviewVersionRow = {
@@ -184,6 +177,10 @@ async function currentCatalogueYear() {
   return data;
 }
 
+/** Admin routes address records by public_id; codes stay valid as a redirect. */
+export const PUBLIC_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
 function safePage(value?: number) {
   return value !== undefined && Number.isFinite(value)
     ? Math.max(1, Math.floor(value))
@@ -199,14 +196,37 @@ function safeQuery(value?: string) {
   );
 }
 
+export type AdminCourseListStatus =
+  "all" | "draft" | "published" | "archived" | "needs-review" | "verified";
+
+export async function loadAdminCourseSubjects(): Promise<string[]> {
+  if (isDemoMode()) return [];
+  const [supabase, year] = await Promise.all([
+    createClient(),
+    currentCatalogueYear(),
+  ]);
+  if (!year) return [];
+  const { data, error } = await supabase
+    .from("course_versions")
+    .select("subject")
+    .eq("catalogue_year_id", year.id)
+    .limit(5000);
+  if (error) return [];
+  return [...new Set((data ?? []).map((row) => row.subject))].sort();
+}
+
 export async function loadAdminCoursePage({
   page,
   pageSize = 24,
   query,
+  status = "all",
+  subject,
 }: {
   page?: number;
   pageSize?: number;
   query?: string;
+  status?: AdminCourseListStatus;
+  subject?: string;
 } = {}): Promise<PaginatedAdminResult<AdminCourseRecord>> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
@@ -257,6 +277,16 @@ export async function loadAdminCoursePage({
       `title.ilike.${pattern},subject.ilike.${pattern}${codeClause}`,
     );
   }
+  if (subject) versionsQuery = versionsQuery.eq("subject", subject);
+  if (status === "archived") {
+    versionsQuery = versionsQuery.eq("publication_status", "archived");
+  } else if (status === "draft" || status === "published") {
+    versionsQuery = versionsQuery.eq("publication_status", status);
+  } else if (status === "verified") {
+    versionsQuery = versionsQuery.eq("review_state", "verified");
+  } else if (status === "needs-review") {
+    versionsQuery = versionsQuery.neq("review_state", "verified");
+  }
   const start = (currentPage - 1) * currentPageSize;
   const {
     data: versions,
@@ -270,22 +300,26 @@ export async function loadAdminCoursePage({
   const rows = (versions ?? []) as CourseVersionRow[];
   const courseIds = [...new Set(rows.map((row) => row.course_id))];
   const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
+    ? await supabase
+        .from("courses")
+        .select("code,id,public_id")
+        .in("id", courseIds)
     : { data: [], error: null };
   if (coursesError) throw coursesError;
-  const codeById = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
+  const courseById = new Map(
+    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course]),
   );
   return {
     page: currentPage,
     pageSize: currentPageSize,
     total: count ?? 0,
     records: rows.flatMap((row) => {
-      const code = codeById.get(row.course_id);
-      return code
+      const course = courseById.get(row.course_id);
+      return course
         ? [
             {
-              code,
+              code: course.code,
+              publicId: course.public_id,
               id: row.id,
               publicationStatus: row.publication_status,
               reviewState: row.review_state,
@@ -304,10 +338,14 @@ export async function loadAdminStructurePage({
   page,
   pageSize = 24,
   query,
+  status = "all",
+  kind,
 }: {
   page?: number;
   pageSize?: number;
   query?: string;
+  status?: AdminCourseListStatus;
+  kind?: string;
 } = {}): Promise<PaginatedAdminResult<AdminStructureRecord>> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
@@ -343,6 +381,14 @@ export async function loadAdminStructurePage({
   const structureIds = (matchingStructures ?? []).map(
     (structure) => structure.id,
   );
+  const { data: kindStructures, error: kindStructuresError } = kind
+    ? await supabase
+        .from("academic_structures")
+        .select("id")
+        .eq("kind", kind)
+        .limit(2000)
+    : { data: null, error: null };
+  if (kindStructuresError) throw kindStructuresError;
 
   let versionsQuery = supabase
     .from("academic_structure_versions")
@@ -358,6 +404,21 @@ export async function loadAdminStructurePage({
       : "";
     versionsQuery = versionsQuery.or(`name.ilike.${pattern}${codeClause}`);
   }
+  if (kindStructures) {
+    const kindIds = kindStructures.map((structure) => structure.id);
+    versionsQuery = kindIds.length
+      ? versionsQuery.in("structure_id", kindIds)
+      : versionsQuery.eq("structure_id", -1);
+  }
+  if (status === "archived") {
+    versionsQuery = versionsQuery.eq("publication_status", "archived");
+  } else if (status === "draft" || status === "published") {
+    versionsQuery = versionsQuery.eq("publication_status", status);
+  } else if (status === "verified") {
+    versionsQuery = versionsQuery.eq("review_state", "verified");
+  } else if (status === "needs-review") {
+    versionsQuery = versionsQuery.neq("review_state", "verified");
+  }
   const start = (currentPage - 1) * currentPageSize;
   const {
     data: versions,
@@ -372,7 +433,7 @@ export async function loadAdminStructurePage({
   const { data: structures, error: structuresError } = ids.length
     ? await supabase
         .from("academic_structures")
-        .select("code,id,kind")
+        .select("code,id,kind,public_id")
         .in("id", ids)
     : { data: [], error: null };
   if (structuresError) throw structuresError;
@@ -392,6 +453,7 @@ export async function loadAdminStructurePage({
         ? [
             {
               code: structure.code,
+              publicId: structure.public_id,
               description: row.description,
               id: row.id,
               kind: structure.kind,
@@ -400,96 +462,6 @@ export async function loadAdminStructurePage({
               reviewState: row.review_state,
               units: row.units,
               year: year.year,
-            },
-          ]
-        : [];
-    }),
-  };
-}
-
-export async function loadAdminRulePage({
-  page,
-  pageSize = 30,
-}: {
-  page?: number;
-  pageSize?: number;
-} = {}): Promise<PaginatedAdminResult<AdminRuleRecord>> {
-  const currentPage = safePage(page);
-  const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
-  if (isDemoMode()) {
-    return {
-      page: currentPage,
-      pageSize: currentPageSize,
-      records: [],
-      total: 0,
-    };
-  }
-  const [supabase, year] = await Promise.all([
-    createClient(),
-    currentCatalogueYear(),
-  ]);
-  if (!year) {
-    return {
-      page: currentPage,
-      pageSize: currentPageSize,
-      records: [],
-      total: 0,
-    };
-  }
-  const start = (currentPage - 1) * currentPageSize;
-  const {
-    data: rules,
-    count,
-    error: rulesError,
-  } = await supabase
-    .from("course_rules")
-    .select("course_version_id,id,review_state,rule_kind,source_text", {
-      count: "exact",
-    })
-    .eq("catalogue_year_id", year.id)
-    .order("id")
-    .range(start, start + currentPageSize - 1);
-  if (rulesError) throw rulesError;
-  const ruleRows = (rules ?? []) as RuleRow[];
-  const versionIds = [
-    ...new Set(ruleRows.map((rule) => rule.course_version_id)),
-  ];
-  const { data: versions, error: versionsError } = versionIds.length
-    ? await supabase
-        .from("course_versions")
-        .select("course_id,id")
-        .in("id", versionIds)
-    : { data: [], error: null };
-  if (versionsError) throw versionsError;
-  const courseIds = [
-    ...new Set((versions ?? []).map((version) => version.course_id)),
-  ];
-  const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
-    : { data: [], error: null };
-  if (coursesError) throw coursesError;
-  const codeByCourseId = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
-  );
-  const courseIdByVersionId = new Map(
-    (versions ?? []).map((version) => [version.id, version.course_id]),
-  );
-  return {
-    page: currentPage,
-    pageSize: currentPageSize,
-    total: count ?? 0,
-    records: ruleRows.flatMap((rule) => {
-      const code = codeByCourseId.get(
-        courseIdByVersionId.get(rule.course_version_id) ?? -1,
-      );
-      return code
-        ? [
-            {
-              code,
-              id: rule.id,
-              kind: rule.rule_kind,
-              reviewState: rule.review_state,
-              sourceText: rule.source_text,
             },
           ]
         : [];
@@ -596,19 +568,23 @@ export async function loadAdminCourseRecords(): Promise<AdminCourseRecord[]> {
   const rows = (versions ?? []) as CourseVersionRow[];
   const courseIds = [...new Set(rows.map((row) => row.course_id))];
   const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
+    ? await supabase
+        .from("courses")
+        .select("code,id,public_id")
+        .in("id", courseIds)
     : { data: [], error: null };
   if (coursesError) throw coursesError;
-  const codeById = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
+  const courseById = new Map(
+    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course]),
   );
 
   return rows.flatMap((row) => {
-    const code = codeById.get(row.course_id);
-    return code
+    const course = courseById.get(row.course_id);
+    return course
       ? [
           {
-            code,
+            code: course.code,
+            publicId: course.public_id,
             id: row.id,
             publicationStatus: row.publication_status,
             reviewState: row.review_state,
@@ -628,12 +604,15 @@ export async function loadAdminCourseRecords(): Promise<AdminCourseRecord[]> {
  * review never loses provenance.
  */
 export async function loadAdminCourseReview(
-  courseCode: string,
+  identifier: string,
 ): Promise<AdminCourseReviewRecord | null> {
-  const code = courseCode.trim().toUpperCase();
-  if (!/^[A-Z]{4}\d{4}$/.test(code)) return null;
+  const value = identifier.trim();
+  const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
+  const code = publicId ? null : value.toUpperCase();
+  if (!publicId && !/^[A-Z]{4}\d{4}$/.test(code ?? "")) return null;
 
   if (isDemoMode()) {
+    if (!code) return null;
     const { courseByCode } = await import("@/lib/catalogue");
     const course = courseByCode(code);
     if (!course) return null;
@@ -668,6 +647,7 @@ export async function loadAdminCourseReview(
 
     return {
       code: course.code,
+      publicId: course.code,
       convener: course.convener,
       deliverySummary: course.delivery,
       description: course.description,
@@ -712,8 +692,8 @@ export async function loadAdminCourseReview(
 
   const { data: course, error: courseError } = await supabase
     .from("courses")
-    .select("id,code")
-    .eq("code", code)
+    .select("id,code,public_id")
+    .eq(publicId ? "public_id" : "code", publicId ?? (code as string))
     .maybeSingle();
   if (courseError) throw courseError;
   if (!course) return null;
@@ -782,7 +762,8 @@ export async function loadAdminCourseReview(
 
   const source = sourceResult.data as SourceDocumentRow | null;
   return {
-    code,
+    code: course.code,
+    publicId: course.public_id,
     convener: versionRow.convener,
     deliverySummary: versionRow.delivery_summary,
     description: versionRow.description,
@@ -853,7 +834,7 @@ export async function loadAdminStructureRecords(): Promise<
   const { data: structures, error: structuresError } = structureIds.length
     ? await supabase
         .from("academic_structures")
-        .select("code,id,kind")
+        .select("code,id,kind,public_id")
         .in("id", structureIds)
     : { data: [], error: null };
   if (structuresError) throw structuresError;
@@ -870,6 +851,7 @@ export async function loadAdminStructureRecords(): Promise<
       ? [
           {
             code: structure.code,
+            publicId: structure.public_id,
             description: row.description,
             id: row.id,
             kind: structure.kind,
@@ -884,63 +866,210 @@ export async function loadAdminStructureRecords(): Promise<
   });
 }
 
-export async function loadAdminRuleRecords(): Promise<AdminRuleRecord[]> {
-  if (isDemoMode()) return [];
+export type AdminStructureReviewCondition = {
+  courseCode: string | null;
+  id: number;
+  kind: string;
+  maximumLevel: number | null;
+  minimumLevel: number | null;
+  minimumUnits: number | null;
+  sourceText: string | null;
+  subjectCode: string | null;
+  targetStructureCode: string | null;
+};
+
+export type AdminStructureReviewGroup = {
+  code: string;
+  conditions: AdminStructureReviewCondition[];
+  description: string | null;
+  id: number;
+  minimumCount: number | null;
+  minimumUnits: number | null;
+  name: string;
+  operator: string;
+  parentGroupId: number | null;
+};
+
+export type AdminStructureReviewRecord = {
+  code: string;
+  publicId: string;
+  description: string;
+  groups: AdminStructureReviewGroup[];
+  id: number;
+  kind: string;
+  name: string;
+  publicationStatus: string;
+  reviewState: string;
+  source: {
+    canonicalUrl: string;
+    contentHash: string | null;
+    fetchedAt: string | null;
+    lastModified: string | null;
+  } | null;
+  units: number;
+  year: number;
+};
+
+/**
+ * Loads one programme version with its requirement tree so a reviewer can
+ * check the imported structure against the ANU page before publishing it.
+ */
+export async function loadAdminStructureReview(
+  identifier: string,
+): Promise<AdminStructureReviewRecord | null> {
+  const value = identifier.trim();
+  const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
+  const code = publicId ? null : value.toUpperCase();
+  if (!publicId && !/^[A-Z0-9][A-Z0-9-]*$/.test(code ?? "")) return null;
+  if (isDemoMode()) return null;
+
   const [supabase, year] = await Promise.all([
     createClient(),
     currentCatalogueYear(),
   ]);
-  if (!year) return [];
+  if (!year) return null;
 
-  const [
-    { data: rules, error: rulesError },
-    { data: versions, error: versionsError },
-  ] = await Promise.all([
-    supabase
-      .from("course_rules")
-      .select("course_version_id,id,review_state,rule_kind,source_text")
-      .eq("catalogue_year_id", year.id)
-      .order("id"),
-    supabase
-      .from("course_versions")
-      .select("course_id,id")
-      .eq("catalogue_year_id", year.id),
-  ]);
-  if (rulesError) throw rulesError;
-  if (versionsError) throw versionsError;
+  const { data: structure, error: structureError } = await supabase
+    .from("academic_structures")
+    .select("id,code,kind,public_id")
+    .eq(publicId ? "public_id" : "code", publicId ?? (code as string))
+    .maybeSingle();
+  if (structureError) throw structureError;
+  if (!structure) return null;
 
-  const versionRows = (versions ?? []) as Array<{
-    course_id: number;
-    id: number;
-  }>;
-  const courseIds = [
-    ...new Set(versionRows.map((version) => version.course_id)),
-  ];
-  const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
+  const { data: version, error: versionError } = await supabase
+    .from("academic_structure_versions")
+    .select("description,id,name,publication_status,review_state,units")
+    .eq("structure_id", structure.id)
+    .eq("catalogue_year_id", year.id)
+    .maybeSingle();
+  if (versionError) throw versionError;
+  if (!version) return null;
+
+  const { data: groupRows, error: groupsError } = await supabase
+    .from("requirement_groups")
+    .select(
+      "code,description,id,minimum_count,minimum_units,name,operator,parent_group_id,position,source_document_id",
+    )
+    .eq("structure_version_id", version.id)
+    .order("position");
+  if (groupsError) throw groupsError;
+  const groups = groupRows ?? [];
+
+  const { data: conditionRows, error: conditionsError } = groups.length
+    ? await supabase
+        .from("requirement_conditions")
+        .select(
+          "condition_kind,course_id,id,maximum_course_level,minimum_course_level,minimum_units,position,requirement_group_id,source_text,subject_code,target_structure_id",
+        )
+        .in(
+          "requirement_group_id",
+          groups.map((group) => group.id),
+        )
+        .order("position")
     : { data: [], error: null };
-  if (coursesError) throw coursesError;
-  const codeByCourseId = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
-  );
-  const courseIdByVersionId = new Map(
-    versionRows.map((version) => [version.id, version.course_id]),
+  if (conditionsError) throw conditionsError;
+  const conditions = conditionRows ?? [];
+
+  const courseIds = [
+    ...new Set(
+      conditions
+        .map((condition) => condition.course_id)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  ];
+  const { data: conditionCourses } = courseIds.length
+    ? await supabase
+        .from("courses")
+        .select("code,id,public_id")
+        .in("id", courseIds)
+    : { data: [] };
+  const courseCodeById = new Map(
+    ((conditionCourses ?? []) as CourseRow[]).map((course) => [
+      course.id,
+      course.code,
+    ]),
   );
 
-  return ((rules ?? []) as RuleRow[]).flatMap((rule) => {
-    const code = codeByCourseId.get(
-      courseIdByVersionId.get(rule.course_version_id) ?? -1,
-    );
-    return code
-      ? [
-          {
-            code,
-            id: rule.id,
-            kind: rule.rule_kind,
-            reviewState: rule.review_state,
-            sourceText: rule.source_text,
-          },
-        ]
-      : [];
-  });
+  const targetIds = [
+    ...new Set(
+      conditions
+        .map((condition) => condition.target_structure_id)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  ];
+  const { data: targetStructures } = targetIds.length
+    ? await supabase
+        .from("academic_structures")
+        .select("code,id")
+        .in("id", targetIds)
+    : { data: [] };
+  const structureCodeById = new Map(
+    ((targetStructures ?? []) as Array<{ code: string; id: number }>).map(
+      (item) => [item.id, item.code],
+    ),
+  );
+
+  const sourceDocumentId = groups[0]?.source_document_id ?? null;
+  const { data: sourceDocument } = sourceDocumentId
+    ? await supabase
+        .from("catalogue_source_documents")
+        .select("canonical_url,content_sha256,fetched_at,source_last_modified")
+        .eq("id", sourceDocumentId)
+        .maybeSingle()
+    : { data: null };
+
+  return {
+    code: structure.code,
+    publicId: structure.public_id,
+    description: version.description,
+    id: version.id,
+    kind: structure.kind,
+    name: version.name,
+    publicationStatus: version.publication_status,
+    reviewState: version.review_state,
+    units: version.units,
+    year: year.year,
+    source: sourceDocument
+      ? {
+          canonicalUrl: sourceDocument.canonical_url,
+          contentHash: sourceDocument.content_sha256,
+          fetchedAt: sourceDocument.fetched_at,
+          lastModified: sourceDocument.source_last_modified,
+        }
+      : null,
+    groups: groups.map((group) => ({
+      code: group.code,
+      description: group.description,
+      id: group.id,
+      minimumCount: group.minimum_count,
+      minimumUnits:
+        group.minimum_units === null ? null : Number(group.minimum_units),
+      name: group.name,
+      operator: group.operator,
+      parentGroupId: group.parent_group_id,
+      conditions: conditions
+        .filter((condition) => condition.requirement_group_id === group.id)
+        .map((condition) => ({
+          courseCode:
+            condition.course_id === null
+              ? null
+              : (courseCodeById.get(condition.course_id) ?? null),
+          id: condition.id,
+          kind: condition.condition_kind,
+          maximumLevel: condition.maximum_course_level,
+          minimumLevel: condition.minimum_course_level,
+          minimumUnits:
+            condition.minimum_units === null
+              ? null
+              : Number(condition.minimum_units),
+          sourceText: condition.source_text,
+          subjectCode: condition.subject_code,
+          targetStructureCode:
+            condition.target_structure_id === null
+              ? null
+              : (structureCodeById.get(condition.target_structure_id) ?? null),
+        })),
+    })),
+  };
 }

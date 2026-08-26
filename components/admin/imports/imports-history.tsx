@@ -6,7 +6,8 @@ import type {
   HistoricalStatus,
   ImportsDashboardData,
 } from "@/components/admin/imports/imports-overview-data";
-import { ImportsTableControls } from "@/components/admin/imports/imports-overview-controls";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -104,20 +105,29 @@ export function ImportsHistory({
             {data.historicalOpenCount} open
           </span>
         </div>
+        <Suspense fallback={<div className="h-10" />}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+            <div className="min-w-0 flex-1">
+              <FilterBar
+                searchPlaceholder="Search course or year"
+                filters={[
+                  {
+                    key: "status",
+                    label: "Status",
+                    allLabel: "All statuses",
+                    options: [
+                      { label: "New", value: "new" },
+                      { label: "In review", value: "in-review" },
+                      { label: "Resolved", value: "resolved" },
+                    ],
+                  },
+                ]}
+              />
+            </div>
+            <DateRangeFilter />
+          </div>
+        </Suspense>
         <DataTableShell>
-          <Suspense
-            fallback={<div className="h-[65px] border-b border-zinc-200/80" />}
-          >
-            <ImportsTableControls
-              searchPlaceholder="Search course or year"
-              statuses={[
-                { label: "All statuses", value: "all" },
-                { label: "New", value: "new" },
-                { label: "In review", value: "in-review" },
-                { label: "Resolved", value: "resolved" },
-              ]}
-            />
-          </Suspense>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

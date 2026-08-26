@@ -16,6 +16,26 @@ const nextConfig: NextConfig = {
         destination: "/signup",
         permanent: true,
       },
+      {
+        source: "/admin/sync/courses",
+        destination: "/admin/imports/new",
+        permanent: false,
+      },
+      {
+        source: "/admin/sync/preview",
+        destination: "/admin/imports/new",
+        permanent: false,
+      },
+      {
+        source: "/admin/sync",
+        destination: "/admin/imports",
+        permanent: false,
+      },
+      {
+        source: "/admin/sync/:path*",
+        destination: "/admin/imports/:path*",
+        permanent: false,
+      },
     ];
   },
 };

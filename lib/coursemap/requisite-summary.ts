@@ -17,6 +17,11 @@ export type RequisiteCondition =
   | {
       kind: "units_total";
       units: number;
+    }
+  | {
+      kind: "programme_enrolment";
+      code: string;
+      name: string;
     };
 
 export type RequisiteExpression =
@@ -60,6 +65,12 @@ export type RequisiteProgress =
       satisfied: boolean;
     }
   | {
+      code: string;
+      kind: "programme_enrolment";
+      name: string;
+      satisfied: boolean;
+    }
+  | {
       conditions: RequisiteProgress[];
       kind: "group";
       operator: "all_of" | "any_of";
@@ -72,6 +83,8 @@ type RequisiteToken =
         | "and"
         | "clause_and"
         | "comma"
+        | "either"
+        | "both"
         | "left_parenthesis"
         | "or"
         | "right_parenthesis";
@@ -91,14 +104,64 @@ function normaliseSourceText(value: string) {
 function stripPreamble(value: string) {
   return value
     .replace(
-      /^to enrol in (?:this|the) course,? (?:you|students) must have (?:successfully )?completed:?\s*(?:the following:?\s*)?/iu,
+      /^to enrol in (?:this|the) course,? (?:you|students) must\s+(?:have (?:successfully )?completed:?\s*(?:the following:?\s*)?)?/iu,
       "",
     )
     .replace(
-      /^to enrol in [A-Z]{4}\d{4},? (?:you|students) must have (?:successfully )?completed:?\s*/iu,
+      /^to enrol in [A-Z]{4}\d{4},? (?:you|students) must\s+(?:have (?:successfully )?completed:?\s*)?/iu,
       "",
-    )
-    .replace(/^either\s+/iu, "");
+    );
+}
+
+/**
+ * ANU states programme requirements as "be enrolled in <Programme name>
+ * (CODE)", optionally listing alternatives. The whole clause is consumed at
+ * once because a bare programme name carries no marker of its own, and the
+ * list is bracketed so its conjunction cannot leak into the wider rule.
+ */
+function readProgrammeEnrolment(
+  input: string,
+): { remainder: string; tokens: RequisiteToken[] } | null {
+  const programme = /^([^.;]+?)\s*\(([A-Z][A-Z0-9-]{1,15})\)/u;
+  const separator = /^\s*,?\s*(or|and)\s+/iu;
+  const conditions: RequisiteCondition[] = [];
+  let remainder = input;
+  let conjunction: "and" | "or" | null = null;
+
+  for (;;) {
+    const match = programme.exec(remainder);
+    if (!match) return null;
+    conditions.push({
+      kind: "programme_enrolment",
+      code: match[2].toUpperCase(),
+      name: normaliseSourceText(match[1]),
+    });
+    remainder = remainder.slice(match[0].length);
+
+    const next = separator.exec(remainder);
+    if (!next) break;
+    const rest = remainder.slice(next[0].length);
+    if (!programme.test(rest)) break;
+    const candidate = next[1].toLowerCase() as "and" | "or";
+    if (conjunction && conjunction !== candidate) return null;
+    conjunction = candidate;
+    remainder = rest;
+  }
+
+  if (conditions.length === 1) {
+    return {
+      remainder,
+      tokens: [{ kind: "condition", condition: conditions[0] }],
+    };
+  }
+
+  const tokens: RequisiteToken[] = [{ kind: "left_parenthesis" }];
+  conditions.forEach((condition, index) => {
+    if (index > 0) tokens.push({ kind: conjunction ?? "or" });
+    tokens.push({ kind: "condition", condition });
+  });
+  tokens.push({ kind: "right_parenthesis" });
+  return { remainder, tokens };
 }
 
 function tokenise(sourceText: string): RequisiteToken[] | null {
@@ -130,6 +193,29 @@ function tokenise(sourceText: string): RequisiteToken[] | null {
     if (clauseConjunction) {
       tokens.push({ kind: "clause_and" });
       remainder = remainder.slice(clauseConjunction.length);
+      continue;
+    }
+
+    const enrolmentPrefix =
+      /^(?:you\s+|students\s+)?(?:must\s+)?(?:be\s+)?(?:currently\s+)?enrolled\s+in\s+(?:the\s+)?/iu.exec(
+        remainder,
+      )?.[0];
+    if (enrolmentPrefix) {
+      const clause = readProgrammeEnrolment(
+        remainder.slice(enrolmentPrefix.length),
+      );
+      if (!clause) return null;
+      tokens.push(...clause.tokens);
+      remainder = clause.remainder;
+      continue;
+    }
+
+    const alternationMarker = /^(either|both)\b/iu.exec(remainder)?.[1];
+    if (alternationMarker) {
+      tokens.push({
+        kind: alternationMarker.toLowerCase() as "both" | "either",
+      });
+      remainder = remainder.slice(alternationMarker.length);
       continue;
     }
 
@@ -250,6 +336,59 @@ function resolveCommas(tokens: RequisiteToken[]): RequisiteToken[] | null {
 }
 
 /**
+ * "either A or B" and "both A and B" carry an explicit grouping that bare
+ * conjunctions do not, so each marker is rewritten as parentheses around the
+ * run it introduces. The run covers alternatives joined only by the marker's
+ * own conjunction; any other shape refuses to parse rather than guessing.
+ */
+function resolveAlternationMarkers(
+  tokens: RequisiteToken[],
+): RequisiteToken[] | null {
+  const resolved: RequisiteToken[] = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token.kind !== "either" && token.kind !== "both") {
+      resolved.push(token);
+      continue;
+    }
+
+    const conjunction = token.kind === "either" ? "or" : "and";
+    let cursor = index + 1;
+    let joins = 0;
+
+    for (;;) {
+      const operand = tokens[cursor];
+      if (operand?.kind === "condition") {
+        cursor += 1;
+      } else if (operand?.kind === "left_parenthesis") {
+        let depth = 0;
+        do {
+          const current = tokens[cursor];
+          if (!current) return null;
+          if (current.kind === "left_parenthesis") depth += 1;
+          if (current.kind === "right_parenthesis") depth -= 1;
+          cursor += 1;
+        } while (depth > 0);
+      } else {
+        return null;
+      }
+      if (tokens[cursor]?.kind !== conjunction) break;
+      joins += 1;
+      cursor += 1;
+    }
+
+    if (joins === 0) return null;
+    resolved.push({ kind: "left_parenthesis" });
+    resolved.push(...tokens.slice(index + 1, cursor));
+    resolved.push({ kind: "right_parenthesis" });
+    index = cursor - 1;
+  }
+
+  return resolved;
+}
+
+/**
  * Official wording like "COMP1110 or COMP1140 AND 6 units of MATH" is
  * ambiguous without parentheses, so a clause mixing bare and/or at one
  * depth refuses to parse instead of guessing an operator precedence.
@@ -302,7 +441,9 @@ export function parseRequisiteSummary(
   const expression = stripPreamble(normalised).replace(/[.]$/u, "");
   const rawTokens = tokenise(expression);
   if (!rawTokens) return null;
-  const tokens = resolveCommas(rawTokens);
+  const listTokens = resolveCommas(rawTokens);
+  if (!listTokens || listTokens.length === 0) return null;
+  const tokens = resolveAlternationMarkers(listTokens);
   if (!tokens || tokens.length === 0) return null;
   if (!hasUnambiguousConjunctions(tokens)) return null;
 
@@ -370,7 +511,19 @@ function courseLevel(code: string) {
 export function evaluateRequisiteExpression(
   expression: RequisiteExpression,
   completedCourses: readonly CompletedRequisiteCourse[],
+  enrolledProgrammeCodes: readonly string[] = [],
 ): RequisiteProgress {
+  if (expression.kind === "programme_enrolment") {
+    return {
+      kind: "programme_enrolment",
+      code: expression.code,
+      name: expression.name,
+      satisfied: enrolledProgrammeCodes.some(
+        (code) => code.toUpperCase() === expression.code,
+      ),
+    };
+  }
+
   if (expression.kind === "course") {
     return {
       kind: "course",
@@ -436,7 +589,11 @@ export function evaluateRequisiteExpression(
   }
 
   const conditions = expression.conditions.map((condition) =>
-    evaluateRequisiteExpression(condition, completedCourses),
+    evaluateRequisiteExpression(
+      condition,
+      completedCourses,
+      enrolledProgrammeCodes,
+    ),
   );
   return {
     kind: "group",

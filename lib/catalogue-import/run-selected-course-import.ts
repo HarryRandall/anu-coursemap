@@ -1,5 +1,7 @@
 import { fetchAnuCourseManifest } from "@/lib/catalogue-import/anu-programs-courses";
+import type { CatalogueManifest } from "@/lib/catalogue-import/manifest";
 import { assertSupportedCatalogueYear } from "@/lib/catalogue-import/catalogue-years";
+import { parseRequisiteSummary } from "@/lib/coursemap/requisite-summary";
 import { isDemoMode } from "@/lib/supabase/config";
 import { importCatalogueManifest } from "@/scripts/catalogue/lib/importer.mjs";
 import {
@@ -9,6 +11,23 @@ import {
 
 const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/;
 export const MAX_WEB_COURSE_IMPORTS = 100;
+
+/**
+ * Per-course facts the admin import screen reports while a run is in flight,
+ * so a reviewer sees what each page actually produced rather than a count.
+ */
+export type CourseImportDetail = {
+  code: string;
+  title: string | null;
+  units: number | null;
+  linkedCourseCodes: string[];
+  requisiteObserved: boolean;
+  requisiteText: string | null;
+  structuredRequisite: boolean;
+  offeringCount: number;
+  warningCount: number;
+  errorCount: number;
+};
 
 export type CourseImportResult = {
   status: "succeeded" | "failed";
@@ -20,7 +39,33 @@ export type CourseImportResult = {
     failed: number;
     unchanged: number;
   };
+  details: CourseImportDetail[];
 };
+
+function summariseManifest(manifest: CatalogueManifest): CourseImportDetail[] {
+  return manifest.documents.map((document) => {
+    const requisites = document.course.requisites;
+    const rawRequisiteText = requisites.rawRequisiteText;
+    return {
+      code: document.course.code ?? document.externalKey,
+      title: document.course.title,
+      units: document.course.units,
+      linkedCourseCodes: requisites.linkedCourseCodes,
+      requisiteObserved: requisites.observed,
+      requisiteText: rawRequisiteText,
+      structuredRequisite:
+        rawRequisiteText !== null &&
+        parseRequisiteSummary(rawRequisiteText) !== null,
+      offeringCount: document.offering ? 1 : 0,
+      warningCount: document.diagnostics.filter(
+        (diagnostic) => diagnostic.severity === "warning",
+      ).length,
+      errorCount: document.diagnostics.filter(
+        (diagnostic) => diagnostic.severity === "error",
+      ).length,
+    };
+  });
+}
 
 export class CatalogueImportConfigurationError extends Error {
   constructor() {
@@ -80,7 +125,11 @@ export async function runSelectedCourseImport({
     : createHostedCatalogueDatabaseClient(configuredImportDatabaseUrl());
 
   try {
-    return await importCatalogueManifest(sql, manifest);
+    const result = (await importCatalogueManifest(sql, manifest)) as Omit<
+      CourseImportResult,
+      "details"
+    >;
+    return { ...result, details: summariseManifest(manifest) };
   } finally {
     await sql.end({ timeout: 5 });
   }

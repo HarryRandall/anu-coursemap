@@ -34,6 +34,18 @@
   --shadow-lg:
     0 24px 60px rgba(12, 12, 16, 0.18), 0 8px 24px rgba(12, 12, 16, 0.08);
 
+  /* Corner radius — deliberately tighter than the Tailwind defaults so the
+     interface reads as a dense tool rather than a consumer app. Overriding
+     the scale keeps every rounded-* utility in step. */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.3125rem;
+  --radius-xl: 0.375rem;
+  --radius-2xl: 0.5rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 1rem;
+
   /* Motion */
   --animate-modal-in: modal-in 160ms ease-out;
   --animate-drawer-in-right: drawer-in-right 200ms

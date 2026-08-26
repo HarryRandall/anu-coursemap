@@ -1,36 +1,84 @@
 "use client";
 
-import { CheckCircle2, GraduationCap } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { publishStructureVersion } from "@/lib/coursemap/catalogue-publication-actions";
+import { archiveStructureVersion } from "@/lib/coursemap/catalogue-publication-actions";
+
 import type {
   AdminStructureRecord,
   PaginatedAdminResult,
 } from "@/lib/coursemap/admin-catalogue";
+import {
+  AdminRecordTable,
+  type AdminTableColumn,
+} from "@/components/admin/admin-record-table";
+import { AdminRowActions } from "@/components/admin/admin-row-actions";
 import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardFooter } from "@/components/ui/card";
-import {
-  DataList,
-  DataListActions,
-  DataListContent,
-  DataListDescription,
-  DataListIcon,
-  DataListItem,
-  DataListMeta,
-  DataListTitle,
-} from "@/components/ui/data-list";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Pagination } from "@/components/ui/pagination";
+import { FilterBar } from "@/components/ui/filter-bar";
+
+const columns: AdminTableColumn<AdminStructureRecord>[] = [
+  {
+    id: "programme",
+    label: "Programme",
+    required: true,
+    cell: (record) => (
+      <>
+        <span className="block font-medium text-zinc-950 group-hover:text-brand-700">
+          {record.name}
+        </span>
+        <span className="mt-0.5 block font-mono text-xs text-zinc-500">
+          {record.code}
+        </span>
+      </>
+    ),
+  },
+  {
+    id: "kind",
+    label: "Kind",
+    cell: (record) => (
+      <span className="text-xs text-zinc-600 capitalize">{record.kind}</span>
+    ),
+  },
+  {
+    id: "units",
+    label: "Units",
+    align: "right",
+    cell: (record) => (
+      <span className="text-xs text-zinc-600 tabular-nums">{record.units}</span>
+    ),
+  },
+  {
+    id: "year",
+    label: "Catalogue",
+    align: "right",
+    cell: (record) => (
+      <span className="text-xs text-zinc-600 tabular-nums">{record.year}</span>
+    ),
+  },
+  {
+    id: "status",
+    label: "Status",
+    cell: (record) => (
+      <Badge
+        tone={record.publicationStatus === "published" ? "success" : "warning"}
+      >
+        {record.publicationStatus === "published" ? "Published" : "Draft"}
+      </Badge>
+    ),
+  },
+  {
+    id: "review",
+    label: "Review",
+    cell: (record) =>
+      record.reviewState === "verified" ? (
+        <Badge tone="brand">Verified</Badge>
+      ) : (
+        <Badge tone="neutral">Unverified</Badge>
+      ),
+  },
+];
 
 export function ProgrammeList({
   data,
@@ -40,115 +88,82 @@ export function ProgrammeList({
   searchParams: Record<string, string | undefined>;
 }) {
   const router = useRouter();
-  const [pendingCode, setPendingCode] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{
-    message: string;
-    ok: boolean;
-  } | null>(null);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
 
-  async function publish(record: AdminStructureRecord) {
-    setPendingCode(record.code);
+  async function archive(record: AdminStructureRecord) {
     setNotice(null);
-    const result = await publishStructureVersion(record.code, record.year);
-    setPendingCode(null);
-    setNotice({ message: result.message, ok: result.ok });
+    const result = await archiveStructureVersion(record.code, record.year);
+    setNotice({ ok: result.ok, text: result.message });
     if (result.ok) router.refresh();
   }
 
   return (
     <AppShell admin>
-      <div className="mx-auto w-full max-w-7xl">
-        <h1 className="sr-only">Degrees and structures</h1>
-        <Card className="overflow-hidden">
-          {notice && (
-            <Alert
-              tone={notice.ok ? "success" : "danger"}
-              className="rounded-none border-x-0 border-t-0"
-            >
-              <CheckCircle2 />
-              <AlertDescription>{notice.message}</AlertDescription>
-            </Alert>
-          )}
+      <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
+        <h1 className="sr-only">Programmes</h1>
 
-          <DataList>
-            {data.records.map((record) => (
-              <DataListItem key={record.id}>
-                <DataListIcon className="border-brand-100 bg-brand-50 text-brand-700">
-                  <GraduationCap size={18} aria-hidden="true" />
-                </DataListIcon>
-                <DataListContent>
-                  <DataListMeta>
-                    <span className="font-mono text-xs font-bold text-zinc-900">
-                      {record.code}
-                    </span>
-                    <Badge tone="neutral">{record.kind}</Badge>
-                    <Badge
-                      tone={
-                        record.publicationStatus === "published"
-                          ? "success"
-                          : "warning"
-                      }
-                    >
-                      {record.publicationStatus === "published"
-                        ? "Published"
-                        : "Draft"}
-                    </Badge>
-                    {record.reviewState === "review" && (
-                      <Badge tone="warning">Source review</Badge>
-                    )}
-                  </DataListMeta>
-                  <DataListTitle>{record.name}</DataListTitle>
-                  <DataListDescription className="line-clamp-2 whitespace-normal">
-                    {record.units} units · {record.year} catalogue ·{" "}
-                    {record.description}
-                  </DataListDescription>
-                </DataListContent>
-                {record.publicationStatus === "published" ? (
-                  <DataListActions className="text-xs font-medium text-emerald-700">
-                    <CheckCircle2 size={15} /> Available in onboarding
-                  </DataListActions>
-                ) : (
-                  <DataListActions>
-                    <Button
-                      disabled={pendingCode === record.code}
-                      onClick={() => publish(record)}
-                      size="sm"
-                    >
-                      {pendingCode === record.code
-                        ? "Publishing…"
-                        : "Publish for students"}
-                    </Button>
-                  </DataListActions>
-                )}
-              </DataListItem>
-            ))}
-            {data.records.length === 0 && (
-              <li>
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <GraduationCap />
-                    </EmptyMedia>
-                    <EmptyTitle>No programme structures</EmptyTitle>
-                    <EmptyDescription>
-                      Imported degrees and structures will appear here.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              </li>
-            )}
-          </DataList>
-          <CardFooter className="bg-zinc-50/40">
-            <Pagination
-              pathname="/admin/programmes"
-              searchParams={searchParams}
-              page={data.page}
-              pageSize={data.pageSize}
-              total={data.total}
-              itemName="programme structures"
+        <FilterBar
+          searchPlaceholder="Search by code or name"
+          filters={[
+            {
+              key: "status",
+              label: "Status",
+              allLabel: "All programmes",
+              options: [
+                { label: "Drafts", value: "draft" },
+                { label: "Published", value: "published" },
+                { label: "Archived", value: "archived" },
+                { label: "Unverified", value: "needs-review" },
+                { label: "Verified", value: "verified" },
+              ],
+            },
+            {
+              key: "kind",
+              label: "Kind",
+              allLabel: "All kinds",
+              options: [
+                { label: "Degree", value: "degree" },
+                { label: "Major", value: "major" },
+                { label: "Minor", value: "minor" },
+                { label: "Specialisation", value: "specialisation" },
+              ],
+            },
+          ]}
+        />
+
+        {notice ? (
+          <Alert role="status" tone={notice.ok ? "success" : "danger"}>
+            <AlertDescription>{notice.text}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <AdminRecordTable
+          actions={(record) => (
+            <AdminRowActions
+              archived={record.publicationStatus === "archived"}
+              label={record.code}
+              onArchive={() => archive(record)}
+              openHref={`/admin/programmes/${record.publicId}`}
+              sourceUrl={`https://programsandcourses.anu.edu.au/${record.year}/program/${record.code}`}
             />
-          </CardFooter>
-        </Card>
+          )}
+          caption="Imported programme versions"
+          columns={columns}
+          emptyDescription="Clear the search, choose a different filter, or run an import to bring programmes in from ANU."
+          emptyTitle="No programmes match this view"
+          itemName="programmes"
+          page={data.page}
+          pageSize={data.pageSize}
+          pathname="/admin/programmes"
+          rowHref={(record) => `/admin/programmes/${record.publicId}`}
+          rowKey={(record) => record.code}
+          rows={data.records}
+          searchParams={searchParams}
+          storageKey="coursemap:admin:programmes:hidden-columns"
+          total={data.total}
+        />
       </div>
     </AppShell>
   );

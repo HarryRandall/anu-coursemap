@@ -5,7 +5,7 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const courseReviewTabs = [
   { value: "changes", label: "Changes" },
   { value: "fields", label: "All fields" },
-  { value: "source", label: "Source HTML" },
+  { value: "source", label: "Source" },
   { value: "parsed", label: "Parsed output" },
   { value: "prerequisites", label: "Prerequisites" },
   { value: "student", label: "Student preview" },

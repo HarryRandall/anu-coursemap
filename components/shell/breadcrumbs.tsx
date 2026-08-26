@@ -2,10 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  ClipboardList,
+  CircleHelp,
+  Compass,
+  GraduationCap,
+  History,
+  House,
+  KeyRound,
+  LayoutDashboard,
+  ListChecks,
+  MapPin,
+  RefreshCw,
+  ShieldCheck,
+  Table,
+  UserRound,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { Fragment } from "react";
 
-type Crumb = { label: string; href?: string };
+type Crumb = { label: string; href?: string; icon?: LucideIcon };
 
 const labels: Record<string, string> = {
   dashboard: "Home",
@@ -30,10 +50,36 @@ const labels: Record<string, string> = {
   profile: "Profile",
   admin: "Admin",
   programmes: "Programmes",
-  relations: "Rule review",
   users: "Users",
   roles: "Roles",
   sync: "Imports",
+  imports: "Imports",
+  new: "New import",
+};
+
+/** Each crumb carries the same icon its sidebar entry uses. */
+const icons: Record<string, LucideIcon> = {
+  academic: ClipboardList,
+  activity: ListChecks,
+  admin: ShieldCheck,
+  calendar: CalendarDays,
+  courses: BookOpen,
+  dashboard: House,
+  help: CircleHelp,
+  history: History,
+  imports: RefreshCw,
+  "key-dates": CalendarDays,
+  new: RefreshCw,
+  plan: Table,
+  profile: UserRound,
+  programmes: GraduationCap,
+  requirements: ListChecks,
+  roadmap: Compass,
+  roles: KeyRound,
+  rooms: MapPin,
+  sync: RefreshCw,
+  timetable: CalendarDays,
+  users: Users,
 };
 
 function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
@@ -47,12 +93,18 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     const isLast = index === segments.length - 1;
     // Dynamic course code segment (e.g. /courses/COMP2100)
     const label =
-      admin && segments[1] === "users" && index === 2
-        ? "User"
-        : admin && segments[1] === "sync" && segment === "history"
-          ? "Historical changes"
-          : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
+      admin &&
+      (segments[1] === "sync" || segments[1] === "imports") &&
+      segment === "history"
+        ? "Historical changes"
+        : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
+    const icon =
+      admin && index === 0
+        ? LayoutDashboard
+        : (icons[segment] ??
+          (/^[A-Z]{4}\d{4}$/iu.test(segment) ? BookOpen : undefined));
     crumbs.push({
+      icon,
       label,
       href: isLast
         ? undefined
@@ -63,7 +115,9 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   });
 
   // The admin index label ("Overview") when landing on /admin exactly
-  if (admin && segments.length === 1) crumbs[0] = { label: "Admin" };
+  if (admin && segments.length === 1) {
+    crumbs[0] = { label: "Admin", icon: LayoutDashboard };
+  }
 
   return { crumbs, admin };
 }
@@ -94,13 +148,27 @@ export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="block truncate text-[13px] font-medium text-zinc-500 transition hover:text-zinc-800"
+                  className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium text-zinc-500 transition hover:text-zinc-800"
                 >
-                  {crumb.label}
+                  {crumb.icon ? (
+                    <crumb.icon
+                      aria-hidden="true"
+                      className="shrink-0 text-zinc-400"
+                      size={14}
+                    />
+                  ) : null}
+                  <span className="truncate">{crumb.label}</span>
                 </Link>
               ) : (
-                <span className="block truncate text-[13px] font-semibold text-zinc-900">
-                  {crumb.label}
+                <span className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-semibold text-zinc-900">
+                  {crumb.icon ? (
+                    <crumb.icon
+                      aria-hidden="true"
+                      className="shrink-0 text-zinc-500"
+                      size={14}
+                    />
+                  ) : null}
+                  <span className="truncate">{crumb.label}</span>
                 </span>
               )}
             </li>

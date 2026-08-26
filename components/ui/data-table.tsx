@@ -30,7 +30,9 @@ export function DataTableShell({
     >
       <div
         className={cn(
-          "relative isolate min-h-0 overflow-x-auto overscroll-x-contain",
+          // rounded-[inherit] keeps the scroll container's painted backgrounds
+          // inside the shell's corners rather than squaring them off.
+          "relative isolate min-h-0 overflow-x-auto overscroll-x-contain rounded-[inherit]",
           viewport && "md:flex md:flex-1 md:overflow-auto",
         )}
       >

@@ -42,14 +42,16 @@ export function DialogContent({
   children,
   showCloseButton = true,
   align = "center",
+  overlayClassName,
   ...props
 }: ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
   align?: "center" | "top";
+  overlayClassName?: string;
 }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogOverlay />
+      <DialogOverlay className={overlayClassName} />
       <div
         className={cn(
           "fixed inset-0 z-[100] grid p-4 sm:p-6",

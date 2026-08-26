@@ -27,6 +27,7 @@ export default async function CoursePage({
   let course = null;
   let requisiteCompletion: RequisiteCompletionSnapshot = {
     completedCourses: [],
+    enrolledProgrammeCodes: [],
     isAuthenticated: false,
   };
   let unavailable = false;

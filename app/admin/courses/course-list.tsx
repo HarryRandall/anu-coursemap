@@ -1,181 +1,214 @@
 "use client";
 
-import { CheckCircle2, ClipboardCheck, LibraryBig } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { publishCourseVersion } from "@/lib/coursemap/catalogue-publication-actions";
+import { archiveCourseVersion } from "@/lib/coursemap/catalogue-publication-actions";
 import type {
   AdminCourseRecord,
   PaginatedAdminResult,
 } from "@/lib/coursemap/admin-catalogue";
+import {
+  AdminRecordTable,
+  type AdminTableColumn,
+} from "@/components/admin/admin-record-table";
+import { AdminRowActions } from "@/components/admin/admin-row-actions";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Card, CardFooter } from "@/components/ui/card";
-import {
-  DataList,
-  DataListActions,
-  DataListContent,
-  DataListDescription,
-  DataListIcon,
-  DataListItem,
-  DataListMeta,
-  DataListTitle,
-} from "@/components/ui/data-list";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Pagination } from "@/components/ui/pagination";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FilterBar } from "@/components/ui/filter-bar";
 
-function statusTone(status: string) {
-  return status === "published" ? "success" : "warning";
-}
+const columns: AdminTableColumn<AdminCourseRecord>[] = [
+  {
+    id: "course",
+    label: "Course",
+    required: true,
+    cell: (record) => (
+      <>
+        <span className="block font-medium text-zinc-950 group-hover:text-brand-700">
+          {record.title}
+        </span>
+        <span className="mt-0.5 block font-mono text-xs text-zinc-500">
+          {record.code}
+        </span>
+      </>
+    ),
+  },
+  {
+    id: "subject",
+    label: "Subject",
+    cell: (record) => (
+      <span className="font-mono text-xs text-zinc-600">{record.subject}</span>
+    ),
+  },
+  {
+    id: "level",
+    label: "Level",
+    cell: (record) => (
+      <span className="text-xs text-zinc-600 tabular-nums">
+        {record.code.slice(4, 5)}000
+      </span>
+    ),
+  },
+  {
+    id: "units",
+    label: "Units",
+    align: "right",
+    cell: (record) => (
+      <span className="text-xs text-zinc-600 tabular-nums">{record.units}</span>
+    ),
+  },
+  {
+    id: "year",
+    label: "Catalogue",
+    align: "right",
+    cell: (record) => (
+      <span className="text-xs text-zinc-600 tabular-nums">{record.year}</span>
+    ),
+  },
+  {
+    id: "status",
+    label: "Status",
+    cell: (record) => (
+      <Badge
+        tone={record.publicationStatus === "published" ? "success" : "warning"}
+      >
+        {record.publicationStatus === "published" ? "Published" : "Draft"}
+      </Badge>
+    ),
+  },
+  {
+    id: "review",
+    label: "Review",
+    cell: (record) =>
+      record.reviewState === "verified" ? (
+        <Badge tone="brand">Verified</Badge>
+      ) : (
+        <Badge tone="neutral">Unverified</Badge>
+      ),
+  },
+];
 
 export function AdminCourseList({
   data,
   searchParams,
+  subjects,
 }: {
   data: PaginatedAdminResult<AdminCourseRecord>;
   searchParams: Record<string, string | undefined>;
+  subjects: string[];
 }) {
   const router = useRouter();
-  const [pendingCode, setPendingCode] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{
-    message: string;
-    ok: boolean;
-  } | null>(null);
+  const [resyncing, setResyncing] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
 
-  async function publish(record: AdminCourseRecord) {
-    setPendingCode(record.code);
+  async function archive(record: AdminCourseRecord) {
     setNotice(null);
-    const result = await publishCourseVersion(record.code, record.year);
-    setPendingCode(null);
-    setNotice({ message: result.message, ok: result.ok });
+    const result = await archiveCourseVersion(record.code, record.year);
+    setNotice({ ok: result.ok, text: result.message });
     if (result.ok) router.refresh();
+  }
+
+  async function resync(record: AdminCourseRecord) {
+    setResyncing(record.code);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/admin/catalogue/imports/courses", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          catalogueYear: record.year,
+          courseCodes: [record.code],
+        }),
+      });
+      const payload = (await response.json()) as { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Resync failed.");
+      setNotice({ ok: true, text: `${record.code} was resynced from ANU.` });
+      router.refresh();
+    } catch (error) {
+      setNotice({
+        ok: false,
+        text:
+          error instanceof Error
+            ? error.message
+            : `${record.code} could not be resynced.`,
+      });
+    } finally {
+      setResyncing(null);
+    }
   }
 
   return (
     <AppShell admin>
-      <div className="mx-auto w-full max-w-7xl">
-        <h1 className="sr-only">Course versions</h1>
-        <Card className="overflow-hidden">
-          {notice && (
-            <Alert
-              tone={notice.ok ? "success" : "danger"}
-              className="rounded-none border-x-0 border-t-0"
-            >
-              {notice.ok ? <CheckCircle2 /> : <ClipboardCheck />}
-              <AlertDescription>{notice.message}</AlertDescription>
-            </Alert>
-          )}
+      <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
+        <h1 className="sr-only">Courses</h1>
 
-          <DataList>
-            {data.records.map((record) => (
-              <DataListItem key={record.id}>
-                <DataListIcon className="border-brand-100 bg-brand-50 text-brand-700">
-                  <LibraryBig />
-                </DataListIcon>
-                <DataListContent>
-                  <DataListMeta>
-                    <span className="font-mono text-[11px] font-semibold text-zinc-700">
-                      {record.code}
-                    </span>
-                    <Badge tone={statusTone(record.publicationStatus)}>
-                      {record.publicationStatus === "published"
-                        ? "Published"
-                        : "Draft"}
-                    </Badge>
-                    {record.reviewState === "review" && (
-                      <Badge tone="warning">Source review</Badge>
-                    )}
-                  </DataListMeta>
-                  <DataListTitle>
-                    <Link
-                      href={`/admin/courses/${record.code}`}
-                      className="rounded-sm hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                    >
-                      {record.title}
-                    </Link>
-                  </DataListTitle>
-                  <DataListDescription>
-                    {record.subject} · {record.units} units · {record.year}{" "}
-                    catalogue
-                  </DataListDescription>
-                </DataListContent>
-                {record.publicationStatus === "published" ? (
-                  <DataListActions>
-                    <ButtonLink
-                      href={`/admin/courses/${record.code}`}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      <ClipboardCheck size={15} /> Review record
-                    </ButtonLink>
-                    <ButtonLink
-                      href={`/courses/${record.code}`}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      <CheckCircle2 size={15} /> View live course
-                    </ButtonLink>
-                  </DataListActions>
-                ) : (
-                  <DataListActions>
-                    <ButtonLink
-                      href={`/admin/courses/${record.code}`}
-                      size="sm"
-                    >
-                      <ClipboardCheck size={15} /> Review draft
-                    </ButtonLink>
-                    {record.reviewState === "verified" && (
-                      <Button
-                        disabled={pendingCode === record.code}
-                        onClick={() => publish(record)}
-                        size="sm"
-                        variant="secondary"
-                      >
-                        {pendingCode === record.code
-                          ? "Publishing…"
-                          : "Publish for students"}
-                      </Button>
-                    )}
-                  </DataListActions>
-                )}
-              </DataListItem>
-            ))}
-            {data.records.length === 0 && (
-              <li>
-                <Empty>
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <LibraryBig />
-                    </EmptyMedia>
-                    <EmptyTitle>No course versions</EmptyTitle>
-                    <EmptyDescription>
-                      Imported course versions will appear here for review.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              </li>
-            )}
-          </DataList>
-          <CardFooter className="bg-zinc-50/40">
-            <Pagination
-              pathname="/admin/courses"
-              searchParams={searchParams}
-              page={data.page}
-              pageSize={data.pageSize}
-              total={data.total}
-              itemName="course versions"
+        <FilterBar
+          searchPlaceholder="Search by code, title or subject"
+          filters={[
+            {
+              key: "status",
+              label: "Status",
+              allLabel: "All courses",
+              options: [
+                { label: "Drafts", value: "draft" },
+                { label: "Published", value: "published" },
+                { label: "Archived", value: "archived" },
+                { label: "Unverified", value: "needs-review" },
+                { label: "Verified", value: "verified" },
+              ],
+            },
+            {
+              key: "subject",
+              label: "Subject",
+              allLabel: "All subjects",
+              options: subjects.map((subject) => ({
+                label: subject,
+                value: subject,
+              })),
+            },
+          ]}
+        />
+
+        {notice ? (
+          <Alert role="status" tone={notice.ok ? "success" : "danger"}>
+            <AlertDescription>{notice.text}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <AdminRecordTable
+          actions={(record) => (
+            <AdminRowActions
+              archived={record.publicationStatus === "archived"}
+              label={record.code}
+              onArchive={() => archive(record)}
+              onResync={() => void resync(record)}
+              openHref={`/admin/courses/${record.publicId}`}
+              resyncing={resyncing === record.code}
+              sourceUrl={`https://programsandcourses.anu.edu.au/${record.year}/course/${record.code}`}
+              studentHref={
+                record.publicationStatus === "published"
+                  ? `/courses/${record.code}`
+                  : undefined
+              }
             />
-          </CardFooter>
-        </Card>
+          )}
+          caption="Imported course versions"
+          columns={columns}
+          emptyDescription="Clear the search, choose a different filter, or run an import to bring course pages in from ANU."
+          emptyTitle="No courses match this view"
+          itemName="courses"
+          page={data.page}
+          pageSize={data.pageSize}
+          pathname="/admin/courses"
+          rowHref={(record) => `/admin/courses/${record.publicId}`}
+          rowKey={(record) => record.code}
+          rows={data.records}
+          searchParams={searchParams}
+          storageKey="coursemap:admin:courses:hidden-columns"
+          total={data.total}
+        />
       </div>
     </AppShell>
   );
