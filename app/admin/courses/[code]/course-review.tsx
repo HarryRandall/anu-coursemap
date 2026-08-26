@@ -563,35 +563,32 @@ export function CourseReview({
           </TabsContent>
 
           <TabsContent className="mt-0" value="source">
-            <Panel label="Source HTML">
-              <div className="p-5 sm:p-6">
-                <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-5 py-8 text-center">
-                  <p className="text-sm font-semibold text-zinc-900">
-                    HTML snapshot unavailable
-                  </p>
-                  <p className="mx-auto mt-1 max-w-xl text-sm leading-6 text-zinc-500">
-                    No stored HTML body or accessible storage path is attached
-                    to this record. The source metadata below is still
-                    preserved.
-                  </p>
-                </div>
-                {record.source ? (
-                  <div className="mt-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <h3 className="text-sm font-semibold text-zinc-950">
-                        Source metadata
-                      </h3>
-                      <ButtonLink
-                        href={record.source.canonicalUrl}
-                        rel="noreferrer"
-                        size="sm"
-                        target="_blank"
-                      >
-                        <ExternalLink aria-hidden="true" size={15} /> Open ANU
-                        page
-                      </ButtonLink>
+            <Panel label="Source">
+              {record.source ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
+                    <div>
+                      <h2 className="text-base font-semibold text-zinc-950">
+                        ANU source page
+                      </h2>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        Every field on this record was parsed from this page.
+                        The page itself is not stored, only its address and a
+                        hash used to detect changes.
+                      </p>
                     </div>
-                    <dl className="mt-3 border-t border-zinc-100">
+                    <ButtonLink
+                      href={record.source.canonicalUrl}
+                      rel="noreferrer"
+                      size="sm"
+                      target="_blank"
+                    >
+                      <ExternalLink aria-hidden="true" size={15} /> Open ANU
+                      page
+                    </ButtonLink>
+                  </div>
+                  <div className="px-5 sm:px-6">
+                    <dl>
                       <FieldValue
                         label="Retrieved"
                         value={formatDate(record.source.fetchedAt)}
@@ -618,12 +615,13 @@ export function CourseReview({
                       />
                     </dl>
                   </div>
-                ) : (
-                  <p className="mt-5 text-sm text-zinc-500">
-                    No source document is attached to this record.
-                  </p>
-                )}
-              </div>
+                </>
+              ) : (
+                <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                  No source document is attached to this record, so there is
+                  nothing to check it against.
+                </p>
+              )}
             </Panel>
           </TabsContent>
 
