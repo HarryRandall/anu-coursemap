@@ -834,3 +834,204 @@ export async function loadAdminStructureRecords(): Promise<
       : [];
   });
 }
+
+export type AdminStructureReviewCondition = {
+  courseCode: string | null;
+  id: number;
+  kind: string;
+  maximumLevel: number | null;
+  minimumLevel: number | null;
+  minimumUnits: number | null;
+  sourceText: string | null;
+  subjectCode: string | null;
+  targetStructureCode: string | null;
+};
+
+export type AdminStructureReviewGroup = {
+  code: string;
+  conditions: AdminStructureReviewCondition[];
+  description: string | null;
+  id: number;
+  minimumCount: number | null;
+  minimumUnits: number | null;
+  name: string;
+  operator: string;
+  parentGroupId: number | null;
+};
+
+export type AdminStructureReviewRecord = {
+  code: string;
+  description: string;
+  groups: AdminStructureReviewGroup[];
+  id: number;
+  kind: string;
+  name: string;
+  publicationStatus: string;
+  reviewState: string;
+  source: {
+    canonicalUrl: string;
+    contentHash: string | null;
+    fetchedAt: string | null;
+    lastModified: string | null;
+  } | null;
+  units: number;
+  year: number;
+};
+
+/**
+ * Loads one programme version with its requirement tree so a reviewer can
+ * check the imported structure against the ANU page before publishing it.
+ */
+export async function loadAdminStructureReview(
+  structureCode: string,
+): Promise<AdminStructureReviewRecord | null> {
+  const code = structureCode.trim().toUpperCase();
+  if (!/^[A-Z0-9][A-Z0-9-]*$/.test(code)) return null;
+  if (isDemoMode()) return null;
+
+  const [supabase, year] = await Promise.all([
+    createClient(),
+    currentCatalogueYear(),
+  ]);
+  if (!year) return null;
+
+  const { data: structure, error: structureError } = await supabase
+    .from("academic_structures")
+    .select("id,code,kind")
+    .eq("code", code)
+    .maybeSingle();
+  if (structureError) throw structureError;
+  if (!structure) return null;
+
+  const { data: version, error: versionError } = await supabase
+    .from("academic_structure_versions")
+    .select("description,id,name,publication_status,review_state,units")
+    .eq("structure_id", structure.id)
+    .eq("catalogue_year_id", year.id)
+    .maybeSingle();
+  if (versionError) throw versionError;
+  if (!version) return null;
+
+  const { data: groupRows, error: groupsError } = await supabase
+    .from("requirement_groups")
+    .select(
+      "code,description,id,minimum_count,minimum_units,name,operator,parent_group_id,position,source_document_id",
+    )
+    .eq("structure_version_id", version.id)
+    .order("position");
+  if (groupsError) throw groupsError;
+  const groups = groupRows ?? [];
+
+  const { data: conditionRows, error: conditionsError } = groups.length
+    ? await supabase
+        .from("requirement_conditions")
+        .select(
+          "condition_kind,course_id,id,maximum_course_level,minimum_course_level,minimum_units,position,requirement_group_id,source_text,subject_code,target_structure_id",
+        )
+        .in(
+          "requirement_group_id",
+          groups.map((group) => group.id),
+        )
+        .order("position")
+    : { data: [], error: null };
+  if (conditionsError) throw conditionsError;
+  const conditions = conditionRows ?? [];
+
+  const courseIds = [
+    ...new Set(
+      conditions
+        .map((condition) => condition.course_id)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  ];
+  const { data: conditionCourses } = courseIds.length
+    ? await supabase.from("courses").select("code,id").in("id", courseIds)
+    : { data: [] };
+  const courseCodeById = new Map(
+    ((conditionCourses ?? []) as CourseRow[]).map((course) => [
+      course.id,
+      course.code,
+    ]),
+  );
+
+  const targetIds = [
+    ...new Set(
+      conditions
+        .map((condition) => condition.target_structure_id)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  ];
+  const { data: targetStructures } = targetIds.length
+    ? await supabase
+        .from("academic_structures")
+        .select("code,id")
+        .in("id", targetIds)
+    : { data: [] };
+  const structureCodeById = new Map(
+    ((targetStructures ?? []) as Array<{ code: string; id: number }>).map(
+      (item) => [item.id, item.code],
+    ),
+  );
+
+  const sourceDocumentId = groups[0]?.source_document_id ?? null;
+  const { data: sourceDocument } = sourceDocumentId
+    ? await supabase
+        .from("catalogue_source_documents")
+        .select("canonical_url,content_sha256,fetched_at,source_last_modified")
+        .eq("id", sourceDocumentId)
+        .maybeSingle()
+    : { data: null };
+
+  return {
+    code: structure.code,
+    description: version.description,
+    id: version.id,
+    kind: structure.kind,
+    name: version.name,
+    publicationStatus: version.publication_status,
+    reviewState: version.review_state,
+    units: version.units,
+    year: year.year,
+    source: sourceDocument
+      ? {
+          canonicalUrl: sourceDocument.canonical_url,
+          contentHash: sourceDocument.content_sha256,
+          fetchedAt: sourceDocument.fetched_at,
+          lastModified: sourceDocument.source_last_modified,
+        }
+      : null,
+    groups: groups.map((group) => ({
+      code: group.code,
+      description: group.description,
+      id: group.id,
+      minimumCount: group.minimum_count,
+      minimumUnits:
+        group.minimum_units === null ? null : Number(group.minimum_units),
+      name: group.name,
+      operator: group.operator,
+      parentGroupId: group.parent_group_id,
+      conditions: conditions
+        .filter((condition) => condition.requirement_group_id === group.id)
+        .map((condition) => ({
+          courseCode:
+            condition.course_id === null
+              ? null
+              : (courseCodeById.get(condition.course_id) ?? null),
+          id: condition.id,
+          kind: condition.condition_kind,
+          maximumLevel: condition.maximum_course_level,
+          minimumLevel: condition.minimum_course_level,
+          minimumUnits:
+            condition.minimum_units === null
+              ? null
+              : Number(condition.minimum_units),
+          sourceText: condition.source_text,
+          subjectCode: condition.subject_code,
+          targetStructureCode:
+            condition.target_structure_id === null
+              ? null
+              : (structureCodeById.get(condition.target_structure_id) ?? null),
+        })),
+    })),
+  };
+}
