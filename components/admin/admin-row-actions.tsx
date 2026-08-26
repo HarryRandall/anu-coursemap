@@ -9,7 +9,7 @@ import {
   SquarePen,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
@@ -31,21 +31,24 @@ export function AdminRowActions({
 }: {
   archived?: boolean;
   label: string;
-  onArchive?: () => void;
+  onArchive?: () => void | Promise<void>;
   onResync?: () => void;
   openHref: string;
   resyncing?: boolean;
   sourceUrl?: string;
   studentHref?: string;
 }) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu onOpenChange={setMenuOpen} open={menuOpen}>
         <DropdownMenuTrigger asChild>
           <button
             className="ml-auto grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none data-[state=open]:bg-zinc-100 data-[state=open]:text-zinc-900"
+            ref={triggerRef}
             type="button"
           >
             {resyncing ? (
@@ -93,9 +96,9 @@ export function AdminRowActions({
               <DropdownMenuItem
                 className="text-rose-600 data-[highlighted]:bg-rose-50 data-[highlighted]:text-rose-700 [&>svg]:text-rose-500"
                 disabled={archived}
-                onSelect={(event) => {
-                  event.preventDefault();
-                  setConfirmOpen(true);
+                onSelect={() => {
+                  setMenuOpen(false);
+                  window.requestAnimationFrame(() => setConfirmOpen(true));
                 }}
               >
                 <Archive aria-hidden="true" />
@@ -110,15 +113,15 @@ export function AdminRowActions({
           confirmLabel="Archive"
           description={
             <>
-              {label} will be taken out of the working catalogue and hidden from
-              students. Nothing is deleted, and publishing it again brings it
-              back.
+              This hides {label} from students and removes it from the working
+              catalogue. You can publish it again later.
             </>
           }
           destructive
           onConfirm={onArchive}
           onOpenChange={setConfirmOpen}
           open={confirmOpen}
+          returnFocusRef={triggerRef}
           title={`Archive ${label}?`}
         />
       ) : null}

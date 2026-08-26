@@ -90,7 +90,7 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(homeHtml, />Prerequisites<\/button>/i);
   assert.match(homeHtml, /Start with a course, then build the rest/i);
   assert.match(homeHtml, /Explore courses/i);
-  assert.match(coursesHtml, /Showing .* of .* course/i);
+  assert.match(coursesHtml, /Viewing .* of .* course/i);
   assert.match(coursesHtml, /Computing Project/i);
   assert.doesNotMatch(
     coursesHtml,
@@ -327,7 +327,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.equal(adminCourseReviewResponse.status, 200);
   assert.equal(adminUsersResponse.status, 200);
   assert.equal(adminRolesResponse.status, 200);
-  assert.equal(relationsResponse.status, 200);
+  assert.equal(relationsResponse.status, 404);
   assert.equal(courseResponse.status, 200);
   assert.equal(chainResponse.status, 200);
   assert.equal(summaryResponse.status, 200);
@@ -336,9 +336,8 @@ test("server-renders admin and course-detail routes", async () => {
   const adminCourseReviewHtml = await adminCourseReviewResponse.text();
   const adminUsersHtml = await adminUsersResponse.text();
   const adminRolesHtml = await adminRolesResponse.text();
-  const relationsHtml = await relationsResponse.text();
   assert.match(adminHtml, /Live catalogue status/i);
-  assert.match(adminHtml, /Publication workflow/i);
+  assert.match(adminHtml, /Publish reviewed records/i);
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
   assert.doesNotMatch(adminHtml, /Catalogue administration/i);
@@ -353,7 +352,7 @@ test("server-renders admin and course-detail routes", async () => {
   );
   assert.match(adminCourseReviewHtml, /Changes/i);
   assert.match(adminCourseReviewHtml, /All fields/i);
-  assert.match(adminCourseReviewHtml, /Source HTML/i);
+  assert.match(adminCourseReviewHtml, />Source<\/button>/i);
   assert.match(adminCourseReviewHtml, /Parsed output/i);
   assert.match(adminCourseReviewHtml, /Prerequisites/i);
   assert.match(adminCourseReviewHtml, /Student preview/i);
@@ -363,12 +362,6 @@ test("server-renders admin and course-detail routes", async () => {
   );
   assert.match(adminUsersHtml, /User management is unavailable in demo mode/i);
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
-  assert.doesNotMatch(relationsHtml, />Table<|>Graph</i);
-  assert.match(relationsHtml, /Imported rules/i);
-  assert.doesNotMatch(
-    relationsHtml,
-    /Catalogue quality|Original ANU wording is retained here/i,
-  );
   const courseHtml = await courseResponse.text();
   assert.match(courseHtml, /Software Design Methodologies/i);
   assert.match(courseHtml, /About this course/i);
@@ -396,6 +389,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     adminPage,
     coursePage,
     courseDetailClient,
+    courseDetailView,
     prereqGraph,
     courseDrawer,
     coursePicker,
@@ -426,6 +420,10 @@ test("removes the disposable starter and keeps product metadata", async () => {
         "../app/courses/[code]/course-detail-client.tsx",
         import.meta.url,
       ),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/courses/course-detail-view.tsx", import.meta.url),
       "utf8",
     ),
     readFile(
@@ -489,14 +487,14 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(planClient, /programmeRequirementsImported/);
   assert.doesNotMatch(planClient, /Blocked: needs/);
   assert.match(adminPage, /Live catalogue status/);
-  assert.match(adminPage, /Publication workflow/);
+  assert.match(adminPage, /Publish reviewed records/);
   assert.match(coursePage, /loadPublishedCourse/);
   assert.match(courseDetailClient, /completedCodes/);
   assert.match(courseDetailClient, /plannedCodes/);
-  assert.match(courseDetailClient, /prerequisiteEdges/);
-  assert.match(courseDetailClient, /CourseReferenceText/);
-  assert.match(courseDetailClient, /Student experience and self-review/);
-  assert.doesNotMatch(courseDetailClient, /> Parsed</);
+  assert.match(courseDetailView, /prerequisiteEdges/);
+  assert.match(courseDetailView, /CourseReferenceText/);
+  assert.match(courseDetailView, /Student experience and self-review/);
+  assert.doesNotMatch(courseDetailView, /> Parsed</);
   assert.match(prereqGraph, /completedCodes\.has\(item\)/);
   assert.match(prereqGraph, /bg-emerald-50 text-emerald-700/);
   assert.match(prereqGraph, /isPlanned/);

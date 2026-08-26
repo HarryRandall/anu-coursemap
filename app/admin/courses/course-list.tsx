@@ -182,7 +182,7 @@ export function AdminCourseList({
             <AdminRowActions
               archived={record.publicationStatus === "archived"}
               label={record.code}
-              onArchive={() => void archive(record)}
+              onArchive={() => archive(record)}
               onResync={() => void resync(record)}
               openHref={`/admin/courses/${record.publicId}`}
               resyncing={resyncing === record.code}

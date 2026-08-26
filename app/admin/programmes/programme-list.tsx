@@ -144,7 +144,7 @@ export function ProgrammeList({
             <AdminRowActions
               archived={record.publicationStatus === "archived"}
               label={record.code}
-              onArchive={() => void archive(record)}
+              onArchive={() => archive(record)}
               openHref={`/admin/programmes/${record.publicId}`}
               sourceUrl={`https://programsandcourses.anu.edu.au/${record.year}/program/${record.code}`}
             />
