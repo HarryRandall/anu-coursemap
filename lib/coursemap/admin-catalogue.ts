@@ -316,10 +316,12 @@ export async function loadAdminStructurePage({
   page,
   pageSize = 24,
   query,
+  status = "all",
 }: {
   page?: number;
   pageSize?: number;
   query?: string;
+  status?: AdminCourseListStatus;
 } = {}): Promise<PaginatedAdminResult<AdminStructureRecord>> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
@@ -369,6 +371,13 @@ export async function loadAdminStructurePage({
       ? `,structure_id.in.(${structureIds.join(",")})`
       : "";
     versionsQuery = versionsQuery.or(`name.ilike.${pattern}${codeClause}`);
+  }
+  if (status === "draft" || status === "published") {
+    versionsQuery = versionsQuery.eq("publication_status", status);
+  } else if (status === "verified") {
+    versionsQuery = versionsQuery.eq("review_state", "verified");
+  } else if (status === "needs-review") {
+    versionsQuery = versionsQuery.neq("review_state", "verified");
   }
   const start = (currentPage - 1) * currentPageSize;
   const {
