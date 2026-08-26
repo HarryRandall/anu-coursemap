@@ -220,3 +220,100 @@ export async function publishStructureVersion(
     return { ok: false, message: errorMessage(error) };
   }
 }
+
+/**
+ * Archiving keeps the imported record and its provenance while taking it out
+ * of the working set. Nothing is deleted, so a mistaken archive is reversible
+ * by republishing.
+ */
+export async function archiveCourseVersion(
+  code: string,
+  catalogueYear: number,
+): Promise<CoursemapActionResult> {
+  const denied = await canPublish();
+  if (denied) return denied;
+
+  try {
+    const supabase = await createClient();
+    const { data: year, error: yearError } = await supabase
+      .from("catalogue_years")
+      .select("id")
+      .eq("year", catalogueYear)
+      .maybeSingle();
+    if (yearError) throw yearError;
+    if (!year) return { ok: false, message: "Unknown catalogue year." };
+
+    const { data: course, error: courseError } = await supabase
+      .from("courses")
+      .select("id")
+      .eq("code", code)
+      .maybeSingle();
+    if (courseError) throw courseError;
+    if (!course) return { ok: false, message: `${code} was not found.` };
+
+    const { data: updated, error: updateError } = await supabase
+      .from("course_versions")
+      .update({ publication_status: "archived" })
+      .eq("catalogue_year_id", year.id)
+      .eq("course_id", course.id)
+      .neq("publication_status", "archived")
+      .select("id")
+      .maybeSingle();
+    if (updateError) throw updateError;
+    if (!updated) {
+      return { ok: false, message: `${code} is already archived.` };
+    }
+
+    revalidatePath("/admin/courses");
+    revalidatePath("/courses");
+    return { ok: true, message: `${code} was archived.` };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}
+
+export async function archiveStructureVersion(
+  code: string,
+  catalogueYear: number,
+): Promise<CoursemapActionResult> {
+  const denied = await canPublish();
+  if (denied) return denied;
+
+  try {
+    const supabase = await createClient();
+    const { data: year, error: yearError } = await supabase
+      .from("catalogue_years")
+      .select("id")
+      .eq("year", catalogueYear)
+      .maybeSingle();
+    if (yearError) throw yearError;
+    if (!year) return { ok: false, message: "Unknown catalogue year." };
+
+    const { data: structure, error: structureError } = await supabase
+      .from("academic_structures")
+      .select("id")
+      .eq("code", code)
+      .maybeSingle();
+    if (structureError) throw structureError;
+    if (!structure) return { ok: false, message: `${code} was not found.` };
+
+    const { data: updated, error: updateError } = await supabase
+      .from("academic_structure_versions")
+      .update({ publication_status: "archived" })
+      .eq("catalogue_year_id", year.id)
+      .eq("structure_id", structure.id)
+      .neq("publication_status", "archived")
+      .select("id")
+      .maybeSingle();
+    if (updateError) throw updateError;
+    if (!updated) {
+      return { ok: false, message: `${code} is already archived.` };
+    }
+
+    revalidatePath("/admin/programmes");
+    revalidatePath("/onboarding");
+    return { ok: true, message: `${code} was archived.` };
+  } catch (error) {
+    return { ok: false, message: errorMessage(error) };
+  }
+}

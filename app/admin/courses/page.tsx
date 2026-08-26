@@ -11,6 +11,7 @@ const statuses: AdminCourseListStatus[] = [
   "all",
   "draft",
   "published",
+  "archived",
   "needs-review",
   "verified",
 ];

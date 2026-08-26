@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { archiveCourseVersion } from "@/lib/coursemap/catalogue-publication-actions";
 import type {
   AdminCourseRecord,
   PaginatedAdminResult,
@@ -102,6 +103,13 @@ export function AdminCourseList({
     null,
   );
 
+  async function archive(record: AdminCourseRecord) {
+    setNotice(null);
+    const result = await archiveCourseVersion(record.code, record.year);
+    setNotice({ ok: result.ok, text: result.message });
+    if (result.ok) router.refresh();
+  }
+
   async function resync(record: AdminCourseRecord) {
     setResyncing(record.code);
     setNotice(null);
@@ -146,6 +154,7 @@ export function AdminCourseList({
               options: [
                 { label: "Drafts", value: "draft" },
                 { label: "Published", value: "published" },
+                { label: "Archived", value: "archived" },
                 { label: "Unverified", value: "needs-review" },
                 { label: "Verified", value: "verified" },
               ],
@@ -171,9 +180,11 @@ export function AdminCourseList({
         <AdminRecordTable
           actions={(record) => (
             <AdminRowActions
+              archived={record.publicationStatus === "archived"}
               label={record.code}
+              onArchive={() => void archive(record)}
               onResync={() => void resync(record)}
-              openHref={`/admin/courses/${record.code}`}
+              openHref={`/admin/courses/${record.publicId}`}
               resyncing={resyncing === record.code}
               sourceUrl={`https://programsandcourses.anu.edu.au/${record.year}/course/${record.code}`}
               studentHref={
@@ -191,7 +202,7 @@ export function AdminCourseList({
           page={data.page}
           pageSize={data.pageSize}
           pathname="/admin/courses"
-          rowHref={(record) => `/admin/courses/${record.code}`}
+          rowHref={(record) => `/admin/courses/${record.publicId}`}
           rowKey={(record) => record.code}
           rows={data.records}
           searchParams={searchParams}

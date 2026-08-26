@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CourseReview } from "./course-review";
 import { loadAdminCourseReview } from "@/lib/coursemap/admin-catalogue";
 import { toStudentPreviewCourse } from "@/lib/coursemap/admin-course-preview";
@@ -10,11 +10,14 @@ const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}\b/gu;
 export default async function AdminCourseDetailPage({
   params,
 }: {
-  params: Promise<{ code: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { code } = await params;
-  const record = await loadAdminCourseReview(code);
+  const { id } = await params;
+  const record = await loadAdminCourseReview(id);
   if (!record) notFound();
+  // Codes stay valid so existing links keep working, but settle on the
+  // public identifier so a URL never depends on a code ANU could reuse.
+  if (id !== record.publicId) redirect(`/admin/courses/${record.publicId}`);
 
   const referenced = [
     ...new Set(

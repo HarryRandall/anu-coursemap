@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type AdminCourseRecord = {
   code: string;
+  publicId: string;
   id: number;
   publicationStatus: string;
   reviewState: string;
@@ -16,6 +17,7 @@ export type AdminCourseRecord = {
 
 export type AdminStructureRecord = {
   code: string;
+  publicId: string;
   description: string;
   id: number;
   kind: string;
@@ -64,6 +66,7 @@ export type AdminCourseReviewOffering = {
 
 export type AdminCourseReviewRecord = {
   code: string;
+  publicId: string;
   convener: string | null;
   deliverySummary: string | null;
   description: string;
@@ -96,7 +99,7 @@ type CourseVersionRow = {
   title: string;
   units: number;
 };
-type CourseRow = { code: string; id: number };
+type CourseRow = { code: string; id: number; public_id: string };
 type StructureVersionRow = {
   description: string;
   id: number;
@@ -106,7 +109,12 @@ type StructureVersionRow = {
   structure_id: number;
   units: number;
 };
-type StructureRow = { code: string; id: number; kind: string };
+type StructureRow = {
+  code: string;
+  id: number;
+  kind: string;
+  public_id: string;
+};
 
 type CourseReviewVersionRow = {
   convener: string | null;
@@ -169,6 +177,10 @@ async function currentCatalogueYear() {
   return data;
 }
 
+/** Admin routes address records by public_id; codes stay valid as a redirect. */
+export const PUBLIC_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
 function safePage(value?: number) {
   return value !== undefined && Number.isFinite(value)
     ? Math.max(1, Math.floor(value))
@@ -185,7 +197,7 @@ function safeQuery(value?: string) {
 }
 
 export type AdminCourseListStatus =
-  "all" | "draft" | "published" | "needs-review" | "verified";
+  "all" | "draft" | "published" | "archived" | "needs-review" | "verified";
 
 export async function loadAdminCourseSubjects(): Promise<string[]> {
   if (isDemoMode()) return [];
@@ -266,7 +278,9 @@ export async function loadAdminCoursePage({
     );
   }
   if (subject) versionsQuery = versionsQuery.eq("subject", subject);
-  if (status === "draft" || status === "published") {
+  if (status === "archived") {
+    versionsQuery = versionsQuery.eq("publication_status", "archived");
+  } else if (status === "draft" || status === "published") {
     versionsQuery = versionsQuery.eq("publication_status", status);
   } else if (status === "verified") {
     versionsQuery = versionsQuery.eq("review_state", "verified");
@@ -286,22 +300,26 @@ export async function loadAdminCoursePage({
   const rows = (versions ?? []) as CourseVersionRow[];
   const courseIds = [...new Set(rows.map((row) => row.course_id))];
   const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
+    ? await supabase
+        .from("courses")
+        .select("code,id,public_id")
+        .in("id", courseIds)
     : { data: [], error: null };
   if (coursesError) throw coursesError;
-  const codeById = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
+  const courseById = new Map(
+    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course]),
   );
   return {
     page: currentPage,
     pageSize: currentPageSize,
     total: count ?? 0,
     records: rows.flatMap((row) => {
-      const code = codeById.get(row.course_id);
-      return code
+      const course = courseById.get(row.course_id);
+      return course
         ? [
             {
-              code,
+              code: course.code,
+              publicId: course.public_id,
               id: row.id,
               publicationStatus: row.publication_status,
               reviewState: row.review_state,
@@ -392,7 +410,9 @@ export async function loadAdminStructurePage({
       ? versionsQuery.in("structure_id", kindIds)
       : versionsQuery.eq("structure_id", -1);
   }
-  if (status === "draft" || status === "published") {
+  if (status === "archived") {
+    versionsQuery = versionsQuery.eq("publication_status", "archived");
+  } else if (status === "draft" || status === "published") {
     versionsQuery = versionsQuery.eq("publication_status", status);
   } else if (status === "verified") {
     versionsQuery = versionsQuery.eq("review_state", "verified");
@@ -413,7 +433,7 @@ export async function loadAdminStructurePage({
   const { data: structures, error: structuresError } = ids.length
     ? await supabase
         .from("academic_structures")
-        .select("code,id,kind")
+        .select("code,id,kind,public_id")
         .in("id", ids)
     : { data: [], error: null };
   if (structuresError) throw structuresError;
@@ -433,6 +453,7 @@ export async function loadAdminStructurePage({
         ? [
             {
               code: structure.code,
+              publicId: structure.public_id,
               description: row.description,
               id: row.id,
               kind: structure.kind,
@@ -547,19 +568,23 @@ export async function loadAdminCourseRecords(): Promise<AdminCourseRecord[]> {
   const rows = (versions ?? []) as CourseVersionRow[];
   const courseIds = [...new Set(rows.map((row) => row.course_id))];
   const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
+    ? await supabase
+        .from("courses")
+        .select("code,id,public_id")
+        .in("id", courseIds)
     : { data: [], error: null };
   if (coursesError) throw coursesError;
-  const codeById = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
+  const courseById = new Map(
+    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course]),
   );
 
   return rows.flatMap((row) => {
-    const code = codeById.get(row.course_id);
-    return code
+    const course = courseById.get(row.course_id);
+    return course
       ? [
           {
-            code,
+            code: course.code,
+            publicId: course.public_id,
             id: row.id,
             publicationStatus: row.publication_status,
             reviewState: row.review_state,
@@ -579,12 +604,15 @@ export async function loadAdminCourseRecords(): Promise<AdminCourseRecord[]> {
  * review never loses provenance.
  */
 export async function loadAdminCourseReview(
-  courseCode: string,
+  identifier: string,
 ): Promise<AdminCourseReviewRecord | null> {
-  const code = courseCode.trim().toUpperCase();
-  if (!/^[A-Z]{4}\d{4}$/.test(code)) return null;
+  const value = identifier.trim();
+  const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
+  const code = publicId ? null : value.toUpperCase();
+  if (!publicId && !/^[A-Z]{4}\d{4}$/.test(code ?? "")) return null;
 
   if (isDemoMode()) {
+    if (!code) return null;
     const { courseByCode } = await import("@/lib/catalogue");
     const course = courseByCode(code);
     if (!course) return null;
@@ -619,6 +647,7 @@ export async function loadAdminCourseReview(
 
     return {
       code: course.code,
+      publicId: course.code,
       convener: course.convener,
       deliverySummary: course.delivery,
       description: course.description,
@@ -663,8 +692,8 @@ export async function loadAdminCourseReview(
 
   const { data: course, error: courseError } = await supabase
     .from("courses")
-    .select("id,code")
-    .eq("code", code)
+    .select("id,code,public_id")
+    .eq(publicId ? "public_id" : "code", publicId ?? (code as string))
     .maybeSingle();
   if (courseError) throw courseError;
   if (!course) return null;
@@ -733,7 +762,8 @@ export async function loadAdminCourseReview(
 
   const source = sourceResult.data as SourceDocumentRow | null;
   return {
-    code,
+    code: course.code,
+    publicId: course.public_id,
     convener: versionRow.convener,
     deliverySummary: versionRow.delivery_summary,
     description: versionRow.description,
@@ -804,7 +834,7 @@ export async function loadAdminStructureRecords(): Promise<
   const { data: structures, error: structuresError } = structureIds.length
     ? await supabase
         .from("academic_structures")
-        .select("code,id,kind")
+        .select("code,id,kind,public_id")
         .in("id", structureIds)
     : { data: [], error: null };
   if (structuresError) throw structuresError;
@@ -821,6 +851,7 @@ export async function loadAdminStructureRecords(): Promise<
       ? [
           {
             code: structure.code,
+            publicId: structure.public_id,
             description: row.description,
             id: row.id,
             kind: structure.kind,
@@ -861,6 +892,7 @@ export type AdminStructureReviewGroup = {
 
 export type AdminStructureReviewRecord = {
   code: string;
+  publicId: string;
   description: string;
   groups: AdminStructureReviewGroup[];
   id: number;
@@ -883,10 +915,12 @@ export type AdminStructureReviewRecord = {
  * check the imported structure against the ANU page before publishing it.
  */
 export async function loadAdminStructureReview(
-  structureCode: string,
+  identifier: string,
 ): Promise<AdminStructureReviewRecord | null> {
-  const code = structureCode.trim().toUpperCase();
-  if (!/^[A-Z0-9][A-Z0-9-]*$/.test(code)) return null;
+  const value = identifier.trim();
+  const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
+  const code = publicId ? null : value.toUpperCase();
+  if (!publicId && !/^[A-Z0-9][A-Z0-9-]*$/.test(code ?? "")) return null;
   if (isDemoMode()) return null;
 
   const [supabase, year] = await Promise.all([
@@ -897,8 +931,8 @@ export async function loadAdminStructureReview(
 
   const { data: structure, error: structureError } = await supabase
     .from("academic_structures")
-    .select("id,code,kind")
-    .eq("code", code)
+    .select("id,code,kind,public_id")
+    .eq(publicId ? "public_id" : "code", publicId ?? (code as string))
     .maybeSingle();
   if (structureError) throw structureError;
   if (!structure) return null;
@@ -945,7 +979,10 @@ export async function loadAdminStructureReview(
     ),
   ];
   const { data: conditionCourses } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
+    ? await supabase
+        .from("courses")
+        .select("code,id,public_id")
+        .in("id", courseIds)
     : { data: [] };
   const courseCodeById = new Map(
     ((conditionCourses ?? []) as CourseRow[]).map((course) => [
@@ -984,6 +1021,7 @@ export async function loadAdminStructureReview(
 
   return {
     code: structure.code,
+    publicId: structure.public_id,
     description: version.description,
     id: version.id,
     kind: structure.kind,

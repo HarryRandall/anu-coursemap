@@ -1,5 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { archiveStructureVersion } from "@/lib/coursemap/catalogue-publication-actions";
+
 import type {
   AdminStructureRecord,
   PaginatedAdminResult,
@@ -10,6 +14,7 @@ import {
 } from "@/components/admin/admin-record-table";
 import { AdminRowActions } from "@/components/admin/admin-row-actions";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { FilterBar } from "@/components/ui/filter-bar";
 
@@ -82,6 +87,18 @@ export function ProgrammeList({
   data: PaginatedAdminResult<AdminStructureRecord>;
   searchParams: Record<string, string | undefined>;
 }) {
+  const router = useRouter();
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(
+    null,
+  );
+
+  async function archive(record: AdminStructureRecord) {
+    setNotice(null);
+    const result = await archiveStructureVersion(record.code, record.year);
+    setNotice({ ok: result.ok, text: result.message });
+    if (result.ok) router.refresh();
+  }
+
   return (
     <AppShell admin>
       <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
@@ -97,6 +114,7 @@ export function ProgrammeList({
               options: [
                 { label: "Drafts", value: "draft" },
                 { label: "Published", value: "published" },
+                { label: "Archived", value: "archived" },
                 { label: "Unverified", value: "needs-review" },
                 { label: "Verified", value: "verified" },
               ],
@@ -115,11 +133,19 @@ export function ProgrammeList({
           ]}
         />
 
+        {notice ? (
+          <Alert role="status" tone={notice.ok ? "success" : "danger"}>
+            <AlertDescription>{notice.text}</AlertDescription>
+          </Alert>
+        ) : null}
+
         <AdminRecordTable
           actions={(record) => (
             <AdminRowActions
+              archived={record.publicationStatus === "archived"}
               label={record.code}
-              openHref={`/admin/programmes/${record.code}`}
+              onArchive={() => void archive(record)}
+              openHref={`/admin/programmes/${record.publicId}`}
               sourceUrl={`https://programsandcourses.anu.edu.au/${record.year}/program/${record.code}`}
             />
           )}
@@ -131,7 +157,7 @@ export function ProgrammeList({
           page={data.page}
           pageSize={data.pageSize}
           pathname="/admin/programmes"
-          rowHref={(record) => `/admin/programmes/${record.code}`}
+          rowHref={(record) => `/admin/programmes/${record.publicId}`}
           rowKey={(record) => record.code}
           rows={data.records}
           searchParams={searchParams}

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Archive,
   ExternalLink,
   LoaderCircle,
   MoreHorizontal,
@@ -17,14 +18,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function AdminRowActions({
+  archived = false,
   label,
+  onArchive,
   onResync,
   openHref,
   resyncing = false,
   sourceUrl,
   studentHref,
 }: {
+  archived?: boolean;
   label: string;
+  onArchive?: () => void;
   onResync?: () => void;
   openHref: string;
   resyncing?: boolean;
@@ -71,14 +76,18 @@ export function AdminRowActions({
             </a>
           </DropdownMenuItem>
         ) : null}
+        {onResync || onArchive ? <DropdownMenuSeparator /> : null}
         {onResync ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem disabled={resyncing} onSelect={onResync}>
-              <RefreshCw aria-hidden="true" />
-              {resyncing ? "Resyncing..." : "Resync from ANU"}
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem disabled={resyncing} onSelect={onResync}>
+            <RefreshCw aria-hidden="true" />
+            {resyncing ? "Resyncing..." : "Resync from ANU"}
+          </DropdownMenuItem>
+        ) : null}
+        {onArchive ? (
+          <DropdownMenuItem disabled={archived} onSelect={onArchive}>
+            <Archive aria-hidden="true" />
+            {archived ? "Archived" : "Archive"}
+          </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>

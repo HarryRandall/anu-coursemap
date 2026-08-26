@@ -117,7 +117,11 @@ export function FilterBar({
         {filters.length > 0 ? (
           <Popover onOpenChange={setPickerOpen} open={pickerOpen}>
             <PopoverTrigger asChild>
-              <Button className="h-10" size="md" variant="secondary">
+              <Button
+                className="h-10 shrink-0 px-3.5"
+                size="md"
+                variant="secondary"
+              >
                 <ListFilter size={16} aria-hidden="true" />
                 Filter
                 {active.length > 0 ? (

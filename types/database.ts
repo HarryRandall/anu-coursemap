@@ -185,6 +185,7 @@ export type Database = {
           created_at: string
           id: number
           kind: string
+          public_id: string
           updated_at: string
         }
         Insert: {
@@ -192,6 +193,7 @@ export type Database = {
           created_at?: string
           id?: never
           kind: string
+          public_id?: string
           updated_at?: string
         }
         Update: {
@@ -199,6 +201,7 @@ export type Database = {
           created_at?: string
           id?: never
           kind?: string
+          public_id?: string
           updated_at?: string
         }
         Relationships: []
@@ -1030,18 +1033,21 @@ export type Database = {
           code: string
           created_at: string
           id: number
+          public_id: string
           updated_at: string
         }
         Insert: {
           code: string
           created_at?: string
           id?: never
+          public_id?: string
           updated_at?: string
         }
         Update: {
           code?: string
           created_at?: string
           id?: never
+          public_id?: string
           updated_at?: string
         }
         Relationships: []
