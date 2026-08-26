@@ -348,3 +348,83 @@ test("groups 'either' around unit conditions as well as course codes", () => {
     },
   );
 });
+
+test("maps a programme enrolment requirement alongside a completed course", () => {
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course, you must have completed ACST4031 and be enrolled in Bachelor of Actuarial Studies (Honours) (HACTS) or Bachelor of Social Sciences (Honours in Actuarial Studies and Economics) (ASSAE).",
+    ),
+    {
+      kind: "group",
+      operator: "all_of",
+      conditions: [
+        { kind: "course", code: "ACST4031" },
+        {
+          kind: "group",
+          operator: "any_of",
+          conditions: [
+            {
+              kind: "programme_enrolment",
+              code: "HACTS",
+              name: "Bachelor of Actuarial Studies (Honours)",
+            },
+            {
+              kind: "programme_enrolment",
+              code: "ASSAE",
+              name: "Bachelor of Social Sciences (Honours in Actuarial Studies and Economics)",
+            },
+          ],
+        },
+      ],
+    },
+  );
+});
+
+test("maps a single programme enrolment requirement", () => {
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course you must be enrolled in the Master of Computing (MCOMP).",
+    ),
+    {
+      kind: "programme_enrolment",
+      code: "MCOMP",
+      name: "Master of Computing",
+    },
+  );
+});
+
+test("refuses programme wording that carries no programme code", () => {
+  assert.equal(
+    parseRequisiteSummary(
+      "To enrol in this course you must be enrolled in a graduate programme.",
+    ),
+    null,
+  );
+});
+
+test("evaluates programme enrolment against the student's programmes", () => {
+  const expression = parseRequisiteSummary(
+    "To enrol in this course, you must have completed ACST4031 and be enrolled in Bachelor of Actuarial Studies (Honours) (HACTS) or Bachelor of Social Sciences (Honours in Actuarial Studies and Economics) (ASSAE).",
+  );
+  assert.ok(expression);
+
+  const enrolled = evaluateRequisiteExpression(
+    expression,
+    [{ code: "ACST4031", units: 6 }],
+    ["HACTS"],
+  );
+  assert.equal(enrolled.satisfied, true);
+
+  const notEnrolled = evaluateRequisiteExpression(
+    expression,
+    [{ code: "ACST4031", units: 6 }],
+    [],
+  );
+  assert.equal(notEnrolled.satisfied, false);
+  assert.deepEqual(notEnrolled.conditions[1].conditions[0], {
+    kind: "programme_enrolment",
+    code: "HACTS",
+    name: "Bachelor of Actuarial Studies (Honours)",
+    satisfied: false,
+  });
+});

@@ -121,6 +121,14 @@ function RequisiteTree({ expression }: { expression: RequisiteExpression }) {
   if (expression.kind === "units_total") {
     return <span>Complete {expression.units} units of tertiary study</span>;
   }
+  if (expression.kind === "programme_enrolment") {
+    return (
+      <span>
+        Be enrolled in {expression.name}{" "}
+        <span className="font-mono font-semibold">({expression.code})</span>
+      </span>
+    );
+  }
   return (
     <div>
       <p className="text-sm font-semibold text-zinc-950">

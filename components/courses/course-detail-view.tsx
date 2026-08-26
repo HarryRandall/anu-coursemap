@@ -191,6 +191,14 @@ function RequisiteConditionText({
   if (condition.kind === "units_total") {
     return <>Complete at least {condition.units} units of study</>;
   }
+  if (condition.kind === "programme_enrolment") {
+    return (
+      <>
+        Be enrolled in {condition.name}{" "}
+        <span className="font-mono font-semibold">({condition.code})</span>
+      </>
+    );
+  }
   return (
     <>
       Complete at least {condition.units} units of {condition.subject}-coded
@@ -303,6 +311,30 @@ function RequisiteProgressSummary({
     );
   }
 
+  if (progress.kind === "programme_enrolment") {
+    return (
+      <div className="flex items-start gap-2">
+        {progress.satisfied ? (
+          <CheckCircle2
+            aria-label="Enrolled"
+            className="mt-0.5 shrink-0 text-emerald-600"
+            size={16}
+          />
+        ) : (
+          <Circle
+            aria-label="Not enrolled"
+            className="mt-0.5 shrink-0 text-amber-700"
+            size={16}
+          />
+        )}
+        <span>
+          Be enrolled in {progress.name}{" "}
+          <span className="font-mono font-semibold">({progress.code})</span>
+        </span>
+      </div>
+    );
+  }
+
   const title =
     progress.operator === "all_of"
       ? "Complete all of the following"
@@ -352,6 +384,7 @@ export function CourseDetailView({
   plannedCodes?: ReadonlySet<string>;
   requisiteCompletion: {
     completedCourses: CompletedRequisiteCourse[];
+    enrolledProgrammeCodes?: string[];
     isAuthenticated: boolean;
   };
 }) {
@@ -363,6 +396,7 @@ export function CourseDetailView({
     ? evaluateRequisiteExpression(
         structuredRule,
         requisiteCompletion.completedCourses,
+        requisiteCompletion.enrolledProgrammeCodes ?? [],
       )
     : null;
   const hasPrerequisiteWording =
@@ -373,10 +407,10 @@ export function CourseDetailView({
     ? "No prerequisite course codes were detected in the imported source."
     : requisiteProgress && requisiteCompletion.isAuthenticated
       ? requisiteProgress.satisfied
-        ? "Your recorded completed courses meet this imported prerequisite matrix. Confirm final enrolment eligibility with ANU."
-        : "Your recorded completed courses do not yet meet this imported prerequisite matrix. Planned and enrolled courses are not counted."
+        ? "Your recorded study and programme meet this imported prerequisite matrix. Confirm final enrolment eligibility with ANU."
+        : "Your recorded study and programme do not yet meet this imported prerequisite matrix. Planned and enrolled courses are not counted."
       : structuredRule
-        ? "Sign in and record completed courses in Academic to see whether you meet this prerequisite matrix."
+        ? "Sign in and record your completed courses and programme to see whether you meet this prerequisite matrix."
         : requisiteSummary
           ? "Coursemap identified the unit and course conditions shown below. Confirm eligibility with the official ANU source."
           : course.reviewState === "verified"

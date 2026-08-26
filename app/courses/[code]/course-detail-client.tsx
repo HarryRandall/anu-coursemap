@@ -22,6 +22,7 @@ export function CourseDetailClient({
   course: CatalogueCourse;
   requisiteCompletion: {
     completedCourses: CompletedRequisiteCourse[];
+    enrolledProgrammeCodes?: string[];
     isAuthenticated: boolean;
   };
 }) {

@@ -17,6 +17,11 @@ export type RequisiteCondition =
   | {
       kind: "units_total";
       units: number;
+    }
+  | {
+      kind: "programme_enrolment";
+      code: string;
+      name: string;
     };
 
 export type RequisiteExpression =
@@ -60,6 +65,12 @@ export type RequisiteProgress =
       satisfied: boolean;
     }
   | {
+      code: string;
+      kind: "programme_enrolment";
+      name: string;
+      satisfied: boolean;
+    }
+  | {
       conditions: RequisiteProgress[];
       kind: "group";
       operator: "all_of" | "any_of";
@@ -93,13 +104,64 @@ function normaliseSourceText(value: string) {
 function stripPreamble(value: string) {
   return value
     .replace(
-      /^to enrol in (?:this|the) course,? (?:you|students) must have (?:successfully )?completed:?\s*(?:the following:?\s*)?/iu,
+      /^to enrol in (?:this|the) course,? (?:you|students) must\s+(?:have (?:successfully )?completed:?\s*(?:the following:?\s*)?)?/iu,
       "",
     )
     .replace(
-      /^to enrol in [A-Z]{4}\d{4},? (?:you|students) must have (?:successfully )?completed:?\s*/iu,
+      /^to enrol in [A-Z]{4}\d{4},? (?:you|students) must\s+(?:have (?:successfully )?completed:?\s*)?/iu,
       "",
     );
+}
+
+/**
+ * ANU states programme requirements as "be enrolled in <Programme name>
+ * (CODE)", optionally listing alternatives. The whole clause is consumed at
+ * once because a bare programme name carries no marker of its own, and the
+ * list is bracketed so its conjunction cannot leak into the wider rule.
+ */
+function readProgrammeEnrolment(
+  input: string,
+): { remainder: string; tokens: RequisiteToken[] } | null {
+  const programme = /^([^.;]+?)\s*\(([A-Z][A-Z0-9-]{1,15})\)/u;
+  const separator = /^\s*,?\s*(or|and)\s+/iu;
+  const conditions: RequisiteCondition[] = [];
+  let remainder = input;
+  let conjunction: "and" | "or" | null = null;
+
+  for (;;) {
+    const match = programme.exec(remainder);
+    if (!match) return null;
+    conditions.push({
+      kind: "programme_enrolment",
+      code: match[2].toUpperCase(),
+      name: normaliseSourceText(match[1]),
+    });
+    remainder = remainder.slice(match[0].length);
+
+    const next = separator.exec(remainder);
+    if (!next) break;
+    const rest = remainder.slice(next[0].length);
+    if (!programme.test(rest)) break;
+    const candidate = next[1].toLowerCase() as "and" | "or";
+    if (conjunction && conjunction !== candidate) return null;
+    conjunction = candidate;
+    remainder = rest;
+  }
+
+  if (conditions.length === 1) {
+    return {
+      remainder,
+      tokens: [{ kind: "condition", condition: conditions[0] }],
+    };
+  }
+
+  const tokens: RequisiteToken[] = [{ kind: "left_parenthesis" }];
+  conditions.forEach((condition, index) => {
+    if (index > 0) tokens.push({ kind: conjunction ?? "or" });
+    tokens.push({ kind: "condition", condition });
+  });
+  tokens.push({ kind: "right_parenthesis" });
+  return { remainder, tokens };
 }
 
 function tokenise(sourceText: string): RequisiteToken[] | null {
@@ -131,6 +193,20 @@ function tokenise(sourceText: string): RequisiteToken[] | null {
     if (clauseConjunction) {
       tokens.push({ kind: "clause_and" });
       remainder = remainder.slice(clauseConjunction.length);
+      continue;
+    }
+
+    const enrolmentPrefix =
+      /^(?:you\s+|students\s+)?(?:must\s+)?(?:be\s+)?(?:currently\s+)?enrolled\s+in\s+(?:the\s+)?/iu.exec(
+        remainder,
+      )?.[0];
+    if (enrolmentPrefix) {
+      const clause = readProgrammeEnrolment(
+        remainder.slice(enrolmentPrefix.length),
+      );
+      if (!clause) return null;
+      tokens.push(...clause.tokens);
+      remainder = clause.remainder;
       continue;
     }
 
@@ -435,7 +511,19 @@ function courseLevel(code: string) {
 export function evaluateRequisiteExpression(
   expression: RequisiteExpression,
   completedCourses: readonly CompletedRequisiteCourse[],
+  enrolledProgrammeCodes: readonly string[] = [],
 ): RequisiteProgress {
+  if (expression.kind === "programme_enrolment") {
+    return {
+      kind: "programme_enrolment",
+      code: expression.code,
+      name: expression.name,
+      satisfied: enrolledProgrammeCodes.some(
+        (code) => code.toUpperCase() === expression.code,
+      ),
+    };
+  }
+
   if (expression.kind === "course") {
     return {
       kind: "course",
@@ -501,7 +589,11 @@ export function evaluateRequisiteExpression(
   }
 
   const conditions = expression.conditions.map((condition) =>
-    evaluateRequisiteExpression(condition, completedCourses),
+    evaluateRequisiteExpression(
+      condition,
+      completedCourses,
+      enrolledProgrammeCodes,
+    ),
   );
   return {
     kind: "group",
