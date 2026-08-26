@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import type { CSSProperties } from "react";
 import {
   DataTableEmpty,
@@ -7,7 +8,6 @@ import {
   TableCaption,
   TableCell,
   TableHead,
-  TableHeader,
   TableRow,
 } from "@/components/ui/data-table";
 import type {
@@ -15,7 +15,44 @@ import type {
   AdminRole,
   AdminRolePermission,
 } from "@/lib/admin/users";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { RolePermissionToggle } from "./role-permission-toggle";
+
+/**
+ * Role descriptions live behind an info control so the matrix header stays a
+ * single line and the columns line up with the permission rows beneath them.
+ */
+function RoleHeading({ role }: { role: AdminRole }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-[11px] font-semibold tracking-[0.08em] text-zinc-600 uppercase">
+        {role.name}
+      </span>
+      {role.description ? (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="grid size-4 place-items-center rounded-full text-zinc-400 transition-colors hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+              type="button"
+            >
+              <Info aria-hidden="true" size={12} />
+              <span className="sr-only">About the {role.name} role</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="center" className="w-64">
+            <p className="text-xs leading-5 font-normal tracking-normal text-zinc-600 normal-case">
+              {role.description}
+            </p>
+          </PopoverContent>
+        </Popover>
+      ) : null}
+    </span>
+  );
+}
 
 function permissionArea(category: string) {
   const labels: Record<string, string> = {
@@ -76,35 +113,24 @@ export function RolePermissionMatrix({
             <col key={role.id} style={{ width: `${roleColumnWidth}px` }} />
           ))}
         </colgroup>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="sticky left-0 z-30 bg-zinc-50/95">
-              Permission
-            </TableHead>
-            {roles.map((role) => (
-              <TableHead
-                key={role.id}
-                className="text-center tracking-normal whitespace-normal text-zinc-700 normal-case"
-              >
-                <span className="block text-xs font-semibold">{role.name}</span>
-                <span className="mt-0.5 line-clamp-2 block text-[10px] leading-3 font-normal text-zinc-500">
-                  {role.description}
-                </span>
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
         {groupedPermissions.length > 0 ? (
           groupedPermissions.map(([category, categoryPermissions]) => (
             <TableBody key={category}>
               <TableRow className="bg-zinc-50/70 hover:bg-zinc-50/70">
                 <TableHead
                   scope="rowgroup"
-                  colSpan={roles.length + 1}
-                  className="h-8 py-1.5 text-left text-[10px] font-semibold tracking-[0.08em] whitespace-normal text-zinc-500 uppercase"
+                  className="h-9 py-1.5 text-left text-[10px] font-semibold tracking-[0.08em] whitespace-normal text-zinc-500 uppercase"
                 >
                   {permissionArea(category)}
                 </TableHead>
+                {roles.map((role) => (
+                  <TableHead
+                    className="h-9 py-1.5 text-center whitespace-nowrap"
+                    key={role.id}
+                  >
+                    <RoleHeading role={role} />
+                  </TableHead>
+                ))}
               </TableRow>
               {categoryPermissions.map((permission) => (
                 <TableRow key={permission.id} className="group">

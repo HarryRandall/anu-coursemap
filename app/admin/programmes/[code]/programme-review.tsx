@@ -11,6 +11,7 @@ import type {
   AdminStructureReviewRecord,
 } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -129,6 +130,9 @@ export function ProgrammeReview({
     text: string;
     tone: "success" | "danger";
   } | null>(null);
+  const [tab, setTab] = useState<"details" | "requirements" | "source">(
+    "details",
+  );
   const isDraft = record.publicationStatus === "draft";
   const needsReview = record.reviewState !== "verified";
 
@@ -144,155 +148,190 @@ export function ProgrammeReview({
     if (result.ok) router.refresh();
   }
 
+  const tabs = (
+    <TabsList className="h-auto min-w-max justify-start gap-0 rounded-none bg-transparent p-0">
+      {[
+        { label: "Details", value: "details" },
+        { label: "Requirements", value: "requirements" },
+        { label: "Source", value: "source" },
+      ].map((item) => (
+        <TabsTrigger
+          className="h-12 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-zinc-500 shadow-none hover:text-zinc-950 data-[state=active]:border-brand-600 data-[state=active]:bg-transparent data-[state=active]:text-zinc-950 data-[state=active]:shadow-none"
+          key={item.value}
+          value={item.value}
+        >
+          {item.label}
+        </TabsTrigger>
+      ))}
+    </TabsList>
+  );
+
   return (
-    <AppShell
-      actions={
-        isDraft && canPublish ? (
-          <Button
-            disabled={needsReview || publishing}
-            onClick={publish}
-            size="sm"
-            title={
-              needsReview
-                ? "Verify the imported requirements before publishing."
-                : undefined
-            }
-            variant="primary"
-          >
-            <Check aria-hidden="true" size={15} />
-            {publishing ? "Publishing..." : "Publish"}
-          </Button>
-        ) : null
+    <Tabs
+      className="block"
+      onValueChange={(value) =>
+        setTab(value as "details" | "requirements" | "source")
       }
-      admin
-      currentBreadcrumbLabel={record.name}
+      value={tab}
     >
-      <div className="mx-auto w-full max-w-5xl min-w-0 space-y-4 pb-10">
-        <h1 className="sr-only">
-          Review {record.code} {record.name}
-        </h1>
+      <AppShell
+        actions={
+          isDraft && canPublish ? (
+            <Button
+              disabled={needsReview || publishing}
+              onClick={publish}
+              size="sm"
+              title={
+                needsReview
+                  ? "Verify the imported requirements before publishing."
+                  : undefined
+              }
+              variant="primary"
+            >
+              <Check aria-hidden="true" size={15} />
+              {publishing ? "Publishing..." : "Publish"}
+            </Button>
+          ) : null
+        }
+        admin
+        currentBreadcrumbLabel={record.name}
+        tabs={tabs}
+      >
+        <div className="mx-auto w-full max-w-5xl min-w-0 space-y-4 pb-10">
+          <h1 className="sr-only">
+            Review {record.code} {record.name}
+          </h1>
 
-        {message ? (
-          <Alert role="status" tone={message.tone}>
-            {message.tone === "success" ? (
-              <CheckCircle2 aria-hidden="true" />
-            ) : (
-              <CircleAlert aria-hidden="true" />
-            )}
-            <AlertDescription>{message.text}</AlertDescription>
-          </Alert>
-        ) : null}
+          {message ? (
+            <Alert role="status" tone={message.tone}>
+              {message.tone === "success" ? (
+                <CheckCircle2 aria-hidden="true" />
+              ) : (
+                <CircleAlert aria-hidden="true" />
+              )}
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          ) : null}
 
-        <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          <div className="grid grid-cols-2 border-b border-zinc-200 sm:grid-cols-4">
-            {[
-              ["Catalogue", String(record.year)],
-              ["Kind", record.kind],
-              [
-                "Version",
-                record.publicationStatus === "published"
-                  ? "Published"
-                  : "Draft",
-              ],
-              [
-                "Review",
-                record.reviewState === "verified"
-                  ? "Verified"
-                  : "Needs source review",
-              ],
-            ].map(([label, value], index) => (
-              <div
-                className={`px-4 py-3.5 sm:px-5 ${index ? "border-l border-zinc-200" : ""}`}
-                key={label}
-              >
-                <p className="text-xs font-medium text-zinc-500">{label}</p>
-                <p className="mt-1 text-sm font-semibold text-zinc-950 capitalize">
-                  {value}
-                </p>
+          <TabsContent className="mt-0" value="details">
+            <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+              <div className="grid grid-cols-2 border-b border-zinc-200 sm:grid-cols-4">
+                {[
+                  ["Catalogue", String(record.year)],
+                  ["Kind", record.kind],
+                  [
+                    "Version",
+                    record.publicationStatus === "published"
+                      ? "Published"
+                      : "Draft",
+                  ],
+                  [
+                    "Review",
+                    record.reviewState === "verified"
+                      ? "Verified"
+                      : "Needs source review",
+                  ],
+                ].map(([label, value], index) => (
+                  <div
+                    className={`px-4 py-3.5 sm:px-5 ${index ? "border-l border-zinc-200" : ""}`}
+                    key={label}
+                  >
+                    <p className="text-xs font-medium text-zinc-500">{label}</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-950 capitalize">
+                      {value}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="px-5 sm:px-6">
-            <dl>
-              <Row label="Name" value={record.name} />
-              <Row label="Code" value={record.code} />
-              <Row label="Units" value={`${record.units} units`} />
-              <Row label="Description" value={record.description} />
-            </dl>
-          </div>
-        </section>
+              <div className="px-5 sm:px-6">
+                <dl>
+                  <Row label="Name" value={record.name} />
+                  <Row label="Code" value={record.code} />
+                  <Row label="Units" value={`${record.units} units`} />
+                  <Row label="Description" value={record.description} />
+                </dl>
+              </div>
+            </section>
+          </TabsContent>
 
-        <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
-            <h2 className="text-base font-semibold text-zinc-950">
-              Requirements
-            </h2>
-            <Badge tone={record.groups.length ? "neutral" : "warning"}>
-              {record.groups.length}{" "}
-              {record.groups.length === 1 ? "group" : "groups"}
-            </Badge>
-          </div>
-          {record.groups.length ? (
-            record.groups.map((group) => (
-              <GroupCard group={group} key={group.id} />
-            ))
-          ) : (
-            <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
-              No requirement groups were imported for this version.
-            </p>
-          )}
-        </section>
+          <TabsContent className="mt-0" value="requirements">
+            <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
+                <h2 className="text-base font-semibold text-zinc-950">
+                  Requirements
+                </h2>
+                <Badge tone={record.groups.length ? "neutral" : "warning"}>
+                  {record.groups.length}{" "}
+                  {record.groups.length === 1 ? "group" : "groups"}
+                </Badge>
+              </div>
+              {record.groups.length ? (
+                record.groups.map((group) => (
+                  <GroupCard group={group} key={group.id} />
+                ))
+              ) : (
+                <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                  No requirement groups were imported for this version.
+                </p>
+              )}
+            </section>
+          </TabsContent>
 
-        <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
-            <h2 className="text-base font-semibold text-zinc-950">Source</h2>
-            {record.source ? (
-              <ButtonLink
-                href={record.source.canonicalUrl}
-                rel="noreferrer"
-                size="sm"
-                target="_blank"
-              >
-                <ExternalLink aria-hidden="true" size={15} /> Open ANU page
-              </ButtonLink>
-            ) : null}
-          </div>
-          <div className="px-5 sm:px-6">
-            {record.source ? (
-              <dl>
-                <Row
-                  label="Retrieved"
-                  value={formatDate(record.source.fetchedAt)}
-                />
-                <Row
-                  label="Last modified"
-                  value={formatDate(record.source.lastModified)}
-                />
-                <Row
-                  label="Content hash"
-                  value={
-                    <span className="font-mono text-xs break-all">
-                      {record.source.contentHash ?? "Not recorded"}
-                    </span>
-                  }
-                />
-                <Row
-                  label="Canonical URL"
-                  value={
-                    <span className="break-all">
-                      {record.source.canonicalUrl}
-                    </span>
-                  }
-                />
-              </dl>
-            ) : (
-              <p className="py-8 text-sm text-zinc-500">
-                No source document is attached to this version.
-              </p>
-            )}
-          </div>
-        </section>
-      </div>
-    </AppShell>
+          <TabsContent className="mt-0" value="source">
+            <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
+                <h2 className="text-base font-semibold text-zinc-950">
+                  Source
+                </h2>
+                {record.source ? (
+                  <ButtonLink
+                    href={record.source.canonicalUrl}
+                    rel="noreferrer"
+                    size="sm"
+                    target="_blank"
+                  >
+                    <ExternalLink aria-hidden="true" size={15} /> Open ANU page
+                  </ButtonLink>
+                ) : null}
+              </div>
+              <div className="px-5 sm:px-6">
+                {record.source ? (
+                  <dl>
+                    <Row
+                      label="Retrieved"
+                      value={formatDate(record.source.fetchedAt)}
+                    />
+                    <Row
+                      label="Last modified"
+                      value={formatDate(record.source.lastModified)}
+                    />
+                    <Row
+                      label="Content hash"
+                      value={
+                        <span className="font-mono text-xs break-all">
+                          {record.source.contentHash ?? "Not recorded"}
+                        </span>
+                      }
+                    />
+                    <Row
+                      label="Canonical URL"
+                      value={
+                        <span className="break-all">
+                          {record.source.canonicalUrl}
+                        </span>
+                      }
+                    />
+                  </dl>
+                ) : (
+                  <p className="py-8 text-sm text-zinc-500">
+                    No source document is attached to this version.
+                  </p>
+                )}
+              </div>
+            </section>
+          </TabsContent>
+        </div>
+      </AppShell>
+    </Tabs>
   );
 }
