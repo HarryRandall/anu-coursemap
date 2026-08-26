@@ -109,12 +109,7 @@ export function FilterBar({
             </PopoverTrigger>
             <PopoverContent align="end">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-medium text-zinc-950">Filter courses</p>
-                  <p className="mt-0.5 text-xs text-zinc-500">
-                    Narrow the published catalogue.
-                  </p>
-                </div>
+                <p className="font-medium text-zinc-950">Filter courses</p>
                 {activeFilterCount.length > 0 ? (
                   <Button
                     size="sm"

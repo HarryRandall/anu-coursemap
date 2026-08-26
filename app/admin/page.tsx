@@ -2,7 +2,6 @@ import { AlertTriangle, BookOpen, GraduationCap } from "lucide-react";
 import { loadAdminCatalogueSummary } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { ButtonLink } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { StatTile } from "@/components/ui/stat-tile";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +17,6 @@ export default async function AdminOverviewPage() {
           <StatTile
             label="Courses"
             value={summary.courses}
-            description="Imported course versions"
             icon={<BookOpen aria-hidden="true" />}
             action={
               <ButtonLink href="/admin/courses" size="sm" variant="secondary">
@@ -29,7 +27,6 @@ export default async function AdminOverviewPage() {
           <StatTile
             label="Programmes"
             value={summary.structures}
-            description="Imported programme structures"
             icon={<GraduationCap aria-hidden="true" />}
             action={
               <ButtonLink
@@ -53,28 +50,6 @@ export default async function AdminOverviewPage() {
             }
           />
         </div>
-        <Card>
-          <CardHeader title="Publication workflow" />
-          <CardContent>
-            <ol className="grid gap-3 text-sm text-zinc-600 sm:grid-cols-3">
-              <li>
-                <strong className="text-zinc-900">1. Import</strong>
-                <br />
-                Save ANU source facts and diagnostic warnings.
-              </li>
-              <li>
-                <strong className="text-zinc-900">2. Review</strong>
-                <br />
-                Check wording and any unresolved rules.
-              </li>
-              <li>
-                <strong className="text-zinc-900">3. Publish</strong>
-                <br />
-                Make the reviewed course or programme available to students.
-              </li>
-            </ol>
-          </CardContent>
-        </Card>
       </div>
     </AppShell>
   );
