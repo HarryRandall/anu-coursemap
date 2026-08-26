@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Check, ListFilter, Search, X } from "lucide-react";
+import { Check, ChevronLeft, ListFilter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -18,7 +18,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/cn";
 
 export type FilterConfig = {
   key: string;
@@ -30,8 +29,9 @@ export type FilterConfig = {
 
 /**
  * Search plus filtering, bound to the URL so a narrowed view can be shared.
- * Filters are chosen from a searchable field list and then read back as
- * removable chips, which keeps the active state legible at a glance.
+ * The filter menu drills from field to value in one popover, and a filter
+ * only becomes a chip once it has a value, so nothing half-set is left on
+ * screen.
  */
 export function FilterBar({
   searchPlaceholder,
@@ -45,8 +45,8 @@ export function FilterBar({
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [isPending, startTransition] = useTransition();
-  const [openField, setOpenField] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [field, setField] = useState<FilterConfig | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const paramsRef = useRef(searchParams.toString());
 
@@ -91,6 +91,11 @@ export function FilterBar({
     return [{ filter, label: option?.label ?? value, value }];
   });
 
+  function openMenu(open: boolean) {
+    setMenuOpen(open);
+    if (!open) setField(null);
+  }
+
   return (
     <div aria-busy={isPending} className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -115,7 +120,7 @@ export function FilterBar({
           />
         </label>
         {filters.length > 0 ? (
-          <Popover onOpenChange={setPickerOpen} open={pickerOpen}>
+          <Popover onOpenChange={openMenu} open={menuOpen}>
             <PopoverTrigger asChild>
               <Button
                 className="h-10 shrink-0 px-3.5"
@@ -132,142 +137,126 @@ export function FilterBar({
               </Button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-60 p-0">
-              <Command label="Choose a filter">
-                <CommandInput placeholder="Filter..." />
-                <CommandList className="max-h-72">
-                  <CommandEmpty>No filters match.</CommandEmpty>
-                  <CommandGroup>
-                    {filters.map((filter) => (
-                      <CommandItem
-                        key={filter.key}
-                        onSelect={() => {
-                          setPickerOpen(false);
-                          setOpenField(filter.key);
-                        }}
-                        value={filter.label}
-                      >
-                        <ListFilter
-                          aria-hidden="true"
-                          className="text-zinc-400"
-                          size={14}
-                        />
-                        {filter.label}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        ) : null}
-      </div>
-
-      {(active.length > 0 || openField) && (
-        <div className="flex flex-wrap items-center gap-2">
-          {filters.map((filter) => {
-            const current = active.find(
-              (entry) => entry.filter.key === filter.key,
-            );
-            if (!current && openField !== filter.key) return null;
-            return (
-              <Popover
-                key={filter.key}
-                onOpenChange={(open) =>
-                  setOpenField(
-                    open
-                      ? filter.key
-                      : (value) => (value === filter.key ? null : value),
-                  )
-                }
-                open={openField === filter.key}
-              >
-                <span className="inline-flex items-center rounded-md border border-zinc-200 bg-white text-xs shadow-xs">
-                  <span className="px-2.5 py-1.5 font-medium text-zinc-700">
-                    {filter.label}
-                  </span>
-                  <span className="border-x border-zinc-200 px-2 py-1.5 text-zinc-400">
-                    is
-                  </span>
-                  <PopoverTrigger asChild>
+              {field ? (
+                <Command label={field.label}>
+                  <div className="flex items-center gap-1 border-b border-zinc-100 px-1.5 py-1.5">
                     <button
-                      className="px-2.5 py-1.5 font-medium text-zinc-900 transition-colors hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                      className="grid size-6 place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                      onClick={() => setField(null)}
                       type="button"
                     >
-                      {current?.label ?? "any"}
+                      <ChevronLeft aria-hidden="true" size={14} />
+                      <span className="sr-only">Back to all filters</span>
                     </button>
-                  </PopoverTrigger>
-                  <button
-                    aria-label={`Remove the ${filter.label} filter`}
-                    className="border-l border-zinc-200 px-2 py-1.5 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                    onClick={() => {
-                      setOpenField(null);
-                      update(filter.key, "");
-                    }}
-                    type="button"
-                  >
-                    <X aria-hidden="true" size={12} />
-                  </button>
-                </span>
-                <PopoverContent align="start" className="w-56 p-0">
-                  <Command label={filter.label}>
-                    <CommandInput
-                      placeholder={`Search ${filter.label.toLowerCase()}...`}
-                    />
-                    <CommandList className="max-h-72">
-                      <CommandEmpty>No values match.</CommandEmpty>
-                      <CommandGroup>
-                        {[
-                          {
-                            value: "",
-                            label:
-                              filter.allLabel ??
-                              `All ${filter.label.toLowerCase()}`,
-                          },
-                          ...filter.options,
-                        ].map((option) => (
+                    <span className="text-xs font-medium text-zinc-700">
+                      {field.label}
+                    </span>
+                  </div>
+                  <CommandInput
+                    placeholder={`Search ${field.label.toLowerCase()}...`}
+                  />
+                  <CommandList className="max-h-64">
+                    <CommandEmpty>No values match.</CommandEmpty>
+                    <CommandGroup>
+                      {[
+                        {
+                          value: "",
+                          label:
+                            field.allLabel ??
+                            `All ${field.label.toLowerCase()}`,
+                        },
+                        ...field.options,
+                      ].map((option) => {
+                        const selected =
+                          (searchParams.get(field.key) ?? "") === option.value;
+                        return (
                           <CommandItem
                             key={option.value || "__all"}
                             onSelect={() => {
-                              setOpenField(null);
-                              update(filter.key, option.value);
+                              update(field.key, option.value);
+                              openMenu(false);
                             }}
                             value={option.label}
                           >
                             <Check
                               aria-hidden="true"
-                              className={cn(
-                                "text-zinc-900",
-                                (current?.value ?? "") === option.value
-                                  ? "opacity-100"
-                                  : "opacity-0",
-                              )}
+                              className={
+                                selected ? "text-zinc-900" : "text-transparent"
+                              }
                               size={14}
                             />
                             {option.label}
                           </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            );
-          })}
-          {active.length > 0 ? (
-            <Button
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              ) : (
+                <Command label="Choose a filter">
+                  <CommandInput placeholder="Filter..." />
+                  <CommandList className="max-h-64">
+                    <CommandEmpty>No filters match.</CommandEmpty>
+                    <CommandGroup>
+                      {filters.map((filter) => (
+                        <CommandItem
+                          key={filter.key}
+                          onSelect={() => setField(filter)}
+                          value={filter.label}
+                        >
+                          <ListFilter
+                            aria-hidden="true"
+                            className="text-zinc-400"
+                            size={14}
+                          />
+                          {filter.label}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              )}
+            </PopoverContent>
+          </Popover>
+        ) : null}
+      </div>
+
+      {active.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {active.map(({ filter, label }) => (
+            <span
+              className="inline-flex items-center overflow-hidden rounded-md border border-zinc-200 bg-white text-xs shadow-xs"
+              key={filter.key}
+            >
+              <span className="py-1.5 pr-1.5 pl-2.5 text-zinc-500">
+                {filter.label}
+              </span>
+              <span className="py-1.5 font-medium text-zinc-900">{label}</span>
+              <button
+                aria-label={`Remove the ${filter.label} filter`}
+                className="ml-1.5 grid h-full place-items-center border-l border-zinc-200 px-1.5 py-1.5 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                onClick={() => update(filter.key, "")}
+                type="button"
+              >
+                <X aria-hidden="true" size={12} />
+              </button>
+            </span>
+          ))}
+          {active.length > 1 ? (
+            <button
+              className="rounded-md px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
               onClick={() =>
                 replaceParams((params) => {
                   filters.forEach((filter) => params.delete(filter.key));
                 })
               }
-              size="sm"
-              variant="ghost"
+              type="button"
             >
-              Clear filters
-            </Button>
+              Clear all
+            </button>
           ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
