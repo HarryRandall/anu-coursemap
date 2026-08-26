@@ -428,12 +428,18 @@ export async function loadAdminStructurePage({
   };
 }
 
+export type AdminRuleListStatus = "all" | "needs-review" | "verified";
+
 export async function loadAdminRulePage({
   page,
   pageSize = 30,
+  query,
+  status = "all",
 }: {
   page?: number;
   pageSize?: number;
+  query?: string;
+  status?: AdminRuleListStatus;
 } = {}): Promise<PaginatedAdminResult<AdminRuleRecord>> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
@@ -457,19 +463,29 @@ export async function loadAdminRulePage({
       total: 0,
     };
   }
+  const search = safeQuery(query);
+  let rulesQuery = supabase
+    .from("course_rules")
+    .select("course_version_id,id,review_state,rule_kind,source_text", {
+      count: "exact",
+    })
+    .eq("catalogue_year_id", year.id);
+  if (search) {
+    rulesQuery = rulesQuery.or(
+      `source_text.ilike.*${search}*,rule_kind.ilike.*${search}*`,
+    );
+  }
+  if (status === "verified") {
+    rulesQuery = rulesQuery.eq("review_state", "verified");
+  } else if (status === "needs-review") {
+    rulesQuery = rulesQuery.neq("review_state", "verified");
+  }
   const start = (currentPage - 1) * currentPageSize;
   const {
     data: rules,
     count,
     error: rulesError,
-  } = await supabase
-    .from("course_rules")
-    .select("course_version_id,id,review_state,rule_kind,source_text", {
-      count: "exact",
-    })
-    .eq("catalogue_year_id", year.id)
-    .order("id")
-    .range(start, start + currentPageSize - 1);
+  } = await rulesQuery.order("id").range(start, start + currentPageSize - 1);
   if (rulesError) throw rulesError;
   const ruleRows = (rules ?? []) as RuleRow[];
   const versionIds = [
