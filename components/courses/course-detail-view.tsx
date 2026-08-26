@@ -61,7 +61,7 @@ export function courseTabFromSearch(value: string | null): CourseTab {
  */
 export function CourseDetailTabsList() {
   return (
-    <TabsList className="h-11 w-full gap-1 rounded-none bg-transparent p-0">
+    <TabsList className="h-11 w-full justify-start gap-1 rounded-none bg-transparent p-0">
       {courseDetailTabs.map(({ id, label, icon: Icon }) => (
         <TabsTrigger
           key={id}
