@@ -25,11 +25,13 @@ export default async function AdminProgrammesPage({
     page?: string | string[];
     q?: string | string[];
     status?: string | string[];
+    kind?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const page = Number(first(params.page));
   const query = (first(params.q) ?? "").trim();
+  const kind = (first(params.kind) ?? "").trim();
   const requestedStatus = first(params.status) ?? "all";
   const status = statuses.includes(requestedStatus as AdminCourseListStatus)
     ? (requestedStatus as AdminCourseListStatus)
@@ -37,10 +39,11 @@ export default async function AdminProgrammesPage({
 
   return (
     <ProgrammeList
-      data={await loadAdminStructurePage({ page, query, status })}
+      data={await loadAdminStructurePage({ page, query, status, kind })}
       searchParams={{
         ...(query ? { q: query } : {}),
         ...(status === "all" ? {} : { status }),
+        ...(kind ? { kind } : {}),
       }}
     />
   );

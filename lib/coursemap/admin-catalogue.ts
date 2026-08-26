@@ -26,7 +26,6 @@ export type AdminStructureRecord = {
   year: number;
 };
 
-
 export type PaginatedAdminResult<T> = {
   page: number;
   pageSize: number;
@@ -188,16 +187,34 @@ function safeQuery(value?: string) {
 export type AdminCourseListStatus =
   "all" | "draft" | "published" | "needs-review" | "verified";
 
+export async function loadAdminCourseSubjects(): Promise<string[]> {
+  if (isDemoMode()) return [];
+  const [supabase, year] = await Promise.all([
+    createClient(),
+    currentCatalogueYear(),
+  ]);
+  if (!year) return [];
+  const { data, error } = await supabase
+    .from("course_versions")
+    .select("subject")
+    .eq("catalogue_year_id", year.id)
+    .limit(5000);
+  if (error) return [];
+  return [...new Set((data ?? []).map((row) => row.subject))].sort();
+}
+
 export async function loadAdminCoursePage({
   page,
   pageSize = 24,
   query,
   status = "all",
+  subject,
 }: {
   page?: number;
   pageSize?: number;
   query?: string;
   status?: AdminCourseListStatus;
+  subject?: string;
 } = {}): Promise<PaginatedAdminResult<AdminCourseRecord>> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
@@ -248,6 +265,7 @@ export async function loadAdminCoursePage({
       `title.ilike.${pattern},subject.ilike.${pattern}${codeClause}`,
     );
   }
+  if (subject) versionsQuery = versionsQuery.eq("subject", subject);
   if (status === "draft" || status === "published") {
     versionsQuery = versionsQuery.eq("publication_status", status);
   } else if (status === "verified") {
@@ -303,11 +321,13 @@ export async function loadAdminStructurePage({
   pageSize = 24,
   query,
   status = "all",
+  kind,
 }: {
   page?: number;
   pageSize?: number;
   query?: string;
   status?: AdminCourseListStatus;
+  kind?: string;
 } = {}): Promise<PaginatedAdminResult<AdminStructureRecord>> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
@@ -343,6 +363,14 @@ export async function loadAdminStructurePage({
   const structureIds = (matchingStructures ?? []).map(
     (structure) => structure.id,
   );
+  const { data: kindStructures, error: kindStructuresError } = kind
+    ? await supabase
+        .from("academic_structures")
+        .select("id")
+        .eq("kind", kind)
+        .limit(2000)
+    : { data: null, error: null };
+  if (kindStructuresError) throw kindStructuresError;
 
   let versionsQuery = supabase
     .from("academic_structure_versions")
@@ -357,6 +385,12 @@ export async function loadAdminStructurePage({
       ? `,structure_id.in.(${structureIds.join(",")})`
       : "";
     versionsQuery = versionsQuery.or(`name.ilike.${pattern}${codeClause}`);
+  }
+  if (kindStructures) {
+    const kindIds = kindStructures.map((structure) => structure.id);
+    versionsQuery = kindIds.length
+      ? versionsQuery.in("structure_id", kindIds)
+      : versionsQuery.eq("structure_id", -1);
   }
   if (status === "draft" || status === "published") {
     versionsQuery = versionsQuery.eq("publication_status", status);
@@ -800,4 +834,3 @@ export async function loadAdminStructureRecords(): Promise<
       : [];
   });
 }
-
