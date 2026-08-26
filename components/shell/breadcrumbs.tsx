@@ -9,7 +9,6 @@ import {
   ClipboardList,
   CircleHelp,
   Compass,
-  GitBranch,
   GraduationCap,
   History,
   House,
@@ -51,7 +50,6 @@ const labels: Record<string, string> = {
   profile: "Profile",
   admin: "Admin",
   programmes: "Programmes",
-  relations: "Rule review",
   users: "Users",
   roles: "Roles",
   sync: "Imports",
@@ -75,7 +73,6 @@ const icons: Record<string, LucideIcon> = {
   plan: Table,
   profile: UserRound,
   programmes: GraduationCap,
-  relations: GitBranch,
   requirements: ListChecks,
   roadmap: Compass,
   roles: KeyRound,
@@ -96,13 +93,11 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     const isLast = index === segments.length - 1;
     // Dynamic course code segment (e.g. /courses/COMP2100)
     const label =
-      admin && segments[1] === "users" && index === 2
-        ? "User"
-        : admin &&
-            (segments[1] === "sync" || segments[1] === "imports") &&
-            segment === "history"
-          ? "Historical changes"
-          : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
+      admin &&
+      (segments[1] === "sync" || segments[1] === "imports") &&
+      segment === "history"
+        ? "Historical changes"
+        : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
     const icon =
       admin && index === 0
         ? LayoutDashboard

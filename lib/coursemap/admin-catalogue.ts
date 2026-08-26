@@ -26,13 +26,6 @@ export type AdminStructureRecord = {
   year: number;
 };
 
-export type AdminRuleRecord = {
-  code: string;
-  id: number;
-  kind: string;
-  reviewState: string;
-  sourceText: string;
-};
 
 export type PaginatedAdminResult<T> = {
   page: number;
@@ -115,13 +108,6 @@ type StructureVersionRow = {
   units: number;
 };
 type StructureRow = { code: string; id: number; kind: string };
-type RuleRow = {
-  course_version_id: number;
-  id: number;
-  review_state: string;
-  rule_kind: string;
-  source_text: string;
-};
 
 type CourseReviewVersionRow = {
   convener: string | null;
@@ -421,112 +407,6 @@ export async function loadAdminStructurePage({
               reviewState: row.review_state,
               units: row.units,
               year: year.year,
-            },
-          ]
-        : [];
-    }),
-  };
-}
-
-export type AdminRuleListStatus = "all" | "needs-review" | "verified";
-
-export async function loadAdminRulePage({
-  page,
-  pageSize = 30,
-  query,
-  status = "all",
-}: {
-  page?: number;
-  pageSize?: number;
-  query?: string;
-  status?: AdminRuleListStatus;
-} = {}): Promise<PaginatedAdminResult<AdminRuleRecord>> {
-  const currentPage = safePage(page);
-  const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
-  if (isDemoMode()) {
-    return {
-      page: currentPage,
-      pageSize: currentPageSize,
-      records: [],
-      total: 0,
-    };
-  }
-  const [supabase, year] = await Promise.all([
-    createClient(),
-    currentCatalogueYear(),
-  ]);
-  if (!year) {
-    return {
-      page: currentPage,
-      pageSize: currentPageSize,
-      records: [],
-      total: 0,
-    };
-  }
-  const search = safeQuery(query);
-  let rulesQuery = supabase
-    .from("course_rules")
-    .select("course_version_id,id,review_state,rule_kind,source_text", {
-      count: "exact",
-    })
-    .eq("catalogue_year_id", year.id);
-  if (search) {
-    rulesQuery = rulesQuery.or(
-      `source_text.ilike.*${search}*,rule_kind.ilike.*${search}*`,
-    );
-  }
-  if (status === "verified") {
-    rulesQuery = rulesQuery.eq("review_state", "verified");
-  } else if (status === "needs-review") {
-    rulesQuery = rulesQuery.neq("review_state", "verified");
-  }
-  const start = (currentPage - 1) * currentPageSize;
-  const {
-    data: rules,
-    count,
-    error: rulesError,
-  } = await rulesQuery.order("id").range(start, start + currentPageSize - 1);
-  if (rulesError) throw rulesError;
-  const ruleRows = (rules ?? []) as RuleRow[];
-  const versionIds = [
-    ...new Set(ruleRows.map((rule) => rule.course_version_id)),
-  ];
-  const { data: versions, error: versionsError } = versionIds.length
-    ? await supabase
-        .from("course_versions")
-        .select("course_id,id")
-        .in("id", versionIds)
-    : { data: [], error: null };
-  if (versionsError) throw versionsError;
-  const courseIds = [
-    ...new Set((versions ?? []).map((version) => version.course_id)),
-  ];
-  const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
-    : { data: [], error: null };
-  if (coursesError) throw coursesError;
-  const codeByCourseId = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
-  );
-  const courseIdByVersionId = new Map(
-    (versions ?? []).map((version) => [version.id, version.course_id]),
-  );
-  return {
-    page: currentPage,
-    pageSize: currentPageSize,
-    total: count ?? 0,
-    records: ruleRows.flatMap((rule) => {
-      const code = codeByCourseId.get(
-        courseIdByVersionId.get(rule.course_version_id) ?? -1,
-      );
-      return code
-        ? [
-            {
-              code,
-              id: rule.id,
-              kind: rule.rule_kind,
-              reviewState: rule.review_state,
-              sourceText: rule.source_text,
             },
           ]
         : [];
@@ -921,63 +801,3 @@ export async function loadAdminStructureRecords(): Promise<
   });
 }
 
-export async function loadAdminRuleRecords(): Promise<AdminRuleRecord[]> {
-  if (isDemoMode()) return [];
-  const [supabase, year] = await Promise.all([
-    createClient(),
-    currentCatalogueYear(),
-  ]);
-  if (!year) return [];
-
-  const [
-    { data: rules, error: rulesError },
-    { data: versions, error: versionsError },
-  ] = await Promise.all([
-    supabase
-      .from("course_rules")
-      .select("course_version_id,id,review_state,rule_kind,source_text")
-      .eq("catalogue_year_id", year.id)
-      .order("id"),
-    supabase
-      .from("course_versions")
-      .select("course_id,id")
-      .eq("catalogue_year_id", year.id),
-  ]);
-  if (rulesError) throw rulesError;
-  if (versionsError) throw versionsError;
-
-  const versionRows = (versions ?? []) as Array<{
-    course_id: number;
-    id: number;
-  }>;
-  const courseIds = [
-    ...new Set(versionRows.map((version) => version.course_id)),
-  ];
-  const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code,id").in("id", courseIds)
-    : { data: [], error: null };
-  if (coursesError) throw coursesError;
-  const codeByCourseId = new Map(
-    ((courses ?? []) as CourseRow[]).map((course) => [course.id, course.code]),
-  );
-  const courseIdByVersionId = new Map(
-    versionRows.map((version) => [version.id, version.course_id]),
-  );
-
-  return ((rules ?? []) as RuleRow[]).flatMap((rule) => {
-    const code = codeByCourseId.get(
-      courseIdByVersionId.get(rule.course_version_id) ?? -1,
-    );
-    return code
-      ? [
-          {
-            code,
-            id: rule.id,
-            kind: rule.rule_kind,
-            reviewState: rule.review_state,
-            sourceText: rule.source_text,
-          },
-        ]
-      : [];
-  });
-}

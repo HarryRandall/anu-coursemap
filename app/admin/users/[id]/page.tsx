@@ -35,7 +35,7 @@ export default async function AdminUserDetailPage({
   const isAdministrator = assignedRole?.key === "admin";
 
   return (
-    <AppShell admin>
+    <AppShell admin currentBreadcrumbLabel={data.user.displayName}>
       <div className="mx-auto w-full max-w-[920px] min-w-0 space-y-5 overflow-hidden">
         <header className="flex min-w-0 flex-wrap items-start justify-between gap-4">
           <div className="flex w-full min-w-0 items-center gap-3">

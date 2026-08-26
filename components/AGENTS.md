@@ -23,3 +23,8 @@
 - Do not add explainer sections describing how the product works to the people who operate it, and do not give a card a description that paraphrases its own title.
 - Every line of interface copy must tell the reader something the surrounding interface does not already show. Delete the rest.
 - Use `FilterBar` above a list for search and filtering rather than building controls into the table, so every list behaves the same way.
+
+## Shape
+
+- Corner radius comes from the `--radius-*` tokens in `app/globals.css`, which are deliberately tighter than the Tailwind defaults. Change the token to reshape the app, never a pile of per-component overrides.
+- Keep `rounded-full` for genuinely circular things only: avatars, status dots and pills.
