@@ -6,6 +6,7 @@ import type {
   HistoricalStatus,
   ImportsDashboardData,
 } from "@/components/admin/imports/imports-overview-data";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -105,21 +106,26 @@ export function ImportsHistory({
           </span>
         </div>
         <Suspense fallback={<div className="h-10" />}>
-          <FilterBar
-            searchPlaceholder="Search course or year"
-            filters={[
-              {
-                key: "status",
-                label: "Status",
-                allLabel: "All statuses",
-                options: [
-                  { label: "New", value: "new" },
-                  { label: "In review", value: "in-review" },
-                  { label: "Resolved", value: "resolved" },
-                ],
-              },
-            ]}
-          />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+            <div className="min-w-0 flex-1">
+              <FilterBar
+                searchPlaceholder="Search course or year"
+                filters={[
+                  {
+                    key: "status",
+                    label: "Status",
+                    allLabel: "All statuses",
+                    options: [
+                      { label: "New", value: "new" },
+                      { label: "In review", value: "in-review" },
+                      { label: "Resolved", value: "resolved" },
+                    ],
+                  },
+                ]}
+              />
+            </div>
+            <DateRangeFilter />
+          </div>
         </Suspense>
         <DataTableShell>
           <Table>

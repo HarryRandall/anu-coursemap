@@ -6,6 +6,7 @@ import type {
   ImportActivityRow,
   ImportsDashboardData,
 } from "@/components/admin/imports/imports-overview-data";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -159,22 +160,27 @@ export function ImportsActivity({
           Course activity
         </h2>
         <Suspense fallback={<div className="h-10" />}>
-          <FilterBar
-            searchPlaceholder="Search courses"
-            filters={[
-              {
-                key: "status",
-                label: "Result",
-                allLabel: "All results",
-                options: [
-                  { label: "Changed", value: "changed" },
-                  { label: "Unchanged", value: "unchanged" },
-                  { label: "Review", value: "review" },
-                  { label: "Failed", value: "failed" },
-                ],
-              },
-            ]}
-          />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+            <div className="min-w-0 flex-1">
+              <FilterBar
+                searchPlaceholder="Search courses"
+                filters={[
+                  {
+                    key: "status",
+                    label: "Result",
+                    allLabel: "All results",
+                    options: [
+                      { label: "Changed", value: "changed" },
+                      { label: "Unchanged", value: "unchanged" },
+                      { label: "Review", value: "review" },
+                      { label: "Failed", value: "failed" },
+                    ],
+                  },
+                ]}
+              />
+            </div>
+            <DateRangeFilter />
+          </div>
         </Suspense>
         <DataTableShell>
           <Table>
