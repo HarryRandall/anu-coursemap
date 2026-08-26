@@ -11,6 +11,7 @@ import type {
   CataloguePrerequisiteEdge,
   CatalogueRequisiteRule,
 } from "./catalogue-types";
+import { accentFor } from "@/lib/coursemap/catalogue-accent";
 import {
   parseRequisiteSummary,
   type RequisiteExpression,
@@ -87,22 +88,6 @@ type CourseDetailPayload = {
 
 function sourceUrl(year: number, code: string) {
   return `${ANU_SOURCE_BASE_URL}/${year}/course/${code}`;
-}
-
-function accentFor(code: string): CatalogueCourse["accent"] {
-  const accents: CatalogueCourse["accent"][] = [
-    "blue",
-    "violet",
-    "mint",
-    "amber",
-    "rose",
-    "cyan",
-  ];
-  const sum = [...code].reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  );
-  return accents[sum % accents.length];
 }
 
 function demoPrerequisiteEdges(

@@ -25,6 +25,11 @@ import {
   CourseReviewTabs,
   type CourseReviewTab,
 } from "@/components/admin/imports/course-review-tabs";
+import {
+  CourseDetailTabsList,
+  CourseDetailView,
+} from "@/components/courses/course-detail-view";
+import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -255,9 +260,11 @@ function FieldsForm({
 
 export function CourseReview({
   canEdit,
+  previewCourse,
   record,
 }: {
   canEdit: boolean;
+  previewCourse: CatalogueCourse;
   record: AdminCourseReviewRecord;
 }) {
   const router = useRouter();
@@ -461,7 +468,10 @@ export function CourseReview({
                 <div className="flex flex-col gap-1 border-t border-zinc-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <p className="text-sm font-medium text-zinc-700">
                     {unverifiedRules.length} requisite rule
-                    {unverifiedRules.length === 1 ? "" : "s"} still need review
+                    {unverifiedRules.length === 1
+                      ? " still needs"
+                      : "s still need"}{" "}
+                    review
                   </p>
                   <button
                     className="text-left text-sm font-medium text-brand-700 hover:text-brand-900 sm:text-right"
@@ -667,6 +677,11 @@ export function CourseReview({
                       rule.kind === "prerequisite"
                         ? parseRequisiteSummary(rule.sourceText)
                         : null;
+                    const referencedCodes = [
+                      ...new Set(
+                        rule.sourceText.match(/\b[A-Z]{4}\d{4}\b/gu) ?? [],
+                      ),
+                    ];
                     return (
                       <section key={rule.id} className="p-5 sm:p-6">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -675,25 +690,45 @@ export function CourseReview({
                           </h3>
                           <p className="text-sm text-zinc-500">
                             {rule.reviewState === "verified"
-                              ? "Verified"
-                              : "Needs review"}
+                              ? "Verified against the ANU page"
+                              : "Not yet verified against the ANU page"}
                           </p>
                         </div>
                         <p className="mt-3 border-l-2 border-zinc-300 pl-4 text-sm leading-7 whitespace-pre-wrap text-zinc-800">
                           {rule.sourceText}
                         </p>
                         {expression ? (
-                          <div className="mt-5 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-                            <h4 className="mb-3 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                              Structured interpretation
+                          <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+                            <h4 className="mb-3 text-xs font-semibold tracking-wide text-emerald-800 uppercase">
+                              Mapped to a structured rule
                             </h4>
                             <RequisiteTree expression={expression} />
+                            <p className="mt-3 border-t border-emerald-200 pt-3 text-xs text-emerald-900">
+                              Coursemap can check a student&apos;s completed
+                              courses against this rule. Confirm it matches the
+                              wording above before publishing.
+                            </p>
                           </div>
                         ) : rule.kind === "prerequisite" ? (
-                          <p className="mt-4 text-sm text-amber-800">
-                            This wording has not been converted to a structured
-                            tree. The source text above remains authoritative.
-                          </p>
+                          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50/60 p-4">
+                            <h4 className="mb-2 text-xs font-semibold tracking-wide text-amber-800 uppercase">
+                              Not mapped to a structured rule
+                            </h4>
+                            <p className="text-sm leading-6 text-amber-900">
+                              This wording could not be read without guessing,
+                              so students see the ANU text exactly as written
+                              and no eligibility check runs. That is safe, not
+                              broken.
+                            </p>
+                            {referencedCodes.length ? (
+                              <p className="mt-3 text-xs text-amber-900">
+                                Course codes detected in the wording:{" "}
+                                <span className="font-mono font-semibold">
+                                  {referencedCodes.join(", ")}
+                                </span>
+                              </p>
+                            ) : null}
+                          </div>
                         ) : null}
                       </section>
                     );
@@ -708,59 +743,36 @@ export function CourseReview({
           </TabsContent>
 
           <TabsContent className="mt-0" value="student">
-            <Panel label="Student preview">
-              <article className="p-5 sm:p-8">
-                <p className="font-mono text-sm font-semibold text-zinc-500">
-                  {record.code}
+            <section
+              aria-label="Student preview"
+              className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50/70 px-5 py-3">
+                <p className="text-sm font-medium text-zinc-700">
+                  Exactly what a student sees on{" "}
+                  <span className="font-mono">/courses/{record.code}</span>
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">
-                  {record.title}
-                </h2>
-                <p className="mt-2 text-sm text-zinc-500">
-                  {record.year} · {record.units} units · {record.school}
+                <p className="text-xs text-zinc-500">
+                  {record.publicationStatus === "published"
+                    ? "This version is live."
+                    : "This draft is not live yet."}
                 </p>
-                <p className="mt-7 max-w-3xl text-base leading-7 text-zinc-800">
-                  {record.description}
-                </p>
-                <div className="mt-8 grid gap-6 border-t border-zinc-200 pt-6 md:grid-cols-2">
-                  <section>
-                    <h3 className="text-sm font-semibold text-zinc-950">
-                      Delivery
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-zinc-600">
-                      {record.deliverySummary ?? "Not provided"}
-                    </p>
-                    <ul className="mt-3 space-y-1 text-sm text-zinc-700">
-                      {record.offerings.flatMap((offering) =>
-                        offering.sessions.map((session, index) => (
-                          <li key={`${offering.id}-${index}`}>
-                            {[session.period, session.deliveryMode]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </li>
-                        )),
-                      )}
-                    </ul>
-                  </section>
-                  <section>
-                    <h3 className="text-sm font-semibold text-zinc-950">
-                      Requisites
-                    </h3>
-                    {requisiteRules.length ? (
-                      <ul className="mt-2 space-y-3 text-sm leading-6 text-zinc-700">
-                        {requisiteRules.map((rule) => (
-                          <li key={rule.id}>{rule.sourceText}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="mt-2 text-sm text-zinc-500">
-                        No requisites are listed.
-                      </p>
-                    )}
-                  </section>
+              </div>
+              <Tabs className="gap-0" defaultValue="overview">
+                <div className="border-b border-zinc-200 px-4 sm:px-6">
+                  <CourseDetailTabsList />
                 </div>
-              </article>
-            </Panel>
+                <div className="bg-zinc-50/60 px-4 py-6 sm:px-6">
+                  <CourseDetailView
+                    course={previewCourse}
+                    requisiteCompletion={{
+                      completedCourses: [],
+                      isAuthenticated: false,
+                    }}
+                  />
+                </div>
+              </Tabs>
+            </section>
           </TabsContent>
         </div>
       </AppShell>
