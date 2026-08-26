@@ -269,17 +269,14 @@ test("groups 'either A or B' so a surrounding AND stays unambiguous", () => {
 });
 
 test("groups a leading 'either' and its comma-separated alternatives", () => {
-  assert.deepEqual(
-    parseRequisiteSummary("Either COMP1100 or COMP1110"),
-    {
-      kind: "group",
-      operator: "any_of",
-      conditions: [
-        { kind: "course", code: "COMP1100" },
-        { kind: "course", code: "COMP1110" },
-      ],
-    },
-  );
+  assert.deepEqual(parseRequisiteSummary("Either COMP1100 or COMP1110"), {
+    kind: "group",
+    operator: "any_of",
+    conditions: [
+      { kind: "course", code: "COMP1100" },
+      { kind: "course", code: "COMP1110" },
+    ],
+  });
   assert.deepEqual(
     parseRequisiteSummary(
       "To enrol in this course you must have completed either MATH1013, MATH1115 or MATH1116, as well as COMP1600.",

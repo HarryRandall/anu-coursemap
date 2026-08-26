@@ -587,3 +587,16 @@ test("rejects units that cannot round-trip through numeric(5, 2)", () => {
     );
   }
 });
+
+test("keeps a space between a linked course code and the word after it", () => {
+  const linkedHtml = comp2100Html.replace(
+    /<div class="requisite">[\s\S]*?<\/div>/,
+    '<div class="requisite">To enrol in this course, you must have completed <a href="/2026/course/ACST4031">ACST4031</a>and be enrolled in Bachelor of Actuarial Studies (Honours) (HACTS).</div>',
+  );
+  const document = parseFixture(linkedHtml, comp2100Url, "COMP2100");
+  assert.equal(
+    document.course.requisites.rawRequisiteText,
+    "To enrol in this course, you must have completed ACST4031 and be enrolled in Bachelor of Actuarial Studies (Honours) (HACTS).",
+  );
+  assert.deepEqual(document.course.requisites.linkedCourseCodes, ["ACST4031"]);
+});
