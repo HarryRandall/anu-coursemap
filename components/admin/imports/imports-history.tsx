@@ -106,7 +106,6 @@ export function ImportsHistory({
         </div>
         <Suspense fallback={<div className="h-10" />}>
           <FilterBar
-            filterTitle="Filter flags"
             searchPlaceholder="Search course or year"
             filters={[
               {

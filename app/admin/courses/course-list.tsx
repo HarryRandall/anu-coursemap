@@ -137,7 +137,6 @@ export function AdminCourseList({
         <h1 className="sr-only">Courses</h1>
 
         <FilterBar
-          filterTitle="Filter courses"
           searchPlaceholder="Search by code, title or subject"
           filters={[
             {

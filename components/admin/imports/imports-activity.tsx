@@ -160,7 +160,6 @@ export function ImportsActivity({
         </h2>
         <Suspense fallback={<div className="h-10" />}>
           <FilterBar
-            filterTitle="Filter activity"
             searchPlaceholder="Search courses"
             filters={[
               {

@@ -112,7 +112,6 @@ export default async function AdminUsersPage({
       <div className="mx-auto flex min-h-0 w-full max-w-[1280px] flex-1 flex-col gap-5">
         <Suspense fallback={<div className="h-10" />}>
           <FilterBar
-            filterTitle="Filter users"
             searchPlaceholder="Search by name or email"
             filters={[
               {

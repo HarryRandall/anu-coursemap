@@ -88,7 +88,6 @@ export function ProgrammeList({
         <h1 className="sr-only">Programmes</h1>
 
         <FilterBar
-          filterTitle="Filter programmes"
           searchPlaceholder="Search by code or name"
           filters={[
             {

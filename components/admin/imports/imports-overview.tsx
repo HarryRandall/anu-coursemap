@@ -98,7 +98,6 @@ function ReviewTable({ rows }: { rows: ImportReviewRow[] }) {
     <div className="space-y-3">
       <Suspense fallback={<div className="h-10" />}>
         <FilterBar
-          filterTitle="Filter review queue"
           searchPlaceholder="Search courses"
           filters={[
             {
