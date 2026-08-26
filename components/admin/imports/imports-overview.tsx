@@ -12,7 +12,7 @@ import type {
   ImportReviewStatus,
   ImportsDashboardData,
 } from "@/components/admin/imports/imports-overview-data";
-import { ImportsTableControls } from "@/components/admin/imports/imports-overview-controls";
+import { AdminListControls } from "@/components/admin/admin-list-controls";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -99,7 +99,7 @@ function ReviewTable({ rows }: { rows: ImportReviewRow[] }) {
       <Suspense
         fallback={<div className="h-[65px] border-b border-zinc-200/80" />}
       >
-        <ImportsTableControls
+        <AdminListControls
           searchPlaceholder="Search courses"
           statuses={[
             { label: "All statuses", value: "all" },

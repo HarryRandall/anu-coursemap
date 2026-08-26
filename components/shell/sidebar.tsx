@@ -79,7 +79,7 @@ const adminNav: NavItem[] = [
   { href: "/admin/relations", label: "Rule review", icon: GitBranch },
   { href: "/admin/users", label: "Users", icon: UsersRound },
   { href: "/admin/roles", label: "Roles", icon: KeyRound },
-  { href: "/admin/sync", label: "Imports", icon: RefreshCw },
+  { href: "/admin/imports", label: "Imports", icon: RefreshCw },
 ];
 
 function Brand() {

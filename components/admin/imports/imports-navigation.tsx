@@ -4,10 +4,10 @@ import { cn } from "@/lib/cn";
 type ImportsView = "overview" | "activity" | "history";
 
 const links: Array<{ href: string; label: string; view: ImportsView }> = [
-  { href: "/admin/sync", label: "Overview", view: "overview" },
-  { href: "/admin/sync/activity", label: "Activity", view: "activity" },
+  { href: "/admin/imports", label: "Overview", view: "overview" },
+  { href: "/admin/imports/activity", label: "Activity", view: "activity" },
   {
-    href: "/admin/sync/history",
+    href: "/admin/imports/history",
     label: "Historical changes",
     view: "history",
   },

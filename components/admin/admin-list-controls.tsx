@@ -5,7 +5,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Input, Select } from "@/components/ui/field";
 
-export function ImportsTableControls({
+/**
+ * Search and status filtering for admin lists. The current query lives in the
+ * URL so a filtered list can be shared, bookmarked and restored on refresh.
+ */
+export function AdminListControls({
   searchPlaceholder,
   statuses,
 }: {
