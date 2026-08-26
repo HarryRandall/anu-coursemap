@@ -244,3 +244,110 @@ test("evaluates subject units and alternatives from completed courses only", () 
     },
   );
 });
+
+test("groups 'either A or B' so a surrounding AND stays unambiguous", () => {
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course you must have completed FINM1001, and either STAT1008 or STAT1003.",
+    ),
+    {
+      kind: "group",
+      operator: "all_of",
+      conditions: [
+        { kind: "course", code: "FINM1001" },
+        {
+          kind: "group",
+          operator: "any_of",
+          conditions: [
+            { kind: "course", code: "STAT1008" },
+            { kind: "course", code: "STAT1003" },
+          ],
+        },
+      ],
+    },
+  );
+});
+
+test("groups a leading 'either' and its comma-separated alternatives", () => {
+  assert.deepEqual(
+    parseRequisiteSummary("Either COMP1100 or COMP1110"),
+    {
+      kind: "group",
+      operator: "any_of",
+      conditions: [
+        { kind: "course", code: "COMP1100" },
+        { kind: "course", code: "COMP1110" },
+      ],
+    },
+  );
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in this course you must have completed either MATH1013, MATH1115 or MATH1116, as well as COMP1600.",
+    ),
+    {
+      kind: "group",
+      operator: "all_of",
+      conditions: [
+        {
+          kind: "group",
+          operator: "any_of",
+          conditions: [
+            { kind: "course", code: "MATH1013" },
+            { kind: "course", code: "MATH1115" },
+            { kind: "course", code: "MATH1116" },
+          ],
+        },
+        { kind: "course", code: "COMP1600" },
+      ],
+    },
+  );
+});
+
+test("groups 'both A and B' inside a wider alternation", () => {
+  assert.deepEqual(
+    parseRequisiteSummary("COMP1100 or both MATH1013 and MATH1014"),
+    {
+      kind: "group",
+      operator: "any_of",
+      conditions: [
+        { kind: "course", code: "COMP1100" },
+        {
+          kind: "group",
+          operator: "all_of",
+          conditions: [
+            { kind: "course", code: "MATH1013" },
+            { kind: "course", code: "MATH1014" },
+          ],
+        },
+      ],
+    },
+  );
+});
+
+test("refuses an alternation marker that introduces no alternatives", () => {
+  assert.equal(parseRequisiteSummary("either COMP1100"), null);
+  assert.equal(parseRequisiteSummary("either COMP1100 and COMP1110"), null);
+});
+
+test("groups 'either' around unit conditions as well as course codes", () => {
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "COMP1600 AND either 6 units of MATH or 12 units of 1000 level courses",
+    ),
+    {
+      kind: "group",
+      operator: "all_of",
+      conditions: [
+        { kind: "course", code: "COMP1600" },
+        {
+          kind: "group",
+          operator: "any_of",
+          conditions: [
+            { kind: "subject_units", subject: "MATH", units: 6 },
+            { kind: "level_units", units: 12, level: 1000 },
+          ],
+        },
+      ],
+    },
+  );
+});

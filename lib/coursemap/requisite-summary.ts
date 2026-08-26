@@ -72,6 +72,8 @@ type RequisiteToken =
         | "and"
         | "clause_and"
         | "comma"
+        | "either"
+        | "both"
         | "left_parenthesis"
         | "or"
         | "right_parenthesis";
@@ -97,8 +99,7 @@ function stripPreamble(value: string) {
     .replace(
       /^to enrol in [A-Z]{4}\d{4},? (?:you|students) must have (?:successfully )?completed:?\s*/iu,
       "",
-    )
-    .replace(/^either\s+/iu, "");
+    );
 }
 
 function tokenise(sourceText: string): RequisiteToken[] | null {
@@ -130,6 +131,15 @@ function tokenise(sourceText: string): RequisiteToken[] | null {
     if (clauseConjunction) {
       tokens.push({ kind: "clause_and" });
       remainder = remainder.slice(clauseConjunction.length);
+      continue;
+    }
+
+    const alternationMarker = /^(either|both)\b/iu.exec(remainder)?.[1];
+    if (alternationMarker) {
+      tokens.push({
+        kind: alternationMarker.toLowerCase() as "both" | "either",
+      });
+      remainder = remainder.slice(alternationMarker.length);
       continue;
     }
 
@@ -250,6 +260,59 @@ function resolveCommas(tokens: RequisiteToken[]): RequisiteToken[] | null {
 }
 
 /**
+ * "either A or B" and "both A and B" carry an explicit grouping that bare
+ * conjunctions do not, so each marker is rewritten as parentheses around the
+ * run it introduces. The run covers alternatives joined only by the marker's
+ * own conjunction; any other shape refuses to parse rather than guessing.
+ */
+function resolveAlternationMarkers(
+  tokens: RequisiteToken[],
+): RequisiteToken[] | null {
+  const resolved: RequisiteToken[] = [];
+
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token.kind !== "either" && token.kind !== "both") {
+      resolved.push(token);
+      continue;
+    }
+
+    const conjunction = token.kind === "either" ? "or" : "and";
+    let cursor = index + 1;
+    let joins = 0;
+
+    for (;;) {
+      const operand = tokens[cursor];
+      if (operand?.kind === "condition") {
+        cursor += 1;
+      } else if (operand?.kind === "left_parenthesis") {
+        let depth = 0;
+        do {
+          const current = tokens[cursor];
+          if (!current) return null;
+          if (current.kind === "left_parenthesis") depth += 1;
+          if (current.kind === "right_parenthesis") depth -= 1;
+          cursor += 1;
+        } while (depth > 0);
+      } else {
+        return null;
+      }
+      if (tokens[cursor]?.kind !== conjunction) break;
+      joins += 1;
+      cursor += 1;
+    }
+
+    if (joins === 0) return null;
+    resolved.push({ kind: "left_parenthesis" });
+    resolved.push(...tokens.slice(index + 1, cursor));
+    resolved.push({ kind: "right_parenthesis" });
+    index = cursor - 1;
+  }
+
+  return resolved;
+}
+
+/**
  * Official wording like "COMP1110 or COMP1140 AND 6 units of MATH" is
  * ambiguous without parentheses, so a clause mixing bare and/or at one
  * depth refuses to parse instead of guessing an operator precedence.
@@ -302,7 +365,9 @@ export function parseRequisiteSummary(
   const expression = stripPreamble(normalised).replace(/[.]$/u, "");
   const rawTokens = tokenise(expression);
   if (!rawTokens) return null;
-  const tokens = resolveCommas(rawTokens);
+  const listTokens = resolveCommas(rawTokens);
+  if (!listTokens || listTokens.length === 0) return null;
+  const tokens = resolveAlternationMarkers(listTokens);
   if (!tokens || tokens.length === 0) return null;
   if (!hasUnambiguousConjunctions(tokens)) return null;
 
