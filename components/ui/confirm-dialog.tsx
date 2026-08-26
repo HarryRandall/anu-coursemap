@@ -1,5 +1,6 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,18 +54,35 @@ export function ConfirmDialog({
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+      <DialogContent className="max-w-sm" showCloseButton={false}>
+        <DialogHeader className="p-5">
+          <div className="flex gap-3">
+            {destructive ? (
+              <span
+                aria-hidden="true"
+                className="grid size-9 shrink-0 place-items-center rounded-md bg-rose-50 text-rose-600"
+              >
+                <TriangleAlert size={17} />
+              </span>
+            ) : null}
+            <div className="min-w-0 space-y-1.5">
+              <DialogTitle className="text-base font-semibold">
+                {title}
+              </DialogTitle>
+              <DialogDescription className="text-[13px] leading-6">
+                {description}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
-        <DialogFooter>
-          <Button onClick={() => onOpenChange?.(false)} type="button">
+        <DialogFooter className="px-5 py-3.5">
+          <Button onClick={() => onOpenChange?.(false)} size="sm" type="button">
             {cancelLabel}
           </Button>
           <Button
             disabled={pending}
             onClick={confirm}
+            size="sm"
             type="button"
             variant={destructive ? "danger" : "primary"}
           >
