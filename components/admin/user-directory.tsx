@@ -49,8 +49,9 @@ export function UserDirectory({
   return (
     <DataTableShell
       footer={
-        <p className="text-xs text-zinc-500">
-          Viewing {users.length.toLocaleString("en-AU")} Coursemap users
+        <p className="text-xs text-zinc-500 tabular-nums">
+          {users.length.toLocaleString("en-AU")}{" "}
+          {users.length === 1 ? "user" : "users"}
         </p>
       }
     >
@@ -75,8 +76,8 @@ export function UserDirectory({
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={4} className="p-0">
                 <DataTableEmpty
-                  title="No users"
-                  description="Coursemap users will appear after they create an account."
+                  title="No users match this view"
+                  description="Clear the search or choose a different role."
                 />
               </TableCell>
             </TableRow>
