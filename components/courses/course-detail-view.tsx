@@ -339,12 +339,15 @@ const EMPTY_CODES: ReadonlySet<string> = new Set();
 export function CourseDetailView({
   completedCodes = EMPTY_CODES,
   course,
+  fullWidth = false,
   onAddToPlan,
   plannedCodes = EMPTY_CODES,
   requisiteCompletion,
 }: {
   completedCodes?: ReadonlySet<string>;
   course: CatalogueCourse;
+  /** Fills the available width instead of centring, for embedded previews. */
+  fullWidth?: boolean;
   onAddToPlan?: () => void;
   plannedCodes?: ReadonlySet<string>;
   requisiteCompletion: {
@@ -381,7 +384,7 @@ export function CourseDetailView({
             : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className={fullWidth ? "w-full" : "mx-auto max-w-6xl"}>
       <header className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
         <div className="min-w-0">
           <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">

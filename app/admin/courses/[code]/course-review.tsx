@@ -743,36 +743,21 @@ export function CourseReview({
           </TabsContent>
 
           <TabsContent className="mt-0" value="student">
-            <section
-              aria-label="Student preview"
-              className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50/70 px-5 py-3">
-                <p className="text-sm font-medium text-zinc-700">
-                  Exactly what a student sees on{" "}
-                  <span className="font-mono">/courses/{record.code}</span>
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {record.publicationStatus === "published"
-                    ? "This version is live."
-                    : "This draft is not live yet."}
-                </p>
+            <Tabs className="gap-0" defaultValue="overview">
+              <div className="border-b border-zinc-200">
+                <CourseDetailTabsList />
               </div>
-              <Tabs className="gap-0" defaultValue="overview">
-                <div className="border-b border-zinc-200 px-4 sm:px-6">
-                  <CourseDetailTabsList />
-                </div>
-                <div className="bg-zinc-50/60 px-4 py-6 sm:px-6">
-                  <CourseDetailView
-                    course={previewCourse}
-                    requisiteCompletion={{
-                      completedCourses: [],
-                      isAuthenticated: false,
-                    }}
-                  />
-                </div>
-              </Tabs>
-            </section>
+              <div className="pt-6">
+                <CourseDetailView
+                  course={previewCourse}
+                  fullWidth
+                  requisiteCompletion={{
+                    completedCourses: [],
+                    isAuthenticated: false,
+                  }}
+                />
+              </div>
+            </Tabs>
           </TabsContent>
         </div>
       </AppShell>
