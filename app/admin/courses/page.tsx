@@ -42,7 +42,6 @@ export default async function AdminCoursesPage({
         ...(query ? { q: query } : {}),
         ...(status === "all" ? {} : { status }),
       }}
-      status={status}
     />
   );
 }

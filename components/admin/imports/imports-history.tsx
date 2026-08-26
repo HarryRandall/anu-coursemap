@@ -6,7 +6,7 @@ import type {
   HistoricalStatus,
   ImportsDashboardData,
 } from "@/components/admin/imports/imports-overview-data";
-import { AdminListControls } from "@/components/admin/admin-list-controls";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -104,20 +104,25 @@ export function ImportsHistory({
             {data.historicalOpenCount} open
           </span>
         </div>
+        <Suspense fallback={<div className="h-10" />}>
+          <FilterBar
+            filterTitle="Filter flags"
+            searchPlaceholder="Search course or year"
+            filters={[
+              {
+                key: "status",
+                label: "Status",
+                allLabel: "All statuses",
+                options: [
+                  { label: "New", value: "new" },
+                  { label: "In review", value: "in-review" },
+                  { label: "Resolved", value: "resolved" },
+                ],
+              },
+            ]}
+          />
+        </Suspense>
         <DataTableShell>
-          <Suspense
-            fallback={<div className="h-[65px] border-b border-zinc-200/80" />}
-          >
-            <AdminListControls
-              searchPlaceholder="Search course or year"
-              statuses={[
-                { label: "All statuses", value: "all" },
-                { label: "New", value: "new" },
-                { label: "In review", value: "in-review" },
-                { label: "Resolved", value: "resolved" },
-              ]}
-            />
-          </Suspense>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

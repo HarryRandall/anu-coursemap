@@ -6,7 +6,7 @@ import type {
   ImportActivityRow,
   ImportsDashboardData,
 } from "@/components/admin/imports/imports-overview-data";
-import { AdminListControls } from "@/components/admin/admin-list-controls";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -158,21 +158,26 @@ export function ImportsActivity({
         >
           Course activity
         </h2>
+        <Suspense fallback={<div className="h-10" />}>
+          <FilterBar
+            filterTitle="Filter activity"
+            searchPlaceholder="Search courses"
+            filters={[
+              {
+                key: "status",
+                label: "Result",
+                allLabel: "All results",
+                options: [
+                  { label: "Changed", value: "changed" },
+                  { label: "Unchanged", value: "unchanged" },
+                  { label: "Review", value: "review" },
+                  { label: "Failed", value: "failed" },
+                ],
+              },
+            ]}
+          />
+        </Suspense>
         <DataTableShell>
-          <Suspense
-            fallback={<div className="h-[65px] border-b border-zinc-200/80" />}
-          >
-            <AdminListControls
-              searchPlaceholder="Search courses"
-              statuses={[
-                { label: "All results", value: "all" },
-                { label: "Changed", value: "changed" },
-                { label: "Unchanged", value: "unchanged" },
-                { label: "Review", value: "review" },
-                { label: "Failed", value: "failed" },
-              ]}
-            />
-          </Suspense>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

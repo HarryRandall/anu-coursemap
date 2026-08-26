@@ -14,6 +14,8 @@ import {
 export type FilterConfig = {
   key: string;
   label: string;
+  /** Label for the unset option. Defaults to "All <label>". */
+  allLabel?: string;
   options: Array<{ value: string; label: string }>;
 };
 
@@ -21,9 +23,11 @@ export type FilterConfig = {
 export function FilterBar({
   searchPlaceholder,
   filters = [],
+  filterTitle = "Filters",
 }: {
   searchPlaceholder: string;
   filters?: FilterConfig[];
+  filterTitle?: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -109,7 +113,7 @@ export function FilterBar({
             </PopoverTrigger>
             <PopoverContent align="end">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="font-medium text-zinc-950">Filter courses</p>
+                <p className="font-medium text-zinc-950">{filterTitle}</p>
                 {activeFilterCount.length > 0 ? (
                   <Button
                     size="sm"
@@ -136,7 +140,9 @@ export function FilterBar({
                       options={[
                         {
                           value: "",
-                          label: `All ${filter.label.toLowerCase()}`,
+                          label:
+                            filter.allLabel ??
+                            `All ${filter.label.toLowerCase()}`,
                         },
                         ...filter.options,
                       ]}

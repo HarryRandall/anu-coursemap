@@ -9,14 +9,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { publishCourseVersion } from "@/lib/coursemap/catalogue-publication-actions";
 import type {
-  AdminCourseListStatus,
   AdminCourseRecord,
   PaginatedAdminResult,
 } from "@/lib/coursemap/admin-catalogue";
-import { AdminListControls } from "@/components/admin/admin-list-controls";
 import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -29,32 +27,27 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 
-const statusOptions = [
-  { label: "All courses", value: "all" },
-  { label: "Drafts", value: "draft" },
-  { label: "Published", value: "published" },
-  { label: "Needs source review", value: "needs-review" },
-  { label: "Verified", value: "verified" },
-];
-
-const statusHeadings: Record<AdminCourseListStatus, string> = {
-  all: "All course versions",
-  draft: "Draft course versions",
-  published: "Published course versions",
-  "needs-review": "Course versions needing source review",
-  verified: "Verified course versions",
+const statusFilter = {
+  key: "status",
+  label: "Status",
+  allLabel: "All courses",
+  options: [
+    { label: "Drafts", value: "draft" },
+    { label: "Published", value: "published" },
+    { label: "Needs source review", value: "needs-review" },
+    { label: "Verified", value: "verified" },
+  ],
 };
 
 export function AdminCourseList({
   data,
   searchParams,
-  status,
 }: {
   data: PaginatedAdminResult<AdminCourseRecord>;
   searchParams: Record<string, string | undefined>;
-  status: AdminCourseListStatus;
 }) {
   const router = useRouter();
   const [pendingCode, setPendingCode] = useState<string | null>(null);
@@ -75,20 +68,13 @@ export function AdminCourseList({
   return (
     <AppShell admin>
       <div className="mx-auto w-full max-w-7xl space-y-5 pb-10">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-zinc-950">
-              Courses
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {statusHeadings[status]} · {data.total}{" "}
-              {data.total === 1 ? "version" : "versions"}
-            </p>
-          </div>
-          <ButtonLink href="/admin/imports/new" size="lg" variant="primary">
-            New import
-          </ButtonLink>
-        </header>
+        <h1 className="sr-only">Courses</h1>
+
+        <FilterBar
+          filterTitle="Filter courses"
+          searchPlaceholder="Search by code, title or subject"
+          filters={[statusFilter]}
+        />
 
         {notice ? (
           <Alert tone={notice.ok ? "success" : "danger"}>
@@ -102,15 +88,6 @@ export function AdminCourseList({
         ) : null}
 
         <Card className="overflow-hidden">
-          <Suspense
-            fallback={<div className="h-[65px] border-b border-zinc-200/80" />}
-          >
-            <AdminListControls
-              searchPlaceholder="Search by code, title or subject"
-              statuses={statusOptions}
-            />
-          </Suspense>
-
           {data.records.length === 0 ? (
             <Empty>
               <EmptyHeader>

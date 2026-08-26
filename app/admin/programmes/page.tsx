@@ -42,7 +42,6 @@ export default async function AdminProgrammesPage({
         ...(query ? { q: query } : {}),
         ...(status === "all" ? {} : { status }),
       }}
-      status={status}
     />
   );
 }

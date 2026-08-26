@@ -12,7 +12,7 @@ import type {
   ImportReviewStatus,
   ImportsDashboardData,
 } from "@/components/admin/imports/imports-overview-data";
-import { AdminListControls } from "@/components/admin/admin-list-controls";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -95,105 +95,112 @@ function ImportStatus({
 
 function ReviewTable({ rows }: { rows: ImportReviewRow[] }) {
   return (
-    <DataTableShell>
-      <Suspense
-        fallback={<div className="h-[65px] border-b border-zinc-200/80" />}
-      >
-        <AdminListControls
+    <div className="space-y-3">
+      <Suspense fallback={<div className="h-10" />}>
+        <FilterBar
+          filterTitle="Filter review queue"
           searchPlaceholder="Search courses"
-          statuses={[
-            { label: "All statuses", value: "all" },
-            { label: "Ready", value: "ready" },
-            { label: "Needs review", value: "needs-review" },
-            { label: "Blocked", value: "blocked" },
-            { label: "Failed", value: "failed" },
+          filters={[
+            {
+              key: "status",
+              label: "Status",
+              allLabel: "All statuses",
+              options: [
+                { label: "Ready", value: "ready" },
+                { label: "Needs review", value: "needs-review" },
+                { label: "Blocked", value: "blocked" },
+                { label: "Failed", value: "failed" },
+              ],
+            },
           ]}
         />
       </Suspense>
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>Course</TableHead>
-            <TableHead className="hidden text-center sm:table-cell">
-              Year
-            </TableHead>
-            <TableHead className="hidden text-center lg:table-cell">
-              Sources
-            </TableHead>
-            <TableHead className="hidden md:table-cell">Change</TableHead>
-            <TableHead className="hidden lg:table-cell">Checked</TableHead>
-            <TableHead className="text-right">Status</TableHead>
-            <TableHead className="w-10">
-              <span className="sr-only">Open</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.length === 0 ? (
+      <DataTableShell>
+        <Table>
+          <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={7} className="p-0">
-                <DataTableEmpty
-                  title="Nothing is waiting on you"
-                  description="Courses appear here when an import finds a change that a person needs to confirm."
-                />
-              </TableCell>
+              <TableHead>Course</TableHead>
+              <TableHead className="hidden text-center sm:table-cell">
+                Year
+              </TableHead>
+              <TableHead className="hidden text-center lg:table-cell">
+                Sources
+              </TableHead>
+              <TableHead className="hidden md:table-cell">Change</TableHead>
+              <TableHead className="hidden lg:table-cell">Checked</TableHead>
+              <TableHead className="text-right">Status</TableHead>
+              <TableHead className="w-10">
+                <span className="sr-only">Open</span>
+              </TableHead>
             </TableRow>
-          ) : (
-            rows.map((row) => (
-              <TableRow key={`${row.year}:${row.code}`} className="group">
-                <TableCell>
-                  <Link
-                    href={row.href}
-                    className="block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
-                  >
-                    <span className="flex items-baseline gap-3">
-                      <span className="font-mono text-sm font-semibold text-zinc-700">
-                        {row.code}
-                      </span>
-                      <span className="font-medium text-zinc-950">
-                        {row.title}
-                      </span>
-                    </span>
-                    <span className="mt-1 block text-xs text-zinc-500 md:hidden">
-                      {row.detail}
-                    </span>
-                  </Link>
-                </TableCell>
-                <TableCell className="hidden text-center font-medium tabular-nums sm:table-cell">
-                  {row.year}
-                </TableCell>
-                <TableCell
-                  className="hidden text-center lg:table-cell"
-                  title={row.sourceSummary}
-                >
-                  <span className="border-b border-dotted border-zinc-400 font-semibold tabular-nums">
-                    {row.sourceCount}
-                  </span>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {row.detail}
-                </TableCell>
-                <TableCell className="hidden whitespace-nowrap text-zinc-500 lg:table-cell">
-                  {formatDate(row.checkedAt)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <ImportStatus issue={row.issue} status={row.status} />
-                </TableCell>
-                <TableCell>
-                  <Link
-                    href={row.href}
-                    aria-label={`Review ${row.code} ${row.title}`}
-                    className="grid size-9 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:outline-none"
-                  >
-                    <ChevronRight size={17} aria-hidden="true" />
-                  </Link>
+          </TableHeader>
+          <TableBody>
+            {rows.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={7} className="p-0">
+                  <DataTableEmpty
+                    title="Nothing is waiting on you"
+                    description="Courses appear here when an import finds a change that a person needs to confirm."
+                  />
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </DataTableShell>
+            ) : (
+              rows.map((row) => (
+                <TableRow key={`${row.year}:${row.code}`} className="group">
+                  <TableCell>
+                    <Link
+                      href={row.href}
+                      className="block rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                    >
+                      <span className="flex items-baseline gap-3">
+                        <span className="font-mono text-sm font-semibold text-zinc-700">
+                          {row.code}
+                        </span>
+                        <span className="font-medium text-zinc-950">
+                          {row.title}
+                        </span>
+                      </span>
+                      <span className="mt-1 block text-xs text-zinc-500 md:hidden">
+                        {row.detail}
+                      </span>
+                    </Link>
+                  </TableCell>
+                  <TableCell className="hidden text-center font-medium tabular-nums sm:table-cell">
+                    {row.year}
+                  </TableCell>
+                  <TableCell
+                    className="hidden text-center lg:table-cell"
+                    title={row.sourceSummary}
+                  >
+                    <span className="border-b border-dotted border-zinc-400 font-semibold tabular-nums">
+                      {row.sourceCount}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {row.detail}
+                  </TableCell>
+                  <TableCell className="hidden whitespace-nowrap text-zinc-500 lg:table-cell">
+                    {formatDate(row.checkedAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ImportStatus issue={row.issue} status={row.status} />
+                  </TableCell>
+                  <TableCell>
+                    <Link
+                      href={row.href}
+                      aria-label={`Review ${row.code} ${row.title}`}
+                      className="grid size-9 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-500/40 focus-visible:outline-none"
+                    >
+                      <ChevronRight size={17} aria-hidden="true" />
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </DataTableShell>
+    </div>
   );
 }
 
