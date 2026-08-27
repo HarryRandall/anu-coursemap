@@ -586,16 +586,12 @@ export function CampusMap({
         buildingLayerIdsRef.current,
       );
       setSelectedBuilding(map, feature, buildingHighlightsRef.current);
-      return Boolean(feature);
     };
 
-    if (selectBuildingFootprint()) return;
-    const selectBuildingWhenReady = () => {
-      selectBuildingFootprint();
-    };
-    map.once("idle", selectBuildingWhenReady);
+    selectBuildingFootprint();
+    map.once("idle", selectBuildingFootprint);
     return () => {
-      map.off("idle", selectBuildingWhenReady);
+      map.off("idle", selectBuildingFootprint);
     };
   }, [mapReady, places, selectedSlug, visibleLayerSlugs]);
 
@@ -625,16 +621,12 @@ export function CampusMap({
       buildingHighlightsRef.current.routeFrom = fromFeature;
       buildingHighlightsRef.current.routeTo = toFeature;
       syncBuildingHighlights(map, buildingHighlightsRef.current);
-      return Boolean(fromFeature && toFeature);
     };
 
-    if (highlightRouteBuildings()) return;
-    const highlightRouteBuildingsWhenReady = () => {
-      highlightRouteBuildings();
-    };
-    map.once("idle", highlightRouteBuildingsWhenReady);
+    highlightRouteBuildings();
+    map.once("idle", highlightRouteBuildings);
     return () => {
-      map.off("idle", highlightRouteBuildingsWhenReady);
+      map.off("idle", highlightRouteBuildings);
     };
   }, [mapReady, routeEndpoints, visibleLayerSlugs]);
 
