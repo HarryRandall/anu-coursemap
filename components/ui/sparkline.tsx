@@ -1,132 +1,158 @@
-import { cn } from "@/lib/cn";
+"use client";
 
-const width = 200;
-const height = 32;
-const padX = 4;
-const padY = 5;
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { cn } from "@/lib/cn";
 
 export type SparklineVariant = "area" | "bar" | "line";
 
-/**
- * Inset the path so the end marker is not clipped. Pass `domainMax` to plot
- * several tiles on the same absolute scale so larger totals read taller.
- */
-function points(values: readonly number[], domainMax: number) {
-  const max = Math.max(domainMax, 1);
-  const plotWidth = width - padX * 2;
-  const plotHeight = height - padY * 2;
-  return values.map((value, index) => {
-    const x =
-      values.length <= 1
-        ? width / 2
-        : padX + (index / (values.length - 1)) * plotWidth;
-    const y = padY + plotHeight - (Math.max(value, 0) / max) * plotHeight;
-    return { x, y };
-  });
+const BRAND = "#7c3aed";
+const FILL = "url(#sparklineFill)";
+
+type Point = { index: number; value: number };
+
+function LastDot({
+  cx,
+  cy,
+  index,
+  lastIndex,
+}: {
+  cx?: number;
+  cy?: number;
+  index?: number;
+  lastIndex: number;
+}) {
+  if (cx == null || cy == null || index !== lastIndex) return null;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} fill="white" r={3.25} />
+      <circle cx={cx} cy={cy} fill={BRAND} r={2} />
+    </g>
+  );
 }
 
-function Bars({
-  values,
-  domainMax,
+function ChartTooltip({
+  active,
+  payload,
 }: {
-  values: readonly number[];
-  domainMax: number;
+  active?: boolean;
+  payload?: Array<{ value?: number }>;
 }) {
-  const max = Math.max(domainMax, 1);
-  const gap = values.length > 6 ? 1.5 : 2;
-  const plotWidth = width - padX * 2;
-  const barWidth = (plotWidth - gap * (values.length - 1)) / values.length;
+  if (!active || payload?.[0]?.value == null) return null;
+  return (
+    <div className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-zinc-800 tabular-nums shadow-xs">
+      {payload[0].value.toLocaleString("en-AU")}
+    </div>
+  );
+}
+
+function axes(peak: number) {
   return (
     <>
-      {values.map((value, index) => {
-        const barHeight =
-          value <= 0 ? 0 : Math.max(2, (value / max) * (height - padY * 2));
-        const x = padX + index * (barWidth + gap);
-        return (
-          <rect
-            key={index}
-            fill="currentColor"
-            height={barHeight}
-            rx="1"
-            width={Math.max(barWidth, 1)}
-            x={x}
-            y={height - padY - barHeight}
-          />
-        );
-      })}
+      <XAxis dataKey="index" hide />
+      <YAxis domain={[0, peak]} hide />
+      <Tooltip
+        content={<ChartTooltip />}
+        cursor={false}
+        isAnimationActive={false}
+      />
     </>
   );
 }
 
-/** Compact SVG trend used inside dashboard stat tiles. */
+/** Compact Recharts trend used inside dashboard stat tiles. */
 export function Sparkline({
   className,
-  domainMax,
   label,
   values,
   variant = "area",
 }: {
   className?: string;
-  /** Absolute ceiling for the Y axis. Defaults to the series maximum. */
-  domainMax?: number;
   label: string;
   values: readonly number[];
   variant?: SparklineVariant;
 }) {
   if (values.length === 0) return null;
-  const resolvedMax = domainMax ?? Math.max(...values, 1);
-  const plotted = points(values, resolvedMax);
-  const line = plotted
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`)
-    .join(" ");
-  const last = plotted[plotted.length - 1];
-  const area = `${line} L${last?.x ?? width - padX} ${height - padY} L${padX} ${height - padY} Z`;
+  const series = values[0] === 0 ? values : [0, ...values];
+  const peak = Math.max(...series, 1);
+  const data: Point[] = series.map((value, index) => ({ index, value }));
+  const lastIndex = data.length - 1;
+  const lastDot = (props: { cx?: number; cy?: number; index?: number }) => (
+    <LastDot lastIndex={lastIndex} {...props} />
+  );
 
   return (
-    <svg
+    <div
       aria-label={label}
-      className={cn("h-8 w-full overflow-visible text-brand-600", className)}
-      fill="none"
-      preserveAspectRatio="none"
+      className={cn("h-8 min-w-0 flex-1", className)}
       role="img"
-      viewBox={`0 0 ${width} ${height}`}
     >
-      <title>{label}</title>
-      {variant === "bar" ? (
-        <Bars domainMax={resolvedMax} values={values} />
-      ) : (
-        <>
-          {variant === "area" ? (
-            <path d={area} fill="currentColor" opacity="0.14" />
-          ) : null}
-          <path
-            d={line}
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.75"
-            vectorEffect="non-scaling-stroke"
-          />
-          {last ? (
-            <>
-              <circle
-                cx={last.x}
-                cy={last.y}
-                fill="white"
-                r="3"
-                vectorEffect="non-scaling-stroke"
-              />
-              <circle
-                cx={last.x}
-                cy={last.y}
-                fill="currentColor"
-                r="1.75"
-                vectorEffect="non-scaling-stroke"
-              />
-            </>
-          ) : null}
-        </>
-      )}
-    </svg>
+      <ResponsiveContainer height="100%" width="100%">
+        {variant === "bar" ? (
+          <BarChart
+            data={data}
+            margin={{ bottom: 2, left: 0, right: 4, top: 2 }}
+          >
+            {axes(peak)}
+            <Bar
+              dataKey="value"
+              fill={BRAND}
+              isAnimationActive={false}
+              maxBarSize={8}
+              radius={[1, 1, 0, 0]}
+            />
+          </BarChart>
+        ) : variant === "line" ? (
+          <LineChart
+            data={data}
+            margin={{ bottom: 2, left: 0, right: 6, top: 4 }}
+          >
+            {axes(peak)}
+            <Line
+              activeDot={false}
+              dataKey="value"
+              dot={lastDot}
+              isAnimationActive={false}
+              stroke={BRAND}
+              strokeWidth={1.75}
+              type="monotone"
+            />
+          </LineChart>
+        ) : (
+          <AreaChart
+            data={data}
+            margin={{ bottom: 2, left: 0, right: 6, top: 4 }}
+          >
+            <defs>
+              <linearGradient id="sparklineFill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={BRAND} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={BRAND} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            {axes(peak)}
+            <Area
+              activeDot={false}
+              dataKey="value"
+              dot={lastDot}
+              fill={FILL}
+              isAnimationActive={false}
+              stroke={BRAND}
+              strokeWidth={1.75}
+              type="monotone"
+            />
+          </AreaChart>
+        )}
+      </ResponsiveContainer>
+    </div>
   );
 }

@@ -410,8 +410,11 @@ test("splits imports into sync, course, programme and change routes", async () =
   assert.equal(changesResponse.status, 200);
 
   const syncHtml = await syncResponse.text();
-  assert.match(syncHtml, /Auto sync/i);
-  assert.match(syncHtml, /Not set up/i);
+  assert.match(syncHtml, /Refresh directory/i);
+  assert.match(syncHtml, /Catalogue year/i);
+  assert.match(syncHtml, /Refresh courses/i);
+  assert.match(syncHtml, /Refresh programmes/i);
+  assert.doesNotMatch(syncHtml, /Auto sync|Not set up/i);
   assert.match(syncHtml, /Catalogue import runs, most recent first/i);
   // Runs are identified by what they touched and grouped under a day, not by
   // repeating "1 checked, 1 changed" down every row.
@@ -427,7 +430,8 @@ test("splits imports into sync, course, programme and change routes", async () =
   assert.doesNotMatch(coursesHtml, /Courses available to import/i);
 
   const programmesHtml = await programmesResponse.text();
-  assert.match(programmesHtml, /Programme code/i);
+  assert.match(programmesHtml, /Find a programme/i);
+  assert.doesNotMatch(programmesHtml, /Programme code/i);
 
   const changesHtml = await changesResponse.text();
   assert.match(changesHtml, /Catalogue changes awaiting review/i);
