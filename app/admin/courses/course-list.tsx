@@ -12,6 +12,7 @@ import {
   type AdminTableColumn,
 } from "@/components/admin/admin-record-table";
 import { AdminRowActions } from "@/components/admin/admin-row-actions";
+import { readImportStream } from "@/components/admin/imports/import-stream";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -122,8 +123,7 @@ export function AdminCourseList({
           courseCodes: [record.code],
         }),
       });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Resync failed.");
+      await readImportStream(response, () => undefined);
       setNotice({ ok: true, text: `${record.code} was resynced from ANU.` });
       router.refresh();
     } catch (error) {

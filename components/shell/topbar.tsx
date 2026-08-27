@@ -15,8 +15,8 @@ export function Topbar({
   onOpenNav: () => void;
 }) {
   return (
-    <header className="relative flex min-h-14 items-center justify-between gap-3 bg-white px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-zinc-200 after:content-[''] sm:px-6">
-      <div className="flex min-w-0 items-center gap-2">
+    <header className="relative flex min-h-14 items-center justify-between gap-3 overflow-visible bg-white px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-zinc-200 after:content-[''] sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 overflow-visible">
         <IconButton
           id="mobile-navigation-trigger"
           label="Open navigation"

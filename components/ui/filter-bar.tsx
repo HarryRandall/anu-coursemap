@@ -27,6 +27,13 @@ export type FilterConfig = {
   options: Array<{ value: string; label: string }>;
 };
 
+type ControlledFilterState = {
+  query: string;
+  values: Record<string, string>;
+  onQueryChange: (query: string) => void;
+  onFilterChange: (key: string, value: string) => void;
+};
+
 /**
  * Search plus filtering, bound to the URL so a narrowed view can be shared.
  * The filter menu drills from field to value in one popover, and a filter
@@ -36,19 +43,23 @@ export type FilterConfig = {
 export function FilterBar({
   searchPlaceholder,
   filters = [],
+  state,
 }: {
   searchPlaceholder: string;
   filters?: FilterConfig[];
+  /** Keeps small, already-loaded datasets synchronous and client-filtered. */
+  state?: ControlledFilterState;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("q") ?? "");
+  const [localQuery, setLocalQuery] = useState(searchParams.get("q") ?? "");
   const [isPending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   const [field, setField] = useState<FilterConfig | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const paramsRef = useRef(searchParams.toString());
+  const query = state?.query ?? localQuery;
 
   const replaceParams = (mutate: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(paramsRef.current);
@@ -67,6 +78,10 @@ export function FilterBar({
   };
 
   const update = (key: string, value: string) => {
+    if (state) {
+      state.onFilterChange(key, value);
+      return;
+    }
     replaceParams((params) => {
       if (value) params.set(key, value);
       else params.delete(key);
@@ -85,7 +100,7 @@ export function FilterBar({
   }, [searchParams]);
 
   const active = filters.flatMap((filter) => {
-    const value = searchParams.get(filter.key);
+    const value = state?.values[filter.key] ?? searchParams.get(filter.key);
     if (!value) return [];
     const option = filter.options.find((item) => item.value === value);
     return [{ filter, label: option?.label ?? value, value }];
@@ -97,7 +112,7 @@ export function FilterBar({
   }
 
   return (
-    <div aria-busy={isPending} className="flex flex-col gap-2">
+    <div aria-busy={!state && isPending} className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">Search</span>
@@ -113,7 +128,11 @@ export function FilterBar({
             className="h-10 pl-9"
             onChange={(event) => {
               const value = event.target.value;
-              setQuery(value);
+              if (state) {
+                state.onQueryChange(value);
+                return;
+              }
+              setLocalQuery(value);
               if (timeout.current) clearTimeout(timeout.current);
               timeout.current = setTimeout(() => update("q", value), 250);
             }}
@@ -168,7 +187,9 @@ export function FilterBar({
                         ...field.options,
                       ].map((option) => {
                         const selected =
-                          (searchParams.get(field.key) ?? "") === option.value;
+                          (state?.values[field.key] ??
+                            searchParams.get(field.key) ??
+                            "") === option.value;
                         return (
                           <CommandItem
                             key={option.value || "__all"}
@@ -246,9 +267,13 @@ export function FilterBar({
             <button
               className="rounded-md px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
               onClick={() =>
-                replaceParams((params) => {
-                  filters.forEach((filter) => params.delete(filter.key));
-                })
+                state
+                  ? filters.forEach((filter) =>
+                      state.onFilterChange(filter.key, ""),
+                    )
+                  : replaceParams((params) => {
+                      filters.forEach((filter) => params.delete(filter.key));
+                    })
               }
               type="button"
             >

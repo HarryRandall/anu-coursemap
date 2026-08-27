@@ -1,5 +1,13 @@
 import "server-only";
 
+import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
+import {
+  preservedRuleField,
+  reviewedTreeFromStored,
+  type ReviewedRuleTree,
+  type StoredRuleCondition,
+  type StoredRuleGroup,
+} from "@/lib/coursemap/requisite-conditions";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,9 +45,11 @@ export type PaginatedAdminResult<T> = {
 
 export type AdminCatalogueSummary = {
   courseDrafts: number;
+  courseHistory: number[];
   courses: number;
-  reviewItems: number;
+  draftHistory: number[];
   structureDrafts: number;
+  structureHistory: number[];
   structures: number;
 };
 
@@ -48,7 +58,9 @@ export type AdminCourseReviewRule = {
   hardness: string;
   id: number;
   kind: string;
+  reviewed: ReviewedRuleTree | null;
   reviewState: string;
+  sourceChanged: boolean;
   sourceText: string;
 };
 
@@ -139,6 +151,41 @@ type CourseReviewRuleRow = {
   review_state: string;
   rule_kind: string;
   source_text: string;
+};
+
+type CourseReviewGroupRow = {
+  course_rule_id: number;
+  id: number;
+  minimum_count: number | null;
+  operator: string;
+  parent_group_id: number | null;
+  position: number;
+};
+
+type CourseReviewConditionRow = {
+  condition_kind: string;
+  confidence: number;
+  course_rule_id: number;
+  id: number;
+  free_text: string | null;
+  group_id: number;
+  maximum_course_level: number | null;
+  minimum_course_level: number | null;
+  minimum_gpa: number | null;
+  minimum_mark: number | null;
+  minimum_units: number | null;
+  position: number;
+  required_course_id: number | null;
+  required_structure_id: number | null;
+  review_state: string;
+  source_text: string | null;
+  subject_code: string | null;
+};
+
+type ReviewChangeRow = {
+  field: string;
+  new_value: unknown;
+  old_value: unknown;
 };
 
 type CourseReviewOfferingRow = {
@@ -469,36 +516,30 @@ export async function loadAdminStructurePage({
   };
 }
 
+const emptyCatalogueSummary = (): AdminCatalogueSummary => ({
+  courseDrafts: 0,
+  courseHistory: [],
+  courses: 0,
+  draftHistory: [],
+  structureDrafts: 0,
+  structureHistory: [],
+  structures: 0,
+});
+
 export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary> {
-  if (isDemoMode()) {
-    return {
-      courseDrafts: 0,
-      courses: 0,
-      reviewItems: 0,
-      structureDrafts: 0,
-      structures: 0,
-    };
-  }
+  if (isDemoMode()) return emptyCatalogueSummary();
   const [supabase, year] = await Promise.all([
     createClient(),
     currentCatalogueYear(),
   ]);
-  if (!year) {
-    return {
-      courseDrafts: 0,
-      courses: 0,
-      reviewItems: 0,
-      structureDrafts: 0,
-      structures: 0,
-    };
-  }
+  if (!year) return emptyCatalogueSummary();
   const [
     courses,
     courseDrafts,
-    courseReview,
     structures,
     structureDrafts,
-    structureReview,
+    courseCreated,
+    structureCreated,
   ] = await Promise.all([
     supabase
       .from("course_versions")
@@ -510,11 +551,6 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
       .eq("catalogue_year_id", year.id)
       .neq("publication_status", "published"),
     supabase
-      .from("course_versions")
-      .select("id", { count: "exact", head: true })
-      .eq("catalogue_year_id", year.id)
-      .eq("review_state", "review"),
-    supabase
       .from("academic_structure_versions")
       .select("id", { count: "exact", head: true })
       .eq("catalogue_year_id", year.id),
@@ -524,28 +560,52 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
       .eq("catalogue_year_id", year.id)
       .neq("publication_status", "published"),
     supabase
-      .from("academic_structure_versions")
-      .select("id", { count: "exact", head: true })
+      .from("course_versions")
+      .select("created_at,publication_status")
       .eq("catalogue_year_id", year.id)
-      .eq("review_state", "review"),
+      .limit(5000),
+    supabase
+      .from("academic_structure_versions")
+      .select("created_at,publication_status")
+      .eq("catalogue_year_id", year.id)
+      .limit(5000),
   ]);
   const firstError = [
     courses,
     courseDrafts,
-    courseReview,
     structures,
     structureDrafts,
-    structureReview,
+    courseCreated,
+    structureCreated,
   ]
     .map((result) => result.error)
     .find(Boolean);
   if (firstError) throw firstError;
+
+  const courseRows = (courseCreated.data ?? []) as Array<{
+    created_at: string;
+    publication_status: string;
+  }>;
+  const structureRows = (structureCreated.data ?? []) as Array<{
+    created_at: string;
+    publication_status: string;
+  }>;
+  const draftCreatedAt = [...courseRows, ...structureRows]
+    .filter((row) => row.publication_status !== "published")
+    .map((row) => row.created_at);
+
   return {
     courses: courses.count ?? 0,
     courseDrafts: courseDrafts.count ?? 0,
+    courseHistory: cumulativeGrowthSeries(
+      courseRows.map((row) => row.created_at),
+    ),
     structures: structures.count ?? 0,
     structureDrafts: structureDrafts.count ?? 0,
-    reviewItems: (courseReview.count ?? 0) + (structureReview.count ?? 0),
+    structureHistory: cumulativeGrowthSeries(
+      structureRows.map((row) => row.created_at),
+    ),
+    draftHistory: cumulativeGrowthSeries(draftCreatedAt),
   };
 }
 
@@ -598,6 +658,176 @@ export async function loadAdminCourseRecords(): Promise<AdminCourseRecord[]> {
   });
 }
 
+async function loadAdminCourseReviewRules(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ruleRows: CourseReviewRuleRow[],
+  reviewChanges: ReviewChangeRow[],
+): Promise<AdminCourseReviewRule[]> {
+  const ruleIds = ruleRows.map((rule) => rule.id);
+  const [groupsResult, conditionsResult] = ruleIds.length
+    ? await Promise.all([
+        supabase
+          .from("course_rule_groups")
+          .select(
+            "course_rule_id,id,minimum_count,operator,parent_group_id,position",
+          )
+          .in("course_rule_id", ruleIds)
+          .order("position"),
+        supabase
+          .from("course_rule_conditions")
+          .select(
+            "condition_kind,confidence,course_rule_id,free_text,group_id,id,maximum_course_level,minimum_course_level,minimum_gpa,minimum_mark,minimum_units,position,required_course_id,required_structure_id,review_state,source_text,subject_code",
+          )
+          .in("course_rule_id", ruleIds)
+          .order("position"),
+      ])
+    : [
+        { data: [], error: null },
+        { data: [], error: null },
+      ];
+  if (groupsResult.error) throw groupsResult.error;
+  if (conditionsResult.error) throw conditionsResult.error;
+
+  const groupRows = (groupsResult.data ?? []) as CourseReviewGroupRow[];
+  const conditionRows = (conditionsResult.data ??
+    []) as CourseReviewConditionRow[];
+  const courseIds = [
+    ...new Set(
+      conditionRows
+        .map((row) => row.required_course_id)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  ];
+  const structureIds = [
+    ...new Set(
+      conditionRows
+        .map((row) => row.required_structure_id)
+        .filter((id): id is number => typeof id === "number"),
+    ),
+  ];
+  const [coursesResult, structuresResult] = await Promise.all([
+    courseIds.length
+      ? supabase.from("courses").select("id,code").in("id", courseIds)
+      : Promise.resolve({ data: [], error: null }),
+    structureIds.length
+      ? supabase
+          .from("academic_structures")
+          .select("id,code")
+          .in("id", structureIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (coursesResult.error) throw coursesResult.error;
+  if (structuresResult.error) throw structuresResult.error;
+
+  const courseCodeById = new Map(
+    ((coursesResult.data ?? []) as Array<{ code: string; id: number }>).map(
+      (row) => [row.id, row.code],
+    ),
+  );
+  const structureCodeById = new Map(
+    ((structuresResult.data ?? []) as Array<{ code: string; id: number }>).map(
+      (row) => [row.id, row.code],
+    ),
+  );
+
+  const titleByCourseId = new Map<number, string>();
+  if (courseIds.length) {
+    const { data: versions, error: versionsError } = await supabase
+      .from("course_versions")
+      .select("course_id,title")
+      .in("course_id", courseIds);
+    if (versionsError) throw versionsError;
+    for (const version of versions ?? []) {
+      if (!titleByCourseId.has(version.course_id)) {
+        titleByCourseId.set(version.course_id, version.title);
+      }
+    }
+  }
+  const nameByStructureId = new Map<number, string>();
+  if (structureIds.length) {
+    const { data: versions, error: versionsError } = await supabase
+      .from("academic_structure_versions")
+      .select("structure_id,name")
+      .in("structure_id", structureIds);
+    if (versionsError) throw versionsError;
+    for (const version of versions ?? []) {
+      if (!nameByStructureId.has(version.structure_id)) {
+        nameByStructureId.set(version.structure_id, version.name);
+      }
+    }
+  }
+
+  const groupsByRule = new Map<number, StoredRuleGroup[]>();
+  for (const row of groupRows) {
+    const groups = groupsByRule.get(row.course_rule_id) ?? [];
+    groups.push({
+      id: row.id,
+      parentId: row.parent_group_id,
+      operator: row.operator,
+      minimumCount: row.minimum_count,
+      position: row.position,
+    });
+    groupsByRule.set(row.course_rule_id, groups);
+  }
+
+  const conditionsByRule = new Map<number, StoredRuleCondition[]>();
+  for (const row of conditionRows) {
+    const conditions = conditionsByRule.get(row.course_rule_id) ?? [];
+    conditions.push({
+      id: row.id,
+      groupId: row.group_id,
+      kind: row.condition_kind,
+      courseCode: row.required_course_id
+        ? (courseCodeById.get(row.required_course_id) ?? null)
+        : null,
+      courseTitle: row.required_course_id
+        ? (titleByCourseId.get(row.required_course_id) ?? null)
+        : null,
+      structureCode: row.required_structure_id
+        ? (structureCodeById.get(row.required_structure_id) ?? null)
+        : null,
+      structureName: row.required_structure_id
+        ? (nameByStructureId.get(row.required_structure_id) ?? null)
+        : null,
+      units: row.minimum_units == null ? null : Number(row.minimum_units),
+      subjectCode: row.subject_code,
+      level: row.minimum_course_level,
+      gpa: row.minimum_gpa == null ? null : Number(row.minimum_gpa),
+      mark: row.minimum_mark == null ? null : Number(row.minimum_mark),
+      freeText: row.free_text,
+      sourceText: row.source_text,
+      confidence: Number(row.confidence),
+      reviewState: row.review_state,
+      position: row.position,
+    });
+    conditionsByRule.set(row.course_rule_id, conditions);
+  }
+
+  return ruleRows.map((rule) => {
+    const groups = groupsByRule.get(rule.id) ?? [];
+    const conditions = conditionsByRule.get(rule.id) ?? [];
+    const change = reviewChanges.find(
+      (item) => item.field === preservedRuleField(rule.rule_kind),
+    );
+    return {
+      confidence: Number(rule.confidence),
+      hardness: rule.hardness,
+      id: rule.id,
+      kind: rule.rule_kind,
+      reviewed: reviewedTreeFromStored({
+        confidence: Number(rule.confidence),
+        reviewState: rule.review_state,
+        sourceText: rule.source_text,
+        groups,
+        conditions,
+      }),
+      reviewState: rule.review_state,
+      sourceChanged: Boolean(change),
+      sourceText: rule.source_text,
+    };
+  });
+}
+
 /**
  * Loads every field an administrator needs to compare a draft against its
  * source. The source document remains separate from mutable draft fields so
@@ -630,7 +860,9 @@ export async function loadAdminCourseReview(
         hardness: "hard",
         id: 1,
         kind: "prerequisite",
+        reviewed: null,
         reviewState,
+        sourceChanged: false,
         sourceText: course.prerequisiteText,
       });
     }
@@ -640,7 +872,9 @@ export async function loadAdminCourseReview(
         hardness: "hard",
         id: 2,
         kind: "incompatibility",
+        reviewed: null,
         reviewState,
+        sourceChanged: false,
         sourceText: `You are not able to enrol in this course if you have successfully completed ${course.incompatibilities.join(", ")}.`,
       });
     }
@@ -710,26 +944,36 @@ export async function loadAdminCourseReview(
   if (!version) return null;
   const versionRow = version as CourseReviewVersionRow;
 
-  const [sourceResult, rulesResult, offeringsResult] = await Promise.all([
-    supabase
-      .from("catalogue_source_documents")
-      .select("canonical_url,content_sha256,fetched_at,source_last_modified")
-      .eq("id", versionRow.source_document_id)
-      .maybeSingle(),
-    supabase
-      .from("course_rules")
-      .select("confidence,hardness,id,review_state,rule_kind,source_text")
-      .eq("course_version_id", versionRow.id)
-      .order("rule_kind"),
-    supabase
-      .from("course_offerings")
-      .select("delivery_mode,id,location,status")
-      .eq("course_version_id", versionRow.id)
-      .order("id"),
-  ]);
+  const [sourceResult, rulesResult, offeringsResult, reviewChangesResult] =
+    await Promise.all([
+      supabase
+        .from("catalogue_source_documents")
+        .select("canonical_url,content_sha256,fetched_at,source_last_modified")
+        .eq("id", versionRow.source_document_id)
+        .maybeSingle(),
+      supabase
+        .from("course_rules")
+        .select("confidence,hardness,id,review_state,rule_kind,source_text")
+        .eq("course_version_id", versionRow.id)
+        .order("rule_kind"),
+      supabase
+        .from("course_offerings")
+        .select("delivery_mode,id,location,status")
+        .eq("course_version_id", versionRow.id)
+        .order("id"),
+      supabase
+        .from("catalogue_review_items")
+        .select("field,old_value,new_value")
+        .eq("catalogue_year_id", year.id)
+        .eq("target_kind", "course_version")
+        .eq("target_key", course.code)
+        .eq("issue_code", "STRUCTURED_RULE_PRESERVED")
+        .eq("status", "open"),
+    ]);
   if (sourceResult.error) throw sourceResult.error;
   if (rulesResult.error) throw rulesResult.error;
   if (offeringsResult.error) throw offeringsResult.error;
+  if (reviewChangesResult.error) throw reviewChangesResult.error;
 
   const offeringRows = (offeringsResult.data ??
     []) as CourseReviewOfferingRow[];
@@ -761,6 +1005,12 @@ export async function loadAdminCourseReview(
   );
 
   const source = sourceResult.data as SourceDocumentRow | null;
+  const ruleRows = (rulesResult.data ?? []) as CourseReviewRuleRow[];
+  const rules = await loadAdminCourseReviewRules(
+    supabase,
+    ruleRows,
+    (reviewChangesResult.data ?? []) as ReviewChangeRow[],
+  );
   return {
     code: course.code,
     publicId: course.public_id,
@@ -773,26 +1023,30 @@ export async function loadAdminCourseReview(
       deliveryMode: offering.delivery_mode,
       id: offering.id,
       location: offering.location,
-      sessions: sessionRows
-        .filter((session) => session.course_offering_id === offering.id)
-        .map((session) => ({
-          deliveryMode: session.delivery_mode,
-          location: session.location,
-          period:
-            periodNameById.get(session.academic_period_id) ?? "Unmapped period",
-        })),
+      // offering_sessions is keyed per class. The review view summarises by
+      // period, so collapse the classes of a period to the first row rather
+      // than listing the same period several times.
+      sessions: [
+        ...new Map(
+          sessionRows
+            .filter((session) => session.course_offering_id === offering.id)
+            .map((session) => [
+              session.academic_period_id,
+              {
+                deliveryMode: session.delivery_mode,
+                location: session.location,
+                period:
+                  periodNameById.get(session.academic_period_id) ??
+                  "Unmapped period",
+              },
+            ]),
+        ).values(),
+      ],
       status: offering.status,
     })),
     publicationStatus: versionRow.publication_status,
     reviewState: versionRow.review_state,
-    rules: ((rulesResult.data ?? []) as CourseReviewRuleRow[]).map((rule) => ({
-      confidence: rule.confidence,
-      hardness: rule.hardness,
-      id: rule.id,
-      kind: rule.rule_kind,
-      reviewState: rule.review_state,
-      sourceText: rule.source_text,
-    })),
+    rules,
     school: versionRow.school,
     source: source
       ? {

@@ -12,10 +12,8 @@ import type {
   CatalogueRequisiteRule,
 } from "./catalogue-types";
 import { accentFor } from "@/lib/coursemap/catalogue-accent";
-import {
-  parseRequisiteSummary,
-  type RequisiteExpression,
-} from "./requisite-summary";
+import { parseRequisiteSummary } from "./requisite-summary";
+import { readPublishedRequisiteRule } from "./published-requisite-rule";
 
 const ANU_SOURCE_BASE_URL = "https://programsandcourses.anu.edu.au";
 
@@ -256,15 +254,25 @@ async function loadOfferings(
   >();
   for (const offering of offeringRows) {
     const sessionsForOffering = sessionsByOffering.get(offering.id) ?? [];
-    const periodNames = sessionsForOffering
-      .map((session) => periodsById.get(session.academic_period_id)?.name)
-      .filter((name): name is string => Boolean(name));
+    // offering_sessions is keyed per class, so a period with two classes
+    // returns two rows. Students see availability by period, not by class.
+    const periodNames = [
+      ...new Set(
+        sessionsForOffering
+          .map((session) => periodsById.get(session.academic_period_id)?.name)
+          .filter((name): name is string => Boolean(name)),
+      ),
+    ];
     const enriched = {
       ...offering,
       periodNames,
-      sessionDeliveryModes: sessionsForOffering
-        .map((session) => session.delivery_mode)
-        .filter((mode): mode is string => Boolean(mode)),
+      sessionDeliveryModes: [
+        ...new Set(
+          sessionsForOffering
+            .map((session) => session.delivery_mode)
+            .filter((mode): mode is string => Boolean(mode)),
+        ),
+      ],
     };
     const existing = byCourseVersion.get(offering.course_version_id) ?? [];
     existing.push(enriched);
@@ -392,217 +400,6 @@ function readPrerequisiteEdges(
   });
 }
 
-type RequisiteGroupPayload = {
-  id: number;
-  operator: "all_of" | "any_of";
-  parentId: number | null;
-  position: number;
-};
-
-type RequisiteConditionPayload =
-  | { code: string; groupId: number; kind: "course"; position: number }
-  | {
-      groupId: number;
-      kind: "subject_units";
-      position: number;
-      subject: string;
-      units: number;
-    }
-  | {
-      groupId: number;
-      kind: "level_units";
-      level: number;
-      position: number;
-      subject?: string;
-      units: number;
-    }
-  | {
-      groupId: number;
-      kind: "units_total";
-      position: number;
-      units: number;
-    };
-
-function readRequisiteRule(
-  value: Json | undefined,
-): CatalogueRequisiteRule | null {
-  if (!isRecord(value)) return null;
-
-  const sourceText = readString(value.source_text);
-  if (!sourceText) return null;
-  const reviewState = readString(value.review_state);
-  const groups: RequisiteGroupPayload[] = Array.isArray(value.groups)
-    ? value.groups.flatMap((group) => {
-        if (!isRecord(group)) return [];
-        const id = readNumber(group.id, Number.NaN);
-        const parentId =
-          typeof group.parent_group_id === "number"
-            ? group.parent_group_id
-            : null;
-        const operator = readString(group.operator);
-        const position = readNumber(group.position, Number.NaN);
-        if (
-          !Number.isInteger(id) ||
-          (parentId !== null && !Number.isInteger(parentId)) ||
-          !["all_of", "any_of"].includes(operator) ||
-          !Number.isInteger(position)
-        ) {
-          return [];
-        }
-        return [
-          {
-            id,
-            parentId,
-            operator: operator as RequisiteGroupPayload["operator"],
-            position,
-          },
-        ];
-      })
-    : [];
-  const conditions: RequisiteConditionPayload[] = Array.isArray(
-    value.conditions,
-  )
-    ? value.conditions.flatMap<RequisiteConditionPayload>((condition) => {
-        if (!isRecord(condition)) return [];
-        const groupId = readNumber(condition.group_id, Number.NaN);
-        const position = readNumber(condition.position, Number.NaN);
-        const kind = readString(condition.condition_kind);
-        if (!Number.isInteger(groupId) || !Number.isInteger(position))
-          return [];
-        if (kind === "course") {
-          const code = readString(condition.course_code).toUpperCase();
-          return /^[A-Z]{4}\d{4}$/u.test(code)
-            ? [
-                {
-                  groupId,
-                  position,
-                  kind: "course" as const,
-                  code,
-                },
-              ]
-            : [];
-        }
-        if (kind === "subject_units") {
-          const subject = readString(condition.subject_code).toUpperCase();
-          const units = readNumber(condition.minimum_units, Number.NaN);
-          return /^[A-Z]{4}$/u.test(subject) && units > 0
-            ? [
-                {
-                  groupId,
-                  position,
-                  kind: "subject_units" as const,
-                  subject,
-                  units,
-                },
-              ]
-            : [];
-        }
-        if (kind === "level_units") {
-          const subject = readString(condition.subject_code).toUpperCase();
-          const units = readNumber(condition.minimum_units, Number.NaN);
-          const level = readNumber(condition.minimum_course_level, Number.NaN);
-          return units > 0 &&
-            Number.isInteger(level) &&
-            level >= 0 &&
-            (subject === "" || /^[A-Z]{4}$/u.test(subject))
-            ? [
-                {
-                  groupId,
-                  position,
-                  kind: "level_units" as const,
-                  level,
-                  units,
-                  ...(subject ? { subject } : {}),
-                },
-              ]
-            : [];
-        }
-        if (kind === "units_total") {
-          const units = readNumber(condition.minimum_units, Number.NaN);
-          return units > 0
-            ? [
-                {
-                  groupId,
-                  position,
-                  kind: "units_total" as const,
-                  units,
-                },
-              ]
-            : [];
-        }
-        return [];
-      })
-    : [];
-  const root = groups.find((group) => group.parentId === null);
-
-  function expressionForGroup(
-    groupId: number,
-    ancestors = new Set<number>(),
-  ): RequisiteExpression | null {
-    if (ancestors.has(groupId)) return null;
-    const group = groups.find((candidate) => candidate.id === groupId);
-    if (!group) return null;
-
-    const children = [
-      ...groups
-        .filter((candidate) => candidate.parentId === groupId)
-        .map((candidate) => ({ kind: "group" as const, value: candidate })),
-      ...conditions
-        .filter((condition) => condition.groupId === groupId)
-        .map((condition) => ({ kind: "condition" as const, value: condition })),
-    ].sort((left, right) => left.value.position - right.value.position);
-    if (children.length === 0) return null;
-
-    const nextAncestors = new Set(ancestors).add(groupId);
-    const expressions: RequisiteExpression[] = [];
-    for (const child of children) {
-      let expression: RequisiteExpression | null;
-      if (child.kind === "group") {
-        expression = expressionForGroup(child.value.id, nextAncestors);
-      } else if (child.value.kind === "course") {
-        expression = { kind: "course", code: child.value.code };
-      } else if (child.value.kind === "subject_units") {
-        expression = {
-          kind: "subject_units",
-          subject: child.value.subject,
-          units: child.value.units,
-        };
-      } else if (child.value.kind === "level_units") {
-        expression = {
-          kind: "level_units",
-          level: child.value.level,
-          units: child.value.units,
-          ...(child.value.subject ? { subject: child.value.subject } : {}),
-        };
-      } else {
-        expression = {
-          kind: "units_total",
-          units: child.value.units,
-        };
-      }
-      if (!expression) return null;
-      expressions.push(expression);
-    }
-    return {
-      kind: "group",
-      operator: group.operator as "all_of" | "any_of",
-      conditions: expressions,
-    };
-  }
-
-  return {
-    confidence: readNumber(value.confidence),
-    expression: root ? expressionForGroup(root.id) : null,
-    reviewState:
-      reviewState === "verified"
-        ? "verified"
-        : reviewState === "review"
-          ? "review"
-          : "automatic",
-    sourceText,
-  };
-}
-
 function readCourseDetail(value: Json): CourseDetailPayload | null {
   if (!isRecord(value)) return null;
   const code = readString(value.code).toUpperCase();
@@ -626,7 +423,7 @@ function readCourseDetail(value: Json): CourseDetailPayload | null {
     ),
     prerequisiteCodes: readStringArray(value.prerequisite_codes),
     prerequisiteEdges: readPrerequisiteEdges(value.prerequisite_edges),
-    prerequisiteRule: readRequisiteRule(value.prerequisite_rule),
+    prerequisiteRule: readPublishedRequisiteRule(value.prerequisite_rule),
     incompatibilityText: readString(value.incompatibility_text),
     sourceUpdatedAt:
       typeof value.source_updated_at === "string"

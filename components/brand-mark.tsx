@@ -12,6 +12,7 @@ export function BrandMark({ className }: BrandMarkProps) {
       alt=""
       width={301}
       height={266}
+      loading="eager"
       aria-hidden="true"
       className={cn("shrink-0 object-contain", className)}
     />

@@ -9,15 +9,16 @@ import {
   ClipboardList,
   CircleHelp,
   Compass,
+  GitCompareArrows,
   GraduationCap,
-  History,
   House,
+  Import,
   KeyRound,
   LayoutDashboard,
   ListChecks,
   MapPin,
   RefreshCw,
-  ShieldCheck,
+  Shield,
   Table,
   UserRound,
   Users,
@@ -45,31 +46,30 @@ const labels: Record<string, string> = {
   "study-calendar": "Use the study calendar",
   "academic-record": "Read your academic record",
   timetable: "Timetable",
-  activity: "Activity",
-  history: "History",
   profile: "Profile",
   admin: "Admin",
   programmes: "Programmes",
   users: "Users",
   roles: "Roles",
-  sync: "Imports",
   imports: "Imports",
-  new: "New import",
+  sync: "Sync",
+  changes: "Changes",
 };
 
-/** Each crumb carries the same icon its sidebar entry uses. */
+/**
+ * Each crumb carries the same icon its sidebar entry uses. Admin dashboard
+ * reuses the grid mark; the student home route keeps the house.
+ */
 const icons: Record<string, LucideIcon> = {
   academic: ClipboardList,
-  activity: ListChecks,
-  admin: ShieldCheck,
+  admin: Shield,
   calendar: CalendarDays,
+  changes: GitCompareArrows,
   courses: BookOpen,
   dashboard: House,
   help: CircleHelp,
-  history: History,
-  imports: RefreshCw,
+  imports: Import,
   "key-dates": CalendarDays,
-  new: RefreshCw,
   plan: Table,
   profile: UserRound,
   programmes: GraduationCap,
@@ -82,6 +82,19 @@ const icons: Record<string, LucideIcon> = {
   users: Users,
 };
 
+const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}$/iu;
+
+/**
+ * Only course codes are shouted. Upper-casing every unmapped segment turned
+ * ordinary path parts into headlines -- /admin/imports/runs read as "RUNS".
+ */
+function fallbackLabel(segment: string) {
+  const value = decodeURIComponent(segment);
+  if (COURSE_CODE_SEGMENT.test(value)) return value.toUpperCase();
+  const words = value.replace(/[-_]+/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   const segments = pathname.split("/").filter(Boolean);
   const admin = segments[0] === "admin";
@@ -91,18 +104,14 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   segments.forEach((segment, index) => {
     href += `/${segment}`;
     const isLast = index === segments.length - 1;
-    // Dynamic course code segment (e.g. /courses/COMP2100)
-    const label =
-      admin &&
-      (segments[1] === "sync" || segments[1] === "imports") &&
-      segment === "history"
-        ? "Historical changes"
-        : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
-    const icon =
-      admin && index === 0
-        ? LayoutDashboard
-        : (icons[segment] ??
-          (/^[A-Z]{4}\d{4}$/iu.test(segment) ? BookOpen : undefined));
+    const isAdminDashboard = admin && segment === "dashboard";
+    const label = isAdminDashboard
+      ? "Dashboard"
+      : (labels[segment] ?? fallbackLabel(segment));
+    const icon = isAdminDashboard
+      ? LayoutDashboard
+      : (icons[segment] ??
+        (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
     crumbs.push({
       icon,
       label,
@@ -114,9 +123,8 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     });
   });
 
-  // The admin index label ("Overview") when landing on /admin exactly
   if (admin && segments.length === 1) {
-    crumbs[0] = { label: "Admin", icon: LayoutDashboard };
+    crumbs[0] = { label: "Admin", icon: Shield };
   }
 
   return { crumbs, admin };
@@ -133,39 +141,37 @@ export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
 
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
-      <ol className="flex min-w-0 items-center gap-1.5">
+      <ol className="flex min-w-0 items-center gap-1.5 overflow-visible py-0.5">
         {visibleCrumbs.map((crumb, index) => (
           <Fragment key={index}>
             {index > 0 && (
               <ChevronRight
-                size={14}
-                className={`shrink-0 text-zinc-300 ${currentLabel ? "hidden sm:block" : ""}`}
+                aria-hidden="true"
+                className={`block size-3.5 shrink-0 text-zinc-300 ${currentLabel ? "hidden sm:block" : ""}`}
               />
             )}
             <li
-              className={`min-w-0 ${currentLabel && index < visibleCrumbs.length - 1 ? "hidden sm:block" : ""}`}
+              className={`min-w-0 overflow-visible ${currentLabel && index < visibleCrumbs.length - 1 ? "hidden sm:block" : ""}`}
             >
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium text-zinc-500 transition hover:text-zinc-800"
+                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-medium text-zinc-500 transition hover:text-zinc-800"
                 >
                   {crumb.icon ? (
                     <crumb.icon
                       aria-hidden="true"
-                      className="shrink-0 text-zinc-400"
-                      size={14}
+                      className="block size-3.5 shrink-0 text-zinc-400"
                     />
                   ) : null}
                   <span className="truncate">{crumb.label}</span>
                 </Link>
               ) : (
-                <span className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-semibold text-zinc-900">
+                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-semibold text-zinc-900">
                   {crumb.icon ? (
                     <crumb.icon
                       aria-hidden="true"
-                      className="shrink-0 text-zinc-500"
-                      size={14}
+                      className="block size-3.5 shrink-0 text-zinc-500"
                     />
                   ) : null}
                   <span className="truncate">{crumb.label}</span>

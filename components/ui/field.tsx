@@ -80,11 +80,29 @@ export function FieldError({
   );
 }
 
-export function Input({ className, ...rest }: ComponentPropsWithRef<"input">) {
+/**
+ * For inputs owned by another library -- a cmdk combobox input, for one --
+ * which cannot be swapped for the `Input` element but must still look like it.
+ */
+export function inputClasses(className?: string) {
+  return cn(controlClasses, className);
+}
+
+export function Input({
+  className,
+  type,
+  ...rest
+}: ComponentPropsWithRef<"input">) {
   return (
     <input
       data-slot="input"
-      className={cn(controlClasses, className)}
+      type={type}
+      className={cn(
+        controlClasses,
+        type === "number" &&
+          "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+        className,
+      )}
       {...rest}
     />
   );

@@ -423,9 +423,24 @@ async function relevantDatabaseState(sql) {
     order by reviews.id
   `;
 
+  const diagnostics = await sql`
+    select to_jsonb(diagnostics) as value
+    from public.catalogue_import_diagnostics as diagnostics
+    join public.catalogue_import_items as items on items.id = diagnostics.import_item_id
+    join public.catalogue_import_runs as runs on runs.id = items.run_id
+    join public.catalogue_sources as sources on sources.id = runs.source_id
+    join public.catalogue_years as years on years.id = runs.catalogue_year_id
+    where sources.kind = ${manifest.source.kind}
+      and sources.base_url = ${manifest.source.baseUrl}
+      and years.year = ${catalogueYear}
+      and runs.scope = ${`course_codes:${courseCode}`}
+      and runs.parser_version = ${manifest.parserVersion}
+    order by diagnostics.id
+  `;
+
   const rejected = await rejectedCourseState(sql);
 
-  return serialise({ domain, runs, items, reviews, rejected });
+  return serialise({ diagnostics, domain, runs, items, reviews, rejected });
 }
 
 async function rejectedCourseState(sql) {
@@ -641,6 +656,9 @@ test(
               firstDomainState.versions[0].value.publication_status,
               "draft",
             );
+            // Newly imported raw rules mark their course version for review
+            // via markCourseVersionForRuleReview, independently of the
+            // diagnostic split.
             assert.equal(
               firstDomainState.versions[0].value.review_state,
               "review",
@@ -732,16 +750,18 @@ test(
             assert.equal(firstItems[0].target_kind, "course_version");
             assert.equal(firstItems[0].diagnostics.semanticOutcome, "created");
 
-            const firstReviews = await tx`
-            select reviews.issue_code, reviews.status, reviews.details
-            from public.catalogue_review_items as reviews
+            const firstDiagnostics = await tx`
+            select diagnostics.issue_code, diagnostics.severity, diagnostics.details
+            from public.catalogue_import_diagnostics as diagnostics
             join public.catalogue_import_items as items
-              on items.id = reviews.import_item_id
+              on items.id = diagnostics.import_item_id
             where items.run_id = ${first.runId}
-            order by reviews.issue_code, reviews.id
+            order by diagnostics.issue_code, diagnostics.id
           `;
+            // Every one of these states how the page parsed. None of them can
+            // name an old value and a new value, so none is a catalogue change.
             assert.deepEqual(
-              firstReviews.map(({ issue_code: issueCode }) => issueCode),
+              firstDiagnostics.map(({ issue_code: issueCode }) => issueCode),
               [
                 "ACADEMIC_PERIOD_DERIVED_FROM_CLASS_DATES",
                 "ACADEMIC_PERIOD_DERIVED_FROM_CLASS_DATES",
@@ -750,11 +770,20 @@ test(
                 "UNSTRUCTURED_REQUISITE_TEXT",
               ],
             );
-            for (const review of firstReviews) {
-              assert.equal(review.status, "open");
-              assert.equal(review.details.canonicalUrl, document.canonicalUrl);
-              assert.equal(review.details.externalKey, courseCode);
+            for (const entry of firstDiagnostics) {
+              assert.equal(entry.severity, "warning");
+              assert.equal(entry.details.canonicalUrl, document.canonicalUrl);
+              assert.equal(entry.details.externalKey, courseCode);
             }
+
+            const firstReviews = await tx`
+            select reviews.issue_code
+            from public.catalogue_review_items as reviews
+            join public.catalogue_import_items as items
+              on items.id = reviews.import_item_id
+            where items.run_id = ${first.runId}
+          `;
+            assert.equal(firstReviews.length, 0);
 
             await tx`
               delete from public.course_versions as versions
@@ -1227,25 +1256,37 @@ test(
               where items.run_id = ${unobservedRequisites.runId}
               order by reviews.issue_code, reviews.id
             `;
+            // Only the deferral is a catalogue change: Coursemap is holding
+            // requisite rules the source no longer states, and someone has to
+            // decide. The derived period and the unobserved section describe
+            // the parse.
             assert.deepEqual(
               [...unobservedRequisiteReviews],
               [
                 {
-                  issue_code: "ACADEMIC_PERIOD_DERIVED_FROM_CLASS_DATES",
-                  status: "open",
-                },
-                {
-                  issue_code: "ACADEMIC_PERIOD_DERIVED_FROM_CLASS_DATES",
-                  status: "open",
-                },
-                {
                   issue_code: "COURSE_RULE_RECONCILIATION_DEFERRED",
                   status: "open",
                 },
-                {
-                  issue_code: "REQUISITE_SECTION_NOT_OBSERVED",
-                  status: "open",
-                },
+              ],
+            );
+
+            const unobservedRequisiteDiagnostics = await tx`
+              select diagnostics.issue_code
+              from public.catalogue_import_diagnostics as diagnostics
+              join public.catalogue_import_items as items
+                on items.id = diagnostics.import_item_id
+              where items.run_id = ${unobservedRequisites.runId}
+              order by diagnostics.issue_code, diagnostics.id
+            `;
+            assert.deepEqual(
+              unobservedRequisiteDiagnostics.map(
+                ({ issue_code: issueCode }) => issueCode,
+              ),
+              [
+                "ACADEMIC_PERIOD_DERIVED_FROM_CLASS_DATES",
+                "ACADEMIC_PERIOD_DERIVED_FROM_CLASS_DATES",
+                "COURSE_RULE_RECONCILIATION_DEFERRED",
+                "REQUISITE_SECTION_NOT_OBSERVED",
               ],
             );
 
@@ -1475,20 +1516,35 @@ test(
             assert.equal(rejectedItem.outcome, "failed");
             assert.equal(rejectedItem.target_key, rejectedCourseCode);
             assert.equal(rejectedItem.diagnostics.semanticOutcome, "failed");
+            // A document that failed validation records diagnostics and no
+            // review items: nothing was imported, so there is no change to
+            // confirm.
+            const rejectedDiagnostics = await tx`
+            select diagnostics.issue_code, diagnostics.severity, diagnostics.details
+            from public.catalogue_import_diagnostics as diagnostics
+            join public.catalogue_import_items as items
+              on items.id = diagnostics.import_item_id
+            where items.run_id = ${rejected.runId}
+          `;
+            assert.equal(rejectedDiagnostics.length, 1);
+            assert.equal(
+              rejectedDiagnostics[0].issue_code,
+              "SOURCE_FACT_CONFLICT",
+            );
+            assert.equal(rejectedDiagnostics[0].severity, "error");
+            assert.equal(
+              rejectedDiagnostics[0].details.externalKey,
+              rejectedCourseCode,
+            );
+
             const rejectedReviews = await tx`
-            select reviews.issue_code, reviews.status, reviews.details
+            select reviews.issue_code
             from public.catalogue_review_items as reviews
             join public.catalogue_import_items as items
               on items.id = reviews.import_item_id
             where items.run_id = ${rejected.runId}
           `;
-            assert.equal(rejectedReviews.length, 1);
-            assert.equal(rejectedReviews[0].issue_code, "SOURCE_FACT_CONFLICT");
-            assert.equal(rejectedReviews[0].status, "open");
-            assert.equal(
-              rejectedReviews[0].details.externalKey,
-              rejectedCourseCode,
-            );
+            assert.equal(rejectedReviews.length, 0);
 
             throw rollbackSignal;
           },
@@ -1570,21 +1626,48 @@ test(
               sessionSnapshot.content_sha256,
               sessionConflictManifest.documents[0].contentSha256,
             );
-            const sessionConflictReviews = await tx`
-              select reviews.issue_code, reviews.status, reviews.details
-              from public.catalogue_review_items as reviews
-              join public.catalogue_import_items as items
-                on items.id = reviews.import_item_id
-              where items.run_id = ${sessionConflict.runId}
-                and reviews.issue_code = 'OFFERING_SESSION_CONFLICT'
+            // offering_sessions is keyed per class, so two classes in one
+            // period that differ on delivery mode are no longer a conflict --
+            // each is imported on its own row, carrying its own class number.
+            // That retired OFFERING_SESSION_CONFLICT entirely.
+            const conflictSessions = await tx`
+              select sessions.class_number, sessions.delivery_mode, sessions.location
+              from public.offering_sessions as sessions
+              join public.course_offerings as offerings
+                on offerings.id = sessions.course_offering_id
+              join public.course_versions as versions
+                on versions.id = offerings.course_version_id
+              join public.courses as courses on courses.id = versions.course_id
+              where courses.code = ${sessionConflictCourseCode}
+              order by sessions.class_number
             `;
-            assert.equal(sessionConflictReviews.length, 1);
-            assert.equal(sessionConflictReviews[0].status, "open");
-            assert.equal(sessionConflictReviews[0].details.severity, "warning");
-            assert.equal(
-              sessionConflictReviews[0].details.field,
-              "offering.sessions",
+            assert.deepEqual(
+              conflictSessions.map(
+                ({
+                  class_number: classNumber,
+                  delivery_mode: deliveryMode,
+                }) => ({ classNumber, deliveryMode }),
+              ),
+              [
+                { classNumber: "3699", deliveryMode: "In Person" },
+                { classNumber: "8676", deliveryMode: "In Person" },
+                // Class 9999 shares a period with 8676 and disagrees with it on
+                // delivery mode. It used to be discarded outright.
+                { classNumber: "9999", deliveryMode: "Online" },
+              ],
             );
+
+            const retiredConflicts = await tx`
+              select count(*)::int as total
+              from public.catalogue_import_diagnostics as diagnostics
+              join public.catalogue_import_items as items
+                on items.id = diagnostics.import_item_id
+              where items.run_id = ${sessionConflict.runId}
+                and diagnostics.issue_code in (
+                  'OFFERING_SESSION_CONFLICT', 'MULTIPLE_CLASSES_COLLAPSED'
+                )
+            `;
+            assert.equal(retiredConflicts[0].total, 0);
             assert.notDeepEqual(await conflictDomainState(tx), domainBefore);
 
             const periodConflict = await importManifest(periodConflictManifest);
@@ -1639,25 +1722,54 @@ test(
                 externalKey: conflictDocument.externalKey,
               })),
             );
+            // Two source pages disagree about the same period's dates. That is
+            // a statement about the source, not a change to confirm -- there is
+            // no value Coursemap held that moved -- so it records a diagnostic.
+            // severity and field are real columns here rather than jsonb keys.
+            const periodConflictDiagnostics = await tx`
+              select items.target_key, diagnostics.severity, diagnostics.field
+              from public.catalogue_import_diagnostics as diagnostics
+              join public.catalogue_import_items as items
+                on items.id = diagnostics.import_item_id
+              where items.run_id = ${periodConflict.runId}
+                and diagnostics.issue_code = 'ACADEMIC_PERIOD_CONFLICT'
+              order by items.target_key
+            `;
+            assert.equal(periodConflictDiagnostics.length, 2);
+            for (const entry of periodConflictDiagnostics) {
+              assert.equal(entry.severity, "warning");
+              assert.equal(entry.field, "periods");
+            }
+            assert.deepEqual(
+              periodConflictDiagnostics.map(({ target_key: code }) => code),
+              periodConflictCourseCodes,
+            );
+
             const periodConflictReviews = await tx`
-              select items.target_key, reviews.issue_code, reviews.status, reviews.details
+              select reviews.issue_code, reviews.old_value, reviews.new_value
               from public.catalogue_review_items as reviews
               join public.catalogue_import_items as items
                 on items.id = reviews.import_item_id
               where items.run_id = ${periodConflict.runId}
-                and reviews.issue_code = 'ACADEMIC_PERIOD_CONFLICT'
-              order by items.target_key
             `;
-            assert.equal(periodConflictReviews.length, 2);
-            for (const review of periodConflictReviews) {
-              assert.equal(review.status, "open");
-              assert.equal(review.details.severity, "warning");
-              assert.equal(review.details.field, "periods");
-            }
+            // The conflict left the period unresolved, so existing sessions
+            // were preserved rather than pruned. That one IS a change a person
+            // has to confirm, and it carries both values.
             assert.deepEqual(
-              periodConflictReviews.map(({ target_key: code }) => code),
-              periodConflictCourseCodes,
+              periodConflictReviews.map(
+                ({ issue_code: issueCode }) => issueCode,
+              ),
+              [
+                "OFFERING_SESSION_RECONCILIATION_DEFERRED",
+                "OFFERING_SESSION_RECONCILIATION_DEFERRED",
+              ],
             );
+            for (const review of periodConflictReviews) {
+              assert.ok(
+                review.old_value !== null || review.new_value !== null,
+                "a change review must state at least one side of the change",
+              );
+            }
             assert.notDeepEqual(await conflictDomainState(tx), domainBefore);
 
             throw conflictRollbackSignal;

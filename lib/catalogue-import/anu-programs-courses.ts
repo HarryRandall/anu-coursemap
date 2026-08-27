@@ -263,16 +263,26 @@ function richCourseDetails($: CheerioAPI): CatalogueCourseRichDetails {
       const outcomes = (
         /\[LO\s*([^\]]+)\]/i.exec(text)?.[1].match(/\d+/g) ?? []
       ).map(Number);
-      const weight = /\((\d+(?:\.\d+)?)\)/.exec(text)?.[1];
+      // ANU writes the weight as "(40)" or "(40%)". The parentheses must hold
+      // the number alone, so "(2000 words)" is not a candidate -- but a bare
+      // "(2000)" meaning a word count is, and course_assessment_items.weight
+      // is constrained to 0-100. Anything outside that range is a measurement
+      // of something else, so it is discarded rather than allowed to abort the
+      // whole import transaction.
+      const parsedWeight = Number(/\((\d+(?:\.\d+)?)\s*%?\)/.exec(text)?.[1]);
+      const weight =
+        Number.isFinite(parsedWeight) &&
+        parsedWeight >= 0 &&
+        parsedWeight <= 100
+          ? Number(parsedWeight.toFixed(2))
+          : null;
       const title = nullableText(
         text
           .replace(/\s*\([^)]*\)/g, "")
           .replace(/\s*\[LO[^\]]*\]/gi, "")
           .replace(/([a-z])([A-Z][a-z])/g, "$1 $2"),
       );
-      return title
-        ? { title, weight: weight ? Number(weight) : null, outcomes }
-        : null;
+      return title ? { title, weight, outcomes, sourceText: text } : null;
     })
     .get()
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
@@ -283,6 +293,12 @@ function richCourseDetails($: CheerioAPI): CatalogueCourseRichDetails {
   const feesText = $("#fees").first().parent().text();
   const feeBand = Number(
     /Student Contribution Band:\s*(\d+)/i.exec(feesText)?.[1],
+  );
+  // ANU heads the fee block with the year the figures describe, e.g.
+  // "2026 Indicative fees". It is not always the catalogue year, so it is read
+  // rather than assumed.
+  const feeYear = Number(
+    /\b(20\d{2})\b(?=[^.]{0,40}\bfee)/i.exec(feesText)?.[1],
   );
   const domesticFee = Number(
     /\$([\d,]+(?:\.\d{2})?)/
@@ -315,6 +331,7 @@ function richCourseDetails($: CheerioAPI): CatalogueCourseRichDetails {
     ...(workload ? { workload } : {}),
     ...(Number.isFinite(workloadHours) ? { workloadHours } : {}),
     ...(Number.isFinite(feeBand) ? { feeBand } : {}),
+    ...(Number.isFinite(feeYear) ? { feeYear } : {}),
     ...(Number.isFinite(domesticFee) ? { domesticFee } : {}),
     ...(Number.isFinite(internationalFee) ? { internationalFee } : {}),
   };

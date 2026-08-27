@@ -337,7 +337,11 @@ test("server-renders admin and course-detail routes", async () => {
   const adminUsersHtml = await adminUsersResponse.text();
   const adminRolesHtml = await adminRolesResponse.text();
   assert.match(adminHtml, /Live catalogue status/i);
-  assert.match(adminHtml, /Publish reviewed records/i);
+  assert.match(adminHtml, />Users</);
+  assert.doesNotMatch(
+    adminHtml,
+    /Review courses|Review programmes|Publish reviewed records|source review/i,
+  );
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
   assert.doesNotMatch(adminHtml, /Catalogue administration/i);
@@ -355,6 +359,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminCourseReviewHtml, />Source<\/button>/i);
   assert.match(adminCourseReviewHtml, /Parsed output/i);
   assert.match(adminCourseReviewHtml, /Prerequisites/i);
+  assert.match(adminCourseReviewHtml, /Incompatibilities/i);
   assert.match(adminCourseReviewHtml, /Student preview/i);
   assert.doesNotMatch(
     adminCourseReviewHtml,
@@ -380,6 +385,96 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(summaryHtml, /Complete one of the following/i);
   assert.match(summaryHtml, /Complete at least.*MATH.*coded courses/is);
   assert.match(summaryHtml, /COMP6466/i);
+});
+
+test("splits imports into sync, course, programme and change routes", async () => {
+  const [
+    importsResponse,
+    syncResponse,
+    coursesResponse,
+    programmesResponse,
+    changesResponse,
+  ] = await Promise.all([
+    fetch(`${origin}/admin/imports`, { redirect: "manual" }),
+    render("/admin/imports/sync"),
+    render("/admin/imports/courses"),
+    render("/admin/imports/programmes"),
+    render("/admin/imports/changes"),
+  ]);
+
+  // The bare section path is not a page; it sends you to the run history.
+  assert.ok([307, 308].includes(importsResponse.status));
+  assert.equal(importsResponse.headers.get("location"), "/admin/imports/sync");
+  assert.equal(syncResponse.status, 200);
+  assert.equal(coursesResponse.status, 200);
+  assert.equal(programmesResponse.status, 200);
+  assert.equal(changesResponse.status, 200);
+
+  const syncHtml = await syncResponse.text();
+  assert.match(syncHtml, /Refresh directory/i);
+  assert.match(syncHtml, /Catalogue year/i);
+  assert.match(syncHtml, /Refresh courses/i);
+  assert.match(syncHtml, /Refresh programmes/i);
+  assert.doesNotMatch(syncHtml, /Auto sync|Not set up/i);
+  assert.match(syncHtml, /Catalogue import runs, most recent first/i);
+  // Runs are identified by what they touched and grouped under a day, not by
+  // repeating "1 checked, 1 changed" down every row.
+  assert.match(syncHtml, /MATH1013/);
+  assert.doesNotMatch(syncHtml, /1 checked, 1 changed/i);
+  // Reported by exception: a success pill on every row is decoration.
+  assert.doesNotMatch(syncHtml, />\s*Succeeded\s*</i);
+
+  const coursesHtml = await coursesResponse.text();
+  assert.match(coursesHtml, /Find a course/i);
+  // The search is a combobox, not a filter over a table that is not there.
+  assert.doesNotMatch(coursesHtml, /Nothing to show yet/i);
+  assert.doesNotMatch(coursesHtml, /Courses available to import/i);
+
+  const programmesHtml = await programmesResponse.text();
+  assert.match(programmesHtml, /Find a programme/i);
+  assert.doesNotMatch(programmesHtml, /Programme code/i);
+
+  const changesHtml = await changesResponse.text();
+  assert.match(changesHtml, /Catalogue changes awaiting review/i);
+
+  // Titles and the explainer subtitle are gone from every import surface, and
+  // so are the tab names of the wizard that preceded them.
+  for (const html of [syncHtml, coursesHtml, programmesHtml, changesHtml]) {
+    assert.doesNotMatch(html, /Everything arrives as a draft/i);
+    assert.doesNotMatch(html, />\s*(?:Overview|Activity|Flags)\s*</i);
+    assert.doesNotMatch(html, /<h1(?![^>]*sr-only)[^>]*>/i);
+  }
+});
+
+test("removes the routes the imports split replaced", async () => {
+  const responses = await Promise.all(
+    [
+      "/admin/imports/new",
+      "/admin/imports/activity",
+      "/admin/imports/history",
+      "/admin/imports/runs/demo-run-1",
+    ].map((path) => fetch(`${origin}${path}`, { redirect: "manual" })),
+  );
+
+  for (const response of responses) {
+    assert.equal(response.status, 404);
+  }
+});
+
+test("renders a run without a back button or a repeated heading", async () => {
+  const response = await render("/admin/imports/sync/demo-run-1");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  assert.match(html, /Parser notes/i);
+  // The breadcrumb carries the trail and the run's time; a back button and a
+  // visible heading would both restate it.
+  assert.doesNotMatch(html, /All imports|All changes/i);
+  assert.doesNotMatch(html, /<h1(?![^>]*sr-only)[^>]*>/i);
+  // The breadcrumb no longer shouts an unmapped path segment.
+  assert.doesNotMatch(html, />RUNS</);
+  // The operator explainer under Parser notes is gone.
+  assert.doesNotMatch(html, /These describe the parse rather than the/i);
 });
 
 test("removes the disposable starter and keeps product metadata", async () => {
@@ -487,7 +582,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(planClient, /programmeRequirementsImported/);
   assert.doesNotMatch(planClient, /Blocked: needs/);
   assert.match(adminPage, /Live catalogue status/);
-  assert.match(adminPage, /Publish reviewed records/);
+  assert.match(adminPage, /loadAdminUserSummary/);
+  assert.doesNotMatch(adminPage, /Publish reviewed records/);
   assert.match(coursePage, /loadPublishedCourse/);
   assert.match(courseDetailClient, /completedCodes/);
   assert.match(courseDetailClient, /plannedCodes/);

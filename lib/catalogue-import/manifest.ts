@@ -46,6 +46,12 @@ export type CatalogueCourseAssessment = {
   title: string;
   weight: number | null;
   outcomes: number[];
+  /**
+   * The assessment line exactly as ANU printed it, before the title, weight
+   * and outcome numbers were extracted from it. Stored so a parser change can
+   * be replayed against past imports without refetching ANU.
+   */
+  sourceText: string;
 };
 
 export type CatalogueCourseRichDetails = {
@@ -58,6 +64,11 @@ export type CatalogueCourseRichDetails = {
   workload?: string;
   workloadHours?: number;
   feeBand?: number;
+  /**
+   * The year the fee figures describe. ANU publishes current-year figures
+   * only, so on a future-year course page this lags the catalogue year.
+   */
+  feeYear?: number;
   domesticFee?: number;
   internationalFee?: number;
 };
@@ -255,6 +266,115 @@ function validateNullableRequiredField(
   }
 }
 
+/**
+ * Validates course.rich. Every field here has a database column or child table
+ * behind it with NOT NULL and CHECK constraints, and the importer runs the
+ * whole manifest in one transaction -- so an unvalidated bad value does not
+ * fail one course, it fails the entire run.
+ */
+function validateRichDetails(value: unknown, path: string, issues: string[]) {
+  if (value === undefined) return;
+  if (!isObject(value)) {
+    issues.push(`${path} must be an object when supplied`);
+    return;
+  }
+
+  for (const field of ["introduction", "college", "workload"]) {
+    if (value[field] !== undefined && !isNonBlankString(value[field])) {
+      issues.push(`${path}.${field} must be non-blank when supplied`);
+    }
+  }
+
+  for (const field of ["areasOfInterest", "coTaughtCourses"]) {
+    const list = value[field];
+    if (list === undefined) continue;
+    if (!Array.isArray(list) || !list.every(isNonBlankString)) {
+      issues.push(`${path}.${field} must be an array of non-blank strings`);
+    }
+  }
+
+  if (value.learningOutcomes !== undefined) {
+    if (
+      !Array.isArray(value.learningOutcomes) ||
+      !value.learningOutcomes.every(isNonBlankString)
+    ) {
+      issues.push(
+        `${path}.learningOutcomes must be an array of non-blank strings`,
+      );
+    }
+  }
+
+  if (value.indicativeAssessment !== undefined) {
+    if (!Array.isArray(value.indicativeAssessment)) {
+      issues.push(`${path}.indicativeAssessment must be an array`);
+    } else {
+      value.indicativeAssessment.forEach((item, index) => {
+        const itemPath = `${path}.indicativeAssessment[${index}]`;
+        if (!isObject(item)) {
+          issues.push(`${itemPath} must be an object`);
+          return;
+        }
+        if (!isNonBlankString(item.title)) {
+          issues.push(`${itemPath}.title must be a non-blank string`);
+        }
+        if (!isNonBlankString(item.sourceText)) {
+          issues.push(`${itemPath}.sourceText must be a non-blank string`);
+        }
+        if (item.weight !== null && typeof item.weight !== "number") {
+          issues.push(`${itemPath}.weight must be a number or null`);
+        } else if (
+          typeof item.weight === "number" &&
+          (!Number.isFinite(item.weight) ||
+            item.weight < 0 ||
+            item.weight > 100)
+        ) {
+          issues.push(`${itemPath}.weight must be between 0 and 100`);
+        }
+        if (
+          !Array.isArray(item.outcomes) ||
+          !item.outcomes.every(
+            (outcome: unknown) =>
+              Number.isInteger(outcome) &&
+              (outcome as number) > 0 &&
+              (outcome as number) <= 32767,
+          )
+        ) {
+          issues.push(
+            `${itemPath}.outcomes must be an array of positive integers`,
+          );
+        }
+      });
+    }
+  }
+
+  const numericBounds: Array<[string, number, number]> = [
+    ["workloadHours", 1, 2000],
+    ["feeBand", 1, 99],
+    ["feeYear", 2000, 2200],
+    ["domesticFee", 0, 99_999_999],
+    ["internationalFee", 0, 99_999_999],
+  ];
+  for (const [field, minimum, maximum] of numericBounds) {
+    const candidate = value[field];
+    if (candidate === undefined) continue;
+    if (
+      typeof candidate !== "number" ||
+      !Number.isFinite(candidate) ||
+      candidate < minimum ||
+      candidate > maximum
+    ) {
+      issues.push(
+        `${path}.${field} must be a number between ${minimum} and ${maximum}`,
+      );
+    }
+  }
+  for (const field of ["workloadHours", "feeBand", "feeYear"]) {
+    if (value[field] !== undefined && !Number.isInteger(value[field])) {
+      issues.push(`${path}.${field} must be an integer`);
+    }
+  }
+}
+
 function validateCourseDocument(
   value: unknown,
   path: string,
@@ -385,6 +505,8 @@ function validateCourseDocument(
   ) {
     issues.push(`${path}.course.sourceUpdatedAt must be an ISO instant`);
   }
+
+  validateRichDetails(course.rich, `${path}.course.rich`, issues);
 
   if (!isObject(course.requisites)) {
     issues.push(`${path}.course.requisites must be an object`);

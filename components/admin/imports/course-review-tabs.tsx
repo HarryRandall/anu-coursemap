@@ -8,6 +8,7 @@ export const courseReviewTabs = [
   { value: "source", label: "Source" },
   { value: "parsed", label: "Parsed output" },
   { value: "prerequisites", label: "Prerequisites" },
+  { value: "incompatibilities", label: "Incompatibilities" },
   { value: "student", label: "Student preview" },
 ] as const;
 

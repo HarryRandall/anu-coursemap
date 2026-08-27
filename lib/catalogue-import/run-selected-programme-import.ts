@@ -18,9 +18,11 @@ const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]+$/;
 export type ProgrammeImportProgress = {
   action: "created" | "updated" | "unchanged" | "failed" | "fetching";
   code: string;
+  index?: number;
   kind: "programme" | "course";
   message: string;
   sourceUrl?: string;
+  total?: number;
 };
 
 export type ProgrammeImportResult = {
@@ -82,12 +84,14 @@ export async function runSelectedProgrammeImport({
     : createHostedCatalogueDatabaseClient(configuredImportDatabaseUrl());
 
   try {
+    const courseTotal = programme.courseCodes.length;
     await onProgress({
       action: "fetching",
       code: programme.code,
       kind: "programme",
       message: "Saving programme structure and requirement text",
       sourceUrl: programme.canonicalUrl,
+      total: courseTotal,
     });
     const programmeResult = await importProgrammeDocument(sql, programme);
     await onProgress({
@@ -96,15 +100,19 @@ export async function runSelectedProgrammeImport({
       kind: "programme",
       message: "Programme imported",
       sourceUrl: programme.canonicalUrl,
+      total: courseTotal,
     });
 
     const courseCounts = { added: 0, changed: 0, failed: 0, unchanged: 0 };
-    for (const courseCode of programme.courseCodes) {
+    for (const [offset, courseCode] of programme.courseCodes.entries()) {
+      const index = offset + 1;
       await onProgress({
         action: "fetching",
         code: courseCode,
+        index,
         kind: "course",
         message: "Fetching course page",
+        total: courseTotal,
       });
       try {
         const manifest = await fetchAnuCourseManifest({
@@ -127,19 +135,23 @@ export async function runSelectedProgrammeImport({
         await onProgress({
           action,
           code: courseCode,
+          index,
           kind: "course",
           message:
             action === "failed" ? "Course needs review" : "Course imported",
           sourceUrl: `https://programsandcourses.anu.edu.au/${catalogueYear}/course/${courseCode}`,
+          total: courseTotal,
         });
       } catch (error) {
         courseCounts.failed += 1;
         await onProgress({
           action: "failed",
           code: courseCode,
+          index,
           kind: "course",
           message:
             error instanceof Error ? error.message : "Course import failed",
+          total: courseTotal,
         });
       }
     }

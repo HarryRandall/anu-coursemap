@@ -1,0 +1,18 @@
+[
+  {
+    "AcademicPlanCode": "BCOMP",
+    "ProgramName": "Bachelor of Computing",
+    "AcademicCareer": "Undergraduate",
+    "Duration": 3
+  },
+  {
+    "AcademicPlanCode": "MCOMP",
+    "ProgramName": "Master of Computing",
+    "AcademicCareer": "Postgraduate",
+    "Duration": 2
+  },
+  {
+    "AcademicPlanCode": "x",
+    "ProgramName": "Invalid short code"
+  }
+]
