@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(30);
+select extensions.plan(35);
 
 select extensions.ok(
   to_regprocedure('public.set_user_role(uuid,text)') is not null,
@@ -115,6 +115,23 @@ select extensions.ok(
   'all admin projections are security-invoker views'
 );
 
+select extensions.ok(
+  (
+    select count(*)
+    from pg_policies
+    where schemaname = 'public'
+      and policyname in (
+        'plans_owner_or_admin_select',
+        'plan_structures_owner_or_admin_select',
+        'plan_items_owner_or_admin_select',
+        'course_attempts_owner_or_admin_select'
+      )
+      and cmd = 'SELECT'
+      and roles = array['authenticated']::name[]
+  ) = 4,
+  'student planning records have explicit administrator read policies'
+);
+
 insert into auth.users (
   instance_id,
   id,
@@ -164,6 +181,10 @@ update auth.users
 set email = 'renamed-student@example.test'
 where id = '70000000-0000-4000-8000-000000000002';
 
+update public.profiles
+set student_number = 'u7654321'
+where id = '70000000-0000-4000-8000-000000000002';
+
 select extensions.is(
   (
     select email
@@ -186,6 +207,31 @@ set
   role_id = excluded.role_id,
   granted_by = excluded.granted_by,
   granted_at = now();
+
+insert into public.plans (
+  owner_id,
+  catalogue_year_id,
+  name,
+  is_primary,
+  status,
+  commencement_year,
+  study_load
+)
+select
+  users.id,
+  years.id,
+  'Admin user management test plan',
+  true,
+  'active',
+  years.year,
+  'full_time'
+from auth.users as users
+cross join public.catalogue_years as years
+where users.id in (
+    '70000000-0000-4000-8000-000000000001',
+    '70000000-0000-4000-8000-000000000002'
+  )
+  and years.year = 2026;
 
 select set_config(
   'request.jwt.claims',
@@ -226,6 +272,12 @@ select extensions.is(
   ),
   0::bigint,
   'a student cannot read permission definitions or role grants'
+);
+
+select extensions.is(
+  (select count(*) from public.plans),
+  1::bigint,
+  'a student can read their own plan but not another user plan'
 );
 
 select extensions.throws_ok(
@@ -285,6 +337,40 @@ select extensions.is(
   ),
   2::bigint,
   'an administrator can list Coursemap users'
+);
+
+select extensions.ok(
+  exists (
+    select 1
+    from public.admin_users
+    where user_id = '70000000-0000-4000-8000-000000000002'
+      and student_number = 'u7654321'
+  ),
+  'the administrator profile projection includes study identity'
+);
+
+select extensions.is(
+  (
+    select count(*)
+    from public.plans
+    where owner_id = '70000000-0000-4000-8000-000000000002'
+  ),
+  1::bigint,
+  'an administrator can read another user primary plan'
+);
+
+update public.plans
+set name = 'Administrator changed this plan'
+where owner_id = '70000000-0000-4000-8000-000000000002';
+
+select extensions.is(
+  (
+    select name
+    from public.plans
+    where owner_id = '70000000-0000-4000-8000-000000000002'
+  ),
+  'Admin user management test plan'::text,
+  'administrator study access remains read-only'
 );
 
 select extensions.ok(
