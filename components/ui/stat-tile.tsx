@@ -48,8 +48,8 @@ export function StatTile({
           </span>
         ) : null}
       </div>
-      <div className="mt-1 flex items-end justify-between gap-3">
-        <div className="min-w-0">
+      <div className="mt-1 flex min-w-0 items-end gap-3">
+        <div className="shrink-0">
           <div className="text-2xl font-semibold tracking-tight tabular-nums">
             {value}
             {unit ? (
@@ -66,7 +66,7 @@ export function StatTile({
         </div>
         {showTrend ? (
           <Sparkline
-            className="mb-1 shrink-0"
+            className="mb-1 min-w-0 flex-1"
             label={chartLabel}
             values={trend ?? []}
             variant={trendVariant}

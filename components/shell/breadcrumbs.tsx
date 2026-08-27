@@ -141,7 +141,7 @@ export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
 
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
-      <ol className="flex min-w-0 items-center gap-1.5">
+      <ol className="flex min-w-0 items-center gap-1.5 overflow-visible py-0.5">
         {visibleCrumbs.map((crumb, index) => (
           <Fragment key={index}>
             {index > 0 && (
@@ -151,12 +151,12 @@ export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
               />
             )}
             <li
-              className={`min-w-0 ${currentLabel && index < visibleCrumbs.length - 1 ? "hidden sm:block" : ""}`}
+              className={`min-w-0 overflow-visible ${currentLabel && index < visibleCrumbs.length - 1 ? "hidden sm:block" : ""}`}
             >
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-none font-medium text-zinc-500 transition hover:text-zinc-800"
+                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-medium text-zinc-500 transition hover:text-zinc-800"
                 >
                   {crumb.icon ? (
                     <crumb.icon
@@ -167,7 +167,7 @@ export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
                   <span className="truncate">{crumb.label}</span>
                 </Link>
               ) : (
-                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-none font-semibold text-zinc-900">
+                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-semibold text-zinc-900">
                   {crumb.icon ? (
                     <crumb.icon
                       aria-hidden="true"
