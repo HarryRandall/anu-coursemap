@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 
-const width = 96;
-const height = 36;
+const width = 160;
+const height = 40;
 
 export type SparklineVariant = "area" | "bar" | "line";
 
@@ -69,19 +69,19 @@ export function Sparkline({
   return (
     <svg
       aria-label={label}
-      className={cn("text-brand-600", className)}
+      className={cn("h-10 w-full text-brand-600", className)}
       fill="none"
-      height={height}
+      preserveAspectRatio="none"
       role="img"
       viewBox={`0 0 ${width} ${height}`}
-      width={width}
     >
+      <title>{label}</title>
       {variant === "bar" ? (
         <Bars values={values} />
       ) : (
         <>
           {variant === "area" ? (
-            <path d={area} fill="currentColor" opacity="0.12" />
+            <path d={area} fill="currentColor" opacity="0.14" />
           ) : null}
           <path
             d={line}
@@ -89,9 +89,16 @@ export function Sparkline({
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="1.75"
+            vectorEffect="non-scaling-stroke"
           />
           {last ? (
-            <circle cx={last.x} cy={last.y} fill="currentColor" r="2.25" />
+            <circle
+              cx={last.x}
+              cy={last.y}
+              fill="currentColor"
+              r="2.25"
+              vectorEffect="non-scaling-stroke"
+            />
           ) : null}
         </>
       )}

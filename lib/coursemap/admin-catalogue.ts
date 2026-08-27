@@ -1,5 +1,9 @@
 import "server-only";
 
+import {
+  catalogueHistorySeries,
+  weeklyCountSeries,
+} from "@/lib/coursemap/admin-catalogue-history";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,8 +41,11 @@ export type PaginatedAdminResult<T> = {
 
 export type AdminCatalogueSummary = {
   courseDrafts: number;
+  courseHistory: number[];
   courses: number;
+  draftHistory: number[];
   structureDrafts: number;
+  structureHistory: number[];
   structures: number;
 };
 
@@ -470,8 +477,11 @@ export async function loadAdminStructurePage({
 
 const emptyCatalogueSummary = (): AdminCatalogueSummary => ({
   courseDrafts: 0,
+  courseHistory: [],
   courses: 0,
+  draftHistory: [],
   structureDrafts: 0,
+  structureHistory: [],
   structures: 0,
 });
 
@@ -482,36 +492,79 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
     currentCatalogueYear(),
   ]);
   if (!year) return emptyCatalogueSummary();
-  const [courses, courseDrafts, structures, structureDrafts] =
-    await Promise.all([
-      supabase
-        .from("course_versions")
-        .select("id", { count: "exact", head: true })
-        .eq("catalogue_year_id", year.id),
-      supabase
-        .from("course_versions")
-        .select("id", { count: "exact", head: true })
-        .eq("catalogue_year_id", year.id)
-        .neq("publication_status", "published"),
-      supabase
-        .from("academic_structure_versions")
-        .select("id", { count: "exact", head: true })
-        .eq("catalogue_year_id", year.id),
-      supabase
-        .from("academic_structure_versions")
-        .select("id", { count: "exact", head: true })
-        .eq("catalogue_year_id", year.id)
-        .neq("publication_status", "published"),
-    ]);
-  const firstError = [courses, courseDrafts, structures, structureDrafts]
+  const [
+    courses,
+    courseDrafts,
+    structures,
+    structureDrafts,
+    courseCreated,
+    structureCreated,
+  ] = await Promise.all([
+    supabase
+      .from("course_versions")
+      .select("id", { count: "exact", head: true })
+      .eq("catalogue_year_id", year.id),
+    supabase
+      .from("course_versions")
+      .select("id", { count: "exact", head: true })
+      .eq("catalogue_year_id", year.id)
+      .neq("publication_status", "published"),
+    supabase
+      .from("academic_structure_versions")
+      .select("id", { count: "exact", head: true })
+      .eq("catalogue_year_id", year.id),
+    supabase
+      .from("academic_structure_versions")
+      .select("id", { count: "exact", head: true })
+      .eq("catalogue_year_id", year.id)
+      .neq("publication_status", "published"),
+    supabase
+      .from("course_versions")
+      .select("created_at,publication_status")
+      .eq("catalogue_year_id", year.id)
+      .limit(5000),
+    supabase
+      .from("academic_structure_versions")
+      .select("created_at,publication_status")
+      .eq("catalogue_year_id", year.id)
+      .limit(5000),
+  ]);
+  const firstError = [
+    courses,
+    courseDrafts,
+    structures,
+    structureDrafts,
+    courseCreated,
+    structureCreated,
+  ]
     .map((result) => result.error)
     .find(Boolean);
   if (firstError) throw firstError;
+
+  const courseRows = (courseCreated.data ?? []) as Array<{
+    created_at: string;
+    publication_status: string;
+  }>;
+  const structureRows = (structureCreated.data ?? []) as Array<{
+    created_at: string;
+    publication_status: string;
+  }>;
+  const draftCreatedAt = [...courseRows, ...structureRows]
+    .filter((row) => row.publication_status !== "published")
+    .map((row) => row.created_at);
+
   return {
     courses: courses.count ?? 0,
     courseDrafts: courseDrafts.count ?? 0,
+    courseHistory: catalogueHistorySeries(
+      courseRows.map((row) => row.created_at),
+    ),
     structures: structures.count ?? 0,
     structureDrafts: structureDrafts.count ?? 0,
+    structureHistory: catalogueHistorySeries(
+      structureRows.map((row) => row.created_at),
+    ),
+    draftHistory: weeklyCountSeries(draftCreatedAt),
   };
 }
 
