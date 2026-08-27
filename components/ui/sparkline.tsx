@@ -1,9 +1,9 @@
 import { cn } from "@/lib/cn";
 
-const width = 96;
-const height = 28;
-const padX = 3;
-const padY = 4;
+const width = 200;
+const height = 32;
+const padX = 4;
+const padY = 5;
 
 export type SparklineVariant = "area" | "bar" | "line";
 
@@ -85,12 +85,11 @@ export function Sparkline({
   return (
     <svg
       aria-label={label}
-      className={cn("overflow-visible text-brand-600", className)}
+      className={cn("h-8 w-full overflow-visible text-brand-600", className)}
       fill="none"
-      height={height}
+      preserveAspectRatio="none"
       role="img"
       viewBox={`0 0 ${width} ${height}`}
-      width={width}
     >
       <title>{label}</title>
       {variant === "bar" ? (
@@ -106,11 +105,24 @@ export function Sparkline({
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="1.75"
+            vectorEffect="non-scaling-stroke"
           />
           {last ? (
             <>
-              <circle cx={last.x} cy={last.y} fill="white" r="3" />
-              <circle cx={last.x} cy={last.y} fill="currentColor" r="1.75" />
+              <circle
+                cx={last.x}
+                cy={last.y}
+                fill="white"
+                r="3"
+                vectorEffect="non-scaling-stroke"
+              />
+              <circle
+                cx={last.x}
+                cy={last.y}
+                fill="currentColor"
+                r="1.75"
+                vectorEffect="non-scaling-stroke"
+              />
             </>
           ) : null}
         </>

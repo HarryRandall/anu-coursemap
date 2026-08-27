@@ -67,14 +67,13 @@ export function StatTile({
           ) : null}
         </div>
         {showTrend ? (
-          <div className="mb-0.5 flex min-w-0 flex-1 justify-end">
-            <Sparkline
-              domainMax={trendDomainMax}
-              label={chartLabel}
-              values={trend ?? []}
-              variant={trendVariant}
-            />
-          </div>
+          <Sparkline
+            className="mb-0.5 min-w-0 flex-1"
+            domainMax={trendDomainMax}
+            label={chartLabel}
+            values={trend ?? []}
+            variant={trendVariant}
+          />
         ) : null}
       </div>
       {action ? (
