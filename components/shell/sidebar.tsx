@@ -72,7 +72,7 @@ const studentNav: NavItem[] = [
     href: "/rooms",
     label: "Room finder",
     icon: MapPin,
-    badge: "Soon",
+    badge: "Preview",
   },
 ];
 

@@ -307,6 +307,310 @@ export type Database = {
           },
         ]
       }
+      campus_map_campuses: {
+        Row: {
+          boundary_geojson: Json
+          created_at: string
+          east: number
+          id: string
+          initial_latitude: number
+          initial_longitude: number
+          initial_zoom: number
+          max_zoom: number
+          min_zoom: number
+          name: string
+          north: number
+          slug: string
+          sort_order: number
+          source_identifier: string
+          source_license: string
+          source_url: string
+          south: number
+          status: string
+          updated_at: string
+          west: number
+        }
+        Insert: {
+          boundary_geojson: Json
+          created_at?: string
+          east: number
+          id?: string
+          initial_latitude: number
+          initial_longitude: number
+          initial_zoom?: number
+          max_zoom?: number
+          min_zoom?: number
+          name: string
+          north: number
+          slug: string
+          sort_order?: number
+          source_identifier: string
+          source_license: string
+          source_url: string
+          south: number
+          status?: string
+          updated_at?: string
+          west: number
+        }
+        Update: {
+          boundary_geojson?: Json
+          created_at?: string
+          east?: number
+          id?: string
+          initial_latitude?: number
+          initial_longitude?: number
+          initial_zoom?: number
+          max_zoom?: number
+          min_zoom?: number
+          name?: string
+          north?: number
+          slug?: string
+          sort_order?: number
+          source_identifier?: string
+          source_license?: string
+          source_url?: string
+          south?: number
+          status?: string
+          updated_at?: string
+          west?: number
+        }
+        Relationships: []
+      }
+      campus_map_features: {
+        Row: {
+          campus_id: string
+          created_at: string
+          feature_kind: string
+          geometry_geojson: Json
+          id: string
+          layer_id: string
+          name: string
+          place_id: string | null
+          slug: string
+          sort_order: number
+          source_identifier: string
+          source_license: string
+          source_url: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          campus_id: string
+          created_at?: string
+          feature_kind: string
+          geometry_geojson: Json
+          id?: string
+          layer_id: string
+          name: string
+          place_id?: string | null
+          slug: string
+          sort_order?: number
+          source_identifier: string
+          source_license: string
+          source_url: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          campus_id?: string
+          created_at?: string
+          feature_kind?: string
+          geometry_geojson?: Json
+          id?: string
+          layer_id?: string
+          name?: string
+          place_id?: string | null
+          slug?: string
+          sort_order?: number
+          source_identifier?: string
+          source_license?: string
+          source_url?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_map_features_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_map_campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campus_map_features_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "campus_map_layers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campus_map_features_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "campus_map_places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campus_map_layers: {
+        Row: {
+          campus_id: string
+          colour: string
+          created_at: string
+          description: string | null
+          id: string
+          is_visible_by_default: boolean
+          layer_kind: string
+          name: string
+          slug: string
+          sort_order: number
+          status: string
+          style_layer_patterns: string[]
+          updated_at: string
+        }
+        Insert: {
+          campus_id: string
+          colour?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_visible_by_default?: boolean
+          layer_kind?: string
+          name: string
+          slug: string
+          sort_order?: number
+          status?: string
+          style_layer_patterns?: string[]
+          updated_at?: string
+        }
+        Update: {
+          campus_id?: string
+          colour?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_visible_by_default?: boolean
+          layer_kind?: string
+          name?: string
+          slug?: string
+          sort_order?: number
+          status?: string
+          style_layer_patterns?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_map_layers_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_map_campuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campus_map_place_details: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          label: string
+          place_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label: string
+          place_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          place_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_map_place_details_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "campus_map_places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campus_map_places: {
+        Row: {
+          address: string
+          created_at: string
+          data_status: string
+          id: string
+          is_routable: boolean
+          latitude: number
+          layer_id: string
+          longitude: number
+          map_display_kind: string
+          marker_label: string
+          name: string
+          official_url: string | null
+          slug: string
+          sort_order: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          data_status?: string
+          id?: string
+          is_routable?: boolean
+          latitude: number
+          layer_id: string
+          longitude: number
+          map_display_kind?: string
+          marker_label: string
+          name: string
+          official_url?: string | null
+          slug: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          data_status?: string
+          id?: string
+          is_routable?: boolean
+          latitude?: number
+          layer_id?: string
+          longitude?: number
+          map_display_kind?: string
+          marker_label?: string
+          name?: string
+          official_url?: string | null
+          slug?: string
+          sort_order?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_map_places_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "campus_map_layers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalogue_directory_courses: {
         Row: {
           career: string | null
