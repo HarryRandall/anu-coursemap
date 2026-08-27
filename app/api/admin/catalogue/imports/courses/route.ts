@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { canManageCatalogueImports } from "@/lib/auth/viewer";
 import {
   CatalogueImportConfigurationError,
@@ -6,18 +5,27 @@ import {
 } from "@/lib/catalogue-import/run-selected-course-import";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type ImportRequest = {
   catalogueYear?: unknown;
   courseCodes?: unknown;
 };
 
+const encoder = new TextEncoder();
+
+function event(data: unknown) {
+  return encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
+}
+
 export async function POST(request: Request) {
   if (!(await canManageCatalogueImports())) {
-    return NextResponse.json(
-      { error: "Import permission is required." },
-      { status: 403 },
+    return new Response(
+      event({ type: "error", message: "Import permission is required." }),
+      {
+        status: 403,
+        headers: { "content-type": "text/event-stream" },
+      },
     );
   }
 
@@ -25,9 +33,12 @@ export async function POST(request: Request) {
   try {
     payload = (await request.json()) as ImportRequest;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid import request." },
-      { status: 400 },
+    return new Response(
+      event({ type: "error", message: "Invalid import request." }),
+      {
+        status: 400,
+        headers: { "content-type": "text/event-stream" },
+      },
     );
   }
 
@@ -38,21 +49,38 @@ export async function POST(request: Request) {
       )
     : [];
 
-  try {
-    const result = await runSelectedCourseImport({
-      catalogueYear,
-      courseCodes,
-    });
-    return NextResponse.json(result);
-  } catch (error) {
-    if (error instanceof CatalogueImportConfigurationError) {
-      return NextResponse.json({ error: error.message }, { status: 503 });
-    }
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Course import failed.",
-      },
-      { status: 422 },
-    );
-  }
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (data: unknown) => controller.enqueue(event(data));
+      try {
+        send({ type: "started" });
+        const result = await runSelectedCourseImport({
+          catalogueYear,
+          courseCodes,
+          onProgress: (progress) => send({ type: "progress", ...progress }),
+        });
+        send({ type: "complete", result });
+      } catch (error) {
+        send({
+          type: "error",
+          message:
+            error instanceof CatalogueImportConfigurationError
+              ? error.message
+              : error instanceof Error
+                ? error.message
+                : "Course import failed.",
+        });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
+      "content-type": "text/event-stream",
+    },
+  });
 }

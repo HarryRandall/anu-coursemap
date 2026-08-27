@@ -1,24 +1,54 @@
 "use client";
 
 import { Command } from "cmdk";
-import { Loader2, Plus, Search, X } from "lucide-react";
+import { Loader2, Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  ImportFormShell,
+  ImportQueue,
+  ImportQueueItem,
+} from "@/components/admin/imports/import-form-shell";
+import {
+  ImportRunStatus,
+  type ImportProgressEvent,
+} from "@/components/admin/imports/import-run-status";
+import { readImportStream } from "@/components/admin/imports/import-stream";
 import {
   searchImportableCourses,
   type ImportSearchResult,
 } from "@/lib/catalogue-import/search-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button, ButtonLink, IconButton } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { CommandItem, CommandList } from "@/components/ui/command";
 import { Field, inputClasses } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 
 const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
 
-/** What the picker keeps: a code is not enough to show a useful list back. */
-type Pick = { code: string; title: string | null };
+type Pick = {
+  code: string;
+  title: string | null;
+  status: string | null;
+};
+
+function actionLabel(action: string | undefined) {
+  switch (action) {
+    case "fetching":
+      return "Fetching";
+    case "created":
+      return "Created";
+    case "updated":
+      return "Updated";
+    case "unchanged":
+      return "Unchanged";
+    case "failed":
+      return "Failed";
+    default:
+      return action ?? null;
+  }
+}
 
 export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const router = useRouter();
@@ -35,33 +65,31 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const [picks, setPicks] = useState<Pick[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [current, setCurrent] = useState<ImportProgressEvent | null>(null);
+  const [log, setLog] = useState<ImportProgressEvent[]>([]);
+  const [runId, setRunId] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const requestId = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const normalisedQuery = query.trim().toUpperCase();
 
-  /**
-   * Debounced in the change handler rather than an effect: searching is a
-   * reaction to the user typing, not synchronisation with an external system,
-   * and setting state synchronously inside an effect cascades renders.
-   */
   function updateQuery(next: string) {
     setQuery(next);
-    setOpen(next.trim().length > 0);
     const term = next.trim().toUpperCase();
     if (timer.current) clearTimeout(timer.current);
     if (term.length < 2) {
       setResults([]);
       setSearching(false);
+      setOpen(false);
       return;
     }
     setSearching(true);
+    setOpen(true);
     const id = ++requestId.current;
     timer.current = setTimeout(() => {
       void searchImportableCourses(term).then((rows) => {
-        // A slow earlier request must not overwrite a newer one.
         if (id !== requestId.current) return;
         setResults(rows);
         setSearching(false);
@@ -69,32 +97,30 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     }, 250);
   }
 
-  /**
-   * A course that has never been imported cannot appear in the search, and that
-   * is exactly the first-import case. So a well-formed code the search did not
-   * return is offered as its own option.
-   */
   const unmatchedCode = useMemo(() => {
     if (!COURSE_CODE_PATTERN.test(normalisedQuery)) return null;
     if (results.some((result) => result.code === normalisedQuery)) return null;
     return normalisedQuery;
   }, [normalisedQuery, results]);
 
+  const showList =
+    open &&
+    (searching || results.length > 0 || unmatchedCode !== null) &&
+    normalisedQuery.length >= 2;
+
   const picked = useMemo(
     () => new Set(picks.map((pick) => pick.code)),
     [picks],
   );
 
-  /**
-   * Adding clears the query and keeps focus, because the task is almost always
-   * "add several codes" rather than one.
-   */
-  function add(pick: Pick) {
+  function add(pick: { code: string; title: string | null }) {
     setError(null);
-    setPicks((current) =>
-      current.some((entry) => entry.code === pick.code)
-        ? current
-        : [...current, pick],
+    setDone(false);
+    setRunId(null);
+    setPicks((currentPicks) =>
+      currentPicks.some((entry) => entry.code === pick.code)
+        ? currentPicks
+        : [...currentPicks, { ...pick, status: null }],
     );
     setQuery("");
     setResults([]);
@@ -103,16 +129,35 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   }
 
   function remove(code: string) {
-    setPicks((current) => current.filter((entry) => entry.code !== code));
+    setPicks((currentPicks) =>
+      currentPicks.filter((entry) => entry.code !== code),
+    );
+  }
+
+  function setPickStatus(code: string, status: string | null) {
+    setPicks((currentPicks) =>
+      currentPicks.map((pick) =>
+        pick.code === code ? { ...pick, status } : pick,
+      ),
+    );
   }
 
   async function runImport() {
     if (running || picks.length === 0) return;
     setError(null);
+    setDone(false);
+    setRunId(null);
+    setLog([]);
+    setCurrent({
+      index: 0,
+      message: "Starting import",
+      total: picks.length,
+    });
     setRunning(true);
-    setProgress(
-      `Reading ${picks.length} ${picks.length === 1 ? "page" : "pages"}`,
+    setPicks((currentPicks) =>
+      currentPicks.map((pick) => ({ ...pick, status: "Queued" })),
     );
+
     try {
       const response = await fetch("/api/admin/catalogue/imports/courses", {
         method: "POST",
@@ -122,43 +167,121 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           courseCodes: picks.map((pick) => pick.code),
         }),
       });
-      const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Import failed.");
 
+      await readImportStream(response, (event) => {
+        if (event.type === "progress") {
+          const progress: ImportProgressEvent = {
+            action: typeof event.action === "string" ? event.action : undefined,
+            code: typeof event.code === "string" ? event.code : undefined,
+            index: typeof event.index === "number" ? event.index : undefined,
+            message:
+              typeof event.message === "string" ? event.message : undefined,
+            total: typeof event.total === "number" ? event.total : undefined,
+          };
+          setCurrent(progress);
+          setLog((entries) => [...entries, progress].slice(-12));
+          if (progress.code) {
+            setPickStatus(progress.code, actionLabel(progress.action));
+          }
+          return;
+        }
+        if (event.type === "complete") {
+          const result = event.result as { runId?: string } | undefined;
+          if (typeof result?.runId === "string") setRunId(result.runId);
+        }
+      });
+
+      setDone(true);
       toast.success(
         `Imported ${picks.length} ${picks.length === 1 ? "course" : "courses"}.`,
       );
-      router.push("/admin/imports/sync");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import failed.");
+      setCurrent(null);
     } finally {
       setRunning(false);
-      setProgress(null);
     }
   }
 
-  return (
-    <div className="mx-auto w-full max-w-2xl space-y-5 pb-10">
-      <h1 className="sr-only">Import courses</h1>
+  const headline = current?.code
+    ? `${current.code}`
+    : running
+      ? "Importing courses"
+      : "Importing";
 
+  return (
+    <ImportFormShell
+      title="Import courses"
+      progress={
+        running || done ? (
+          <ImportRunStatus
+            current={current}
+            done={done}
+            headline={headline}
+            log={log}
+            runHref={runId ? `/admin/imports/sync/${runId}` : "/admin/imports/sync"}
+            successLabel={`Imported ${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
+          />
+        ) : null
+      }
+      footer={
+        <>
+          <Button
+            aria-busy={running}
+            disabled={running || picks.length === 0}
+            onClick={() => void runImport()}
+            variant="primary"
+          >
+            {running ? (
+              <Loader2 aria-hidden="true" className="animate-spin" size={16} />
+            ) : null}
+            {running
+              ? "Importing"
+              : picks.length === 0
+                ? "Import"
+                : `Import ${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
+          </Button>
+          <ButtonLink href="/admin/imports/sync" variant="ghost">
+            {done ? "Back to sync" : "Cancel"}
+          </ButtonLink>
+        </>
+      }
+    >
       {error ? (
         <Alert tone="danger">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
-      {/*
-        One Command wraps the input and the list so arrow keys and Enter move
-        through the options without any key handling here. The list is a popover
-        rather than a table: nothing is being filtered down, so an empty frame
-        before the first keystroke would be describing a list that does not
-        exist.
-      */}
+      {picks.length > 0 ? (
+        <ImportQueue
+          count={picks.length}
+          label="Courses to import"
+          onClear={
+            running
+              ? undefined
+              : () => {
+                  setPicks([]);
+                  setDone(false);
+                  setRunId(null);
+                }
+          }
+        >
+          {picks.map((pick) => (
+            <ImportQueueItem
+              code={pick.code}
+              key={pick.code}
+              onRemove={running ? undefined : () => remove(pick.code)}
+              status={pick.status}
+              title={pick.title}
+            />
+          ))}
+        </ImportQueue>
+      ) : null}
+
       <Command
         className="relative"
-        // The server already narrowed by code; filtering again client-side
-        // would hide rows matched on title.
         shouldFilter={false}
         onBlur={(event) => {
           if (event.currentTarget.contains(event.relatedTarget as Node)) return;
@@ -168,19 +291,27 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           if (event.key === "Escape") setOpen(false);
         }}
       >
-        <Field label="Find a course">
+        <Field
+          hint={
+            normalisedQuery.length > 0 && normalisedQuery.length < 2
+              ? "Keep typing to search."
+              : undefined
+          }
+          label="Find a course"
+        >
           <div className="relative">
             <Search
               aria-hidden="true"
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
             />
             <Command.Input
-              // cmdk points aria-labelledby at its own Command.Label, which
-              // this combobox does not use, so the name is stated here.
               aria-label="Find a course"
               autoComplete="off"
               className={inputClasses("pl-9")}
-              onFocus={() => setOpen(query.trim().length > 0)}
+              disabled={running}
+              onFocus={() => {
+                if (normalisedQuery.length >= 2) setOpen(true);
+              }}
               onValueChange={updateQuery}
               placeholder="Code or title, e.g. COMP1100"
               ref={input}
@@ -195,19 +326,13 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           </div>
         </Field>
 
-        {open ? (
-          <div className="absolute top-full right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
+        {showList ? (
+          <div className="absolute top-full right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
             <CommandList className="max-h-72">
-              {/*
-                Owned here rather than by Command.Empty, whose visibility is
-                derived from cmdk's own filter count -- which this combobox
-                deliberately switches off.
-              */}
               {!searching && results.length === 0 && !unmatchedCode ? (
-                <p className="px-2.5 py-6 text-center text-[13px] text-zinc-500">
-                  {normalisedQuery.length < 2
-                    ? "Keep typing to search."
-                    : "No match. Type a full code like COMP1100 to pull one Coursemap has never seen."}
+                <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
+                  No match. Type a full code like COMP1100 to pull one
+                  Coursemap has never seen.
                 </p>
               ) : null}
 
@@ -225,7 +350,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                     {unmatchedCode}
                   </span>
                   <span className="min-w-0 truncate text-zinc-500">
-                    Not in Coursemap yet — fetch from ANU
+                    Not in Coursemap yet - fetch from ANU
                   </span>
                 </CommandItem>
               ) : null}
@@ -259,47 +384,10 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
         ) : null}
       </Command>
 
-      {/*
-        The selection is a list, not a row of code-only chips. Once a code was
-        picked the title vanished, so there was no way to tell COMP1100 from
-        COMP1130 without importing and checking.
-      */}
-      {picks.length > 0 ? (
-        <section aria-label="Courses to import" className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-zinc-700">
-              Selected {picks.length}
-            </span>
-            <Button onClick={() => setPicks([])} size="sm" variant="ghost">
-              Clear
-            </Button>
-          </div>
-          <ul className="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-xs">
-            {picks.map((pick) => (
-              <li className="flex items-center gap-3 px-3 py-2" key={pick.code}>
-                <span className="w-[76px] shrink-0 font-mono text-sm text-zinc-900">
-                  {pick.code}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-sm text-zinc-600">
-                  {pick.title ?? "Not imported yet"}
-                </span>
-                <IconButton
-                  label={`Remove ${pick.code}`}
-                  onClick={() => remove(pick.code)}
-                  size="icon-sm"
-                  variant="ghost"
-                >
-                  <X aria-hidden="true" size={15} />
-                </IconButton>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      <Field className="max-w-[200px]" label="Catalogue year">
+      <Field label="Catalogue year">
         <Select
           aria-label="Catalogue year"
+          disabled={running}
           onChange={setYear}
           options={catalogueYears.map((value) => ({
             label: String(value),
@@ -308,35 +396,6 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           value={year}
         />
       </Field>
-
-      <div className="flex items-center gap-3 border-t border-zinc-200 pt-4">
-        <Button
-          aria-busy={running}
-          disabled={running || picks.length === 0}
-          onClick={() => void runImport()}
-          variant="primary"
-        >
-          {running ? (
-            <Loader2 aria-hidden="true" className="animate-spin" size={16} />
-          ) : null}
-          {running
-            ? "Importing"
-            : picks.length === 0
-              ? "Import"
-              : `Import ${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
-        </Button>
-        <ButtonLink href="/admin/imports/sync" variant="ghost">
-          Cancel
-        </ButtonLink>
-        {progress ? (
-          <span
-            aria-live="polite"
-            className="text-[13px] text-zinc-500 tabular-nums"
-          >
-            {progress}
-          </span>
-        ) : null}
-      </div>
-    </div>
+    </ImportFormShell>
   );
 }

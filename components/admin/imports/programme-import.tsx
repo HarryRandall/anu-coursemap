@@ -4,49 +4,18 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ImportFormShell } from "@/components/admin/imports/import-form-shell";
+import {
+  ImportRunStatus,
+  type ImportProgressEvent,
+} from "@/components/admin/imports/import-run-status";
+import { readImportStream } from "@/components/admin/imports/import-stream";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 
 const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]{4,}$/u;
-
-/**
- * A programme pull streams a page at a time, because it walks every course the
- * programme references and that can be eighty requests.
- */
-async function readProgrammeImport(
-  response: Response,
-  onProgress: (pages: number) => void,
-) {
-  const reader = response.body?.getReader();
-  if (!reader) return;
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let pages = 0;
-
-  for (;;) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const event = JSON.parse(line.slice(5).trim()) as {
-        type?: string;
-        message?: string;
-      };
-      if (event.type === "progress") {
-        pages += 1;
-        onProgress(pages);
-      }
-      if (event.type === "error") {
-        throw new Error(event.message ?? "Programme import failed.");
-      }
-    }
-    if (done) return;
-  }
-}
 
 export function ProgrammeImport({
   catalogueYears,
@@ -63,7 +32,11 @@ export function ProgrammeImport({
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [current, setCurrent] = useState<ImportProgressEvent | null>(null);
+  const [log, setLog] = useState<ImportProgressEvent[]>([]);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [courseTotal, setCourseTotal] = useState(0);
 
   const normalisedCode = code.trim().toUpperCase();
   const valid = PROGRAMME_CODE_PATTERN.test(normalisedCode);
@@ -77,7 +50,16 @@ export function ProgrammeImport({
     }
 
     setRunning(true);
-    setProgress("Reading programme page");
+    setDone(false);
+    setRunId(null);
+    setLog([]);
+    setCourseTotal(0);
+    setCurrent({
+      code: normalisedCode,
+      kind: "programme",
+      message: "Reading programme page",
+    });
+
     try {
       const response = await fetch("/api/admin/catalogue/imports/programmes", {
         method: "POST",
@@ -87,26 +69,86 @@ export function ProgrammeImport({
           programmeCodes: [normalisedCode],
         }),
       });
-      if (!response.ok) throw new Error("Programme import failed.");
-      await readProgrammeImport(response, (pages) =>
-        setProgress(`Read ${pages} ${pages === 1 ? "page" : "pages"}`),
-      );
 
+      await readImportStream(response, (event) => {
+        if (event.type === "progress") {
+          const progress: ImportProgressEvent = {
+            action: typeof event.action === "string" ? event.action : undefined,
+            code: typeof event.code === "string" ? event.code : undefined,
+            index: typeof event.index === "number" ? event.index : undefined,
+            kind: event.kind === "course" ? "course" : "programme",
+            message:
+              typeof event.message === "string" ? event.message : undefined,
+            total: typeof event.total === "number" ? event.total : undefined,
+          };
+          if (typeof progress.total === "number") {
+            setCourseTotal(progress.total);
+          }
+          setCurrent(progress);
+          setLog((entries) => [...entries, progress].slice(-16));
+          return;
+        }
+        if (event.type === "complete") {
+          const result = event.result as
+            | { programme?: { runId?: string } }
+            | undefined;
+          if (typeof result?.programme?.runId === "string") {
+            setRunId(result.programme.runId);
+          }
+        }
+      });
+
+      setDone(true);
       toast.success(`Imported ${normalisedCode}.`);
-      router.push("/admin/imports/sync");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import failed.");
+      setCurrent(null);
     } finally {
       setRunning(false);
-      setProgress(null);
     }
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-5 pb-10">
-      <h1 className="sr-only">Import programmes</h1>
-
+    <ImportFormShell
+      title="Import programmes"
+      progress={
+        running || done ? (
+          <ImportRunStatus
+            current={current}
+            done={done}
+            headline={current?.code ?? normalisedCode}
+            log={log}
+            runHref={
+              runId ? `/admin/imports/sync/${runId}` : "/admin/imports/sync"
+            }
+            successLabel={`Imported ${normalisedCode}${
+              courseTotal > 0
+                ? ` and ${courseTotal} ${courseTotal === 1 ? "course" : "courses"}`
+                : ""
+            }`}
+          />
+        ) : null
+      }
+      footer={
+        <>
+          <Button
+            aria-busy={running}
+            disabled={running || !valid}
+            onClick={() => void runImport()}
+            variant="primary"
+          >
+            {running ? (
+              <Loader2 aria-hidden="true" className="animate-spin" size={16} />
+            ) : null}
+            {running ? "Importing" : "Import programme"}
+          </Button>
+          <ButtonLink href="/admin/imports/sync" variant="ghost">
+            {done ? "Back to sync" : "Cancel"}
+          </ButtonLink>
+        </>
+      }
+    >
       {error ? (
         <Alert tone="danger">
           <AlertDescription>{error}</AlertDescription>
@@ -125,7 +167,12 @@ export function ProgrammeImport({
         <Input
           autoComplete="off"
           className="font-mono"
-          onChange={(event) => setCode(event.target.value)}
+          disabled={running}
+          onChange={(event) => {
+            setCode(event.target.value);
+            setDone(false);
+            setRunId(null);
+          }}
           onKeyDown={(event) => {
             if (event.key !== "Enter") return;
             event.preventDefault();
@@ -136,9 +183,10 @@ export function ProgrammeImport({
         />
       </Field>
 
-      <Field className="max-w-[200px]" label="Catalogue year">
+      <Field label="Catalogue year">
         <Select
           aria-label="Catalogue year"
+          disabled={running}
           onChange={setYear}
           options={catalogueYears.map((value) => ({
             label: String(value),
@@ -147,31 +195,6 @@ export function ProgrammeImport({
           value={year}
         />
       </Field>
-
-      <div className="flex items-center gap-3 border-t border-zinc-200 pt-4">
-        <Button
-          aria-busy={running}
-          disabled={running || !valid}
-          onClick={() => void runImport()}
-          variant="primary"
-        >
-          {running ? (
-            <Loader2 aria-hidden="true" className="animate-spin" size={16} />
-          ) : null}
-          {running ? "Importing" : "Import programme"}
-        </Button>
-        <ButtonLink href="/admin/imports/sync" variant="ghost">
-          Cancel
-        </ButtonLink>
-        {progress ? (
-          <span
-            aria-live="polite"
-            className="text-[13px] text-zinc-500 tabular-nums"
-          >
-            {progress}
-          </span>
-        ) : null}
-      </div>
-    </div>
+    </ImportFormShell>
   );
 }
