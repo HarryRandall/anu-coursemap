@@ -101,8 +101,12 @@ set
   south = -35.305,
   east = 149.15,
   north = -35.25,
-  min_zoom = 16
+  min_zoom = 15
 where slug = 'anu-acton';
+
+update public.campus_map_layers
+set description = 'Open elevation hillshade that reveals ridges and slopes.'
+where slug = 'terrain';
 
 comment on column public.campus_map_places.map_display_kind is
   'Selects whether a place resolves to a live building footprint or remains a non-building point.';

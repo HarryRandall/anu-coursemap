@@ -35,7 +35,6 @@ const MAP_STYLE_URL =
 const TERRAIN_URL =
   process.env.NEXT_PUBLIC_ROOM_MAP_TERRAIN_URL ??
   "https://tiles.mapterhorn.com/tilejson.json";
-const TERRAIN_SOURCE_ID = "coursemap-terrain";
 const TERRAIN_HILLSHADE_SOURCE_ID = "coursemap-terrain-hillshade-source";
 const TERRAIN_LAYER_ID = "coursemap-terrain-hillshade";
 
@@ -80,20 +79,17 @@ function syncBuildingHighlights(
   for (const { colour, kind, selection } of selections) {
     if (!selection) continue;
     const renderHeight = Number(selection.properties?.render_height);
-    const renderBase = Number(selection.properties?.render_min_height);
+    const nativeHeight =
+      Number.isFinite(renderHeight) && renderHeight > 0 ? renderHeight : 0;
     featuresByBuilding.set(
       `${selection.source}:${selection.sourceLayer}:${selection.id}`,
       {
         type: "Feature",
         properties: {
           colour,
-          height:
-            Number.isFinite(renderHeight) && renderHeight > 0
-              ? renderHeight + 0.75
-              : 4,
+          height: nativeHeight + 0.45,
           kind,
-          minHeight:
-            Number.isFinite(renderBase) && renderBase > 0 ? renderBase : 0,
+          minHeight: nativeHeight + 0.05,
         },
         geometry: selection.geometry,
       },
@@ -238,12 +234,6 @@ function applyStyleLayerVisibility(
       map.setLayoutProperty(styleLayer.id, "visibility", visibility);
     }
   }
-
-  map.setTerrain(
-    visibleLayerSlugs.has("terrain")
-      ? { source: TERRAIN_SOURCE_ID, exaggeration: 1 }
-      : null,
-  );
 }
 
 export function CampusMap({
@@ -389,13 +379,6 @@ export function CampusMap({
             .slice(Math.max(0, lastBuildingIndex + 1))
             .find((layer) => layer.type === "symbol")?.id;
 
-          map.addSource(TERRAIN_SOURCE_ID, {
-            type: "raster-dem",
-            url: TERRAIN_URL,
-            tileSize: 512,
-            attribution:
-              '<a href="https://mapterhorn.com/attribution">© Mapterhorn</a>',
-          });
           map.addSource(TERRAIN_HILLSHADE_SOURCE_ID, {
             type: "raster-dem",
             url: TERRAIN_URL,
@@ -449,8 +432,8 @@ export function CampusMap({
                 "fill-extrusion-base": ["get", "minHeight"],
                 "fill-extrusion-color": ["get", "colour"],
                 "fill-extrusion-height": ["get", "height"],
-                "fill-extrusion-opacity": 0.96,
-                "fill-extrusion-vertical-gradient": true,
+                "fill-extrusion-opacity": 0.92,
+                "fill-extrusion-vertical-gradient": false,
               },
             },
             firstLabelLayer,

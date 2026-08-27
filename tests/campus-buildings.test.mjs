@@ -151,8 +151,8 @@ test("supplies dynamic map layers and preserves imported feature provenance", ()
   assert.ok(campusMap.isCampusMapPolygon(demoData.campus.boundary));
   assert.equal(
     demoData.campus.initialZoom - demoData.campus.minZoom,
-    2,
-    "the campus preview allows exactly two zoom-out steps",
+    3,
+    "the campus preview allows exactly three zoom-out steps",
   );
   for (const feature of demoData.features) {
     assert.match(feature.sourceIdentifier, /^way\/\d+$/);
@@ -272,7 +272,8 @@ test("renders the live vector style without bespoke building boxes", async () =>
     "utf8",
   );
 
-  assert.match(mapComponent, /setTerrain/);
+  assert.doesNotMatch(mapComponent, /setTerrain/);
+  assert.match(mapComponent, /type: "hillshade"/);
   assert.match(mapComponent, /dragRotate: true/);
   assert.match(mapComponent, /maxPitch: 65/);
   assert.match(mapComponent, /campus-building-highlights/);

@@ -71,7 +71,7 @@ select extensions.is(
 
 select extensions.ok(
   (
-    select initial_zoom - min_zoom = 2
+    select initial_zoom - min_zoom = 3
       and west = 149.09
       and south = -35.305
       and east = 149.15
@@ -79,7 +79,7 @@ select extensions.ok(
     from public.campus_map_campuses
     where slug = 'anu-acton'
   ),
-  'the map allows two zoom-out steps inside a bounded ANU area'
+  'the map allows three zoom-out steps inside a bounded ANU area'
 );
 
 select extensions.is(
