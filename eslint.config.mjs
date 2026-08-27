@@ -14,5 +14,6 @@ export default defineConfig([
     "dist/**",
     "next-env.d.ts",
     "out/**",
+    "public/maplibre/**",
   ]),
 ]);

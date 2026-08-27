@@ -1,0 +1,455 @@
+{
+  "campus": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "slug": "anu-acton",
+    "name": "ANU Acton campus",
+    "boundary": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [149.1098826, -35.2830191],
+          [149.1103178, -35.2836835],
+          [149.1108063, -35.2839965],
+          [149.11512, -35.2863447],
+          [149.1151302, -35.2879243],
+          [149.1153657, -35.2881374],
+          [149.1170365, -35.28829],
+          [149.1169638, -35.2890607],
+          [149.1180279, -35.2900054],
+          [149.118583, -35.2896696],
+          [149.1183578, -35.2879485],
+          [149.1178261, -35.2866025],
+          [149.1213223, -35.2854183],
+          [149.1222195, -35.2845],
+          [149.122075, -35.2840208],
+          [149.1204952, -35.2839926],
+          [149.1196713, -35.283616],
+          [149.1213854, -35.2816597],
+          [149.1222234, -35.2819466],
+          [149.1230524, -35.2818804],
+          [149.1238086, -35.2813622],
+          [149.1250824, -35.2798978],
+          [149.1237325, -35.2791221],
+          [149.1257826, -35.2767166],
+          [149.1263704, -35.276655],
+          [149.1265367, -35.2756131],
+          [149.124677, -35.275333],
+          [149.1212697, -35.273358],
+          [149.1173368, -35.2726359],
+          [149.1100104, -35.280961],
+          [149.1113411, -35.2817823],
+          [149.1109395, -35.2821],
+          [149.1104271, -35.2829808],
+          [149.1098826, -35.2830191]
+        ]
+      ]
+    },
+    "bounds": [149.1098826, -35.2900054, 149.1265367, -35.2726359],
+    "initialCoordinates": [149.1208, -35.2779],
+    "initialZoom": 18,
+    "minZoom": 15,
+    "maxZoom": 19,
+    "sourceIdentifier": "way/279984863",
+    "sourceUrl": "https://www.openstreetmap.org/way/279984863",
+    "sourceLicense": "OpenStreetMap contributors, ODbL 1.0"
+  },
+  "layers": [
+    {
+      "id": "10000000-0000-4000-8000-000000000001",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "buildings",
+      "name": "Buildings",
+      "description": "Example ANU buildings and teaching spaces.",
+      "colour": "#52525b",
+      "isVisibleByDefault": true,
+      "sortOrder": 10
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000002",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "study-spaces",
+      "name": "Study spaces",
+      "description": "Libraries and other places intended for study.",
+      "colour": "#0284c7",
+      "isVisibleByDefault": true,
+      "sortOrder": 20
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000003",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "student-services",
+      "name": "Student services",
+      "description": "Places where students can get in-person help.",
+      "colour": "#059669",
+      "isVisibleByDefault": true,
+      "sortOrder": 30
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000004",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "walking-paths",
+      "name": "Walking paths",
+      "description": "Selected paths sourced from OpenStreetMap inside the ANU boundary.",
+      "colour": "#7c3aed",
+      "isVisibleByDefault": true,
+      "sortOrder": 40
+    }
+  ],
+  "places": [
+    {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000001",
+      "slug": "marie-reay-teaching-centre",
+      "name": "Marie Reay Teaching Centre",
+      "markerLabel": "MR",
+      "address": "155 University Avenue, Acton",
+      "coordinates": [149.120685, -35.277786],
+      "officialUrl": "https://www.anu.edu.au/maps/kambri-precinct/marie-reay-teaching-centre",
+      "dataStatus": "example",
+      "isRoutable": true,
+      "sortOrder": 10,
+      "details": [
+        {
+          "id": "30000000-0000-4000-8000-000000000001",
+          "kind": "room",
+          "label": "Marie Reay 2.02",
+          "sortOrder": 10
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000002",
+          "kind": "room",
+          "label": "Marie Reay 4.03",
+          "sortOrder": 20
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000003",
+          "kind": "room",
+          "label": "Marie Reay 5.06",
+          "sortOrder": 30
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000004",
+          "kind": "room",
+          "label": "Marie Reay 6.02",
+          "sortOrder": 40
+        }
+      ]
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000002",
+      "layerId": "10000000-0000-4000-8000-000000000001",
+      "slug": "beryl-rawson-building",
+      "name": "Beryl Rawson Building",
+      "markerLabel": "BR",
+      "address": "13 Ellery Crescent, Acton",
+      "coordinates": [149.122333, -35.278959],
+      "officialUrl": "https://www.anu.edu.au/maps/beryl-rawson-building",
+      "dataStatus": "example",
+      "isRoutable": true,
+      "sortOrder": 20,
+      "details": [
+        {
+          "id": "30000000-0000-4000-8000-000000000005",
+          "kind": "place",
+          "label": "Jean Martin Room",
+          "sortOrder": 10
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000006",
+          "kind": "service",
+          "label": "CASS Student Office and Oasis Lounge",
+          "sortOrder": 20
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000007",
+          "kind": "facility",
+          "label": "Unisex Accessible toilet Level 1 - 1.56A",
+          "sortOrder": 30
+        }
+      ]
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000003",
+      "layerId": "10000000-0000-4000-8000-000000000001",
+      "slug": "ad-hope-building",
+      "name": "AD Hope Building",
+      "markerLabel": "AH",
+      "address": "14 Ellery Crescent, Acton",
+      "coordinates": [149.121713, -35.278353],
+      "officialUrl": "https://www.anu.edu.au/maps/ad-hope-building",
+      "dataStatus": "example",
+      "isRoutable": true,
+      "sortOrder": 30,
+      "details": [
+        {
+          "id": "30000000-0000-4000-8000-000000000008",
+          "kind": "room",
+          "label": "AD Hope 1.23",
+          "sortOrder": 10
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000009",
+          "kind": "room",
+          "label": "AD Hope G12",
+          "sortOrder": 20
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000010",
+          "kind": "room",
+          "label": "AD Hope LG1",
+          "sortOrder": 30
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000011",
+          "kind": "place",
+          "label": "Classics Museum",
+          "sortOrder": 40
+        }
+      ]
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000004",
+      "layerId": "10000000-0000-4000-8000-000000000002",
+      "slug": "chifley-library",
+      "name": "Chifley Library",
+      "markerLabel": "CL",
+      "address": "15 Concessions Lane, Acton",
+      "coordinates": [149.12039, -35.27802],
+      "officialUrl": "https://anulib.anu.edu.au/using-library/branches/chifley-library",
+      "dataStatus": "example",
+      "isRoutable": true,
+      "sortOrder": 10,
+      "details": [
+        {
+          "id": "30000000-0000-4000-8000-000000000012",
+          "kind": "facility",
+          "label": "Individual and group study spaces",
+          "sortOrder": 10
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000013",
+          "kind": "service",
+          "label": "Chifley information desk",
+          "sortOrder": 20
+        }
+      ]
+    },
+    {
+      "id": "20000000-0000-4000-8000-000000000005",
+      "layerId": "10000000-0000-4000-8000-000000000003",
+      "slug": "student-hub-kambri",
+      "name": "Student Hub Kambri",
+      "markerLabel": "SH",
+      "address": "Level 1, Building 154, University Avenue, Kambri",
+      "coordinates": [149.12105, -35.27765],
+      "officialUrl": "https://www.anu.edu.au/students/contacts/anu-student-hubs",
+      "dataStatus": "example",
+      "isRoutable": true,
+      "sortOrder": 10,
+      "details": [
+        {
+          "id": "30000000-0000-4000-8000-000000000014",
+          "kind": "service",
+          "label": "General student enquiries",
+          "sortOrder": 10
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000015",
+          "kind": "service",
+          "label": "Course and program advice",
+          "sortOrder": 20
+        },
+        {
+          "id": "30000000-0000-4000-8000-000000000016",
+          "kind": "service",
+          "label": "IT support",
+          "sortOrder": 30
+        }
+      ]
+    }
+  ],
+  "features": [
+    {
+      "id": "40000000-0000-4000-8000-000000000001",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000001",
+      "placeId": "20000000-0000-4000-8000-000000000001",
+      "slug": "marie-reay-building-outline",
+      "name": "Marie Reay Teaching Centre",
+      "featureKind": "building",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [149.1205593, -35.2777852],
+            [149.1202794, -35.2776175],
+            [149.120349, -35.27754],
+            [149.1204849, -35.2773888],
+            [149.1207648, -35.2775564],
+            [149.1205871, -35.2777596],
+            [149.1205593, -35.2777852]
+          ]
+        ]
+      },
+      "sourceIdentifier": "way/674003253",
+      "sourceUrl": "https://www.openstreetmap.org/way/674003253",
+      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
+      "sortOrder": 10
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000002",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000001",
+      "placeId": "20000000-0000-4000-8000-000000000002",
+      "slug": "beryl-rawson-building-outline",
+      "name": "Beryl Rawson Building",
+      "featureKind": "building",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [149.1220769, -35.2792082],
+            [149.1224247, -35.2788199],
+            [149.1227081, -35.2789891],
+            [149.1223603, -35.2793774],
+            [149.1220769, -35.2792082]
+          ]
+        ]
+      },
+      "sourceIdentifier": "way/50632679",
+      "sourceUrl": "https://www.openstreetmap.org/way/50632679",
+      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
+      "sortOrder": 20
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000003",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000001",
+      "placeId": "20000000-0000-4000-8000-000000000003",
+      "slug": "ad-hope-building-outline",
+      "name": "A.D. Hope Building",
+      "featureKind": "building",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [149.1210117, -35.2780453],
+            [149.1211797, -35.2778587],
+            [149.1218406, -35.2782688],
+            [149.1217544, -35.2783792],
+            [149.1217478, -35.2783896],
+            [149.1216853, -35.2784526],
+            [149.1216577, -35.2784363],
+            [149.1210117, -35.2780453]
+          ]
+        ]
+      },
+      "sourceIdentifier": "way/50632683",
+      "sourceUrl": "https://www.openstreetmap.org/way/50632683",
+      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
+      "sortOrder": 30
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000004",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000001",
+      "placeId": "20000000-0000-4000-8000-000000000004",
+      "slug": "chifley-building-outline",
+      "name": "JB Chifley Building",
+      "featureKind": "building",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [149.1199935, -35.2779323],
+            [149.120202, -35.2776984],
+            [149.1205289, -35.2778923],
+            [149.1208518, -35.278084],
+            [149.1207462, -35.2782062],
+            [149.1206439, -35.2783198],
+            [149.120525, -35.2782488],
+            [149.1199935, -35.2779323]
+          ]
+        ]
+      },
+      "sourceIdentifier": "way/5001918",
+      "sourceUrl": "https://www.openstreetmap.org/way/5001918",
+      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
+      "sortOrder": 40
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000005",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000004",
+      "placeId": null,
+      "slug": "university-avenue-path",
+      "name": "University Avenue",
+      "featureKind": "walking_path",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [149.1237932, -35.2789686],
+          [149.1231287, -35.2785721],
+          [149.1221918, -35.2780132],
+          [149.121553, -35.2776321],
+          [149.1214493, -35.2775704],
+          [149.1214081, -35.2775458],
+          [149.1213388, -35.2775007],
+          [149.1210602, -35.2773414],
+          [149.1210405, -35.2773299],
+          [149.120853, -35.27722],
+          [149.1208339, -35.2772089],
+          [149.1205766, -35.2770637]
+        ]
+      },
+      "sourceIdentifier": "way/672266049",
+      "sourceUrl": "https://www.openstreetmap.org/way/672266049",
+      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
+      "sortOrder": 10
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000006",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000004",
+      "placeId": null,
+      "slug": "denis-winston-walk-path",
+      "name": "Denis Winston Walk",
+      "featureKind": "walking_path",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [149.1191383, -35.2777672],
+          [149.1194259, -35.2779271],
+          [149.1198009, -35.2781643],
+          [149.1198215, -35.2781766],
+          [149.1205472, -35.2786115]
+        ]
+      },
+      "sourceIdentifier": "way/29108598",
+      "sourceUrl": "https://www.openstreetmap.org/way/29108598",
+      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
+      "sortOrder": 20
+    },
+    {
+      "id": "40000000-0000-4000-8000-000000000007",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "layerId": "10000000-0000-4000-8000-000000000004",
+      "placeId": null,
+      "slug": "joplin-lane-path",
+      "name": "Joplin Lane",
+      "featureKind": "walking_path",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [149.1202345, -35.2776696],
+          [149.1208663, -35.2780608],
+          [149.1209209, -35.2780933]
+        ]
+      },
+      "sourceIdentifier": "way/673020981",
+      "sourceUrl": "https://www.openstreetmap.org/way/673020981",
+      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
+      "sortOrder": 30
+    }
+  ]
+}
