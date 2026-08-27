@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function UserDirectoryLoadingSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <DataTableShell footer={<Skeleton className="h-2.5 w-32" />}>
         <div className="grid h-10 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-zinc-200/80 bg-zinc-50/70 px-4">
           {["w-10", "w-9", "w-11", "w-12"].map((width, index) => (
@@ -36,7 +36,7 @@ export function UserDirectoryLoadingSkeleton() {
 
 export function RoleMatrixLoadingSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
       <DataTableShell>
         <div className="grid h-10 min-w-[800px] grid-cols-[minmax(500px,1fr)_150px_150px] items-center border-b border-zinc-200/80 bg-zinc-50/70 px-4">
           <Skeleton className="h-2.5 w-20" />
@@ -66,7 +66,7 @@ export function RoleMatrixLoadingSkeleton() {
 
 export function UserDetailLoadingSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[920px] min-w-0 space-y-5 overflow-hidden">
+    <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5 overflow-hidden">
       <div className="flex items-center gap-3">
         <Skeleton className="size-11 shrink-0 rounded-full" />
         <span className="space-y-2">

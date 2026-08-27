@@ -88,11 +88,21 @@ export function inputClasses(className?: string) {
   return cn(controlClasses, className);
 }
 
-export function Input({ className, ...rest }: ComponentPropsWithRef<"input">) {
+export function Input({
+  className,
+  type,
+  ...rest
+}: ComponentPropsWithRef<"input">) {
   return (
     <input
       data-slot="input"
-      className={cn(controlClasses, className)}
+      type={type}
+      className={cn(
+        controlClasses,
+        type === "number" &&
+          "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+        className,
+      )}
       {...rest}
     />
   );

@@ -19,7 +19,7 @@ export default async function AdminOverviewPage() {
 
   return (
     <AppShell admin>
-      <div className="mx-auto w-full max-w-6xl space-y-5">
+      <div className="mx-auto w-full max-w-7xl space-y-5">
         <h1 className="sr-only">Live catalogue status</h1>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatTile

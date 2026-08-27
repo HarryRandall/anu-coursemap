@@ -16,11 +16,11 @@ import {
   saveCourseReviewDraft,
   type CourseReviewDraftInput,
 } from "@/lib/coursemap/catalogue-publication-actions";
-import type { AdminCourseReviewRecord } from "@/lib/coursemap/admin-catalogue";
-import {
-  parseRequisiteSummary,
-  type RequisiteExpression,
-} from "@/lib/coursemap/requisite-summary";
+import { RequisiteConditionEditor } from "@/components/admin/requisite-condition-editor";
+import type {
+  AdminCourseReviewRecord,
+  AdminCourseReviewRule,
+} from "@/lib/coursemap/admin-catalogue";
 import {
   CourseReviewTabs,
   type CourseReviewTab,
@@ -94,55 +94,61 @@ function FieldValue({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function RequisiteTree({ expression }: { expression: RequisiteExpression }) {
-  if (expression.kind === "course") {
-    return (
-      <span>
-        Complete{" "}
-        <span className="font-mono font-semibold">{expression.code}</span>
-      </span>
-    );
-  }
-  if (expression.kind === "subject_units") {
-    return (
-      <span>
-        Complete {expression.units} units of {expression.subject}-coded courses
-      </span>
-    );
-  }
-  if (expression.kind === "level_units") {
-    return (
-      <span>
-        Complete {expression.units} units at {expression.level}-level
-        {expression.subject ? ` in ${expression.subject}` : ""}
-      </span>
-    );
-  }
-  if (expression.kind === "units_total") {
-    return <span>Complete {expression.units} units of tertiary study</span>;
-  }
-  if (expression.kind === "programme_enrolment") {
-    return (
-      <span>
-        Be enrolled in {expression.name}{" "}
-        <span className="font-mono font-semibold">({expression.code})</span>
-      </span>
-    );
-  }
+const PREREQUISITE_KINDS = [
+  "prerequisite",
+  "corequisite",
+  "permission",
+  "assumed_knowledge",
+] as const;
+
+function RequisiteRulesPanel({
+  canEdit,
+  catalogueYear,
+  code,
+  empty,
+  label,
+  onMessage,
+  rules,
+}: {
+  canEdit: boolean;
+  catalogueYear: number;
+  code: string;
+  empty: string;
+  label: string;
+  onMessage: (message: { text: string; tone: "success" | "danger" }) => void;
+  rules: AdminCourseReviewRule[];
+}) {
   return (
-    <div>
-      <p className="text-sm font-semibold text-zinc-950">
-        {expression.operator === "all_of" ? "All of" : "Any of"}
-      </p>
-      <ul className="mt-2 space-y-2 border-l border-zinc-200 pl-4 text-sm leading-6 text-zinc-700">
-        {expression.conditions.map((condition, index) => (
-          <li key={index} className="relative">
-            <span className="absolute top-3 -left-4 w-2 border-t border-zinc-200" />
-            <RequisiteTree expression={condition} />
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Panel label={label}>
+      {rules.length ? (
+        <div className="divide-y divide-zinc-200">
+          {rules.map((rule) => (
+            <section key={rule.id} className="p-5 sm:p-6">
+              <h3 className="text-base font-semibold text-zinc-950 capitalize">
+                {rule.kind.replaceAll("_", " ")}
+              </h3>
+              <div className="mt-4 space-y-3">
+                <p className="border-l-2 border-zinc-300 pl-4 text-sm leading-7 whitespace-pre-wrap text-zinc-700">
+                  {rule.sourceText}
+                </p>
+                <RequisiteConditionEditor
+                  canEdit={canEdit}
+                  catalogueYear={catalogueYear}
+                  code={code}
+                  onMessage={onMessage}
+                  reviewed={rule.reviewed}
+                  ruleId={rule.id}
+                  sourceChanged={rule.sourceChanged}
+                  sourceText={rule.sourceText}
+                />
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">{empty}</p>
+      )}
+    </Panel>
   );
 }
 
@@ -291,15 +297,30 @@ export function CourseReview({
   );
   const needsReview =
     record.reviewState !== "verified" || unverifiedRules.length > 0;
-  const requisiteRules = record.rules.filter((rule) =>
-    [
-      "prerequisite",
-      "corequisite",
-      "incompatibility",
-      "permission",
-      "assumed_knowledge",
-    ].includes(rule.kind),
+  const prerequisiteRules = record.rules.filter((rule) =>
+    (PREREQUISITE_KINDS as readonly string[]).includes(rule.kind),
   );
+  const incompatibilityRules = record.rules.filter(
+    (rule) => rule.kind === "incompatibility",
+  );
+  const unverifiedPrerequisiteRules = prerequisiteRules.filter(
+    (rule) => rule.reviewState !== "verified",
+  );
+  const unverifiedIncompatibilityRules = incompatibilityRules.filter(
+    (rule) => rule.reviewState !== "verified",
+  );
+  const reviewRequisitesTab: CourseReviewTab =
+    unverifiedPrerequisiteRules.length > 0 ||
+    unverifiedIncompatibilityRules.length === 0
+      ? "prerequisites"
+      : "incompatibilities";
+  const reviewRequisitesLabel =
+    unverifiedPrerequisiteRules.length > 0 &&
+    unverifiedIncompatibilityRules.length > 0
+      ? "Review requisites"
+      : unverifiedIncompatibilityRules.length > 0
+        ? "Review incompatibilities"
+        : "Review prerequisites";
   const parsedOutput = {
     course: {
       code: record.code,
@@ -414,7 +435,7 @@ export function CourseReview({
         currentBreadcrumbLabel={record.title}
         tabs={<CourseReviewTabs />}
       >
-        <div className="mx-auto w-full max-w-6xl min-w-0 pb-10">
+        <div className="mx-auto w-full max-w-7xl min-w-0 pb-10">
           <h1 className="sr-only">
             Review {record.code} {record.title}
           </h1>
@@ -483,10 +504,10 @@ export function CourseReview({
                   </p>
                   <button
                     className="text-left text-sm font-medium text-brand-700 hover:text-brand-900 sm:text-right"
-                    onClick={() => setActiveTab("prerequisites")}
+                    onClick={() => setActiveTab(reviewRequisitesTab)}
                     type="button"
                   >
-                    Review requisites
+                    {reviewRequisitesLabel}
                   </button>
                 </div>
               ) : null}
@@ -675,77 +696,27 @@ export function CourseReview({
           </TabsContent>
 
           <TabsContent className="mt-0" value="prerequisites">
-            <Panel label="Prerequisites">
-              {requisiteRules.length ? (
-                <div className="divide-y divide-zinc-200">
-                  {requisiteRules.map((rule) => {
-                    const expression =
-                      rule.kind === "prerequisite"
-                        ? parseRequisiteSummary(rule.sourceText)
-                        : null;
-                    const referencedCodes = [
-                      ...new Set(
-                        rule.sourceText.match(/\b[A-Z]{4}\d{4}\b/gu) ?? [],
-                      ),
-                    ];
-                    return (
-                      <section key={rule.id} className="p-5 sm:p-6">
-                        <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <h3 className="text-base font-semibold text-zinc-950 capitalize">
-                            {rule.kind.replaceAll("_", " ")}
-                          </h3>
-                          <p className="text-sm text-zinc-500">
-                            {rule.reviewState === "verified"
-                              ? "Verified against the ANU page"
-                              : "Not yet verified against the ANU page"}
-                          </p>
-                        </div>
-                        <p className="mt-3 border-l-2 border-zinc-300 pl-4 text-sm leading-7 whitespace-pre-wrap text-zinc-800">
-                          {rule.sourceText}
-                        </p>
-                        {expression ? (
-                          <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
-                            <h4 className="mb-3 text-xs font-semibold tracking-wide text-emerald-800 uppercase">
-                              Mapped to a structured rule
-                            </h4>
-                            <RequisiteTree expression={expression} />
-                            <p className="mt-3 border-t border-emerald-200 pt-3 text-xs text-emerald-900">
-                              Coursemap can check a student&apos;s completed
-                              courses against this rule. Confirm it matches the
-                              wording above before publishing.
-                            </p>
-                          </div>
-                        ) : rule.kind === "prerequisite" ? (
-                          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50/60 p-4">
-                            <h4 className="mb-2 text-xs font-semibold tracking-wide text-amber-800 uppercase">
-                              Not mapped to a structured rule
-                            </h4>
-                            <p className="text-sm leading-6 text-amber-900">
-                              This wording could not be read without guessing,
-                              so students see the ANU text exactly as written
-                              and no eligibility check runs. That is safe, not
-                              broken.
-                            </p>
-                            {referencedCodes.length ? (
-                              <p className="mt-3 text-xs text-amber-900">
-                                Course codes detected in the wording:{" "}
-                                <span className="font-mono font-semibold">
-                                  {referencedCodes.join(", ")}
-                                </span>
-                              </p>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </section>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
-                  No requisite rules are stored for this version.
-                </p>
-              )}
-            </Panel>
+            <RequisiteRulesPanel
+              canEdit={canEdit}
+              catalogueYear={record.year}
+              code={record.code}
+              empty="No prerequisite rules are stored for this version."
+              label="Prerequisites"
+              onMessage={setMessage}
+              rules={prerequisiteRules}
+            />
+          </TabsContent>
+
+          <TabsContent className="mt-0" value="incompatibilities">
+            <RequisiteRulesPanel
+              canEdit={canEdit}
+              catalogueYear={record.year}
+              code={record.code}
+              empty="No incompatibility rules are stored for this version."
+              label="Incompatibilities"
+              onMessage={setMessage}
+              rules={incompatibilityRules}
+            />
           </TabsContent>
 
           <TabsContent className="mt-0" value="student">

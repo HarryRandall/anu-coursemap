@@ -991,6 +991,7 @@ export type Database = {
           id: number
           maximum_course_level: number | null
           minimum_course_level: number | null
+          minimum_gpa: number | null
           minimum_mark: number | null
           minimum_units: number | null
           position: number
@@ -1011,6 +1012,7 @@ export type Database = {
           id?: never
           maximum_course_level?: number | null
           minimum_course_level?: number | null
+          minimum_gpa?: number | null
           minimum_mark?: number | null
           minimum_units?: number | null
           position?: number
@@ -1031,6 +1033,7 @@ export type Database = {
           id?: never
           maximum_course_level?: number | null
           minimum_course_level?: number | null
+          minimum_gpa?: number | null
           minimum_mark?: number | null
           minimum_units?: number | null
           position?: number

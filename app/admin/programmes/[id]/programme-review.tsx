@@ -197,7 +197,7 @@ export function ProgrammeReview({
         currentBreadcrumbLabel={record.name}
         tabs={tabs}
       >
-        <div className="mx-auto w-full max-w-5xl min-w-0 space-y-4 pb-10">
+        <div className="mx-auto w-full max-w-7xl min-w-0 space-y-4 pb-10">
           <h1 className="sr-only">
             Review {record.code} {record.name}
           </h1>

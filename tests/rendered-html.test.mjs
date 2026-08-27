@@ -359,6 +359,7 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(adminCourseReviewHtml, />Source<\/button>/i);
   assert.match(adminCourseReviewHtml, /Parsed output/i);
   assert.match(adminCourseReviewHtml, /Prerequisites/i);
+  assert.match(adminCourseReviewHtml, /Incompatibilities/i);
   assert.match(adminCourseReviewHtml, /Student preview/i);
   assert.doesNotMatch(
     adminCourseReviewHtml,

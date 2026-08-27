@@ -261,7 +261,7 @@ export function AdminUserDetail({
         currentBreadcrumbLabel={data.user.displayName}
         tabs={tabs}
       >
-        <div className="mx-auto w-full max-w-6xl min-w-0 space-y-5 pb-10">
+        <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5 pb-10">
           <Card className="overflow-hidden">
             <div className="flex min-w-0 flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div className="flex min-w-0 items-center gap-4">
