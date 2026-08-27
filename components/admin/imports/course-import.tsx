@@ -40,22 +40,30 @@ const PAGE_SIZE = 10;
 type QueueRow = {
   code: string;
   detail: string | null;
-  status: string | null;
+  /** Live import step, null while the row is only queued. */
+  runStatus: string | null;
   subject: string | null;
   title: string | null;
+  /** Catalogue year this row will be pulled into. */
+  year: number;
+  /** Years Coursemap already holds for this code. */
   years: number[];
 };
 
+function rowKey(code: string, year: number) {
+  return `${code}:${year}`;
+}
+
 /**
- * What importing into the selected catalogue year will do, relative to what
- * Coursemap already holds for that course.
+ * What pulling this code into the row's catalogue year will do, relative to
+ * what Coursemap already holds.
  */
 function planChip(
   years: readonly number[],
   targetYear: number,
 ): { label: string; tone: Tone } {
   if (years.length === 0) return { label: "New", tone: "info" };
-  if (years.includes(targetYear)) return { label: "Refresh", tone: "neutral" };
+  if (years.includes(targetYear)) return { label: "Refresh", tone: "warning" };
   return { label: "Update", tone: "brand" };
 }
 
@@ -76,7 +84,7 @@ function actionLabel(action: string | undefined) {
   }
 }
 
-function progressTone(status: string | null): Tone {
+function runTone(status: string | null): Tone {
   if (!status) return "neutral";
   const key = status.toLowerCase();
   if (key.includes("fail")) return "danger";
@@ -95,8 +103,11 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // Prefer the newest catalogue year so "next year" is the default pull target.
-  const [year, setYear] = useState(catalogueYears[0] ?? new Date().getFullYear());
+  // Newest year first; each queued row keeps its own year so 2026 and 2027 can
+  // sit in the same import.
+  const [year, setYear] = useState(
+    catalogueYears[0] ?? new Date().getFullYear(),
+  );
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ImportSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -113,9 +124,12 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
 
   const normalisedQuery = query.trim().toUpperCase();
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
-  const pageCount = Math.max(1, Math.ceil(picks.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(picks.length / PAGE_SIZE) || 1);
   const safePage = Math.min(page, pageCount);
-  const pageRows = picks.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pageRows = picks.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
 
   useEffect(() => {
     if (page === safePage) return;
@@ -124,7 +138,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     else params.set("page", String(safePage));
     const queryString = params.toString();
     router.replace(queryString ? `${pathname}?${queryString}` : pathname);
-  }, [page, pageCount, pathname, router, safePage, searchParams]);
+  }, [page, pathname, router, safePage, searchParams]);
 
   function updateQuery(next: string) {
     setQuery(next);
@@ -154,20 +168,20 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     return normalisedQuery;
   }, [normalisedQuery, results]);
 
-  // Only mount the list once there is something to show. An empty bordered
-  // shell while the first request is in flight was shifting the page.
   const showList =
     open &&
     normalisedQuery.length >= 2 &&
-    (results.length > 0 || unmatchedCode !== null || (!searching && results.length === 0));
+    (results.length > 0 ||
+      unmatchedCode !== null ||
+      (!searching && results.length === 0));
 
   const picked = useMemo(
-    () => new Set(picks.map((pick) => pick.code)),
+    () => new Set(picks.map((pick) => rowKey(pick.code, pick.year))),
     [picks],
   );
 
   const completedCount = picks.filter((pick) => {
-    const status = pick.status?.toLowerCase() ?? "";
+    const status = pick.runStatus?.toLowerCase() ?? "";
     return (
       status.includes("created") ||
       status.includes("updated") ||
@@ -182,18 +196,22 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     title: string | null;
     years: number[];
   }) {
+    const targetYear = year;
     setError(null);
     setDone(false);
     setRunId(null);
     setPicks((currentPicks) =>
-      currentPicks.some((entry) => entry.code === pick.code)
+      currentPicks.some(
+        (entry) => entry.code === pick.code && entry.year === targetYear,
+      )
         ? currentPicks
         : [
             ...currentPicks,
             {
               ...pick,
               detail: null,
-              status: null,
+              runStatus: null,
+              year: targetYear,
             },
           ],
     );
@@ -203,27 +221,83 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     input.current?.focus();
   }
 
-  function remove(code: string) {
+  function remove(code: string, targetYear: number) {
     setPicks((currentPicks) =>
-      currentPicks.filter((entry) => entry.code !== code),
-    );
-  }
-
-  function patchPick(
-    code: string,
-    patch: Partial<Pick<QueueRow, "detail" | "status">>,
-  ) {
-    setPicks((currentPicks) =>
-      currentPicks.map((pick) =>
-        pick.code === code ? { ...pick, ...patch } : pick,
+      currentPicks.filter(
+        (entry) => !(entry.code === code && entry.year === targetYear),
       ),
     );
   }
 
-  function changeYear(next: number) {
-    setYear(next);
+  function setRowYear(code: string, fromYear: number, toYear: number) {
+    if (fromYear === toYear) return;
+    setPicks((currentPicks) => {
+      if (
+        currentPicks.some(
+          (entry) => entry.code === code && entry.year === toYear,
+        )
+      ) {
+        return currentPicks.filter(
+          (entry) => !(entry.code === code && entry.year === fromYear),
+        );
+      }
+      return currentPicks.map((entry) =>
+        entry.code === code && entry.year === fromYear
+          ? { ...entry, year: toYear, runStatus: null, detail: null }
+          : entry,
+      );
+    });
     setDone(false);
     setRunId(null);
+  }
+
+  function patchPick(
+    code: string,
+    targetYear: number,
+    patch: Partial<Pick<QueueRow, "detail" | "runStatus">>,
+  ) {
+    setPicks((currentPicks) =>
+      currentPicks.map((pick) =>
+        pick.code === code && pick.year === targetYear
+          ? { ...pick, ...patch }
+          : pick,
+      ),
+    );
+  }
+
+  async function importYearBatch(
+    catalogueYear: number,
+    codes: string[],
+    onProgress: (event: ImportProgressEvent) => void,
+  ) {
+    const response = await fetch("/api/admin/catalogue/imports/courses", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        catalogueYear,
+        courseCodes: codes,
+      }),
+    });
+
+    let lastRunId: string | null = null;
+    await readImportStream(response, (event) => {
+      if (event.type === "progress") {
+        onProgress({
+          action: typeof event.action === "string" ? event.action : undefined,
+          code: typeof event.code === "string" ? event.code : undefined,
+          index: typeof event.index === "number" ? event.index : undefined,
+          message:
+            typeof event.message === "string" ? event.message : undefined,
+          total: typeof event.total === "number" ? event.total : undefined,
+        });
+        return;
+      }
+      if (event.type === "complete") {
+        const result = event.result as { runId?: string } | undefined;
+        if (typeof result?.runId === "string") lastRunId = result.runId;
+      }
+    });
+    return lastRunId;
   }
 
   async function runImport() {
@@ -241,48 +315,48 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
       currentPicks.map((pick) => ({
         ...pick,
         detail: null,
-        status: "Queued",
+        runStatus: "Queued",
       })),
     );
 
     try {
-      const response = await fetch("/api/admin/catalogue/imports/courses", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          catalogueYear: year,
-          courseCodes: picks.map((pick) => pick.code),
-        }),
-      });
+      const byYear = new Map<number, QueueRow[]>();
+      for (const pick of picks) {
+        const group = byYear.get(pick.year) ?? [];
+        group.push(pick);
+        byYear.set(pick.year, group);
+      }
 
-      await readImportStream(response, (event) => {
-        if (event.type === "progress") {
-          const progress: ImportProgressEvent = {
-            action: typeof event.action === "string" ? event.action : undefined,
-            code: typeof event.code === "string" ? event.code : undefined,
-            index: typeof event.index === "number" ? event.index : undefined,
-            message:
-              typeof event.message === "string" ? event.message : undefined,
-            total: typeof event.total === "number" ? event.total : undefined,
-          };
-          setCurrent(progress);
-          if (progress.code) {
-            patchPick(progress.code, {
-              detail: progress.message ?? null,
-              status: actionLabel(progress.action),
+      let finished = 0;
+      let lastRunId: string | null = null;
+      for (const [catalogueYear, rows] of byYear) {
+        const runIdForYear = await importYearBatch(
+          catalogueYear,
+          rows.map((row) => row.code),
+          (progress) => {
+            const absoluteIndex =
+              progress.index != null ? finished + progress.index : finished;
+            setCurrent({
+              ...progress,
+              index: absoluteIndex,
+              total: picks.length,
             });
-          }
-          return;
-        }
-        if (event.type === "complete") {
-          const result = event.result as { runId?: string } | undefined;
-          if (typeof result?.runId === "string") setRunId(result.runId);
-        }
-      });
+            if (progress.code) {
+              patchPick(progress.code, catalogueYear, {
+                detail: progress.message ?? null,
+                runStatus: actionLabel(progress.action),
+              });
+            }
+          },
+        );
+        finished += rows.length;
+        if (runIdForYear) lastRunId = runIdForYear;
+      }
 
+      if (lastRunId) setRunId(lastRunId);
       setDone(true);
       toast.success(
-        `Imported ${picks.length} ${picks.length === 1 ? "course" : "courses"} for ${year}.`,
+        `Imported ${picks.length} ${picks.length === 1 ? "course" : "courses"}.`,
       );
       router.refresh();
     } catch (cause) {
@@ -305,7 +379,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                 className="size-4 text-emerald-600"
               />
               Imported {picks.length}{" "}
-              {picks.length === 1 ? "course" : "courses"} for {year}
+              {picks.length === 1 ? "course" : "courses"}
               {runId ? (
                 <>
                   {" · "}
@@ -338,13 +412,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
             {running ? (
               <Loader2 aria-hidden="true" className="animate-spin" size={16} />
             ) : null}
-            {running
-              ? current?.index && current.total
-                ? `Importing ${current.index} of ${current.total}`
-                : "Importing"
-              : picks.length === 0
-                ? "Import"
-                : `Import ${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
+            {running ? "Importing" : "Import"}
           </Button>
         </>
       }
@@ -369,10 +437,6 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
               if (event.key === "Escape") setOpen(false);
             }}
           >
-            {/*
-              Relative only on the input shell so the result list overlays the
-              page instead of growing the field and shoving the table down.
-            */}
             <div className="relative">
               <Search
                 aria-hidden="true"
@@ -412,7 +476,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
 
                     {unmatchedCode ? (
                       <CommandItem
-                        disabled={picked.has(unmatchedCode)}
+                        disabled={picked.has(rowKey(unmatchedCode, year))}
                         onSelect={() =>
                           add({
                             code: unmatchedCode,
@@ -438,9 +502,10 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
 
                     {results.map((result) => {
                       const chip = planChip(result.years, year);
+                      const queued = picked.has(rowKey(result.code, year));
                       return (
                         <CommandItem
-                          disabled={picked.has(result.code)}
+                          disabled={queued}
                           key={result.code}
                           onSelect={() =>
                             add({
@@ -458,10 +523,8 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                           <span className="min-w-0 flex-1 truncate text-zinc-700">
                             {result.title ?? "Untitled"}
                           </span>
-                          <Badge
-                            tone={picked.has(result.code) ? "neutral" : chip.tone}
-                          >
-                            {picked.has(result.code) ? "Queued" : chip.label}
+                          <Badge tone={queued ? "neutral" : chip.tone}>
+                            {queued ? "Queued" : chip.label}
                           </Badge>
                         </CommandItem>
                       );
@@ -473,11 +536,14 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           </Command>
         </Field>
 
-        <Field label="Catalogue year">
+        <Field
+          hint="Applied to courses you add next."
+          label="Catalogue year"
+        >
           <Select
             aria-label="Catalogue year"
             disabled={running}
-            onChange={changeYear}
+            onChange={setYear}
             options={catalogueYears.map((value) => ({
               label: String(value),
               value,
@@ -492,7 +558,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           <p className="text-sm font-medium text-zinc-900">
             {picks.length === 0
               ? "Queue"
-              : `${picks.length} ${picks.length === 1 ? "course" : "courses"} · ${year}`}
+              : `${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
           </p>
           {picks.length > 0 && !running ? (
             <Button
@@ -510,22 +576,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           ) : null}
         </div>
 
-        <DataTableShell
-          footer={
-            picks.length > 0 ? (
-              <Pagination
-                itemName="courses"
-                page={safePage}
-                pageSize={PAGE_SIZE}
-                pathname={pathname}
-                searchParams={{
-                  page: safePage > 1 ? String(safePage) : undefined,
-                }}
-                total={picks.length}
-              />
-            ) : undefined
-          }
-        >
+        <DataTableShell>
           {picks.length === 0 ? (
             <DataTableEmpty
               description="Search by code or title, then add rows to the queue."
@@ -540,7 +591,6 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                   <TableHead>Title</TableHead>
                   <TableHead>Year</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Progress</TableHead>
                   <TableHead className="w-12">
                     <span className="sr-only">Remove</span>
                   </TableHead>
@@ -548,60 +598,68 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
               </TableHeader>
               <TableBody>
                 {pageRows.map((pick) => {
-                  const chip = planChip(pick.years, year);
+                  const chip = planChip(pick.years, pick.year);
                   const active =
                     running &&
                     current?.code === pick.code &&
-                    pick.status === "Fetching";
+                    pick.runStatus === "Fetching";
                   return (
                     <TableRow
                       className={cn(active && "bg-brand-50/50")}
-                      key={pick.code}
+                      key={rowKey(pick.code, pick.year)}
                     >
                       <TableCell className="font-mono text-zinc-900">
                         {pick.code}
                       </TableCell>
-                      <TableCell className="max-w-[18rem] truncate">
+                      <TableCell className="max-w-[16rem] truncate">
                         {pick.title ?? (
                           <span className="text-zinc-400">Untitled</span>
                         )}
                       </TableCell>
-                      <TableCell className="tabular-nums text-zinc-700">
-                        {year}
+                      <TableCell className="w-[7.5rem]">
+                        {running ? (
+                          <span className="tabular-nums text-zinc-700">
+                            {pick.year}
+                          </span>
+                        ) : (
+                          <Select
+                            aria-label={`Catalogue year for ${pick.code}`}
+                            onChange={(next) =>
+                              setRowYear(pick.code, pick.year, next)
+                            }
+                            options={catalogueYears.map((value) => ({
+                              label: String(value),
+                              value,
+                            }))}
+                            value={pick.year}
+                          />
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Badge tone={chip.tone}>{chip.label}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {pick.status ? (
-                          <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {pick.runStatus ? (
+                            <>
                               {active ? (
                                 <Loader2
                                   aria-hidden="true"
                                   className="size-3.5 animate-spin text-brand-600"
                                 />
                               ) : null}
-                              <Badge tone={progressTone(pick.status)}>
-                                {pick.status}
+                              <Badge tone={runTone(pick.runStatus)}>
+                                {pick.runStatus}
                               </Badge>
-                            </div>
-                            {pick.detail ? (
-                              <p className="text-[12px] text-zinc-500">
-                                {pick.detail}
-                              </p>
-                            ) : null}
-                          </div>
-                        ) : (
-                          <span className="text-zinc-400">Ready</span>
-                        )}
+                            </>
+                          ) : (
+                            <Badge tone={chip.tone}>{chip.label}</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         {running ? null : (
                           <IconButton
                             className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            label={`Remove ${pick.code}`}
-                            onClick={() => remove(pick.code)}
+                            label={`Remove ${pick.code} ${pick.year}`}
+                            onClick={() => remove(pick.code, pick.year)}
                             size="icon-sm"
                             variant="ghost"
                           >
@@ -616,6 +674,18 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
             </Table>
           )}
         </DataTableShell>
+
+        <Pagination
+          alwaysShowControls
+          itemName="courses"
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          pathname={pathname}
+          searchParams={{
+            page: safePage > 1 ? String(safePage) : undefined,
+          }}
+          total={picks.length}
+        />
       </section>
     </ImportFormShell>
   );
