@@ -136,7 +136,7 @@ test("finds places and honours layer visibility", () => {
 });
 
 test("supplies dynamic map layers and preserves imported feature provenance", () => {
-  assert.equal(demoData.layers.length, 10);
+  assert.equal(demoData.layers.length, 13);
   assert.equal(
     demoData.features.filter((feature) => feature.featureKind === "building")
       .length,
@@ -151,8 +151,8 @@ test("supplies dynamic map layers and preserves imported feature provenance", ()
   assert.ok(campusMap.isCampusMapPolygon(demoData.campus.boundary));
   assert.equal(
     demoData.campus.initialZoom - demoData.campus.minZoom,
-    3,
-    "the campus preview allows exactly three zoom-out steps",
+    2,
+    "the campus preview allows exactly two zoom-out steps",
   );
   for (const feature of demoData.features) {
     assert.match(feature.sourceIdentifier, /^way\/\d+$/);
@@ -218,6 +218,52 @@ test("maps OpenFreeMap style layers into independently toggleable groups", () =>
     ),
     null,
   );
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(
+      layerBySlug.get("points-of-interest"),
+      "poi_z16",
+    ),
+    true,
+  );
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(
+      layerBySlug.get("place-labels"),
+      "label_city",
+    ),
+    true,
+  );
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(
+      layerBySlug.get("road-and-water-names"),
+      "highway-name-major",
+    ),
+    true,
+  );
+});
+
+test("uses native building footprints for building places", () => {
+  const buildingPlaces = demoData.places.filter(
+    (place) => place.mapDisplayKind === "building",
+  );
+  assert.equal(buildingPlaces.length, 5);
+  assert.equal(
+    demoData.places.filter((place) => place.mapDisplayKind === "point").length,
+    0,
+  );
+
+  const marieReayFeature = demoData.features.find(
+    (feature) => feature.slug === "marie-reay-building-outline",
+  );
+  assert.ok(marieReayFeature);
+  assert.equal(
+    campusMap.isCoordinateNearBuildingGeometry(
+      buildingPlaces.find(
+        (place) => place.slug === "marie-reay-teaching-centre",
+      ).coordinates,
+      marieReayFeature.geometry,
+    ),
+    true,
+  );
 });
 
 test("renders the live vector style without bespoke building boxes", async () => {
@@ -229,6 +275,14 @@ test("renders the live vector style without bespoke building boxes", async () =>
   assert.match(mapComponent, /setTerrain/);
   assert.match(mapComponent, /dragRotate: true/);
   assert.match(mapComponent, /maxPitch: 65/);
+  assert.match(mapComponent, /campus-building-highlights/);
+  assert.match(mapComponent, /geometry: selection\.geometry/);
+  assert.match(mapComponent, /type: "fill-extrusion"/);
+  assert.doesNotMatch(mapComponent, /feature-state/);
+  assert.doesNotMatch(
+    mapComponent,
+    /createPlaceMarker|createEndpointMarker|room-map-marker|room-route-endpoint/,
+  );
   assert.doesNotMatch(mapComponent, /campus-features|campus-mask/);
 });
 

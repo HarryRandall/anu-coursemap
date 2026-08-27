@@ -556,6 +556,7 @@ export type Database = {
           latitude: number
           layer_id: string
           longitude: number
+          map_display_kind: string
           marker_label: string
           name: string
           official_url: string | null
@@ -573,6 +574,7 @@ export type Database = {
           latitude: number
           layer_id: string
           longitude: number
+          map_display_kind?: string
           marker_label: string
           name: string
           official_url?: string | null
@@ -590,6 +592,7 @@ export type Database = {
           latitude?: number
           layer_id?: string
           longitude?: number
+          map_display_kind?: string
           marker_label?: string
           name?: string
           official_url?: string | null

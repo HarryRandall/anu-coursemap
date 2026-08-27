@@ -44,10 +44,10 @@
         ]
       ]
     },
-    "bounds": [149.075, -35.325, 149.175, -35.235],
+    "bounds": [149.09, -35.305, 149.15, -35.25],
     "initialCoordinates": [149.1208, -35.2779],
     "initialZoom": 18,
-    "minZoom": 15,
+    "minZoom": 16,
     "maxZoom": 19,
     "sourceIdentifier": "way/279984863",
     "sourceUrl": "https://www.openstreetmap.org/way/279984863",
@@ -76,7 +76,7 @@
       "isVisibleByDefault": true,
       "layerKind": "place",
       "styleLayerPatterns": [],
-      "sortOrder": 100
+      "sortOrder": 200
     },
     {
       "id": "10000000-0000-4000-8000-000000000003",
@@ -88,7 +88,7 @@
       "isVisibleByDefault": true,
       "layerKind": "place",
       "styleLayerPatterns": [],
-      "sortOrder": 110
+      "sortOrder": 210
     },
     {
       "id": "10000000-0000-4000-8000-000000000004",
@@ -203,17 +203,37 @@
     {
       "id": "10000000-0000-4000-8000-000000000010",
       "campusId": "00000000-0000-4000-8000-000000000001",
-      "slug": "labels-and-places",
-      "name": "Labels and places",
-      "description": "Road names, place labels, points of interest and map boundaries.",
+      "slug": "points-of-interest",
+      "name": "Points of interest",
+      "description": "Shops, amenities, facilities and other map icons.",
+      "colour": "#db2777",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": ["poi_*", "!poi_transit", "airport"],
+      "sortOrder": 80
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000011",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "place-labels",
+      "name": "Place labels",
+      "description": "Campus, suburb, park and other area labels.",
       "colour": "#7c3aed",
       "isVisibleByDefault": true,
       "layerKind": "map",
+      "styleLayerPatterns": ["label_*"],
+      "sortOrder": 90
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000012",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "road-and-water-names",
+      "name": "Road and water names",
+      "description": "Street names, route shields, rivers, creeks and lake names.",
+      "colour": "#2563eb",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
       "styleLayerPatterns": [
-        "poi_*",
-        "label_*",
-        "airport",
-        "boundary_*",
         "highway-name-*",
         "highway-shield-*",
         "road_one_way_arrow*",
@@ -221,7 +241,19 @@
         "waterway_line_label",
         "water_name_*"
       ],
-      "sortOrder": 80
+      "sortOrder": 100
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000013",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "boundaries",
+      "name": "Boundaries",
+      "description": "Administrative and mapped area boundaries.",
+      "colour": "#64748b",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": ["boundary_*"],
+      "sortOrder": 110
     }
   ],
   "places": [
@@ -235,6 +267,7 @@
       "coordinates": [149.120685, -35.277786],
       "officialUrl": "https://www.anu.edu.au/maps/kambri-precinct/marie-reay-teaching-centre",
       "dataStatus": "example",
+      "mapDisplayKind": "building",
       "isRoutable": true,
       "sortOrder": 10,
       "details": [
@@ -274,6 +307,7 @@
       "coordinates": [149.122333, -35.278959],
       "officialUrl": "https://www.anu.edu.au/maps/beryl-rawson-building",
       "dataStatus": "example",
+      "mapDisplayKind": "building",
       "isRoutable": true,
       "sortOrder": 20,
       "details": [
@@ -307,6 +341,7 @@
       "coordinates": [149.121713, -35.278353],
       "officialUrl": "https://www.anu.edu.au/maps/ad-hope-building",
       "dataStatus": "example",
+      "mapDisplayKind": "building",
       "isRoutable": true,
       "sortOrder": 30,
       "details": [
@@ -346,6 +381,7 @@
       "coordinates": [149.12039, -35.27802],
       "officialUrl": "https://anulib.anu.edu.au/using-library/branches/chifley-library",
       "dataStatus": "example",
+      "mapDisplayKind": "building",
       "isRoutable": true,
       "sortOrder": 10,
       "details": [
@@ -373,6 +409,7 @@
       "coordinates": [149.12105, -35.27765],
       "officialUrl": "https://www.anu.edu.au/students/contacts/anu-student-hubs",
       "dataStatus": "example",
+      "mapDisplayKind": "building",
       "isRoutable": true,
       "sortOrder": 10,
       "details": [

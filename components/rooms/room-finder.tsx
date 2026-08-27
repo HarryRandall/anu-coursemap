@@ -361,7 +361,10 @@ export function RoomFinder({
                   </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-72">
+              <PopoverContent
+                align="start"
+                className="max-h-[min(40rem,calc(100dvh-2rem))] w-72 overflow-y-auto"
+              >
                 <p className="text-xs font-semibold text-zinc-950">
                   Map detail
                 </p>
@@ -504,9 +507,9 @@ export function RoomFinder({
           <div className="text-brand-950 mt-3 grid grid-cols-[auto_1fr] gap-x-2.5 rounded-md border border-brand-100 bg-brand-50 p-3">
             <Info aria-hidden="true" className="mt-0.5 size-4" />
             <p className="text-xs leading-relaxed text-brand-900/80">
-              Buildings, roads, paths, water, parks and labels come directly
-              from live OpenStreetMap vectors. Terrain uses open elevation
-              tiles. Place details remain example data.
+              Select an ANU building to highlight its complete OpenStreetMap
+              footprint. Map detail and place categories can be filtered
+              independently.
             </p>
           </div>
         </div>

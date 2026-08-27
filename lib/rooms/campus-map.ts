@@ -68,6 +68,7 @@ export type CampusMapPlace = Readonly<{
   coordinates: readonly [longitude: number, latitude: number];
   officialUrl: string | null;
   dataStatus: "example" | "verified";
+  mapDisplayKind: "building" | "point";
   isRoutable: boolean;
   sortOrder: number;
   details: readonly CampusMapPlaceDetail[];
@@ -118,6 +119,75 @@ export function isCampusMapPolygon(value: unknown): value is CampusMapPolygon {
       (ring) =>
         Array.isArray(ring) && ring.length >= 4 && ring.every(isCoordinate),
     )
+  );
+}
+
+function isCoordinateInRing(
+  coordinate: readonly [number, number],
+  ring: readonly GeoJSON.Position[],
+) {
+  const [longitude, latitude] = coordinate;
+  let isInside = false;
+
+  for (
+    let index = 0, previous = ring.length - 1;
+    index < ring.length;
+    index++
+  ) {
+    const [currentLongitude, currentLatitude] = ring[index];
+    const [previousLongitude, previousLatitude] = ring[previous];
+    const crossesLatitude =
+      currentLatitude > latitude !== previousLatitude > latitude;
+    const crossingLongitude =
+      ((previousLongitude - currentLongitude) * (latitude - currentLatitude)) /
+        (previousLatitude - currentLatitude) +
+      currentLongitude;
+
+    if (crossesLatitude && longitude < crossingLongitude) {
+      isInside = !isInside;
+    }
+    previous = index;
+  }
+
+  return isInside;
+}
+
+export function isCoordinateInBuildingGeometry(
+  coordinate: readonly [number, number],
+  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+) {
+  const polygons =
+    geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+
+  return polygons.some(
+    (polygon) =>
+      polygon.length > 0 &&
+      isCoordinateInRing(coordinate, polygon[0]) &&
+      polygon.slice(1).every((hole) => !isCoordinateInRing(coordinate, hole)),
+  );
+}
+
+export function isCoordinateNearBuildingGeometry(
+  coordinate: readonly [number, number],
+  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+  tolerance = 0.00005,
+) {
+  if (isCoordinateInBuildingGeometry(coordinate, geometry)) return true;
+
+  const polygons =
+    geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
+  const coordinates = polygons.flatMap((polygon) =>
+    polygon.flatMap((ring) => ring),
+  );
+  const longitudes = coordinates.map(([longitude]) => longitude);
+  const latitudes = coordinates.map(([, latitude]) => latitude);
+  const [longitude, latitude] = coordinate;
+
+  return (
+    longitude >= Math.min(...longitudes) - tolerance &&
+    longitude <= Math.max(...longitudes) + tolerance &&
+    latitude >= Math.min(...latitudes) - tolerance &&
+    latitude <= Math.max(...latitudes) + tolerance
   );
 }
 

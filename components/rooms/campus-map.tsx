@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Box, LoaderCircle, MapPinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  campusLayerControlsStyleLayer,
   getControlledStyleLayerVisibility,
+  isCoordinateInBuildingGeometry,
+  isCoordinateNearBuildingGeometry,
   type CampusMapCampus,
   type CampusMapLayer,
   type CampusMapPlace,
@@ -39,6 +42,172 @@ const TERRAIN_LAYER_ID = "coursemap-terrain-hillshade";
 const MAP_ATTRIBUTION =
   'Walking routes: <a href="https://routing.openstreetmap.de/about.html">FOSSGIS</a>';
 
+type BuildingGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
+type BuildingSelection = Readonly<{
+  id: string | number;
+  source: string;
+  sourceLayer: string;
+  geometry: BuildingGeometry;
+  properties: GeoJSON.GeoJsonProperties;
+}>;
+type BuildingHighlights = {
+  selected: BuildingSelection | null;
+  routeFrom: BuildingSelection | null;
+  routeTo: BuildingSelection | null;
+};
+
+const BUILDING_HIGHLIGHT_SOURCE_ID = "campus-building-highlights";
+const BUILDING_HIGHLIGHT_LAYER_ID = "campus-building-highlight";
+
+function syncBuildingHighlights(
+  map: import("maplibre-gl").Map,
+  highlights: BuildingHighlights,
+) {
+  const source = map.getSource(BUILDING_HIGHLIGHT_SOURCE_ID) as
+    import("maplibre-gl").GeoJSONSource | undefined;
+  if (!source) return;
+
+  const featuresByBuilding = new Map<
+    string,
+    GeoJSON.Feature<BuildingGeometry>
+  >();
+  const selections = [
+    { colour: "#7c3aed", kind: "selected", selection: highlights.selected },
+    { colour: "#7c3aed", kind: "routeFrom", selection: highlights.routeFrom },
+    { colour: "#059669", kind: "routeTo", selection: highlights.routeTo },
+  ] as const;
+
+  for (const { colour, kind, selection } of selections) {
+    if (!selection) continue;
+    const renderHeight = Number(selection.properties?.render_height);
+    const renderBase = Number(selection.properties?.render_min_height);
+    featuresByBuilding.set(
+      `${selection.source}:${selection.sourceLayer}:${selection.id}`,
+      {
+        type: "Feature",
+        properties: {
+          colour,
+          height:
+            Number.isFinite(renderHeight) && renderHeight > 0
+              ? renderHeight + 0.75
+              : 4,
+          kind,
+          minHeight:
+            Number.isFinite(renderBase) && renderBase > 0 ? renderBase : 0,
+        },
+        geometry: selection.geometry,
+      },
+    );
+  }
+
+  void source.setData({
+    type: "FeatureCollection",
+    features: [...featuresByBuilding.values()],
+  });
+}
+
+function isBuildingGeometry(
+  geometry: GeoJSON.Geometry,
+): geometry is BuildingGeometry {
+  return geometry.type === "Polygon" || geometry.type === "MultiPolygon";
+}
+
+function asBuildingSelection(
+  feature: import("maplibre-gl").MapGeoJSONFeature | undefined,
+): BuildingSelection | null {
+  if (
+    !feature ||
+    feature.id === undefined ||
+    !feature.sourceLayer ||
+    !isBuildingGeometry(feature.geometry)
+  ) {
+    return null;
+  }
+  return {
+    id: feature.id,
+    source: feature.source,
+    sourceLayer: feature.sourceLayer,
+    properties: feature.properties,
+    geometry: feature.geometry,
+  };
+}
+
+function setSelectedBuilding(
+  map: import("maplibre-gl").Map,
+  selection: BuildingSelection | null,
+  highlights: BuildingHighlights,
+) {
+  highlights.selected = selection;
+  syncBuildingHighlights(map, highlights);
+
+  map.getContainer().dataset.selectedBuilding = String(Boolean(selection));
+  map.getContainer().dataset.selectedBuildingHeight = String(
+    selection?.properties?.render_height ?? "",
+  );
+  map.getContainer().dataset.selectedBuildingName = String(
+    selection?.properties?.name ?? "",
+  );
+  map.getContainer().dataset.selectedBuildingId = String(selection?.id ?? "");
+  map.getContainer().dataset.selectedBuildingProperties = Object.keys(
+    selection?.properties ?? {},
+  ).join(",");
+}
+
+function getBuildingFeatureAtPoint(
+  map: import("maplibre-gl").Map,
+  point:
+    | import("maplibre-gl").PointLike
+    | [import("maplibre-gl").PointLike, import("maplibre-gl").PointLike],
+  buildingLayerIds: readonly string[],
+  coordinate: readonly [number, number],
+) {
+  if (buildingLayerIds.length === 0) return null;
+  const features = map.queryRenderedFeatures(point, {
+    layers: [...buildingLayerIds],
+  });
+  const buildingFeatures = features
+    .map(asBuildingSelection)
+    .filter((feature): feature is BuildingSelection => feature !== null);
+
+  const buildingPolygons = buildingFeatures.flatMap((feature) => {
+    const polygons =
+      feature.geometry.type === "Polygon"
+        ? [feature.geometry]
+        : feature.geometry.coordinates.map((coordinates): GeoJSON.Polygon => ({
+            type: "Polygon",
+            coordinates,
+          }));
+    return polygons.map((geometry) => ({ ...feature, geometry }));
+  });
+
+  return (
+    buildingPolygons.find((feature) =>
+      isCoordinateInBuildingGeometry(coordinate, feature.geometry),
+    ) ??
+    buildingPolygons.find((feature) =>
+      isCoordinateNearBuildingGeometry(coordinate, feature.geometry),
+    ) ??
+    null
+  );
+}
+
+function getBuildingFeatureAtCoordinate(
+  map: import("maplibre-gl").Map,
+  coordinate: readonly [number, number],
+  buildingLayerIds: readonly string[],
+) {
+  const point = map.project(toLngLat(coordinate));
+  return getBuildingFeatureAtPoint(
+    map,
+    [
+      [point.x - 18, point.y - 18],
+      [point.x + 18, point.y + 18],
+    ],
+    buildingLayerIds,
+    coordinate,
+  );
+}
+
 function toGeoJsonGeometry(geometry: CampusMapPolygon): GeoJSON.Polygon {
   return {
     type: "Polygon",
@@ -52,33 +221,6 @@ function toLngLat(
   coordinate: readonly [longitude: number, latitude: number],
 ): [number, number] {
   return [coordinate[0], coordinate[1]];
-}
-
-function createPlaceMarker(
-  place: CampusMapPlace,
-  colour: string,
-  isSelected: boolean,
-  onSelect: (slug: string) => void,
-) {
-  const element = document.createElement("button");
-  element.type = "button";
-  element.className = "room-map-marker";
-  element.dataset.roomMapSlug = place.slug;
-  element.dataset.selected = String(isSelected);
-  element.textContent = place.markerLabel;
-  element.style.setProperty("--room-map-marker-colour", colour);
-  element.setAttribute("aria-label", `Select ${place.name}`);
-  element.setAttribute("aria-pressed", String(isSelected));
-  element.addEventListener("click", () => onSelect(place.slug));
-  return element;
-}
-
-function createEndpointMarker(label: "A" | "B") {
-  const element = document.createElement("span");
-  element.className = "room-route-endpoint";
-  element.textContent = label;
-  element.setAttribute("aria-hidden", "true");
-  return element;
 }
 
 function applyStyleLayerVisibility(
@@ -118,8 +260,13 @@ export function CampusMap({
   const mapRef = useRef<import("maplibre-gl").Map | null>(null);
   const mapLibreRef = useRef<typeof import("maplibre-gl") | null>(null);
   const visibleLayerSlugsRef = useRef(visibleLayerSlugs);
-  const placeMarkersRef = useRef<import("maplibre-gl").Marker[]>([]);
-  const routeMarkersRef = useRef<import("maplibre-gl").Marker[]>([]);
+  const placesRef = useRef(places);
+  const buildingLayerIdsRef = useRef<string[]>([]);
+  const buildingHighlightsRef = useRef<BuildingHighlights>({
+    selected: null,
+    routeFrom: null,
+    routeTo: null,
+  });
   const onSelectRef = useRef(onSelect);
   const [mapReady, setMapReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
@@ -132,6 +279,10 @@ export function CampusMap({
   useEffect(() => {
     visibleLayerSlugsRef.current = visibleLayerSlugs;
   }, [visibleLayerSlugs]);
+
+  useEffect(() => {
+    placesRef.current = places;
+  }, [places]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -218,9 +369,25 @@ export function CampusMap({
           const firstTransportLayer = styleLayers.find((layer) =>
             /^(tunnel_|road_|bridge_|building)/.test(layer.id),
           )?.id;
-          const firstLabelLayer = styleLayers.find(
-            (layer) => layer.type === "symbol",
-          )?.id;
+          const buildingsLayer = layers.find(
+            (layer) => layer.slug === "buildings",
+          );
+          const buildingLayerIds = buildingsLayer
+            ? styleLayers
+                .filter((layer) =>
+                  campusLayerControlsStyleLayer(buildingsLayer, layer.id),
+                )
+                .map((layer) => layer.id)
+            : [];
+          buildingLayerIdsRef.current = buildingLayerIds;
+          const lastBuildingIndex = Math.max(
+            ...buildingLayerIds.map((id) =>
+              styleLayers.findIndex((layer) => layer.id === id),
+            ),
+          );
+          const firstLabelLayer = styleLayers
+            .slice(Math.max(0, lastBuildingIndex + 1))
+            .find((layer) => layer.type === "symbol")?.id;
 
           map.addSource(TERRAIN_SOURCE_ID, {
             type: "raster-dem",
@@ -269,6 +436,26 @@ export function CampusMap({
             firstLabelLayer,
           );
 
+          map.addSource(BUILDING_HIGHLIGHT_SOURCE_ID, {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer(
+            {
+              id: BUILDING_HIGHLIGHT_LAYER_ID,
+              type: "fill-extrusion",
+              source: BUILDING_HIGHLIGHT_SOURCE_ID,
+              paint: {
+                "fill-extrusion-base": ["get", "minHeight"],
+                "fill-extrusion-color": ["get", "colour"],
+                "fill-extrusion-height": ["get", "height"],
+                "fill-extrusion-opacity": 0.96,
+                "fill-extrusion-vertical-gradient": true,
+              },
+            },
+            firstLabelLayer,
+          );
+
           map.addSource("campus-route", {
             type: "geojson",
             data: { type: "FeatureCollection", features: [] },
@@ -282,6 +469,57 @@ export function CampusMap({
               "line-opacity": 0.95,
               "line-width": 10,
             },
+          });
+
+          map.on("click", (event) => {
+            if (
+              !visibleLayerSlugsRef.current.has("buildings") ||
+              !isCoordinateInBuildingGeometry(
+                [event.lngLat.lng, event.lngLat.lat],
+                toGeoJsonGeometry(campus.boundary),
+              )
+            ) {
+              return;
+            }
+
+            const feature = getBuildingFeatureAtPoint(
+              map,
+              event.point,
+              buildingLayerIdsRef.current,
+              [event.lngLat.lng, event.lngLat.lat],
+            );
+            if (!feature) return;
+            setSelectedBuilding(map, feature, buildingHighlightsRef.current);
+
+            const mappedPlace = placesRef.current.find(
+              (place) =>
+                place.mapDisplayKind === "building" &&
+                isCoordinateNearBuildingGeometry(
+                  place.coordinates,
+                  feature.geometry,
+                ),
+            );
+            if (mappedPlace) onSelectRef.current(mappedPlace.slug);
+          });
+
+          map.on("mousemove", (event) => {
+            const isInsideCampus = isCoordinateInBuildingGeometry(
+              [event.lngLat.lng, event.lngLat.lat],
+              toGeoJsonGeometry(campus.boundary),
+            );
+            const feature =
+              visibleLayerSlugsRef.current.has("buildings") && isInsideCampus
+                ? getBuildingFeatureAtPoint(
+                    map,
+                    event.point,
+                    buildingLayerIdsRef.current,
+                    [event.lngLat.lng, event.lngLat.lat],
+                  )
+                : null;
+            map.getCanvas().style.cursor = feature ? "pointer" : "";
+          });
+          map.on("mouseout", () => {
+            map.getCanvas().style.cursor = "";
           });
           map.addLayer({
             id: "campus-route-line",
@@ -310,10 +548,12 @@ export function CampusMap({
     return () => {
       cancelled = true;
       if (loadTimeout) clearTimeout(loadTimeout);
-      placeMarkersRef.current.forEach((marker) => marker.remove());
-      routeMarkersRef.current.forEach((marker) => marker.remove());
-      placeMarkersRef.current = [];
-      routeMarkersRef.current = [];
+      buildingLayerIdsRef.current = [];
+      buildingHighlightsRef.current = {
+        selected: null,
+        routeFrom: null,
+        routeTo: null,
+      };
       mapRef.current?.remove();
       mapRef.current = null;
       mapLibreRef.current = null;
@@ -328,39 +568,81 @@ export function CampusMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    const maplibregl = mapLibreRef.current;
-    if (!mapReady || !map || !maplibregl) return;
+    if (!mapReady || !map) return;
 
-    placeMarkersRef.current.forEach((marker) => marker.remove());
-    const layerById = new Map(layers.map((layer) => [layer.id, layer]));
-    placeMarkersRef.current = places.map((place) => {
-      const marker = new maplibregl.Marker({
-        anchor: "center",
-        element: createPlaceMarker(
-          place,
-          layerById.get(place.layerId)?.colour ?? "#52525b",
-          place.slug === selectedSlug,
-          (slug) => onSelectRef.current(slug),
-        ),
-      })
-        .setLngLat(toLngLat(place.coordinates))
-        .addTo(map);
-      return marker;
-    });
+    const selectedPlace = places.find((place) => place.slug === selectedSlug);
+    if (
+      selectedPlace?.mapDisplayKind !== "building" ||
+      !visibleLayerSlugs.has("buildings")
+    ) {
+      setSelectedBuilding(map, null, buildingHighlightsRef.current);
+      return;
+    }
 
-    return () => {
-      placeMarkersRef.current.forEach((marker) => marker.remove());
-      placeMarkersRef.current = [];
+    const selectBuildingFootprint = () => {
+      const feature = getBuildingFeatureAtCoordinate(
+        map,
+        selectedPlace.coordinates,
+        buildingLayerIdsRef.current,
+      );
+      setSelectedBuilding(map, feature, buildingHighlightsRef.current);
+      return Boolean(feature);
     };
-  }, [layers, mapReady, places, selectedSlug]);
+
+    if (selectBuildingFootprint()) return;
+    const selectBuildingWhenReady = () => {
+      selectBuildingFootprint();
+    };
+    map.once("idle", selectBuildingWhenReady);
+    return () => {
+      map.off("idle", selectBuildingWhenReady);
+    };
+  }, [mapReady, places, selectedSlug, visibleLayerSlugs]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
+    const highlightRouteBuildings = () => {
+      const showBuildings = visibleLayerSlugs.has("buildings");
+      const fromFeature =
+        routeEndpoints && showBuildings
+          ? getBuildingFeatureAtCoordinate(
+              map,
+              routeEndpoints.from.coordinates,
+              buildingLayerIdsRef.current,
+            )
+          : null;
+      const toFeature =
+        routeEndpoints && showBuildings
+          ? getBuildingFeatureAtCoordinate(
+              map,
+              routeEndpoints.to.coordinates,
+              buildingLayerIdsRef.current,
+            )
+          : null;
+
+      buildingHighlightsRef.current.routeFrom = fromFeature;
+      buildingHighlightsRef.current.routeTo = toFeature;
+      syncBuildingHighlights(map, buildingHighlightsRef.current);
+      return Boolean(fromFeature && toFeature);
+    };
+
+    if (highlightRouteBuildings()) return;
+    const highlightRouteBuildingsWhenReady = () => {
+      highlightRouteBuildings();
+    };
+    map.once("idle", highlightRouteBuildingsWhenReady);
+    return () => {
+      map.off("idle", highlightRouteBuildingsWhenReady);
+    };
+  }, [mapReady, routeEndpoints, visibleLayerSlugs]);
 
   useEffect(() => {
     const map = mapRef.current;
     const maplibregl = mapLibreRef.current;
     if (!mapReady || !map || !maplibregl) return;
 
-    routeMarkersRef.current.forEach((marker) => marker.remove());
-    routeMarkersRef.current = [];
     const source = map.getSource("campus-route") as
       import("maplibre-gl").GeoJSONSource | null;
 
@@ -378,21 +660,6 @@ export function CampusMap({
       },
     });
 
-    routeMarkersRef.current = [
-      new maplibregl.Marker({
-        anchor: "center",
-        element: createEndpointMarker("A"),
-      })
-        .setLngLat(toLngLat(routeEndpoints.from.coordinates))
-        .addTo(map),
-      new maplibregl.Marker({
-        anchor: "center",
-        element: createEndpointMarker("B"),
-      })
-        .setLngLat(toLngLat(routeEndpoints.to.coordinates))
-        .addTo(map),
-    ];
-
     const bounds = route.coordinates.reduce(
       (result, coordinate) => result.extend(toLngLat(coordinate)),
       new maplibregl.LngLatBounds(
@@ -405,11 +672,6 @@ export function CampusMap({
       maxZoom: Math.min(17, campus?.maxZoom ?? 17),
       padding: 64,
     });
-
-    return () => {
-      routeMarkersRef.current.forEach((marker) => marker.remove());
-      routeMarkersRef.current = [];
-    };
   }, [campus?.maxZoom, mapReady, route, routeEndpoints]);
 
   function togglePerspective() {

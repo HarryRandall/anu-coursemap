@@ -128,6 +128,7 @@ function mapPlace(
     coordinates: [row.longitude, row.latitude],
     officialUrl: row.official_url,
     dataStatus: row.data_status as CampusMapPlace["dataStatus"],
+    mapDisplayKind: row.map_display_kind as CampusMapPlace["mapDisplayKind"],
     isRoutable: row.is_routable,
     sortOrder: row.sort_order,
     details: details.map(mapDetail),
@@ -200,7 +201,7 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
       ? await supabase
           .from("campus_map_places")
           .select(
-            "id,layer_id,slug,name,marker_label,address,longitude,latitude,official_url,data_status,is_routable,status,sort_order,created_at,updated_at",
+            "id,layer_id,slug,name,marker_label,address,longitude,latitude,official_url,data_status,map_display_kind,is_routable,status,sort_order,created_at,updated_at",
           )
           .in("layer_id", layerIds)
           .order("sort_order")

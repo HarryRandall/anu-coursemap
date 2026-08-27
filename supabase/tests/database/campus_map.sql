@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(23);
+select extensions.plan(25);
 
 select extensions.ok(
   has_table_privilege('anon', 'public.campus_map_layers', 'select')
@@ -41,8 +41,8 @@ select extensions.is(
     from public.campus_map_layers
     where status = 'published'
   ),
-  10,
-  'the migrations publish ten independently toggleable layers'
+  13,
+  'the migrations publish thirteen independently toggleable layers'
 );
 
 select extensions.is(
@@ -53,8 +53,8 @@ select extensions.is(
       and layer_kind in ('map', 'hybrid')
       and cardinality(style_layer_patterns) > 0
   ),
-  8,
-  'eight published layers dynamically control live map vectors'
+  11,
+  'eleven published layers dynamically control live map vectors'
 );
 
 select extensions.is(
@@ -71,15 +71,15 @@ select extensions.is(
 
 select extensions.ok(
   (
-    select initial_zoom - min_zoom = 3
-      and west = 149.075
-      and south = -35.325
-      and east = 149.175
-      and north = -35.235
+    select initial_zoom - min_zoom = 2
+      and west = 149.09
+      and south = -35.305
+      and east = 149.15
+      and north = -35.25
     from public.campus_map_campuses
     where slug = 'anu-acton'
   ),
-  'the map allows three zoom-out steps and pans across central Canberra'
+  'the map allows two zoom-out steps inside a bounded ANU area'
 );
 
 select extensions.is(
@@ -100,6 +100,46 @@ select extensions.is(
   ),
   5,
   'the migration supplies five example places through database rows'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_map_places
+    where status = 'published'
+      and map_display_kind = 'building'
+  ),
+  5,
+  'all five places select their live vector building footprint'
+);
+
+select extensions.throws_ok(
+  $$
+    insert into public.campus_map_places (
+      layer_id,
+      slug,
+      name,
+      marker_label,
+      address,
+      longitude,
+      latitude,
+      map_display_kind
+    )
+    select
+      id,
+      'invalid-display-kind',
+      'Invalid display kind',
+      'ID',
+      'Acton',
+      149.12,
+      -35.28,
+      'pin'
+    from public.campus_map_layers
+    limit 1
+  $$,
+  '23514',
+  null,
+  'places reject unsupported map display kinds'
 );
 
 select extensions.is(
@@ -237,7 +277,7 @@ set local role anon;
 
 select extensions.is(
   (select count(*)::integer from public.campus_map_layers),
-  10,
+  13,
   'anonymous users only see published layers'
 );
 
