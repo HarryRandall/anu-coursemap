@@ -337,7 +337,11 @@ test("server-renders admin and course-detail routes", async () => {
   const adminUsersHtml = await adminUsersResponse.text();
   const adminRolesHtml = await adminRolesResponse.text();
   assert.match(adminHtml, /Live catalogue status/i);
-  assert.match(adminHtml, /Publish reviewed records/i);
+  assert.match(adminHtml, />Users</);
+  assert.doesNotMatch(
+    adminHtml,
+    /Review courses|Review programmes|Publish reviewed records|source review/i,
+  );
   assert.doesNotMatch(adminHtml, /Start scoped sync/i);
   assert.doesNotMatch(adminHtml, /Catalogue data tools/i);
   assert.doesNotMatch(adminHtml, /Catalogue administration/i);
@@ -573,7 +577,8 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(planClient, /programmeRequirementsImported/);
   assert.doesNotMatch(planClient, /Blocked: needs/);
   assert.match(adminPage, /Live catalogue status/);
-  assert.match(adminPage, /Publish reviewed records/);
+  assert.match(adminPage, /loadAdminUserSummary/);
+  assert.doesNotMatch(adminPage, /Publish reviewed records/);
   assert.match(coursePage, /loadPublishedCourse/);
   assert.match(courseDetailClient, /completedCodes/);
   assert.match(courseDetailClient, /plannedCodes/);

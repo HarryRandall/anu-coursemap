@@ -1,5 +1,6 @@
 import "server-only";
 
+import { countsByYear } from "@/lib/coursemap/admin-catalogue-history";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,9 +38,11 @@ export type PaginatedAdminResult<T> = {
 
 export type AdminCatalogueSummary = {
   courseDrafts: number;
+  courseHistory: number[];
   courses: number;
-  reviewItems: number;
+  draftHistory: number[];
   structureDrafts: number;
+  structureHistory: number[];
   structures: number;
 };
 
@@ -469,83 +472,82 @@ export async function loadAdminStructurePage({
   };
 }
 
+const emptyCatalogueSummary = (): AdminCatalogueSummary => ({
+  courseDrafts: 0,
+  courseHistory: [],
+  courses: 0,
+  draftHistory: [],
+  structureDrafts: 0,
+  structureHistory: [],
+  structures: 0,
+});
+
 export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary> {
-  if (isDemoMode()) {
-    return {
-      courseDrafts: 0,
-      courses: 0,
-      reviewItems: 0,
-      structureDrafts: 0,
-      structures: 0,
-    };
-  }
+  if (isDemoMode()) return emptyCatalogueSummary();
   const [supabase, year] = await Promise.all([
     createClient(),
     currentCatalogueYear(),
   ]);
-  if (!year) {
-    return {
-      courseDrafts: 0,
-      courses: 0,
-      reviewItems: 0,
-      structureDrafts: 0,
-      structures: 0,
-    };
-  }
-  const [
-    courses,
-    courseDrafts,
-    courseReview,
-    structures,
-    structureDrafts,
-    structureReview,
-  ] = await Promise.all([
-    supabase
-      .from("course_versions")
-      .select("id", { count: "exact", head: true })
-      .eq("catalogue_year_id", year.id),
-    supabase
-      .from("course_versions")
-      .select("id", { count: "exact", head: true })
-      .eq("catalogue_year_id", year.id)
-      .neq("publication_status", "published"),
-    supabase
-      .from("course_versions")
-      .select("id", { count: "exact", head: true })
-      .eq("catalogue_year_id", year.id)
-      .eq("review_state", "review"),
-    supabase
-      .from("academic_structure_versions")
-      .select("id", { count: "exact", head: true })
-      .eq("catalogue_year_id", year.id),
-    supabase
-      .from("academic_structure_versions")
-      .select("id", { count: "exact", head: true })
-      .eq("catalogue_year_id", year.id)
-      .neq("publication_status", "published"),
-    supabase
-      .from("academic_structure_versions")
-      .select("id", { count: "exact", head: true })
-      .eq("catalogue_year_id", year.id)
-      .eq("review_state", "review"),
-  ]);
-  const firstError = [
-    courses,
-    courseDrafts,
-    courseReview,
-    structures,
-    structureDrafts,
-    structureReview,
-  ]
+  if (!year) return emptyCatalogueSummary();
+  const [yearsResult, courseRowsResult, structureRowsResult] =
+    await Promise.all([
+      supabase.from("catalogue_years").select("id,year").order("year"),
+      supabase
+        .from("course_versions")
+        .select("catalogue_year_id,publication_status")
+        .limit(5000),
+      supabase
+        .from("academic_structure_versions")
+        .select("catalogue_year_id,publication_status")
+        .limit(5000),
+    ]);
+  const firstError = [yearsResult, courseRowsResult, structureRowsResult]
     .map((result) => result.error)
     .find(Boolean);
   if (firstError) throw firstError;
+  const years = (yearsResult.data ?? []) as Array<{ id: number; year: number }>;
+  const yearById = new Map(years.map((row) => [row.id, row.year]));
+  const yearNumbers = years.map((row) => row.year);
+  const courseRows = (courseRowsResult.data ?? []) as Array<{
+    catalogue_year_id: number;
+    publication_status: string;
+  }>;
+  const structureRows = (structureRowsResult.data ?? []) as Array<{
+    catalogue_year_id: number;
+    publication_status: string;
+  }>;
+  const withYear = <T extends { catalogue_year_id: number }>(rows: T[]) =>
+    rows.flatMap((row) => {
+      const catalogueYear = yearById.get(row.catalogue_year_id);
+      return catalogueYear === undefined
+        ? []
+        : [{ ...row, year: catalogueYear }];
+    });
+  const coursesInYear = courseRows.filter(
+    (row) => row.catalogue_year_id === year.id,
+  );
+  const structuresInYear = structureRows.filter(
+    (row) => row.catalogue_year_id === year.id,
+  );
   return {
-    courses: courses.count ?? 0,
-    courseDrafts: courseDrafts.count ?? 0,
-    structures: structures.count ?? 0,
-    structureDrafts: structureDrafts.count ?? 0,
-    reviewItems: (courseReview.count ?? 0) + (structureReview.count ?? 0),
+    courses: coursesInYear.length,
+    courseDrafts: coursesInYear.filter(
+      (row) => row.publication_status !== "published",
+    ).length,
+    courseHistory: countsByYear(yearNumbers, withYear(courseRows)),
+    structures: structuresInYear.length,
+    structureDrafts: structuresInYear.filter(
+      (row) => row.publication_status !== "published",
+    ).length,
+    structureHistory: countsByYear(yearNumbers, withYear(structureRows)),
+    draftHistory: countsByYear(
+      yearNumbers,
+      withYear(
+        [...courseRows, ...structureRows].filter(
+          (row) => row.publication_status !== "published",
+        ),
+      ),
+    ),
   };
 }
 

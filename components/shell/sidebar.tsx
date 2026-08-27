@@ -10,6 +10,7 @@ import {
   GitCompareArrows,
   GraduationCap,
   House,
+  Import,
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
@@ -18,10 +19,10 @@ import {
   MapPin,
   RefreshCw,
   Route,
+  Shield,
   Table2,
   UserRound,
   UsersRound,
-  Wrench,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -75,7 +76,11 @@ const studentNav: NavItem[] = [
   },
 ];
 
-type NavSection = { label: string | null; items: NavItem[] };
+type NavSection = {
+  icon?: LucideIcon;
+  items: NavItem[];
+  label: string | null;
+};
 
 /**
  * Grouped rather than one flat list. The admin destinations do three unrelated
@@ -102,6 +107,7 @@ const adminNav: NavSection[] = [
     ],
   },
   {
+    icon: Import,
     label: "Imports",
     items: [
       { href: "/admin/imports/sync", label: "Sync", icon: RefreshCw },
@@ -247,7 +253,14 @@ function SidebarContent({
             {adminNav.map((section) => (
               <Fragment key={section.label ?? "primary"}>
                 {section.label ? (
-                  <h2 className="mt-4 mb-1 px-6 text-[11px] font-medium tracking-wide text-zinc-400 uppercase first:mt-0">
+                  <h2 className="mt-4 mb-1 flex items-center gap-1.5 px-6 text-[11px] leading-none font-medium tracking-wide text-zinc-400 uppercase first:mt-0">
+                    {section.icon ? (
+                      <section.icon
+                        aria-hidden="true"
+                        className="size-3 shrink-0"
+                        strokeWidth={2}
+                      />
+                    ) : null}
                     {section.label}
                   </h2>
                 ) : null}
@@ -289,7 +302,7 @@ function SidebarContent({
               onClick={onNavigate}
               className="mx-3 flex h-10 items-center gap-3 rounded-lg px-3 text-[13px] font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
             >
-              <Wrench size={17} strokeWidth={1.9} />
+              <Shield size={17} strokeWidth={1.9} />
               <span>Admin console</span>
             </Link>
           </>

@@ -12,12 +12,13 @@ import {
   GitCompareArrows,
   GraduationCap,
   House,
+  Import,
   KeyRound,
   LayoutDashboard,
   ListChecks,
   MapPin,
   RefreshCw,
-  ShieldCheck,
+  Shield,
   Table,
   UserRound,
   Users,
@@ -56,18 +57,18 @@ const labels: Record<string, string> = {
 };
 
 /**
- * Each crumb carries the same icon its sidebar entry uses. `imports` has none
- * on purpose: it is a group heading in the sidebar too, and giving it one put
- * the same refresh glyph next to itself in "Imports > Sync".
+ * Each crumb carries the same icon its sidebar entry uses. Admin dashboard
+ * reuses the grid mark; the student home route keeps the house.
  */
 const icons: Record<string, LucideIcon> = {
   academic: ClipboardList,
-  admin: ShieldCheck,
+  admin: Shield,
   calendar: CalendarDays,
   changes: GitCompareArrows,
   courses: BookOpen,
   dashboard: House,
   help: CircleHelp,
+  imports: Import,
   "key-dates": CalendarDays,
   plan: Table,
   profile: UserRound,
@@ -103,12 +104,14 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   segments.forEach((segment, index) => {
     href += `/${segment}`;
     const isLast = index === segments.length - 1;
-    const label = labels[segment] ?? fallbackLabel(segment);
-    const icon =
-      admin && index === 0
-        ? LayoutDashboard
-        : (icons[segment] ??
-          (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
+    const isAdminDashboard = admin && segment === "dashboard";
+    const label = isAdminDashboard
+      ? "Dashboard"
+      : (labels[segment] ?? fallbackLabel(segment));
+    const icon = isAdminDashboard
+      ? LayoutDashboard
+      : (icons[segment] ??
+        (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
     crumbs.push({
       icon,
       label,
@@ -120,9 +123,8 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     });
   });
 
-  // The admin index label ("Overview") when landing on /admin exactly
   if (admin && segments.length === 1) {
-    crumbs[0] = { label: "Admin", icon: LayoutDashboard };
+    crumbs[0] = { label: "Admin", icon: Shield };
   }
 
   return { crumbs, admin };
@@ -144,8 +146,8 @@ export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
           <Fragment key={index}>
             {index > 0 && (
               <ChevronRight
-                size={14}
-                className={`shrink-0 text-zinc-300 ${currentLabel ? "hidden sm:block" : ""}`}
+                aria-hidden="true"
+                className={`block size-3.5 shrink-0 text-zinc-300 ${currentLabel ? "hidden sm:block" : ""}`}
               />
             )}
             <li
@@ -154,24 +156,22 @@ export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-medium text-zinc-500 transition hover:text-zinc-800"
+                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-none font-medium text-zinc-500 transition hover:text-zinc-800"
                 >
                   {crumb.icon ? (
                     <crumb.icon
                       aria-hidden="true"
-                      className="shrink-0 text-zinc-400"
-                      size={14}
+                      className="block size-3.5 shrink-0 text-zinc-400"
                     />
                   ) : null}
                   <span className="truncate">{crumb.label}</span>
                 </Link>
               ) : (
-                <span className="flex min-w-0 items-center gap-1.5 truncate text-[13px] font-semibold text-zinc-900">
+                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-none font-semibold text-zinc-900">
                   {crumb.icon ? (
                     <crumb.icon
                       aria-hidden="true"
-                      className="shrink-0 text-zinc-500"
-                      size={14}
+                      className="block size-3.5 shrink-0 text-zinc-500"
                     />
                   ) : null}
                   <span className="truncate">{crumb.label}</span>

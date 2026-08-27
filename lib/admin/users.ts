@@ -1,3 +1,5 @@
+import { weeklyCountSeries } from "@/lib/coursemap/admin-catalogue-history";
+import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminUser = {
@@ -204,6 +206,29 @@ function courseStatus(value: string): AdminUserCourseStatus | null {
   )
     ? (value as AdminUserCourseStatus)
     : null;
+}
+
+export type AdminUserSummary = {
+  history: number[];
+  users: number;
+};
+
+export async function loadAdminUserSummary(): Promise<AdminUserSummary> {
+  if (isDemoMode()) return { history: [], users: 0 };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("created_at");
+  if (error) throw new Error("Coursemap could not load user totals.");
+  const rows = data ?? [];
+  return {
+    history: weeklyCountSeries(
+      rows
+        .map((row) => row.created_at)
+        .filter((value): value is string => typeof value === "string"),
+    ),
+    users: rows.length,
+  };
 }
 
 export async function loadAdminUserManagement(): Promise<AdminUserManagementData> {
