@@ -11,7 +11,7 @@ export default async function ImportsSyncPage() {
 
   return (
     <AppShell admin>
-      <div className="mx-auto w-full max-w-5xl space-y-4 pb-10">
+      <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
         {/* The sidebar and the breadcrumb both already say Sync. */}
         <h1 className="sr-only">Catalogue sync</h1>
 

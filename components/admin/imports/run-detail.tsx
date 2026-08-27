@@ -41,7 +41,7 @@ export function RunDetail({ detail }: { detail: ImportRunDetail }) {
   const warnings = diagnostics.length - run.errorCount;
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5 pb-10">
+    <div className="mx-auto w-full max-w-7xl space-y-5 pb-10">
       {/*
         No back link and no visible heading. The breadcrumb states the trail and
         carries this run's time as its final crumb, so both would be a second

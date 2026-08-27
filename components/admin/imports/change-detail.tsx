@@ -84,7 +84,7 @@ export function ChangeDetail({ change }: { change: ImportFlag }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-5 pb-10">
+    <div className="mx-auto w-full max-w-7xl space-y-5 pb-10">
       {/*
         No back link and no visible heading: the breadcrumb ends in this course
         code and links back to the queue.

@@ -7,7 +7,7 @@ export default function ImportsSyncLoading() {
     <AppShell admin>
       <div
         aria-label="Loading catalogue sync"
-        className="mx-auto w-full max-w-5xl space-y-4 pb-10"
+        className="mx-auto w-full max-w-7xl space-y-4 pb-10"
         role="status"
       >
         <div className="flex items-center gap-3 rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-xs">

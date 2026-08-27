@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+import { CatalogueYearFilter } from "@/components/admin/imports/catalogue-year-filter";
 import { ImportFormShell } from "@/components/admin/imports/import-form-shell";
 import {
   ImportRunStatus,
@@ -13,7 +14,6 @@ import { readImportStream } from "@/components/admin/imports/import-stream";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
-import { Select } from "@/components/ui/select";
 
 const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]{4,}$/u;
 
@@ -23,12 +23,8 @@ export function ProgrammeImport({
   catalogueYears: number[];
 }) {
   const router = useRouter();
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(
-    catalogueYears.includes(currentYear)
-      ? currentYear
-      : (catalogueYears[0] ?? currentYear),
-  );
+  const defaultYear = catalogueYears[0] ?? new Date().getFullYear();
+  const [yearFilter, setYearFilter] = useState(String(defaultYear));
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -40,12 +36,17 @@ export function ProgrammeImport({
 
   const normalisedCode = code.trim().toUpperCase();
   const valid = PROGRAMME_CODE_PATTERN.test(normalisedCode);
+  const year = yearFilter ? Number(yearFilter) : defaultYear;
 
   async function runImport() {
     if (running) return;
     setError(null);
     if (!valid) {
       setError("Enter a programme code, for example BCOMP.");
+      return;
+    }
+    if (!Number.isFinite(year)) {
+      setError("Choose a catalogue year.");
       return;
     }
 
@@ -155,46 +156,35 @@ export function ProgrammeImport({
         </Alert>
       ) : null}
 
-      {/*
-        No search here: programmes are not held in a list an operator picks
-        from, and one code pulls the whole structure with every course it
-        references.
-      */}
-      <Field
-        hint="Pulls the programme structure and every course it references."
-        label="Programme code"
-      >
-        <Input
-          autoComplete="off"
-          className="font-mono"
-          disabled={running}
-          onChange={(event) => {
-            setCode(event.target.value);
-            setDone(false);
-            setRunId(null);
-          }}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            void runImport();
-          }}
-          placeholder="e.g. BCOMP"
-          value={code}
+      <div className="flex flex-wrap items-end gap-2">
+        <Field
+          className="min-w-0 flex-1 basis-[min(100%,20rem)]"
+          label="Programme code"
+        >
+          <Input
+            autoComplete="off"
+            className="font-mono"
+            disabled={running}
+            onChange={(event) => {
+              setCode(event.target.value);
+              setDone(false);
+              setRunId(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              void runImport();
+            }}
+            placeholder="e.g. BCOMP"
+            value={code}
+          />
+        </Field>
+        <CatalogueYearFilter
+          onChange={(next) => setYearFilter(next || String(defaultYear))}
+          value={yearFilter}
+          years={catalogueYears}
         />
-      </Field>
-
-      <Field label="Catalogue year">
-        <Select
-          aria-label="Catalogue year"
-          disabled={running}
-          onChange={setYear}
-          options={catalogueYears.map((value) => ({
-            label: String(value),
-            value,
-          }))}
-          value={year}
-        />
-      </Field>
+      </div>
     </ImportFormShell>
   );
 }

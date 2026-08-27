@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 /**
- * Page chrome for course and programme pulls. Controls, queue and actions are
- * separate page sections rather than one boxed card.
+ * Page chrome for course and programme pulls. Matches the admin list width
+ * used by Courses and Programmes.
  */
 export function ImportFormShell({
   children,
@@ -21,7 +21,7 @@ export function ImportFormShell({
   return (
     <div
       className={cn(
-        "mx-auto flex w-full max-w-4xl flex-col gap-6 pb-10",
+        "mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10",
         className,
       )}
     >
