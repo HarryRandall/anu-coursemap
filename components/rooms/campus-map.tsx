@@ -233,6 +233,7 @@ export function CampusMap({
             type: "raster-dem",
             url: TERRAIN_URL,
             tileSize: 512,
+            attribution: "",
           });
           map.addLayer(
             {
