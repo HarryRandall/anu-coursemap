@@ -1,4 +1,6 @@
 import { notFound, redirect } from "next/navigation";
+import { AdminNavProvider } from "@/components/admin/admin-nav-context";
+import { loadOpenChangeCount } from "@/components/admin/imports/imports-overview-data";
 import { getAuthContext } from "@/lib/auth/viewer";
 import { isDemoMode } from "@/lib/supabase/config";
 
@@ -7,7 +9,13 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  if (isDemoMode()) return children;
+  if (isDemoMode()) {
+    return (
+      <AdminNavProvider openChangeCount={await loadOpenChangeCount()}>
+        {children}
+      </AdminNavProvider>
+    );
+  }
 
   const { viewer, canAccessAdmin } = await getAuthContext();
   if (!viewer) {
@@ -18,5 +26,9 @@ export default async function AdminLayout({
     notFound();
   }
 
-  return children;
+  return (
+    <AdminNavProvider openChangeCount={await loadOpenChangeCount()}>
+      {children}
+    </AdminNavProvider>
+  );
 }

@@ -38,16 +38,33 @@ const formatter = new Intl.DateTimeFormat("en-AU", {
  * URL-bound date range, with the presets people actually reach for first and
  * a two-month calendar for anything else.
  */
-export function DateRangeFilter({ label = "All dates" }: { label?: string }) {
+export function DateRangeFilter({
+  label = "All dates",
+  state,
+}: {
+  label?: string;
+  state?: {
+    value: DateRange | undefined;
+    onChange: (range: DateRange | undefined) => void;
+  };
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [draft, setDraft] = useState<DateRange | undefined>(state?.value);
+  const [month, setMonth] = useState(
+    state?.value?.from ?? fromIsoDate(searchParams.get("from")) ?? new Date(),
+  );
 
-  const from = fromIsoDate(searchParams.get("from"));
-  const to = fromIsoDate(searchParams.get("to"));
-  const selected: DateRange | undefined = from ? { from, to } : undefined;
+  const urlFrom = fromIsoDate(searchParams.get("from"));
+  const urlTo = fromIsoDate(searchParams.get("to"));
+  const selected: DateRange | undefined = state
+    ? draft
+    : urlFrom
+      ? { from: urlFrom, to: urlTo }
+      : undefined;
 
   function apply(range: DateRange | undefined) {
     const params = new URLSearchParams(searchParams.toString());
@@ -68,22 +85,40 @@ export function DateRangeFilter({ label = "All dates" }: { label?: string }) {
     const end = new Date();
     const start = new Date();
     start.setDate(start.getDate() - (days - 1));
-    apply({ from: start, to: end });
+    const range = { from: start, to: end };
+    if (state) {
+      setDraft(range);
+      state.onChange(range);
+    } else {
+      apply(range);
+    }
     setOpen(false);
   }
 
-  const summary = from
-    ? to
-      ? `${formatter.format(from)} – ${formatter.format(to)}`
-      : formatter.format(from)
+  const summary = selected?.from
+    ? selected.to
+      ? `${formatter.format(selected.from)} to ${formatter.format(selected.to)}`
+      : formatter.format(selected.from)
     : label;
 
   return (
-    <Popover onOpenChange={setOpen} open={open}>
+    <Popover
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          const nextDraft = state?.value ?? selected;
+          setDraft(nextDraft);
+          setMonth(nextDraft?.from ?? new Date());
+        } else if (state) {
+          state.onChange(draft);
+        }
+        setOpen(nextOpen);
+      }}
+      open={open}
+    >
       <PopoverTrigger asChild>
         <Button
-          aria-busy={isPending}
-          className={cn("h-10", from && "text-zinc-950")}
+          aria-busy={!state && isPending}
+          className={cn("h-9", selected?.from && "text-zinc-950")}
           size="md"
           variant="secondary"
         >
@@ -95,10 +130,11 @@ export function DateRangeFilter({ label = "All dates" }: { label?: string }) {
       <PopoverContent align="end" className="w-auto p-0">
         <div className="flex flex-col sm:flex-row">
           <Calendar
-            defaultMonth={from}
+            month={month}
             mode="range"
-            numberOfMonths={2}
-            onSelect={apply}
+            numberOfMonths={1}
+            onMonthChange={setMonth}
+            onSelect={state ? setDraft : apply}
             selected={selected}
           />
           <div className="flex shrink-0 flex-col gap-0.5 border-t border-zinc-200 p-2 sm:border-t-0 sm:border-l">
@@ -112,11 +148,16 @@ export function DateRangeFilter({ label = "All dates" }: { label?: string }) {
                 {preset.label}
               </button>
             ))}
-            {from ? (
+            {selected?.from ? (
               <button
                 className="mt-1 rounded-md border-t border-zinc-100 px-3 py-1.5 text-left text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
                 onClick={() => {
-                  apply(undefined);
+                  if (state) {
+                    setDraft(undefined);
+                    state.onChange(undefined);
+                  } else {
+                    apply(undefined);
+                  }
                   setOpen(false);
                 }}
                 type="button"

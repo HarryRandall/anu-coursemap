@@ -9,8 +9,8 @@ import {
   ClipboardList,
   CircleHelp,
   Compass,
+  GitCompareArrows,
   GraduationCap,
-  History,
   House,
   KeyRound,
   LayoutDashboard,
@@ -45,31 +45,30 @@ const labels: Record<string, string> = {
   "study-calendar": "Use the study calendar",
   "academic-record": "Read your academic record",
   timetable: "Timetable",
-  activity: "Activity",
-  history: "History",
   profile: "Profile",
   admin: "Admin",
   programmes: "Programmes",
   users: "Users",
   roles: "Roles",
-  sync: "Imports",
   imports: "Imports",
-  new: "New import",
+  sync: "Sync",
+  changes: "Changes",
 };
 
-/** Each crumb carries the same icon its sidebar entry uses. */
+/**
+ * Each crumb carries the same icon its sidebar entry uses. `imports` has none
+ * on purpose: it is a group heading in the sidebar too, and giving it one put
+ * the same refresh glyph next to itself in "Imports > Sync".
+ */
 const icons: Record<string, LucideIcon> = {
   academic: ClipboardList,
-  activity: ListChecks,
   admin: ShieldCheck,
   calendar: CalendarDays,
+  changes: GitCompareArrows,
   courses: BookOpen,
   dashboard: House,
   help: CircleHelp,
-  history: History,
-  imports: RefreshCw,
   "key-dates": CalendarDays,
-  new: RefreshCw,
   plan: Table,
   profile: UserRound,
   programmes: GraduationCap,
@@ -82,6 +81,19 @@ const icons: Record<string, LucideIcon> = {
   users: Users,
 };
 
+const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}$/iu;
+
+/**
+ * Only course codes are shouted. Upper-casing every unmapped segment turned
+ * ordinary path parts into headlines -- /admin/imports/runs read as "RUNS".
+ */
+function fallbackLabel(segment: string) {
+  const value = decodeURIComponent(segment);
+  if (COURSE_CODE_SEGMENT.test(value)) return value.toUpperCase();
+  const words = value.replace(/[-_]+/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   const segments = pathname.split("/").filter(Boolean);
   const admin = segments[0] === "admin";
@@ -91,18 +103,12 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   segments.forEach((segment, index) => {
     href += `/${segment}`;
     const isLast = index === segments.length - 1;
-    // Dynamic course code segment (e.g. /courses/COMP2100)
-    const label =
-      admin &&
-      (segments[1] === "sync" || segments[1] === "imports") &&
-      segment === "history"
-        ? "Historical changes"
-        : (labels[segment] ?? decodeURIComponent(segment).toUpperCase());
+    const label = labels[segment] ?? fallbackLabel(segment);
     const icon =
       admin && index === 0
         ? LayoutDashboard
         : (icons[segment] ??
-          (/^[A-Z]{4}\d{4}$/iu.test(segment) ? BookOpen : undefined));
+          (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
     crumbs.push({
       icon,
       label,

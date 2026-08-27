@@ -16,19 +16,21 @@ const nextConfig: NextConfig = {
         destination: "/signup",
         permanent: true,
       },
+      // The legacy /admin/sync paths point straight at the run history rather
+      // than at /admin/imports, which is itself only a redirect now.
       {
         source: "/admin/sync/courses",
-        destination: "/admin/imports/new",
+        destination: "/admin/imports/courses",
         permanent: false,
       },
       {
         source: "/admin/sync/preview",
-        destination: "/admin/imports/new",
+        destination: "/admin/imports/sync",
         permanent: false,
       },
       {
         source: "/admin/sync",
-        destination: "/admin/imports",
+        destination: "/admin/imports/sync",
         permanent: false,
       },
       {

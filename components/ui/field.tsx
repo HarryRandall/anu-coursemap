@@ -80,6 +80,14 @@ export function FieldError({
   );
 }
 
+/**
+ * For inputs owned by another library -- a cmdk combobox input, for one --
+ * which cannot be swapped for the `Input` element but must still look like it.
+ */
+export function inputClasses(className?: string) {
+  return cn(controlClasses, className);
+}
+
 export function Input({ className, ...rest }: ComponentPropsWithRef<"input">) {
   return (
     <input
