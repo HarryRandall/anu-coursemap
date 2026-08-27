@@ -6,10 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ImportSearchResult = {
   code: string;
-  imported: boolean;
   subject: string | null;
   title: string | null;
-  year: number | null;
+  /** Catalogue years already stored for this course, newest first. */
+  years: number[];
 };
 
 const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
@@ -17,24 +17,21 @@ const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
 const DEMO_RESULTS: ImportSearchResult[] = [
   {
     code: "COMP1100",
-    imported: true,
     subject: "COMP",
     title: "Programming as Problem Solving",
-    year: 2026,
+    years: [2027, 2026],
   },
   {
     code: "COMP1110",
-    imported: true,
     subject: "COMP",
     title: "Structured Programming",
-    year: 2026,
+    years: [2027],
   },
   {
     code: "COMP2100",
-    imported: false,
     subject: "COMP",
     title: "Software Design Methodologies",
-    year: 2026,
+    years: [2026],
   },
 ];
 
@@ -51,7 +48,11 @@ export async function searchImportableCourses(
   if (term.length < 2) return [];
   if (!(await canManageCatalogueImports())) return [];
   if (isDemoMode()) {
-    return DEMO_RESULTS.filter((result) => result.code.includes(term));
+    return DEMO_RESULTS.filter(
+      (result) =>
+        result.code.includes(term) ||
+        (result.title?.toUpperCase().includes(term) ?? false),
+    );
   }
 
   try {
@@ -82,31 +83,41 @@ export async function searchImportableCourses(
     if (yearsError) throw yearsError;
     const yearById = new Map((years ?? []).map((row) => [row.id, row.year]));
 
-    // Keep the newest catalogue year per course so the row says which version
-    // Coursemap is actually holding.
-    const latestByCourse = new Map<
+    const byCourse = new Map<
       number,
-      { subject: string | null; title: string | null; year: number | null }
+      {
+        subject: string | null;
+        title: string | null;
+        years: Set<number>;
+      }
     >();
     for (const version of versions ?? []) {
-      const year = yearById.get(version.catalogue_year_id) ?? null;
-      const existing = latestByCourse.get(version.course_id);
-      if (existing && (existing.year ?? 0) >= (year ?? 0)) continue;
-      latestByCourse.set(version.course_id, {
+      const year = yearById.get(version.catalogue_year_id);
+      const existing = byCourse.get(version.course_id) ?? {
         subject: version.subject,
         title: version.title,
-        year,
-      });
+        years: new Set<number>(),
+      };
+      if (year != null) existing.years.add(year);
+      // Prefer the newest year's title when several versions exist.
+      if (
+        year != null &&
+        [...existing.years].every((held) => held <= year)
+      ) {
+        existing.subject = version.subject;
+        existing.title = version.title;
+      }
+      byCourse.set(version.course_id, existing);
     }
 
     return rows.map((course) => {
-      const version = latestByCourse.get(course.id);
+      const version = byCourse.get(course.id);
+      const held = version ? [...version.years].sort((a, b) => b - a) : [];
       return {
         code: course.code,
-        imported: version !== undefined,
         subject: version?.subject ?? null,
         title: version?.title ?? null,
-        year: version?.year ?? null,
+        years: held,
       };
     });
   } catch {

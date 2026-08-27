@@ -3,8 +3,8 @@
 import { Command } from "cmdk";
 import { CheckCircle2, Loader2, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ImportFormShell } from "@/components/admin/imports/import-form-shell";
 import type { ImportProgressEvent } from "@/components/admin/imports/import-run-status";
@@ -29,20 +29,35 @@ import {
   TableRow,
 } from "@/components/ui/data-table";
 import { Field, inputClasses } from "@/components/ui/field";
+import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 import type { Tone } from "@/lib/ui";
 
 const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
+const PAGE_SIZE = 10;
 
 type QueueRow = {
   code: string;
   detail: string | null;
-  holdingYear: number | null;
   status: string | null;
   subject: string | null;
   title: string | null;
+  years: number[];
 };
+
+/**
+ * What importing into the selected catalogue year will do, relative to what
+ * Coursemap already holds for that course.
+ */
+function planChip(
+  years: readonly number[],
+  targetYear: number,
+): { label: string; tone: Tone } {
+  if (years.length === 0) return { label: "New", tone: "info" };
+  if (years.includes(targetYear)) return { label: "Refresh", tone: "neutral" };
+  return { label: "Update", tone: "brand" };
+}
 
 function actionLabel(action: string | undefined) {
   switch (action) {
@@ -78,12 +93,10 @@ function progressTone(status: string | null): Tone {
 
 export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const router = useRouter();
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(
-    catalogueYears.includes(currentYear)
-      ? currentYear
-      : (catalogueYears[0] ?? currentYear),
-  );
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Prefer the newest catalogue year so "next year" is the default pull target.
+  const [year, setYear] = useState(catalogueYears[0] ?? new Date().getFullYear());
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ImportSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -99,6 +112,19 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const normalisedQuery = query.trim().toUpperCase();
+  const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
+  const pageCount = Math.max(1, Math.ceil(picks.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = picks.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  useEffect(() => {
+    if (page === safePage) return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (safePage <= 1) params.delete("page");
+    else params.set("page", String(safePage));
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
+  }, [page, pageCount, pathname, router, safePage, searchParams]);
 
   function updateQuery(next: string) {
     setQuery(next);
@@ -128,10 +154,12 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     return normalisedQuery;
   }, [normalisedQuery, results]);
 
+  // Only mount the list once there is something to show. An empty bordered
+  // shell while the first request is in flight was shifting the page.
   const showList =
     open &&
-    (searching || results.length > 0 || unmatchedCode !== null) &&
-    normalisedQuery.length >= 2;
+    normalisedQuery.length >= 2 &&
+    (results.length > 0 || unmatchedCode !== null || (!searching && results.length === 0));
 
   const picked = useMemo(
     () => new Set(picks.map((pick) => pick.code)),
@@ -150,9 +178,9 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
 
   function add(pick: {
     code: string;
-    holdingYear: number | null;
     subject: string | null;
     title: string | null;
+    years: number[];
   }) {
     setError(null);
     setDone(false);
@@ -190,6 +218,12 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
         pick.code === code ? { ...pick, ...patch } : pick,
       ),
     );
+  }
+
+  function changeYear(next: number) {
+    setYear(next);
+    setDone(false);
+    setRunId(null);
   }
 
   async function runImport() {
@@ -248,7 +282,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
 
       setDone(true);
       toast.success(
-        `Imported ${picks.length} ${picks.length === 1 ? "course" : "courses"}.`,
+        `Imported ${picks.length} ${picks.length === 1 ? "course" : "courses"} for ${year}.`,
       );
       router.refresh();
     } catch (cause) {
@@ -322,31 +356,27 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-end">
-        <Command
-          className="relative min-w-0"
-          shouldFilter={false}
-          onBlur={(event) => {
-            if (event.currentTarget.contains(event.relatedTarget as Node)) {
-              return;
-            }
-            setOpen(false);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setOpen(false);
-          }}
-        >
-          <Field
-            hint={
-              normalisedQuery.length > 0 && normalisedQuery.length < 2
-                ? "Keep typing to search."
-                : undefined
-            }
-            label="Find a course"
+        <Field label="Find a course">
+          <Command
+            shouldFilter={false}
+            onBlur={(event) => {
+              if (event.currentTarget.contains(event.relatedTarget as Node)) {
+                return;
+              }
+              setOpen(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setOpen(false);
+            }}
           >
+            {/*
+              Relative only on the input shell so the result list overlays the
+              page instead of growing the field and shoving the table down.
+            */}
             <div className="relative">
               <Search
                 aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+                className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400"
               />
               <Command.Input
                 aria-label="Find a course"
@@ -367,84 +397,87 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                   className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-zinc-400"
                 />
               ) : null}
+
+              {showList ? (
+                <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
+                  <CommandList className="max-h-72">
+                    {!searching &&
+                    results.length === 0 &&
+                    !unmatchedCode ? (
+                      <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
+                        No match. Type a full code like COMP1100 to pull one
+                        Coursemap has never seen.
+                      </p>
+                    ) : null}
+
+                    {unmatchedCode ? (
+                      <CommandItem
+                        disabled={picked.has(unmatchedCode)}
+                        onSelect={() =>
+                          add({
+                            code: unmatchedCode,
+                            subject: unmatchedCode.slice(0, 4),
+                            title: null,
+                            years: [],
+                          })
+                        }
+                        value={unmatchedCode}
+                      >
+                        <Plus
+                          aria-hidden="true"
+                          className="size-4 shrink-0 text-brand-600"
+                        />
+                        <span className="font-mono text-zinc-900">
+                          {unmatchedCode}
+                        </span>
+                        <Badge className="ml-auto" tone="info">
+                          New
+                        </Badge>
+                      </CommandItem>
+                    ) : null}
+
+                    {results.map((result) => {
+                      const chip = planChip(result.years, year);
+                      return (
+                        <CommandItem
+                          disabled={picked.has(result.code)}
+                          key={result.code}
+                          onSelect={() =>
+                            add({
+                              code: result.code,
+                              subject: result.subject,
+                              title: result.title,
+                              years: result.years,
+                            })
+                          }
+                          value={result.code}
+                        >
+                          <span className="w-[76px] shrink-0 font-mono text-zinc-900">
+                            {result.code}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-zinc-700">
+                            {result.title ?? "Untitled"}
+                          </span>
+                          <Badge
+                            tone={picked.has(result.code) ? "neutral" : chip.tone}
+                          >
+                            {picked.has(result.code) ? "Queued" : chip.label}
+                          </Badge>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandList>
+                </div>
+              ) : null}
             </div>
-          </Field>
-
-          {showList ? (
-            <div className="absolute top-full right-0 left-0 z-20 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
-              <CommandList className="max-h-72">
-                {!searching && results.length === 0 && !unmatchedCode ? (
-                  <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
-                    No match. Type a full code like COMP1100 to pull one
-                    Coursemap has never seen.
-                  </p>
-                ) : null}
-
-                {unmatchedCode ? (
-                  <CommandItem
-                    disabled={picked.has(unmatchedCode)}
-                    onSelect={() =>
-                      add({
-                        code: unmatchedCode,
-                        holdingYear: null,
-                        subject: unmatchedCode.slice(0, 4),
-                        title: null,
-                      })
-                    }
-                    value={unmatchedCode}
-                  >
-                    <Plus
-                      aria-hidden="true"
-                      className="size-4 shrink-0 text-brand-600"
-                    />
-                    <span className="font-mono text-zinc-900">
-                      {unmatchedCode}
-                    </span>
-                    <span className="min-w-0 truncate text-zinc-500">
-                      Not in Coursemap yet - fetch from ANU
-                    </span>
-                  </CommandItem>
-                ) : null}
-
-                {results.map((result) => (
-                  <CommandItem
-                    disabled={picked.has(result.code)}
-                    key={result.code}
-                    onSelect={() =>
-                      add({
-                        code: result.code,
-                        holdingYear: result.year,
-                        subject: result.subject,
-                        title: result.title,
-                      })
-                    }
-                    value={result.code}
-                  >
-                    <span className="w-[76px] shrink-0 font-mono text-zinc-900">
-                      {result.code}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-zinc-700">
-                      {result.title ?? "Untitled"}
-                    </span>
-                    <span className="shrink-0 text-[13px] text-zinc-400 tabular-nums">
-                      {picked.has(result.code)
-                        ? "Added"
-                        : result.imported && result.year
-                          ? `Holding ${result.year}`
-                          : "New"}
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandList>
-            </div>
-          ) : null}
-        </Command>
+          </Command>
+        </Field>
 
         <Field label="Catalogue year">
           <Select
             aria-label="Catalogue year"
             disabled={running}
-            onChange={setYear}
+            onChange={changeYear}
             options={catalogueYears.map((value) => ({
               label: String(value),
               value,
@@ -454,26 +487,20 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
         </Field>
       </div>
 
-      <section aria-label="Import queue" className="space-y-2">
+      <section aria-label="Import queue" className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-zinc-900">
-              {picks.length === 0
-                ? "Queue"
-                : `${picks.length} ${picks.length === 1 ? "course" : "courses"} for ${year}`}
-            </p>
-            <p className="text-[13px] text-zinc-500">
-              {running
-                ? "Progress updates in the table as each page is pulled."
-                : "Each row is imported into the catalogue year selected above."}
-            </p>
-          </div>
+          <p className="text-sm font-medium text-zinc-900">
+            {picks.length === 0
+              ? "Queue"
+              : `${picks.length} ${picks.length === 1 ? "course" : "courses"} · ${year}`}
+          </p>
           {picks.length > 0 && !running ? (
             <Button
               onClick={() => {
                 setPicks([]);
                 setDone(false);
                 setRunId(null);
+                router.replace(pathname);
               }}
               size="sm"
               variant="ghost"
@@ -483,7 +510,22 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           ) : null}
         </div>
 
-        <DataTableShell>
+        <DataTableShell
+          footer={
+            picks.length > 0 ? (
+              <Pagination
+                itemName="courses"
+                page={safePage}
+                pageSize={PAGE_SIZE}
+                pathname={pathname}
+                searchParams={{
+                  page: safePage > 1 ? String(safePage) : undefined,
+                }}
+                total={picks.length}
+              />
+            ) : undefined
+          }
+        >
           {picks.length === 0 ? (
             <DataTableEmpty
               description="Search by code or title, then add rows to the queue."
@@ -497,7 +539,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                   <TableHead>Code</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Year</TableHead>
-                  <TableHead>In Coursemap</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Progress</TableHead>
                   <TableHead className="w-12">
                     <span className="sr-only">Remove</span>
@@ -505,7 +547,8 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {picks.map((pick) => {
+                {pageRows.map((pick) => {
+                  const chip = planChip(pick.years, year);
                   const active =
                     running &&
                     current?.code === pick.code &&
@@ -520,20 +563,14 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                       </TableCell>
                       <TableCell className="max-w-[18rem] truncate">
                         {pick.title ?? (
-                          <span className="text-zinc-400">Not imported yet</span>
+                          <span className="text-zinc-400">Untitled</span>
                         )}
                       </TableCell>
                       <TableCell className="tabular-nums text-zinc-700">
                         {year}
                       </TableCell>
-                      <TableCell className="text-zinc-600">
-                        {pick.holdingYear ? (
-                          <span className="tabular-nums">
-                            Holding {pick.holdingYear}
-                          </span>
-                        ) : (
-                          <span className="text-zinc-400">New</span>
-                        )}
+                      <TableCell>
+                        <Badge tone={chip.tone}>{chip.label}</Badge>
                       </TableCell>
                       <TableCell>
                         {pick.status ? (
