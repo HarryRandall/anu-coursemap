@@ -112,7 +112,6 @@ export function ProgrammeImport({
   return (
     <ImportFormShell
       title="Import programmes"
-      wide
       progress={
         running || done ? (
           <ImportRunStatus
@@ -133,6 +132,9 @@ export function ProgrammeImport({
       }
       footer={
         <>
+          <ButtonLink href="/admin/imports/sync" variant="secondary">
+            {done ? "Back to sync" : "Cancel"}
+          </ButtonLink>
           <Button
             aria-busy={running}
             disabled={running || !valid}
@@ -144,9 +146,6 @@ export function ProgrammeImport({
             ) : null}
             {running ? "Importing" : "Import programme"}
           </Button>
-          <ButtonLink href="/admin/imports/sync" variant="ghost">
-            {done ? "Back to sync" : "Cancel"}
-          </ButtonLink>
         </>
       }
     >

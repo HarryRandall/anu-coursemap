@@ -262,31 +262,10 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   return (
     <ImportFormShell
       title="Import courses"
-      wide
       footer={
         <>
-          <Button
-            aria-busy={running}
-            disabled={running || picks.length === 0}
-            onClick={() => void runImport()}
-            variant="primary"
-          >
-            {running ? (
-              <Loader2 aria-hidden="true" className="animate-spin" size={16} />
-            ) : null}
-            {running
-              ? current?.index && current.total
-                ? `Importing ${current.index} of ${current.total}`
-                : "Importing"
-              : picks.length === 0
-                ? "Import"
-                : `Import ${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
-          </Button>
-          <ButtonLink href="/admin/imports/sync" variant="ghost">
-            {done ? "Back to sync" : "Cancel"}
-          </ButtonLink>
           {done ? (
-            <span className="ml-auto flex items-center gap-2 text-[13px] text-zinc-600">
+            <span className="mr-auto flex items-center gap-2 text-[13px] text-zinc-600">
               <CheckCircle2
                 aria-hidden="true"
                 className="size-4 text-emerald-600"
@@ -308,11 +287,31 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           ) : running && current?.total ? (
             <span
               aria-live="polite"
-              className="ml-auto text-[13px] text-zinc-500 tabular-nums"
+              className="mr-auto text-[13px] text-zinc-500 tabular-nums"
             >
               {completedCount} of {current.total} finished
             </span>
           ) : null}
+          <ButtonLink href="/admin/imports/sync" variant="secondary">
+            {done ? "Back to sync" : "Cancel"}
+          </ButtonLink>
+          <Button
+            aria-busy={running}
+            disabled={running || picks.length === 0}
+            onClick={() => void runImport()}
+            variant="primary"
+          >
+            {running ? (
+              <Loader2 aria-hidden="true" className="animate-spin" size={16} />
+            ) : null}
+            {running
+              ? current?.index && current.total
+                ? `Importing ${current.index} of ${current.total}`
+                : "Importing"
+              : picks.length === 0
+                ? "Import"
+                : `Import ${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
+          </Button>
         </>
       }
     >
