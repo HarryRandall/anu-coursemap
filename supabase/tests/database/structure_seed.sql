@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(14);
+select extensions.plan(15);
 
 select extensions.is(
   (
@@ -80,6 +80,24 @@ select extensions.ok(
   'the structure seed has a successful provenance run'
 );
 
+-- These describe requirement shapes the seed could not model (tag filters,
+-- maximum-unit rules). They state no old value and no new value, so they are
+-- parser diagnostics, not catalogue changes, and live in
+-- catalogue_import_diagnostics rather than the review queue.
+select extensions.is(
+  (
+    select count(*)
+    from public.catalogue_import_diagnostics as diagnostics
+    join public.catalogue_import_items as items
+      on items.id = diagnostics.import_item_id
+    join public.catalogue_import_runs as runs
+      on runs.id = items.run_id
+    where runs.scope = 'structure_codes:BCOMP,SOFT-MAJ'
+  ),
+  8::bigint,
+  'unsupported structure rules are recorded as import diagnostics'
+);
+
 select extensions.is(
   (
     select count(*)
@@ -89,10 +107,9 @@ select extensions.is(
     join public.catalogue_import_runs as runs
       on runs.id = items.run_id
     where runs.scope = 'structure_codes:BCOMP,SOFT-MAJ'
-      and reviews.status = 'open'
   ),
-  8::bigint,
-  'unsupported structure rules are explicitly queued for review'
+  0::bigint,
+  'the structure seed raises no catalogue change reviews'
 );
 
 select extensions.is(

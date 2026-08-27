@@ -194,7 +194,7 @@ test("extracts official course detail sections without inventing missing fields"
       </div>
       <div id="introduction"><p>First paragraph.</p><p>Second paragraph.</p></div>
       <h2 id="learning-outcomes">Learning Outcomes</h2><ol><li>Build correct programs.</li></ol>
-      <h2 id="indicative-assessment">Indicative Assessment</h2><ol><li>Assignments (40) [LO 1,2]</li></ol>
+      <h2 id="indicative-assessment">Indicative Assessment</h2><ol><li>Assignments (40) [LO 1,2]</li><li>Research essay (2000) [LO 3]</li></ol>
       <h2 id="workload">Workload</h2><p>Students should allow 130 hours.</p>
       <h2 id="fees">Fees</h2><dl><dt>Student Contribution Band:</dt><dd>2</dd></dl>
       <div id="indicative-fees__domestic"><td>$5520</td></div>
@@ -209,7 +209,22 @@ test("extracts official course detail sections without inventing missing fields"
     areasOfInterest: ["Computer Science", "Software Engineering"],
     learningOutcomes: ["Build correct programs."],
     indicativeAssessment: [
-      { title: "Assignments", weight: 40, outcomes: [1, 2] },
+      {
+        title: "Assignments",
+        weight: 40,
+        outcomes: [1, 2],
+        sourceText: "Assignments (40) [LO 1,2]",
+      },
+      // "(2000)" is a word count, not a percentage. course_assessment_items
+      // constrains weight to 0-100, and the importer runs one transaction for
+      // the whole manifest, so letting this through would fail every course in
+      // the run rather than just this line.
+      {
+        title: "Research essay",
+        weight: null,
+        outcomes: [3],
+        sourceText: "Research essay (2000) [LO 3]",
+      },
     ],
     workload: "Students should allow 130 hours.",
     workloadHours: 130,

@@ -773,14 +773,25 @@ export async function loadAdminCourseReview(
       deliveryMode: offering.delivery_mode,
       id: offering.id,
       location: offering.location,
-      sessions: sessionRows
-        .filter((session) => session.course_offering_id === offering.id)
-        .map((session) => ({
-          deliveryMode: session.delivery_mode,
-          location: session.location,
-          period:
-            periodNameById.get(session.academic_period_id) ?? "Unmapped period",
-        })),
+      // offering_sessions is keyed per class. The review view summarises by
+      // period, so collapse the classes of a period to the first row rather
+      // than listing the same period several times.
+      sessions: [
+        ...new Map(
+          sessionRows
+            .filter((session) => session.course_offering_id === offering.id)
+            .map((session) => [
+              session.academic_period_id,
+              {
+                deliveryMode: session.delivery_mode,
+                location: session.location,
+                period:
+                  periodNameById.get(session.academic_period_id) ??
+                  "Unmapped period",
+              },
+            ]),
+        ).values(),
+      ],
       status: offering.status,
     })),
     publicationStatus: versionRow.publication_status,

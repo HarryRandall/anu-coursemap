@@ -256,15 +256,25 @@ async function loadOfferings(
   >();
   for (const offering of offeringRows) {
     const sessionsForOffering = sessionsByOffering.get(offering.id) ?? [];
-    const periodNames = sessionsForOffering
-      .map((session) => periodsById.get(session.academic_period_id)?.name)
-      .filter((name): name is string => Boolean(name));
+    // offering_sessions is keyed per class, so a period with two classes
+    // returns two rows. Students see availability by period, not by class.
+    const periodNames = [
+      ...new Set(
+        sessionsForOffering
+          .map((session) => periodsById.get(session.academic_period_id)?.name)
+          .filter((name): name is string => Boolean(name)),
+      ),
+    ];
     const enriched = {
       ...offering,
       periodNames,
-      sessionDeliveryModes: sessionsForOffering
-        .map((session) => session.delivery_mode)
-        .filter((mode): mode is string => Boolean(mode)),
+      sessionDeliveryModes: [
+        ...new Set(
+          sessionsForOffering
+            .map((session) => session.delivery_mode)
+            .filter((mode): mode is string => Boolean(mode)),
+        ),
+      ],
     };
     const existing = byCourseVersion.get(offering.course_version_id) ?? [];
     existing.push(enriched);

@@ -434,7 +434,7 @@ begin
   join public.academic_periods as periods
     on periods.calendar_year = 2026
    and periods.code = session_codes.code
-  on conflict (course_offering_id, academic_period_id) do update
+  on conflict on constraint offering_sessions_offering_period_class_unique do update
   set delivery_mode = excluded.delivery_mode,
       location = excluded.location,
       source_document_id = excluded.source_document_id,

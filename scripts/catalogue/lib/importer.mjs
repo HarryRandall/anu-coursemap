@@ -368,6 +368,172 @@ async function upsertCourse(tx, code) {
   return { action: "unchanged", id: existing.id };
 }
 
+function normaliseAssessmentItem(item) {
+  if (!item || typeof item !== "object") return null;
+  const title = cleanText(item.title);
+  if (!title) return null;
+  // course_assessment_items.weight is constrained to 0-100. The parser already
+  // discards out-of-range values, but this runs inside the single transaction
+  // that covers the whole manifest, so a bad value here fails every course in
+  // the run rather than one line. Defended twice on purpose.
+  const weight =
+    typeof item.weight === "number" &&
+    Number.isFinite(item.weight) &&
+    item.weight >= 0 &&
+    item.weight <= 100
+      ? Number(item.weight.toFixed(2))
+      : null;
+  const outcomes = (Array.isArray(item.outcomes) ? item.outcomes : []).filter(
+    (outcome) => Number.isInteger(outcome) && outcome > 0 && outcome <= 32_767,
+  );
+  return {
+    outcomes,
+    sourceText: cleanText(item.sourceText) ?? title,
+    title,
+    weight,
+  };
+}
+
+/**
+ * Writes the fee, workload, learning outcome and assessment facts ANU
+ * publishes. Learning outcomes and assessment items are ordered lists that ANU
+ * retitles freely, so they are reconciled by replace-on-change -- compared
+ * first, and only rewritten when they actually differ -- which is the same
+ * shape upsertStructuredCourseRule uses for rule trees. Diffing them by
+ * natural key, the way course rule references are reconciled, does not apply:
+ * their identity is their position.
+ */
+async function importCourseRichDetails(tx, { courseVersionId, rich }) {
+  const actions = [];
+  const details = rich && typeof rich === "object" ? rich : {};
+
+  const numeric = (value) =>
+    typeof value === "number" && Number.isFinite(value) ? value : null;
+  const feeBand = numeric(details.feeBand);
+  const feeYear = numeric(details.feeYear);
+  const domesticFee = numeric(details.domesticFee);
+  const internationalFee = numeric(details.internationalFee);
+  const workload = cleanOptionalText(details.workload);
+  const workloadHours = numeric(details.workloadHours);
+
+  const updatedScalars = await tx`
+    update public.course_versions
+    set
+      student_contribution_band = ${feeBand},
+      fee_year = ${feeYear},
+      fee_domestic = ${domesticFee},
+      fee_international = ${internationalFee},
+      workload = ${workload},
+      workload_hours = ${workloadHours}
+    where id = ${courseVersionId}
+      and (
+        student_contribution_band,
+        fee_year,
+        fee_domestic,
+        fee_international,
+        workload,
+        workload_hours
+      ) is distinct from (
+        ${feeBand},
+        ${feeYear},
+        ${domesticFee},
+        ${internationalFee},
+        ${workload},
+        ${workloadHours}
+      )
+    returning id
+  `;
+  if (updatedScalars.length > 0) {
+    actions.push("updated");
+  }
+
+  const outcomes = (
+    Array.isArray(details.learningOutcomes) ? details.learningOutcomes : []
+  )
+    .map((body) => cleanText(body))
+    .filter(Boolean);
+  const storedOutcomes = await tx`
+    select body
+    from public.course_learning_outcomes
+    where course_version_id = ${courseVersionId}
+    order by position
+  `;
+  const outcomesMatch =
+    storedOutcomes.length === outcomes.length &&
+    storedOutcomes.every((row, index) => row.body === outcomes[index]);
+  if (!outcomesMatch) {
+    await tx`
+      delete from public.course_learning_outcomes
+      where course_version_id = ${courseVersionId}
+    `;
+    for (const [index, body] of outcomes.entries()) {
+      // position is 1-based: the column is constrained to position > 0.
+      await tx`
+        insert into public.course_learning_outcomes (
+          course_version_id, position, body
+        )
+        values (${courseVersionId}, ${index + 1}, ${body})
+      `;
+    }
+    if (storedOutcomes.length > 0 || outcomes.length > 0) {
+      actions.push("updated");
+    }
+  }
+
+  const assessments = (
+    Array.isArray(details.indicativeAssessment)
+      ? details.indicativeAssessment
+      : []
+  )
+    .map(normaliseAssessmentItem)
+    .filter(Boolean);
+  const storedAssessments = await tx`
+    select title, weight, learning_outcomes, source_text
+    from public.course_assessment_items
+    where course_version_id = ${courseVersionId}
+    order by position
+  `;
+  const assessmentsMatch =
+    storedAssessments.length === assessments.length &&
+    storedAssessments.every((row, index) => {
+      const item = assessments[index];
+      return (
+        row.title === item.title &&
+        (row.weight === null ? null : Number(row.weight)) === item.weight &&
+        row.source_text === item.sourceText &&
+        JSON.stringify(row.learning_outcomes ?? []) ===
+          JSON.stringify(item.outcomes)
+      );
+    });
+  if (!assessmentsMatch) {
+    await tx`
+      delete from public.course_assessment_items
+      where course_version_id = ${courseVersionId}
+    `;
+    for (const [index, item] of assessments.entries()) {
+      await tx`
+        insert into public.course_assessment_items (
+          course_version_id, position, title, weight, learning_outcomes,
+          source_text
+        )
+        values (
+          ${courseVersionId},
+          ${index + 1},
+          ${item.title},
+          ${item.weight},
+          ${item.outcomes},
+          ${item.sourceText}
+        )
+      `;
+    }
+    if (storedAssessments.length > 0 || assessments.length > 0) {
+      actions.push("updated");
+    }
+  }
+
+  return combineActions(actions);
+}
+
 async function upsertCourseVersion(
   tx,
   { catalogueYearId, course, courseId, reviewState, sourceDocumentId },
@@ -597,24 +763,46 @@ async function upsertOfferingSession(
 ) {
   const deliveryMode = cleanOptionalText(session.deliveryMode);
   const location = cleanOptionalText(session.location);
+  // ANU's own class identifier. It is what distinguishes two classes running
+  // in the same period, so it is part of the natural key rather than a detail.
+  const classNumber = cleanOptionalText(session.classNumber);
+  const startsOn = cleanDate(session.startsOn);
+  const endsOn = cleanDate(session.endsOn);
+  const enrolClosesOn = cleanDate(session.lastEnrolmentDate);
+  const censusOn = cleanDate(session.censusDate);
+  const classSummaryUrl = cleanOptionalText(session.classSummaryUrl);
+
   const inserted = await tx`
     insert into public.offering_sessions (
       course_offering_id,
       catalogue_year_id,
       academic_period_id,
+      class_number,
       delivery_mode,
       location,
+      starts_on,
+      ends_on,
+      enrol_closes_on,
+      census_on,
+      class_summary_url,
       source_document_id
     )
     values (
       ${courseOfferingId},
       ${catalogueYearId},
       ${academicPeriodId},
+      ${classNumber},
       ${deliveryMode},
       ${location},
+      ${startsOn},
+      ${endsOn},
+      ${enrolClosesOn},
+      ${censusOn},
+      ${classSummaryUrl},
       ${sourceDocumentId}
     )
-    on conflict (course_offering_id, academic_period_id) do nothing
+    on conflict on constraint offering_sessions_offering_period_class_unique
+      do nothing
     returning id
   `;
 
@@ -627,12 +815,32 @@ async function upsertOfferingSession(
     set
       delivery_mode = ${deliveryMode},
       location = ${location},
+      starts_on = ${startsOn},
+      ends_on = ${endsOn},
+      enrol_closes_on = ${enrolClosesOn},
+      census_on = ${censusOn},
+      class_summary_url = ${classSummaryUrl},
       source_document_id = ${sourceDocumentId}
     where course_offering_id = ${courseOfferingId}
       and academic_period_id = ${academicPeriodId}
-      and (delivery_mode, location, source_document_id) is distinct from (
+      and class_number is not distinct from ${classNumber}
+      and (
+        delivery_mode,
+        location,
+        starts_on,
+        ends_on,
+        enrol_closes_on,
+        census_on,
+        class_summary_url,
+        source_document_id
+      ) is distinct from (
         ${deliveryMode},
         ${location},
+        ${startsOn},
+        ${endsOn},
+        ${enrolClosesOn},
+        ${censusOn},
+        ${classSummaryUrl},
         ${sourceDocumentId}
       )
     returning id
@@ -647,6 +855,7 @@ async function upsertOfferingSession(
     from public.offering_sessions
     where course_offering_id = ${courseOfferingId}
       and academic_period_id = ${academicPeriodId}
+      and class_number is not distinct from ${classNumber}
   `;
   return { action: "unchanged", id: existing.id };
 }
@@ -757,6 +966,7 @@ async function upsertCourseRule(
         action: "unchanged",
         id: ruleId,
         preserved: sourceMismatch,
+        preservedSourceText: existing.source_text,
       };
     }
 
@@ -983,6 +1193,7 @@ async function upsertStructuredCourseRule(
         action: "unchanged",
         id: ruleId,
         preserved: sourceMismatch,
+        preservedSourceText: existing.source_text,
       };
     }
 
@@ -1095,14 +1306,17 @@ async function reconcileMissingCourseRules(
       where course_version_id = ${courseVersionId}
         and rule_kind in ('prerequisite', 'incompatibility')
     `;
-    let hasUnreconciledRules = false;
+    const preservedRuleTexts = [];
     for (const existing of existingRules) {
       const importerOwned = await isImporterOwnedRule(tx, existing);
-      hasUnreconciledRules ||=
+      if (
         importerOwned ||
-        String(existing.source_document_id) !== String(sourceDocumentId);
+        String(existing.source_document_id) !== String(sourceDocumentId)
+      ) {
+        preservedRuleTexts.push(existing.source_text);
+      }
     }
-    if (hasUnreconciledRules) {
+    if (preservedRuleTexts.length > 0) {
       appendUniqueDiagnostic(
         diagnostics,
         diagnostic({
@@ -1111,6 +1325,10 @@ async function reconcileMissingCourseRules(
           message:
             "Existing course rules were preserved because the source requisite section is incomplete.",
           severity: "warning",
+          // The source no longer states these, so there is no new value. What
+          // a reviewer needs to see is what Coursemap is still holding.
+          oldValue: preservedRuleTexts.filter(Boolean),
+          newValue: null,
         }),
       );
       requiresParentReview = true;
@@ -1164,6 +1382,8 @@ async function reconcileMissingCourseRules(
         message: `An existing ${ruleKind} rule was preserved after it disappeared from this source and requires manual reconciliation.`,
         severity: "warning",
         sourceFragment: existing.source_text,
+        oldValue: existing.source_text,
+        newValue: null,
       }),
     );
     requiresParentReview = true;
@@ -1432,6 +1652,8 @@ async function reconcileAbsentOffering(
     select
       offerings.id,
       offerings.status,
+      offerings.delivery_mode,
+      offerings.location,
       offerings.source_document_id,
       documents.source_id
     from public.course_offerings as offerings
@@ -1453,6 +1675,20 @@ async function reconcileAbsentOffering(
           issue.field.startsWith("periods")),
     );
   if (!sourceIsComplete || String(existing.source_id) !== String(sourceId)) {
+    // A reviewer needs to see the offering being held, not just that one was.
+    const preservedSessions = await tx`
+      select
+        periods.code as period_code,
+        periods.calendar_year,
+        sessions.class_number,
+        sessions.delivery_mode,
+        sessions.location
+      from public.offering_sessions as sessions
+      join public.academic_periods as periods
+        on periods.id = sessions.academic_period_id
+      where sessions.course_offering_id = ${existing.id}
+      order by periods.calendar_year, periods.sort_order, sessions.class_number
+    `;
     appendUniqueDiagnostic(
       diagnostics,
       diagnostic({
@@ -1462,6 +1698,18 @@ async function reconcileAbsentOffering(
           "An existing offering was preserved after it disappeared from this source and requires manual reconciliation.",
         severity: "warning",
         sourceFragment: document.sourceFragment,
+        oldValue: {
+          deliveryMode: existing.delivery_mode,
+          location: existing.location,
+          sessions: preservedSessions.map((session) => ({
+            calendarYear: session.calendar_year,
+            classNumber: session.class_number,
+            deliveryMode: session.delivery_mode,
+            location: session.location,
+            periodCode: session.period_code,
+          })),
+        },
+        newValue: null,
       }),
     );
     return [];
@@ -1524,7 +1772,7 @@ async function importOffering(
     ? document.offering.sessions
     : [];
   const sessionsByPeriod = new Map();
-  const importedAcademicPeriodIds = new Set();
+  const importedSessionIds = new Set();
   let safeToReconcileSessions = true;
   let sessionsChanged = false;
   for (const session of sessions) {
@@ -1537,50 +1785,11 @@ async function importOffering(
   for (const [key, periodSessions] of [...sessionsByPeriod.entries()].sort(
     ([left], [right]) => left.localeCompare(right),
   )) {
-    const deliveryDefinitions = new Set(
-      periodSessions.map((session) =>
-        JSON.stringify({
-          deliveryMode: cleanOptionalText(session.deliveryMode),
-          location: cleanOptionalText(session.location),
-        }),
-      ),
-    );
-
-    if (deliveryDefinitions.size > 1) {
-      safeToReconcileSessions = false;
-      appendUniqueDiagnostic(
-        diagnostics,
-        diagnostic({
-          code: "OFFERING_SESSION_CONFLICT",
-          field: "offering.sessions",
-          message: `Classes in ${key} disagree on delivery mode or location and were not collapsed.`,
-          severity: "warning",
-          sourceFragment:
-            periodSessions
-              .map((session) => session.sourceFragment)
-              .find(Boolean) ?? document.sourceFragment,
-        }),
-      );
-      continue;
-    }
-
-    if (periodSessions.length > 1) {
-      appendUniqueDiagnostic(
-        diagnostics,
-        diagnostic({
-          code: "MULTIPLE_CLASSES_COLLAPSED",
-          field: "offering.sessions",
-          message: `Multiple classes in ${key} share one offering-session record; class facts remain in import diagnostics.`,
-          severity: "warning",
-          sourceFragment:
-            periodSessions
-              .map((session) => session.sourceFragment)
-              .find(Boolean) ?? document.sourceFragment,
-        }),
-      );
-    }
-
-    const session = periodSessions[0];
+    // offering_sessions is keyed per class, so classes that disagree on
+    // delivery mode or location are no longer a conflict -- each keeps its own
+    // row. That retires both OFFERING_SESSION_CONFLICT and
+    // MULTIPLE_CLASSES_COLLAPSED, which only existed because every class after
+    // the first used to be discarded here.
     const academicPeriodId = periodsByKey.get(key);
     if (!academicPeriodId) {
       safeToReconcileSessions = false;
@@ -1591,35 +1800,43 @@ async function importOffering(
           field: "offering.sessions",
           message: "An offering session did not match a valid academic period.",
           severity: "warning",
-          sourceFragment: session.sourceFragment ?? document.sourceFragment,
+          sourceFragment:
+            periodSessions
+              .map((session) => session.sourceFragment)
+              .find(Boolean) ?? document.sourceFragment,
         }),
       );
       continue;
     }
 
-    const result = await upsertOfferingSession(tx, {
-      academicPeriodId,
-      catalogueYearId,
-      courseOfferingId: offering.id,
-      session,
-      sourceDocumentId,
-    });
-    actions.push(result.action);
-    sessionsChanged ||= result.action !== "unchanged";
-    importedAcademicPeriodIds.add(academicPeriodId);
+    for (const session of periodSessions) {
+      const result = await upsertOfferingSession(tx, {
+        academicPeriodId,
+        catalogueYearId,
+        courseOfferingId: offering.id,
+        session,
+        sourceDocumentId,
+      });
+      actions.push(result.action);
+      sessionsChanged ||= result.action !== "unchanged";
+      importedSessionIds.add(result.id);
+    }
   }
 
   if (safeToReconcileSessions) {
-    const periodIds = [...importedAcademicPeriodIds];
+    // Keyed on session id, not period. Pruning by period would leave a stale
+    // class behind whenever a period keeps at least one class but loses
+    // another.
+    const sessionIds = [...importedSessionIds];
     const deletedSessions =
-      periodIds.length > 0
+      sessionIds.length > 0
         ? await tx`
             delete from public.offering_sessions as sessions
             using public.catalogue_source_documents as documents
             where sessions.course_offering_id = ${offering.id}
               and documents.id = sessions.source_document_id
               and documents.source_id = ${sourceId}
-              and sessions.academic_period_id not in ${tx(periodIds)}
+              and sessions.id not in ${tx(sessionIds)}
             returning sessions.id
           `
         : await tx`
@@ -1635,6 +1852,17 @@ async function importOffering(
       sessionsChanged = true;
     }
   } else {
+    const preservedSessions = await tx`
+      select
+        periods.code as period_code,
+        periods.calendar_year,
+        sessions.class_number
+      from public.offering_sessions as sessions
+      join public.academic_periods as periods
+        on periods.id = sessions.academic_period_id
+      where sessions.course_offering_id = ${offering.id}
+      order by periods.calendar_year, periods.sort_order, sessions.class_number
+    `;
     appendUniqueDiagnostic(
       diagnostics,
       diagnostic({
@@ -1644,6 +1872,16 @@ async function importOffering(
           "Existing offering sessions were preserved because the current source sessions are ambiguous.",
         severity: "warning",
         sourceFragment: document.sourceFragment,
+        oldValue: preservedSessions.map((session) => ({
+          calendarYear: session.calendar_year,
+          classNumber: session.class_number,
+          periodCode: session.period_code,
+        })),
+        newValue: sessions.map((session) => ({
+          calendarYear: Number(session.calendarYear),
+          classNumber: cleanText(session.classNumber),
+          periodCode: cleanText(session.periodCode),
+        })),
       }),
     );
   }
@@ -1663,32 +1901,6 @@ async function importOffering(
   return actions;
 }
 
-function collectUnmodelledSessionFacts(document) {
-  const sessions = document.offering?.sessions ?? [];
-  return sessions
-    .map((session) =>
-      serialisable({
-        censusDate: cleanDate(session.censusDate),
-        classNumber: cleanText(session.classNumber),
-        classSummaryUrl: cleanText(session.classSummaryUrl),
-        endsOn: cleanDate(session.endsOn),
-        lastEnrolmentDate: cleanDate(session.lastEnrolmentDate),
-        periodCode: cleanText(session.periodCode),
-        startsOn: cleanDate(session.startsOn),
-      }),
-    )
-    .filter((session) =>
-      [
-        session.censusDate,
-        session.classNumber,
-        session.classSummaryUrl,
-        session.endsOn,
-        session.lastEnrolmentDate,
-        session.startsOn,
-      ].some(Boolean),
-    );
-}
-
 async function insertImportItem(
   tx,
   {
@@ -1701,13 +1913,11 @@ async function insertImportItem(
     sourceId,
     targetKey,
     targetKind,
-    unmodelledSessions,
   },
 ) {
   const details = serialisable({
     issues: diagnostics,
     semanticOutcome,
-    unmodelledSessions,
   });
   const [item] = await tx`
     insert into public.catalogue_import_items (
@@ -1735,7 +1945,37 @@ async function insertImportItem(
   return item.id;
 }
 
-async function insertReviewItems(
+/**
+ * The diagnostics that describe a catalogue change rather than the parse: the
+ * source moved and the importer deliberately kept what it already held,
+ * pending a human decision. Everything else is evidence about how the page
+ * parsed and belongs in catalogue_import_diagnostics.
+ *
+ * The test is mechanical -- if a diagnostic cannot state both an old value and
+ * a new value, it is not a change. That is why COURSE_RULE_REQUIRES_REVIEW is
+ * absent despite its name: it is raised for every rule the grammar cannot
+ * structure, without consulting anything stored.
+ */
+const CHANGE_REVIEW_ISSUE_CODES = new Set([
+  "STRUCTURED_RULE_SOURCE_REMOVAL_PRESERVED",
+  "OFFERING_SOURCE_REMOVAL_PRESERVED",
+  "STRUCTURED_RULE_PRESERVED",
+  "COURSE_RULE_RECONCILIATION_DEFERRED",
+  "OFFERING_SESSION_RECONCILIATION_DEFERRED",
+]);
+
+function isChangeReview(issue) {
+  if (!CHANGE_REVIEW_ISSUE_CODES.has(issue.code)) return false;
+  // catalogue_review_items rejects a row whose before and after match. Rules
+  // are marked preserved when only the source document id moved, which is a
+  // re-fetch of identical text, not a change anyone needs to confirm.
+  return (
+    JSON.stringify(issue.oldValue ?? null) !==
+    JSON.stringify(issue.newValue ?? null)
+  );
+}
+
+async function insertImportDiagnostics(
   tx,
   { canonicalUrl, diagnostics, externalKey, importItemId },
 ) {
@@ -1743,25 +1983,105 @@ async function insertReviewItems(
     const details = serialisable({
       canonicalUrl,
       externalKey,
-      field: issue.field,
-      severity: issue.severity,
-      sourceFragment: issue.sourceFragment,
+      sourceFragment: issue.sourceFragment ?? null,
     });
+    await tx`
+      insert into public.catalogue_import_diagnostics (
+        import_item_id,
+        issue_code,
+        severity,
+        summary,
+        field,
+        details
+      )
+      values (
+        ${importItemId},
+        ${issue.code},
+        ${issue.severity === "error" ? "error" : "warning"},
+        ${issue.message},
+        ${cleanOptionalText(issue.field)},
+        ${tx.json(details)}
+      )
+      on conflict on constraint catalogue_import_diagnostics_item_issue_unique
+        do nothing
+    `;
+  }
+}
+
+async function upsertReviewItems(
+  tx,
+  {
+    canonicalUrl,
+    catalogueYearId,
+    diagnostics,
+    externalKey,
+    importItemId,
+    targetKey,
+    targetKind,
+  },
+) {
+  for (const issue of diagnostics.filter(isChangeReview)) {
+    const details = serialisable({
+      canonicalUrl,
+      externalKey,
+      sourceFragment: issue.sourceFragment ?? null,
+    });
+    // The unique key is total rather than partial on open, so a rerun refreshes
+    // the flag in place instead of stacking a second open row. A flag a human
+    // already resolved reopens only when the source has moved again since.
     await tx`
       insert into public.catalogue_review_items (
         import_item_id,
+        catalogue_year_id,
+        target_kind,
+        target_key,
         issue_code,
+        field,
         summary,
+        old_value,
+        new_value,
         details,
         status
       )
       values (
         ${importItemId},
+        ${catalogueYearId},
+        ${targetKind},
+        ${targetKey},
         ${issue.code},
+        ${cleanText(issue.field)},
         ${issue.message},
+        ${tx.json(issue.oldValue ?? null)},
+        ${tx.json(issue.newValue ?? null)},
         ${tx.json(details)},
         'open'
       )
+      on conflict (catalogue_year_id, target_kind, target_key, issue_code, field)
+      do update set
+        import_item_id = excluded.import_item_id,
+        summary = excluded.summary,
+        old_value = excluded.old_value,
+        new_value = excluded.new_value,
+        details = excluded.details,
+        updated_at = now(),
+        status = case
+          when catalogue_review_items.status = 'open' then 'open'
+          when catalogue_review_items.new_value is distinct from excluded.new_value
+            then 'open'
+          else catalogue_review_items.status
+        end,
+        resolved_at = case
+          when catalogue_review_items.status <> 'open'
+           and catalogue_review_items.new_value is distinct from excluded.new_value
+            then null
+          else catalogue_review_items.resolved_at
+        end,
+        resolved_by = case
+          when catalogue_review_items.status <> 'open'
+           and catalogue_review_items.new_value is distinct from excluded.new_value
+            then null
+          else catalogue_review_items.resolved_by
+        end
     `;
   }
 }
@@ -1793,8 +2113,6 @@ async function importDocument(
     (issue) => issue.severity === "error",
   );
 
-  const unmodelledSessions = collectUnmodelledSessionFacts(document);
-
   if (!validation.valid || sourceErrors.length > 0) {
     const itemId = await insertImportItem(tx, {
       catalogueYearId,
@@ -1806,9 +2124,10 @@ async function importDocument(
       sourceId,
       targetKey: cleanText(document.externalKey),
       targetKind: "course_version",
-      unmodelledSessions,
     });
-    await insertReviewItems(tx, {
+    // Validation errors describe the parse, never a catalogue change, so this
+    // path raises no review items at all.
+    await insertImportDiagnostics(tx, {
       canonicalUrl: document.canonicalUrl,
       diagnostics,
       externalKey: document.externalKey,
@@ -1833,7 +2152,22 @@ async function importDocument(
     );
   }
 
-  const reviewState = diagnostics.length > 0 ? "review" : "automatic";
+  // Keyed on what actually needs a person: a confirmed catalogue change, an
+  // error, or a requisite rule still carried as raw text. Keying it on the raw
+  // diagnostic count instead put every course with so much as a derived
+  // academic period into review, which is how all 139 course versions ended up
+  // in the review state at once.
+  //
+  // The unstructured-rule term is evaluated here rather than left to
+  // markCourseVersionForRuleReview, which only fires when a rule row actually
+  // changes. Without it a replay recomputes "automatic", overwrites the review
+  // state set on the first run, and the import stops being idempotent.
+  const hasUnstructuredRules = rawRules.some((rule) => !rule.expression);
+  const needsHumanReview = () =>
+    hasUnstructuredRules ||
+    diagnostics.some(isChangeReview) ||
+    diagnostics.some((issue) => issue.severity === "error");
+  const reviewState = needsHumanReview() ? "review" : "automatic";
   const actions = [];
   const course = await upsertCourse(tx, validation.course.code);
   actions.push(course.action);
@@ -1845,6 +2179,13 @@ async function importDocument(
     sourceDocumentId: snapshot.id,
   });
   actions.push(version.action);
+
+  actions.push(
+    await importCourseRichDetails(tx, {
+      courseVersionId: version.id,
+      rich: document.course.rich,
+    }),
+  );
 
   const importedPeriods = await importPeriods(
     tx,
@@ -1892,6 +2233,11 @@ async function importDocument(
           message: `An existing structured ${rule.ruleKind} rule was preserved; the new raw source requires manual reconciliation.`,
           severity: "warning",
           sourceFragment: rule.sourceText,
+          // "preserved" is also set when only the source document id moved,
+          // i.e. an identical re-fetch. isChangeReview compares these two and
+          // drops the flag when they match, so that case raises nothing.
+          oldValue: result.preservedSourceText ?? null,
+          newValue: rule.sourceText,
         }),
       );
     }
@@ -1912,7 +2258,7 @@ async function importDocument(
     actions.push(await markCourseVersionForRuleReview(tx, version.id));
   }
 
-  if (reviewState === "automatic" && diagnostics.length > 0) {
+  if (reviewState === "automatic" && needsHumanReview()) {
     const reviewedVersion = await upsertCourseVersion(tx, {
       catalogueYearId,
       course: validation.course,
@@ -1924,7 +2270,14 @@ async function importDocument(
   }
 
   const semanticOutcome = combineActions(actions);
-  const outcome = diagnostics.length > 0 ? "review" : semanticOutcome;
+  // The item outcome must not disagree with the course version's review state.
+  // Three things can put a version into review: a confirmed catalogue change,
+  // an error diagnostic, and a newly imported raw rule that has no structured
+  // form yet (markCourseVersionForRuleReview).
+  const outcome =
+    needsHumanReview() || ruleChangeRequiresParentReview
+      ? "review"
+      : semanticOutcome;
   const itemId = await insertImportItem(tx, {
     catalogueYearId,
     diagnostics,
@@ -1935,17 +2288,24 @@ async function importDocument(
     sourceId,
     targetKey: validation.course.code,
     targetKind: "course_version",
-    unmodelledSessions,
   });
 
-  if (diagnostics.length > 0) {
-    await insertReviewItems(tx, {
-      canonicalUrl: document.canonicalUrl,
-      diagnostics,
-      externalKey: document.externalKey,
-      importItemId: itemId,
-    });
-  }
+  await insertImportDiagnostics(tx, {
+    canonicalUrl: document.canonicalUrl,
+    diagnostics,
+    externalKey: document.externalKey,
+    importItemId: itemId,
+  });
+
+  await upsertReviewItems(tx, {
+    canonicalUrl: document.canonicalUrl,
+    catalogueYearId,
+    diagnostics,
+    externalKey: document.externalKey,
+    importItemId: itemId,
+    targetKey: validation.course.code,
+    targetKind: "course_version",
+  });
 
   return { semanticOutcome };
 }
