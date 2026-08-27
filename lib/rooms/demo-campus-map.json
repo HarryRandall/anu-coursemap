@@ -44,7 +44,7 @@
         ]
       ]
     },
-    "bounds": [149.1098826, -35.2900054, 149.1265367, -35.2726359],
+    "bounds": [149.075, -35.325, 149.175, -35.235],
     "initialCoordinates": [149.1208, -35.2779],
     "initialZoom": 18,
     "minZoom": 15,
@@ -59,9 +59,11 @@
       "campusId": "00000000-0000-4000-8000-000000000001",
       "slug": "buildings",
       "name": "Buildings",
-      "description": "Example ANU buildings and teaching spaces.",
+      "description": "All OpenStreetMap building footprints and available 3D heights.",
       "colour": "#52525b",
       "isVisibleByDefault": true,
+      "layerKind": "hybrid",
+      "styleLayerPatterns": ["building", "building-3d"],
       "sortOrder": 10
     },
     {
@@ -72,7 +74,9 @@
       "description": "Libraries and other places intended for study.",
       "colour": "#0284c7",
       "isVisibleByDefault": true,
-      "sortOrder": 20
+      "layerKind": "place",
+      "styleLayerPatterns": [],
+      "sortOrder": 100
     },
     {
       "id": "10000000-0000-4000-8000-000000000003",
@@ -82,17 +86,142 @@
       "description": "Places where students can get in-person help.",
       "colour": "#059669",
       "isVisibleByDefault": true,
-      "sortOrder": 30
+      "layerKind": "place",
+      "styleLayerPatterns": [],
+      "sortOrder": 110
     },
     {
       "id": "10000000-0000-4000-8000-000000000004",
       "campusId": "00000000-0000-4000-8000-000000000001",
       "slug": "walking-paths",
       "name": "Walking paths",
-      "description": "Selected paths sourced from OpenStreetMap inside the ANU boundary.",
+      "description": "All mapped footpaths and pedestrian bridges in the current view.",
       "colour": "#7c3aed",
       "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": [
+        "road_path_pedestrian",
+        "bridge_path_pedestrian*",
+        "tunnel_path_pedestrian",
+        "highway-name-path"
+      ],
+      "sortOrder": 30
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000005",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "roads",
+      "name": "Roads",
+      "description": "Road surfaces, bridges and tunnels from the live vector style.",
+      "colour": "#f97316",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": [
+        "road_*",
+        "bridge_*",
+        "tunnel_*",
+        "!road_path_pedestrian",
+        "!bridge_path_pedestrian*",
+        "!tunnel_path_pedestrian",
+        "!road_major_rail*",
+        "!road_transit_rail*",
+        "!bridge_major_rail*",
+        "!bridge_transit_rail*",
+        "!tunnel_major_rail*",
+        "!tunnel_transit_rail*",
+        "!road_one_way_arrow*"
+      ],
+      "sortOrder": 20
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000006",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "rail-and-transit",
+      "name": "Rail and transit",
+      "description": "Rail lines, light rail and public transport markers.",
+      "colour": "#71717a",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": [
+        "road_major_rail*",
+        "road_transit_rail*",
+        "bridge_major_rail*",
+        "bridge_transit_rail*",
+        "tunnel_major_rail*",
+        "tunnel_transit_rail*",
+        "poi_transit"
+      ],
       "sortOrder": 40
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000007",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "landscape",
+      "name": "Parks and landscape",
+      "description": "Parks, woodland, grass, sports grounds and other land cover.",
+      "colour": "#16a34a",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": [
+        "natural_earth",
+        "park*",
+        "landcover_*",
+        "landuse_*",
+        "aeroway_*"
+      ],
+      "sortOrder": 50
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000008",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "water",
+      "name": "Water",
+      "description": "Lake, river, creek and waterway vectors.",
+      "colour": "#0284c7",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": [
+        "water",
+        "waterway_tunnel",
+        "waterway_river",
+        "waterway_other"
+      ],
+      "sortOrder": 60
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000009",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "terrain",
+      "name": "Terrain",
+      "description": "Open elevation hillshade and three-dimensional terrain.",
+      "colour": "#a16207",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": ["coursemap-terrain-hillshade"],
+      "sortOrder": 70
+    },
+    {
+      "id": "10000000-0000-4000-8000-000000000010",
+      "campusId": "00000000-0000-4000-8000-000000000001",
+      "slug": "labels-and-places",
+      "name": "Labels and places",
+      "description": "Road names, place labels, points of interest and map boundaries.",
+      "colour": "#7c3aed",
+      "isVisibleByDefault": true,
+      "layerKind": "map",
+      "styleLayerPatterns": [
+        "poi_*",
+        "label_*",
+        "airport",
+        "boundary_*",
+        "highway-name-*",
+        "highway-shield-*",
+        "road_one_way_arrow*",
+        "road_shield_us",
+        "waterway_line_label",
+        "water_name_*"
+      ],
+      "sortOrder": 80
     }
   ],
   "places": [

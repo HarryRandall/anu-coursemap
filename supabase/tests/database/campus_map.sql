@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(20);
+select extensions.plan(23);
 
 select extensions.ok(
   has_table_privilege('anon', 'public.campus_map_layers', 'select')
@@ -41,8 +41,45 @@ select extensions.is(
     from public.campus_map_layers
     where status = 'published'
   ),
-  4,
-  'the migrations publish four independently toggleable layers'
+  10,
+  'the migrations publish ten independently toggleable layers'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_map_layers
+    where status = 'published'
+      and layer_kind in ('map', 'hybrid')
+      and cardinality(style_layer_patterns) > 0
+  ),
+  8,
+  'eight published layers dynamically control live map vectors'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_map_layers
+    where status = 'published'
+      and layer_kind = 'place'
+      and cardinality(style_layer_patterns) = 0
+  ),
+  2,
+  'two published layers filter place categories without changing the map style'
+);
+
+select extensions.ok(
+  (
+    select initial_zoom - min_zoom = 3
+      and west = 149.075
+      and south = -35.325
+      and east = 149.175
+      and north = -35.235
+    from public.campus_map_campuses
+    where slug = 'anu-acton'
+  ),
+  'the map allows three zoom-out steps and pans across central Canberra'
 );
 
 select extensions.is(
@@ -200,7 +237,7 @@ set local role anon;
 
 select extensions.is(
   (select count(*)::integer from public.campus_map_layers),
-  4,
+  10,
   'anonymous users only see published layers'
 );
 

@@ -66,6 +66,8 @@ function mapLayer(row: LayerRow): CampusMapLayer {
     description: row.description,
     colour: row.colour,
     isVisibleByDefault: row.is_visible_by_default,
+    layerKind: row.layer_kind as CampusMapLayer["layerKind"],
+    styleLayerPatterns: row.style_layer_patterns,
     sortOrder: row.sort_order,
   };
 }
@@ -170,7 +172,7 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
       supabase
         .from("campus_map_layers")
         .select(
-          "id,campus_id,slug,name,description,colour,is_visible_by_default,status,sort_order,created_at,updated_at",
+          "id,campus_id,slug,name,description,colour,is_visible_by_default,layer_kind,style_layer_patterns,status,sort_order,created_at,updated_at",
         )
         .eq("campus_id", campus.id)
         .order("sort_order")

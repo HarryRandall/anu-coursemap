@@ -201,8 +201,11 @@ test("server-renders the complete student workspace", async () => {
   assert.match(roomsHtml, /Marie Reay Teaching Centre/i);
   assert.match(roomsHtml, />Layers</i);
   assert.match(roomsHtml, /Directions/i);
-  assert.match(roomsHtml, /OpenStreetMap vector data/i);
-  assert.match(roomsHtml, /Interactive vector map of the ANU Acton campus/i);
+  assert.match(roomsHtml, /live OpenStreetMap vectors/i);
+  assert.match(
+    roomsHtml,
+    /Interactive vector map of ANU and central Canberra/i,
+  );
   assert.match(roomsHtml, /Open source page/i);
   assert.doesNotMatch(
     roomsHtml,

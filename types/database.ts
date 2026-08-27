@@ -460,10 +460,12 @@ export type Database = {
           description: string | null
           id: string
           is_visible_by_default: boolean
+          layer_kind: string
           name: string
           slug: string
           sort_order: number
           status: string
+          style_layer_patterns: string[]
           updated_at: string
         }
         Insert: {
@@ -473,10 +475,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_visible_by_default?: boolean
+          layer_kind?: string
           name: string
           slug: string
           sort_order?: number
           status?: string
+          style_layer_patterns?: string[]
           updated_at?: string
         }
         Update: {
@@ -486,10 +490,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_visible_by_default?: boolean
+          layer_kind?: string
           name?: string
           slug?: string
           sort_order?: number
           status?: string
+          style_layer_patterns?: string[]
           updated_at?: string
         }
         Relationships: [

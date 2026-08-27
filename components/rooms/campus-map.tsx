@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { LoaderCircle, MapPinOff } from "lucide-react";
-import type {
-  CampusMapCampus,
-  CampusMapFeature,
-  CampusMapLayer,
-  CampusMapPlace,
-  CampusMapPolygon,
-  CampusWalkingRoute,
+import { useEffect, useRef, useState } from "react";
+import { Box, LoaderCircle, MapPinOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  getControlledStyleLayerVisibility,
+  type CampusMapCampus,
+  type CampusMapLayer,
+  type CampusMapPlace,
+  type CampusMapPolygon,
+  type CampusWalkingRoute,
 } from "@/lib/rooms/campus-map";
 
 type CampusMapProps = {
   campus: CampusMapCampus | null;
   layers: readonly CampusMapLayer[];
-  features: readonly CampusMapFeature[];
+  visibleLayerSlugs: ReadonlySet<string>;
   places: readonly CampusMapPlace[];
   selectedSlug?: string;
   route: CampusWalkingRoute | null;
@@ -25,51 +26,20 @@ type CampusMapProps = {
   onSelect: (slug: string) => void;
 };
 
-type MapFeatureProperties = {
-  id: string;
-  name: string;
-  featureKind: CampusMapFeature["featureKind"];
-  placeSlug: string;
-  colour: string;
-  selected: boolean;
-};
-
-type CampusGeometry = CampusMapFeature["geometry"] | CampusMapPolygon;
-
 const MAP_STYLE_URL =
   process.env.NEXT_PUBLIC_ROOM_MAP_STYLE_URL ??
   "https://tiles.openfreemap.org/styles/liberty";
+const TERRAIN_URL =
+  process.env.NEXT_PUBLIC_ROOM_MAP_TERRAIN_URL ??
+  "https://tiles.mapterhorn.com/tilejson.json";
+const TERRAIN_SOURCE_ID = "coursemap-terrain";
+const TERRAIN_HILLSHADE_SOURCE_ID = "coursemap-terrain-hillshade-source";
+const TERRAIN_LAYER_ID = "coursemap-terrain-hillshade";
 
 const MAP_ATTRIBUTION =
   'Walking routes: <a href="https://routing.openstreetmap.de/about.html">FOSSGIS</a>';
 
-function campusMask(boundary: CampusMapPolygon): CampusMapPolygon {
-  return {
-    type: "Polygon",
-    coordinates: [
-      [
-        [-180, -85],
-        [180, -85],
-        [180, 85],
-        [-180, 85],
-        [-180, -85],
-      ],
-      [...boundary.coordinates[0]].reverse(),
-    ],
-  };
-}
-
-function toGeoJsonGeometry(geometry: CampusGeometry): GeoJSON.Geometry {
-  if (geometry.type === "LineString") {
-    return {
-      type: "LineString",
-      coordinates: geometry.coordinates.map(([longitude, latitude]) => [
-        longitude,
-        latitude,
-      ]),
-    };
-  }
-
+function toGeoJsonGeometry(geometry: CampusMapPolygon): GeoJSON.Polygon {
   return {
     type: "Polygon",
     coordinates: geometry.coordinates.map((ring) =>
@@ -82,36 +52,6 @@ function toLngLat(
   coordinate: readonly [longitude: number, latitude: number],
 ): [number, number] {
   return [coordinate[0], coordinate[1]];
-}
-
-function featureCollection(
-  features: readonly CampusMapFeature[],
-  layers: readonly CampusMapLayer[],
-  places: readonly CampusMapPlace[],
-  selectedSlug?: string,
-): GeoJSON.FeatureCollection<GeoJSON.Geometry, MapFeatureProperties> {
-  const layerById = new Map(layers.map((layer) => [layer.id, layer]));
-  const placeById = new Map(places.map((place) => [place.id, place]));
-
-  return {
-    type: "FeatureCollection",
-    features: features.map((feature) => {
-      const place = feature.placeId ? placeById.get(feature.placeId) : null;
-      return {
-        type: "Feature",
-        id: feature.id,
-        geometry: toGeoJsonGeometry(feature.geometry),
-        properties: {
-          id: feature.id,
-          name: feature.name,
-          featureKind: feature.featureKind,
-          placeSlug: place?.slug ?? "",
-          colour: layerById.get(feature.layerId)?.colour ?? "#52525b",
-          selected: place?.slug === selectedSlug,
-        },
-      };
-    }),
-  };
 }
 
 function createPlaceMarker(
@@ -141,10 +81,33 @@ function createEndpointMarker(label: "A" | "B") {
   return element;
 }
 
+function applyStyleLayerVisibility(
+  map: import("maplibre-gl").Map,
+  layers: readonly CampusMapLayer[],
+  visibleLayerSlugs: ReadonlySet<string>,
+) {
+  for (const styleLayer of map.getStyle().layers) {
+    const visibility = getControlledStyleLayerVisibility(
+      styleLayer.id,
+      layers,
+      visibleLayerSlugs,
+    );
+    if (visibility) {
+      map.setLayoutProperty(styleLayer.id, "visibility", visibility);
+    }
+  }
+
+  map.setTerrain(
+    visibleLayerSlugs.has("terrain")
+      ? { source: TERRAIN_SOURCE_ID, exaggeration: 1 }
+      : null,
+  );
+}
+
 export function CampusMap({
   campus,
   layers,
-  features,
+  visibleLayerSlugs,
   places,
   selectedSlug,
   route,
@@ -154,20 +117,21 @@ export function CampusMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("maplibre-gl").Map | null>(null);
   const mapLibreRef = useRef<typeof import("maplibre-gl") | null>(null);
+  const visibleLayerSlugsRef = useRef(visibleLayerSlugs);
   const placeMarkersRef = useRef<import("maplibre-gl").Marker[]>([]);
   const routeMarkersRef = useRef<import("maplibre-gl").Marker[]>([]);
   const onSelectRef = useRef(onSelect);
   const [mapReady, setMapReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
-
-  const vectorFeatures = useMemo(
-    () => featureCollection(features, layers, places, selectedSlug),
-    [features, layers, places, selectedSlug],
-  );
+  const [isPerspective, setIsPerspective] = useState(true);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
+
+  useEffect(() => {
+    visibleLayerSlugsRef.current = visibleLayerSlugs;
+  }, [visibleLayerSlugs]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -188,20 +152,21 @@ export function CampusMap({
         const [west, south, east, north] = campus.bounds;
         const map = new maplibregl.Map({
           attributionControl: false,
-          bearing: 0,
+          bearing: -12,
+          canvasContextAttributes: { antialias: true },
           center: toLngLat(campus.initialCoordinates),
           container,
-          dragRotate: false,
+          dragRotate: true,
           keyboard: true,
           maxBounds: [
             [west, south],
             [east, north],
           ],
-          maxPitch: 0,
+          maxPitch: 65,
           maxZoom: campus.maxZoom,
           minPitch: 0,
           minZoom: campus.minZoom,
-          pitch: 0,
+          pitch: 35,
           renderWorldCopies: false,
           style: MAP_STYLE_URL,
           zoom: campus.initialZoom,
@@ -211,9 +176,9 @@ export function CampusMap({
 
         map.addControl(
           new maplibregl.NavigationControl({
-            showCompass: false,
+            showCompass: true,
             showZoom: true,
-            visualizePitch: false,
+            visualizePitch: true,
           }),
           "top-right",
         );
@@ -225,6 +190,21 @@ export function CampusMap({
           "bottom-right",
         );
 
+        const updateCameraMetadata = () => {
+          const centre = map.getCenter();
+          container.dataset.mapBearing = map.getBearing().toFixed(2);
+          container.dataset.mapCentre = `${centre.lng.toFixed(6)},${centre.lat.toFixed(6)}`;
+          container.dataset.mapPitch = map.getPitch().toFixed(2);
+          container.dataset.mapZoom = map.getZoom().toFixed(2);
+        };
+        const updatePerspective = () => {
+          setIsPerspective(map.getPitch() > 10);
+          updateCameraMetadata();
+        };
+        updateCameraMetadata();
+        map.on("moveend", updateCameraMetadata);
+        map.on("pitch", updatePerspective);
+
         loadTimeout = setTimeout(() => {
           if (!cancelled && !styleLoaded) setMapFailed(true);
         }, 12_000);
@@ -234,102 +214,59 @@ export function CampusMap({
           styleLoaded = true;
           if (loadTimeout) clearTimeout(loadTimeout);
 
-          map.addSource("campus-mask", {
-            type: "geojson",
-            data: toGeoJsonGeometry(campusMask(campus.boundary)),
+          const styleLayers = map.getStyle().layers;
+          const firstTransportLayer = styleLayers.find((layer) =>
+            /^(tunnel_|road_|bridge_|building)/.test(layer.id),
+          )?.id;
+          const firstLabelLayer = styleLayers.find(
+            (layer) => layer.type === "symbol",
+          )?.id;
+
+          map.addSource(TERRAIN_SOURCE_ID, {
+            type: "raster-dem",
+            url: TERRAIN_URL,
+            tileSize: 512,
+            attribution:
+              '<a href="https://mapterhorn.com/attribution">© Mapterhorn</a>',
           });
-          map.addLayer({
-            id: "campus-mask-fill",
-            type: "fill",
-            source: "campus-mask",
-            paint: {
-              "fill-color": "#f4f4f5",
-              "fill-opacity": 0.96,
+          map.addSource(TERRAIN_HILLSHADE_SOURCE_ID, {
+            type: "raster-dem",
+            url: TERRAIN_URL,
+            tileSize: 512,
+          });
+          map.addLayer(
+            {
+              id: TERRAIN_LAYER_ID,
+              type: "hillshade",
+              source: TERRAIN_HILLSHADE_SOURCE_ID,
+              paint: {
+                "hillshade-accent-color": "#675f4d",
+                "hillshade-exaggeration": 0.28,
+                "hillshade-highlight-color": "#fffdf7",
+                "hillshade-shadow-color": "#473b24",
+              },
             },
-          });
+            firstTransportLayer,
+          );
 
           map.addSource("campus-boundary", {
             type: "geojson",
             data: toGeoJsonGeometry(campus.boundary),
           });
-          map.addLayer({
-            id: "campus-boundary-line",
-            type: "line",
-            source: "campus-boundary",
-            paint: {
-              "line-color": "#7c3aed",
-              "line-opacity": 0.7,
-              "line-width": 2,
+          map.addLayer(
+            {
+              id: "campus-boundary-line",
+              type: "line",
+              source: "campus-boundary",
+              paint: {
+                "line-color": "#7c3aed",
+                "line-dasharray": [2, 2],
+                "line-opacity": 0.65,
+                "line-width": 2,
+              },
             },
-          });
-
-          map.addSource("campus-features", {
-            type: "geojson",
-            data: { type: "FeatureCollection", features: [] },
-          });
-          map.addLayer({
-            id: "campus-walking-path-casing",
-            type: "line",
-            source: "campus-features",
-            filter: ["==", ["get", "featureKind"], "walking_path"],
-            paint: {
-              "line-color": "#ffffff",
-              "line-opacity": 0.95,
-              "line-width": 8,
-            },
-          });
-          map.addLayer({
-            id: "campus-walking-path-line",
-            type: "line",
-            source: "campus-features",
-            filter: ["==", ["get", "featureKind"], "walking_path"],
-            paint: {
-              "line-color": ["get", "colour"],
-              "line-opacity": 0.95,
-              "line-width": 4,
-            },
-          });
-          map.addLayer({
-            id: "campus-building-fill",
-            type: "fill",
-            source: "campus-features",
-            filter: ["==", ["get", "featureKind"], "building"],
-            paint: {
-              "fill-color": [
-                "case",
-                ["boolean", ["get", "selected"], false],
-                "#7c3aed",
-                ["get", "colour"],
-              ],
-              "fill-opacity": [
-                "case",
-                ["boolean", ["get", "selected"], false],
-                0.5,
-                0.24,
-              ],
-            },
-          });
-          map.addLayer({
-            id: "campus-building-outline",
-            type: "line",
-            source: "campus-features",
-            filter: ["==", ["get", "featureKind"], "building"],
-            paint: {
-              "line-color": [
-                "case",
-                ["boolean", ["get", "selected"], false],
-                "#6d28d9",
-                ["get", "colour"],
-              ],
-              "line-opacity": 0.95,
-              "line-width": [
-                "case",
-                ["boolean", ["get", "selected"], false],
-                4,
-                2,
-              ],
-            },
-          });
+            firstLabelLayer,
+          );
 
           map.addSource("campus-route", {
             type: "geojson",
@@ -356,19 +293,7 @@ export function CampusMap({
             },
           });
 
-          map.on("click", "campus-building-fill", (event) => {
-            const placeSlug = event.features?.[0]?.properties?.placeSlug;
-            if (typeof placeSlug === "string" && placeSlug) {
-              onSelectRef.current(placeSlug);
-            }
-          });
-          map.on("mouseenter", "campus-building-fill", () => {
-            map.getCanvas().style.cursor = "pointer";
-          });
-          map.on("mouseleave", "campus-building-fill", () => {
-            map.getCanvas().style.cursor = "";
-          });
-
+          applyStyleLayerVisibility(map, layers, visibleLayerSlugsRef.current);
           setMapReady(true);
           setMapFailed(false);
         });
@@ -392,14 +317,13 @@ export function CampusMap({
       mapRef.current = null;
       mapLibreRef.current = null;
     };
-  }, [campus]);
+  }, [campus, layers]);
 
   useEffect(() => {
-    if (!mapReady) return;
-    const source = mapRef.current?.getSource("campus-features") as
-      import("maplibre-gl").GeoJSONSource | null;
-    void source?.setData(vectorFeatures);
-  }, [mapReady, vectorFeatures]);
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+    applyStyleLayerVisibility(map, layers, visibleLayerSlugs);
+  }, [layers, mapReady, visibleLayerSlugs]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -487,11 +411,24 @@ export function CampusMap({
     };
   }, [campus?.maxZoom, mapReady, route, routeEndpoints]);
 
+  function togglePerspective() {
+    const map = mapRef.current;
+    if (!map) return;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    map.easeTo({
+      bearing: isPerspective ? 0 : -18,
+      duration: reduceMotion ? 0 : 550,
+      pitch: isPerspective ? 0 : 52,
+    });
+  }
+
   return (
     <div className="room-map relative h-full min-h-[50dvh] overflow-hidden bg-zinc-100 lg:min-h-0">
       <div
         ref={containerRef}
-        aria-label="Interactive vector map of the ANU Acton campus"
+        aria-label="Interactive vector map of ANU and central Canberra"
         className="h-full w-full"
       />
 
@@ -526,10 +463,21 @@ export function CampusMap({
         </div>
       ) : null}
 
-      {campus ? (
-        <p className="pointer-events-none absolute bottom-7 left-3 z-10 rounded-full border border-zinc-200 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-zinc-600 shadow-sm backdrop-blur">
-          ANU boundary · {features.length} mapped vectors
-        </p>
+      {campus && mapReady ? (
+        <div className="absolute bottom-8 left-3 z-10 flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            aria-pressed={isPerspective}
+            onClick={togglePerspective}
+          >
+            <Box aria-hidden="true" size={14} />
+            {isPerspective ? "2D view" : "3D view"}
+          </Button>
+          <p className="pointer-events-none hidden rounded-full border border-zinc-200 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-zinc-600 shadow-sm backdrop-blur sm:block">
+            Drag to pan · right-drag to rotate
+          </p>
+        </div>
       ) : null}
     </div>
   );

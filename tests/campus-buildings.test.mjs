@@ -135,8 +135,8 @@ test("finds places and honours layer visibility", () => {
   );
 });
 
-test("supplies ANU-scoped building and walking vectors with provenance", () => {
-  assert.equal(demoData.layers.length, 4);
+test("supplies dynamic map layers and preserves imported feature provenance", () => {
+  assert.equal(demoData.layers.length, 10);
   assert.equal(
     demoData.features.filter((feature) => feature.featureKind === "building")
       .length,
@@ -161,6 +161,75 @@ test("supplies ANU-scoped building and walking vectors with provenance", () => {
       /^https:\/\/www\.openstreetmap\.org\/way\//,
     );
   }
+});
+
+test("maps OpenFreeMap style layers into independently toggleable groups", () => {
+  const layerBySlug = new Map(
+    demoData.layers.map((layer) => [layer.slug, layer]),
+  );
+  const buildings = layerBySlug.get("buildings");
+  const roads = layerBySlug.get("roads");
+  const paths = layerBySlug.get("walking-paths");
+  const terrain = layerBySlug.get("terrain");
+
+  assert.ok(campusMap.isMapStyleLayer(buildings));
+  assert.ok(campusMap.isMapStyleLayer(roads));
+  assert.ok(campusMap.isPlaceFilterLayer(layerBySlug.get("study-spaces")));
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(buildings, "building-3d"),
+    true,
+  );
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(roads, "road_minor"),
+    true,
+  );
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(roads, "road_path_pedestrian"),
+    false,
+  );
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(
+      paths,
+      "bridge_path_pedestrian_casing",
+    ),
+    true,
+  );
+  assert.equal(
+    campusMap.getControlledStyleLayerVisibility(
+      "coursemap-terrain-hillshade",
+      demoData.layers,
+      new Set([terrain.slug]),
+    ),
+    "visible",
+  );
+  assert.equal(
+    campusMap.getControlledStyleLayerVisibility(
+      "coursemap-terrain-hillshade",
+      demoData.layers,
+      new Set(),
+    ),
+    "none",
+  );
+  assert.equal(
+    campusMap.getControlledStyleLayerVisibility(
+      "uncontrolled-style-layer",
+      demoData.layers,
+      new Set(),
+    ),
+    null,
+  );
+});
+
+test("renders the live vector style without bespoke building boxes", async () => {
+  const mapComponent = await readFile(
+    new URL("../components/rooms/campus-map.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(mapComponent, /setTerrain/);
+  assert.match(mapComponent, /dragRotate: true/);
+  assert.match(mapComponent, /maxPitch: 65/);
+  assert.doesNotMatch(mapComponent, /campus-features|campus-mask/);
 });
 
 test("builds an HTTPS walking route request for the selected places", () => {

@@ -6,6 +6,8 @@ export type CampusMapLayer = Readonly<{
   description: string | null;
   colour: string;
   isVisibleByDefault: boolean;
+  layerKind: "map" | "place" | "hybrid";
+  styleLayerPatterns: readonly string[];
   sortOrder: number;
 }>;
 
@@ -180,6 +182,49 @@ export function getDefaultVisibleLayerSlugs(layers: readonly CampusMapLayer[]) {
       .filter((layer) => layer.isVisibleByDefault)
       .map((layer) => layer.slug),
   );
+}
+
+export function isMapStyleLayer(layer: CampusMapLayer) {
+  return layer.layerKind !== "place" && layer.styleLayerPatterns.length > 0;
+}
+
+export function isPlaceFilterLayer(layer: CampusMapLayer) {
+  return layer.layerKind === "place";
+}
+
+function matchesStyleLayerGlob(styleLayerId: string, pattern: string) {
+  const glob = pattern.startsWith("!") ? pattern.slice(1) : pattern;
+  return glob.endsWith("*")
+    ? styleLayerId.startsWith(glob.slice(0, -1))
+    : styleLayerId === glob;
+}
+
+export function campusLayerControlsStyleLayer(
+  layer: CampusMapLayer,
+  styleLayerId: string,
+) {
+  if (!isMapStyleLayer(layer)) return false;
+  const included = layer.styleLayerPatterns
+    .filter((pattern) => !pattern.startsWith("!"))
+    .some((pattern) => matchesStyleLayerGlob(styleLayerId, pattern));
+  const excluded = layer.styleLayerPatterns
+    .filter((pattern) => pattern.startsWith("!"))
+    .some((pattern) => matchesStyleLayerGlob(styleLayerId, pattern));
+  return included && !excluded;
+}
+
+export function getControlledStyleLayerVisibility(
+  styleLayerId: string,
+  layers: readonly CampusMapLayer[],
+  visibleLayerSlugs: ReadonlySet<string>,
+) {
+  const controllingLayers = layers.filter((layer) =>
+    campusLayerControlsStyleLayer(layer, styleLayerId),
+  );
+  if (controllingLayers.length === 0) return null;
+  return controllingLayers.some((layer) => visibleLayerSlugs.has(layer.slug))
+    ? "visible"
+    : "none";
 }
 
 export function formatWalkingDistance(distanceMetres: number) {

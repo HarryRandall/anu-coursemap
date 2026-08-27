@@ -69,6 +69,7 @@ seed. Its Auth redirect configuration accepts the trusted local callback.
 | Command                    | Purpose                                        |
 | -------------------------- | ---------------------------------------------- |
 | `npm run dev`              | Start the development server                   |
+| `npm run dev:local`        | Start port 3000 with local Supabase settings   |
 | `npm run db:start`         | Start the full local Supabase stack            |
 | `npm run db:reset`         | Rebuild the local database from migrations     |
 | `npm run db:test`          | Run local pgTAP database tests                 |

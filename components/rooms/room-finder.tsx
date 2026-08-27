@@ -37,7 +37,9 @@ import {
   formatWalkingDistance,
   formatWalkingDuration,
   getDefaultVisibleLayerSlugs,
+  isMapStyleLayer,
   isCampusWalkingRoute,
+  isPlaceFilterLayer,
   type CampusMapData,
   type CampusWalkingRoute,
 } from "@/lib/rooms/campus-map";
@@ -159,13 +161,17 @@ export function RoomFinder({
       filterCampusPlaces(data.places, data.layers, visibleLayerSlugs, query),
     [data.layers, data.places, query, visibleLayerSlugs],
   );
-  const visibleFeatures = useMemo(() => {
-    const layerById = new Map(data.layers.map((layer) => [layer.id, layer]));
-    return data.features.filter((feature) => {
-      const layer = layerById.get(feature.layerId);
-      return layer ? visibleLayerSlugs.has(layer.slug) : false;
-    });
-  }, [data.features, data.layers, visibleLayerSlugs]);
+  const mapLayers = useMemo(
+    () => data.layers.filter(isMapStyleLayer),
+    [data.layers],
+  );
+  const placeLayers = useMemo(
+    () => data.layers.filter(isPlaceFilterLayer),
+    [data.layers],
+  );
+  const visibleMapLayerCount = mapLayers.filter((layer) =>
+    visibleLayerSlugs.has(layer.slug),
+  ).length;
   const selectedPlace =
     findCampusPlace(filteredPlaces, selectedSlug) ?? filteredPlaces[0];
   const selectedLayer = data.layers.find(
@@ -326,7 +332,7 @@ export function RoomFinder({
                 {data.campus?.name ?? "Campus map"}
               </p>
               <p className="mt-0.5 text-xs text-zinc-500">
-                {data.places.length} places · {data.features.length} vectors
+                {data.places.length} places · live OpenStreetMap vectors
               </p>
             </div>
             <Badge tone="brand">Preview</Badge>
@@ -351,16 +357,16 @@ export function RoomFinder({
                   <Layers3 aria-hidden="true" size={14} />
                   Layers
                   <span className="text-zinc-400">
-                    {visibleLayerSlugs.size}/{data.layers.length}
+                    {visibleMapLayerCount}/{mapLayers.length}
                   </span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" className="w-72">
                 <p className="text-xs font-semibold text-zinc-950">
-                  Map layers
+                  Map detail
                 </p>
                 <div className="mt-3 space-y-3">
-                  {data.layers.map((layer) => (
+                  {mapLayers.map((layer) => (
                     <label
                       key={layer.id}
                       className="flex cursor-pointer items-start gap-3"
@@ -387,6 +393,41 @@ export function RoomFinder({
                     </label>
                   ))}
                 </div>
+                {placeLayers.length > 0 ? (
+                  <>
+                    <p className="mt-5 border-t border-zinc-200 pt-4 text-xs font-semibold text-zinc-950">
+                      Place categories
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {placeLayers.map((layer) => (
+                        <label
+                          key={layer.id}
+                          className="flex cursor-pointer items-start gap-3"
+                        >
+                          <Checkbox
+                            checked={visibleLayerSlugs.has(layer.slug)}
+                            onCheckedChange={() => toggleLayer(layer.slug)}
+                          />
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-2 text-xs font-medium text-zinc-900">
+                              <span
+                                aria-hidden="true"
+                                className="size-2.5 rounded-full"
+                                style={{ backgroundColor: layer.colour }}
+                              />
+                              {layer.name}
+                            </span>
+                            {layer.description ? (
+                              <span className="mt-0.5 block text-xs leading-relaxed text-zinc-500">
+                                {layer.description}
+                              </span>
+                            ) : null}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </PopoverContent>
             </Popover>
 
@@ -463,9 +504,9 @@ export function RoomFinder({
           <div className="text-brand-950 mt-3 grid grid-cols-[auto_1fr] gap-x-2.5 rounded-md border border-brand-100 bg-brand-50 p-3">
             <Info aria-hidden="true" className="mt-0.5 size-4" />
             <p className="text-xs leading-relaxed text-brand-900/80">
-              The basemap, highlighted building outlines and walking paths use
-              OpenStreetMap vector data clipped to the ANU boundary. Place
-              details remain example data.
+              Buildings, roads, paths, water, parks and labels come directly
+              from live OpenStreetMap vectors. Terrain uses open elevation
+              tiles. Place details remain example data.
             </p>
           </div>
         </div>
@@ -547,7 +588,7 @@ export function RoomFinder({
                 <EmptyHeader>
                   <EmptyTitle>No places match</EmptyTitle>
                   <EmptyDescription>
-                    Change the search or turn on another map layer.
+                    Change the search or turn on another place category.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -615,7 +656,7 @@ export function RoomFinder({
         <CampusMap
           campus={data.campus}
           layers={data.layers}
-          features={visibleFeatures}
+          visibleLayerSlugs={visibleLayerSlugs}
           places={filteredPlaces}
           selectedSlug={selectedPlace?.slug}
           route={routeState.route}
