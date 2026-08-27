@@ -113,7 +113,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const defaultYear = catalogueYears[0] ?? new Date().getFullYear();
+  const defaultYear = catalogueYears[0] ?? 0;
   const [yearScope, setYearScope] = useState<string>(String(defaultYear));
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ImportSearchResult[]>([]);

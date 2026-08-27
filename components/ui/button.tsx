@@ -71,11 +71,14 @@ export function Button({
   type = "button",
   ...rest
 }: ButtonProps) {
+  // Firefox persists dynamic disabled across soft reloads; keep SSR in sync.
+  const firefoxFormProps = { autoComplete: "off" as const };
   return (
     <button
       data-slot="button"
       type={type}
       className={buttonClasses({ variant, size, fullWidth, className })}
+      {...firefoxFormProps}
       {...rest}
     >
       {children}
@@ -125,6 +128,7 @@ export function IconButton({
   type = "button",
   ...rest
 }: IconButtonProps) {
+  const firefoxFormProps = { autoComplete: "off" as const };
   return (
     <button
       data-slot="button"
@@ -132,6 +136,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={buttonClasses({ variant, size, className })}
+      {...firefoxFormProps}
       {...rest}
     >
       {children}

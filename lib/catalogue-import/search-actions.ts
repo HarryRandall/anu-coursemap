@@ -57,10 +57,34 @@ export async function searchImportableCourses(
 
   try {
     const supabase = await createClient();
+    const [{ data: byCode, error: codeError }, { data: byTitle, error: titleError }] =
+      await Promise.all([
+        supabase
+          .from("courses")
+          .select("id")
+          .ilike("code", `%${term}%`)
+          .limit(25),
+        supabase
+          .from("course_versions")
+          .select("course_id")
+          .ilike("title", `%${term}%`)
+          .limit(50),
+      ]);
+    if (codeError) throw codeError;
+    if (titleError) throw titleError;
+
+    const matchedIds = [
+      ...new Set([
+        ...(byCode ?? []).map((course) => course.id),
+        ...(byTitle ?? []).map((version) => version.course_id),
+      ]),
+    ];
+    if (matchedIds.length === 0) return [];
+
     const { data: courses, error } = await supabase
       .from("courses")
       .select("id,code")
-      .ilike("code", `%${term}%`)
+      .in("id", matchedIds)
       .order("code")
       .limit(25);
     if (error) throw error;
@@ -179,10 +203,36 @@ export async function searchImportableProgrammes(
 
   try {
     const supabase = await createClient();
+    const [
+      { data: byCode, error: codeError },
+      { data: byName, error: nameError },
+    ] = await Promise.all([
+      supabase
+        .from("academic_structures")
+        .select("id")
+        .ilike("code", `%${term}%`)
+        .limit(25),
+      supabase
+        .from("academic_structure_versions")
+        .select("structure_id")
+        .ilike("name", `%${term}%`)
+        .limit(50),
+    ]);
+    if (codeError) throw codeError;
+    if (nameError) throw nameError;
+
+    const matchedIds = [
+      ...new Set([
+        ...(byCode ?? []).map((structure) => structure.id),
+        ...(byName ?? []).map((version) => version.structure_id),
+      ]),
+    ];
+    if (matchedIds.length === 0) return [];
+
     const { data: structures, error } = await supabase
       .from("academic_structures")
       .select("id,code,kind")
-      .ilike("code", `%${term}%`)
+      .in("id", matchedIds)
       .order("code")
       .limit(25);
     if (error) throw error;
