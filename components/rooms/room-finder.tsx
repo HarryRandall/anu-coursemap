@@ -258,10 +258,12 @@ export function RoomFinder({
 
   const selectPlace = useCallback(
     (slug: string) => {
+      const isVisible = Boolean(findCampusPlace(filteredPlaces, slug));
+      if (!isVisible) setQuery("");
       setSelectedSlug(slug);
-      updateUrl({ placeSlug: slug });
+      updateUrl({ placeSlug: slug, query: isVisible ? query : "" });
     },
-    [updateUrl],
+    [filteredPlaces, query, updateUrl],
   );
 
   function changeQuery(nextQuery: string) {
@@ -612,7 +614,9 @@ export function RoomFinder({
                 <Badge size="sm">
                   {selectedPlace.dataStatus === "verified"
                     ? "Verified"
-                    : "Example data"}
+                    : selectedPlace.dataStatus === "mapped"
+                      ? "Mapped"
+                      : "Example data"}
                 </Badge>
               </div>
 
@@ -660,7 +664,8 @@ export function RoomFinder({
           campus={data.campus}
           layers={data.layers}
           visibleLayerSlugs={visibleLayerSlugs}
-          places={filteredPlaces}
+          places={data.places}
+          features={data.features}
           selectedSlug={selectedPlace?.slug}
           route={routeState.route}
           routeEndpoints={routeEndpoints}
