@@ -1,21 +1,111 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { Command } from "cmdk";
+import {
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ImportFormShell } from "@/components/admin/imports/import-form-shell";
-import {
-  ImportRunStatus,
-  type ImportProgressEvent,
-} from "@/components/admin/imports/import-run-status";
+import type { ImportProgressEvent } from "@/components/admin/imports/import-run-status";
 import { readImportStream } from "@/components/admin/imports/import-stream";
+import {
+  searchImportableProgrammes,
+  type ProgrammeImportSearchResult,
+} from "@/lib/catalogue-import/search-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/field";
+import { CommandItem, CommandList } from "@/components/ui/command";
+import {
+  DataTableEmpty,
+  DataTableShell,
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/data-table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Field, inputClasses } from "@/components/ui/field";
+import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/cn";
+import type { Tone } from "@/lib/ui";
 
 const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]{4,}$/u;
+const PAGE_SIZE = 10;
+
+type QueueRow = {
+  code: string;
+  detail: string | null;
+  kind: string | null;
+  runStatus: string | null;
+  title: string | null;
+  year: number;
+  years: number[];
+};
+
+function rowKey(code: string, year: number) {
+  return `${code}:${year}`;
+}
+
+function planChip(years: readonly number[]): { label: string; tone: Tone } {
+  if (years.length === 0) return { label: "New", tone: "info" };
+  return { label: "Update", tone: "brand" };
+}
+
+function actionLabel(action: string | undefined) {
+  switch (action) {
+    case "fetching":
+      return "Fetching";
+    case "created":
+      return "Created";
+    case "updated":
+      return "Updated";
+    case "unchanged":
+      return "Unchanged";
+    case "failed":
+      return "Failed";
+    default:
+      return action ?? null;
+  }
+}
+
+function runTone(status: string | null): Tone {
+  if (!status) return "neutral";
+  const key = status.toLowerCase();
+  if (key.includes("fail")) return "danger";
+  if (key.includes("fetch") || key.includes("queued")) return "brand";
+  if (
+    key.includes("created") ||
+    key.includes("updated") ||
+    key.includes("unchanged")
+  ) {
+    return "success";
+  }
+  return "neutral";
+}
+
+function anuProgrammeUrl(year: number, code: string) {
+  return `https://programsandcourses.anu.edu.au/${year}/program/${code}`;
+}
 
 export function ProgrammeImport({
   catalogueYears,
@@ -23,124 +113,377 @@ export function ProgrammeImport({
   catalogueYears: number[];
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const defaultYear = catalogueYears[0] ?? new Date().getFullYear();
-  const [year, setYear] = useState(defaultYear);
-  const [code, setCode] = useState("");
+  const [yearScope, setYearScope] = useState<string>(String(defaultYear));
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ProgrammeImportSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [picks, setPicks] = useState<QueueRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [current, setCurrent] = useState<ImportProgressEvent | null>(null);
-  const [log, setLog] = useState<ImportProgressEvent[]>([]);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
   const [runId, setRunId] = useState<string | null>(null);
-  const [courseTotal, setCourseTotal] = useState(0);
+  const input = useRef<HTMLInputElement>(null);
+  const requestId = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const normalisedCode = code.trim().toUpperCase();
-  const valid = PROGRAMME_CODE_PATTERN.test(normalisedCode);
+  const normalisedQuery = query.trim().toUpperCase();
+  const addYears =
+    yearScope === "all"
+      ? catalogueYears
+      : [Number(yearScope)].filter((year) => Number.isFinite(year));
+  const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
+  const pageCount = Math.max(1, Math.ceil(picks.length / PAGE_SIZE) || 1);
+  const safePage = Math.min(page, pageCount);
+  const pageRows = picks.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
 
-  async function runImport() {
-    if (running) return;
-    setError(null);
-    if (!valid) {
-      setError("Enter a programme code, for example BCOMP.");
+  useEffect(() => {
+    if (page === safePage) return;
+    const params = new URLSearchParams(searchParams.toString());
+    if (safePage <= 1) params.delete("page");
+    else params.set("page", String(safePage));
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
+  }, [page, pathname, router, safePage, searchParams]);
+
+  function updateQuery(next: string) {
+    setQuery(next);
+    const term = next.trim().toUpperCase();
+    if (timer.current) clearTimeout(timer.current);
+    if (term.length < 2) {
+      setResults([]);
+      setSearching(false);
+      setOpen(false);
       return;
     }
+    setSearching(true);
+    setOpen(true);
+    const id = ++requestId.current;
+    timer.current = setTimeout(() => {
+      void searchImportableProgrammes(term).then((rows) => {
+        if (id !== requestId.current) return;
+        setResults(rows);
+        setSearching(false);
+      });
+    }, 250);
+  }
 
-    setRunning(true);
+  const unmatchedCode = useMemo(() => {
+    if (!PROGRAMME_CODE_PATTERN.test(normalisedQuery)) return null;
+    if (results.some((result) => result.code === normalisedQuery)) return null;
+    return normalisedQuery;
+  }, [normalisedQuery, results]);
+
+  const showList =
+    open &&
+    normalisedQuery.length >= 2 &&
+    (results.length > 0 ||
+      unmatchedCode !== null ||
+      (!searching && results.length === 0));
+
+  const picked = useMemo(
+    () => new Set(picks.map((pick) => rowKey(pick.code, pick.year))),
+    [picks],
+  );
+
+  const completedCount = picks.filter((pick) => {
+    const status = pick.runStatus?.toLowerCase() ?? "";
+    return (
+      status.includes("created") ||
+      status.includes("updated") ||
+      status.includes("unchanged") ||
+      status.includes("failed")
+    );
+  }).length;
+
+  function add(
+    pick: {
+      code: string;
+      kind: string | null;
+      title: string | null;
+      years: number[];
+    },
+    targetYears: number[] = addYears,
+  ) {
+    setError(null);
     setDone(false);
     setRunId(null);
-    setLog([]);
-    setCourseTotal(0);
-    setCurrent({
-      code: normalisedCode,
-      kind: "programme",
-      message: "Reading programme page",
+    setPicks((currentPicks) => {
+      const next = [...currentPicks];
+      for (const targetYear of targetYears) {
+        if (
+          next.some(
+            (entry) => entry.code === pick.code && entry.year === targetYear,
+          )
+        ) {
+          continue;
+        }
+        next.push({
+          ...pick,
+          detail: null,
+          runStatus: null,
+          year: targetYear,
+        });
+      }
+      return next;
+    });
+    setQuery("");
+    setResults([]);
+    setOpen(false);
+    input.current?.focus();
+  }
+
+  function remove(code: string, targetYear: number) {
+    setPicks((currentPicks) =>
+      currentPicks.filter(
+        (entry) => !(entry.code === code && entry.year === targetYear),
+      ),
+    );
+  }
+
+  function queueForYear(pick: QueueRow, targetYear: number) {
+    add(
+      {
+        code: pick.code,
+        kind: pick.kind,
+        title: pick.title,
+        years: pick.years,
+      },
+      [targetYear],
+    );
+  }
+
+  function patchPick(
+    code: string,
+    targetYear: number,
+    patch: Partial<Pick<QueueRow, "detail" | "runStatus">>,
+  ) {
+    setPicks((currentPicks) =>
+      currentPicks.map((row) =>
+        row.code === code && row.year === targetYear
+          ? { ...row, ...patch }
+          : row,
+      ),
+    );
+  }
+
+  async function importProgramme(
+    catalogueYear: number,
+    code: string,
+    onProgress: (event: ImportProgressEvent) => void,
+  ) {
+    const response = await fetch("/api/admin/catalogue/imports/programmes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        catalogueYear,
+        programmeCodes: [code],
+      }),
     });
 
+    let lastRunId: string | null = null;
+    await readImportStream(response, (event) => {
+      if (event.type === "progress") {
+        onProgress({
+          action: typeof event.action === "string" ? event.action : undefined,
+          code: typeof event.code === "string" ? event.code : undefined,
+          index: typeof event.index === "number" ? event.index : undefined,
+          kind: event.kind === "course" ? "course" : "programme",
+          message:
+            typeof event.message === "string" ? event.message : undefined,
+          total: typeof event.total === "number" ? event.total : undefined,
+        });
+        return;
+      }
+      if (event.type === "complete") {
+        const result = event.result as
+          | { programme?: { runId?: string; action?: string } }
+          | undefined;
+        if (typeof result?.programme?.runId === "string") {
+          lastRunId = result.programme.runId;
+        }
+        if (typeof result?.programme?.action === "string") {
+          onProgress({
+            action: result.programme.action,
+            code,
+            kind: "programme",
+            message: "Programme imported",
+          });
+        }
+      }
+    });
+    return lastRunId;
+  }
+
+  async function runImport() {
+    if (running || picks.length === 0) return;
+    setError(null);
+    setDone(false);
+    setRunId(null);
+    setCurrent({
+      index: 0,
+      message: "Starting import",
+      total: picks.length,
+    });
+    setRunning(true);
+    setPicks((currentPicks) =>
+      currentPicks.map((pick) => ({
+        ...pick,
+        detail: null,
+        runStatus: "Queued",
+      })),
+    );
+
     try {
-      const response = await fetch("/api/admin/catalogue/imports/programmes", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          catalogueYear: year,
-          programmeCodes: [normalisedCode],
-        }),
-      });
+      let finished = 0;
+      let lastRunId: string | null = null;
+      for (const pick of picks) {
+        const key = rowKey(pick.code, pick.year);
+        setActiveKey(key);
+        patchPick(pick.code, pick.year, {
+          detail: "Reading programme page",
+          runStatus: "Fetching",
+        });
+        setCurrent({
+          code: pick.code,
+          index: finished + 1,
+          kind: "programme",
+          message: "Reading programme page",
+          total: picks.length,
+        });
 
-      await readImportStream(response, (event) => {
-        if (event.type === "progress") {
-          const progress: ImportProgressEvent = {
-            action: typeof event.action === "string" ? event.action : undefined,
-            code: typeof event.code === "string" ? event.code : undefined,
-            index: typeof event.index === "number" ? event.index : undefined,
-            kind: event.kind === "course" ? "course" : "programme",
-            message:
-              typeof event.message === "string" ? event.message : undefined,
-            total: typeof event.total === "number" ? event.total : undefined,
-          };
-          if (typeof progress.total === "number") {
-            setCourseTotal(progress.total);
-          }
-          setCurrent(progress);
-          setLog((entries) => [...entries, progress].slice(-16));
-          return;
-        }
-        if (event.type === "complete") {
-          const result = event.result as
-            | { programme?: { runId?: string } }
-            | undefined;
-          if (typeof result?.programme?.runId === "string") {
-            setRunId(result.programme.runId);
-          }
-        }
-      });
+        const runIdForPick = await importProgramme(
+          pick.year,
+          pick.code,
+          (progress) => {
+            setCurrent({
+              ...progress,
+              code: pick.code,
+              index: finished + 1,
+              total: picks.length,
+            });
+            if (progress.kind === "programme") {
+              patchPick(pick.code, pick.year, {
+                detail: progress.message ?? null,
+                runStatus: actionLabel(progress.action),
+              });
+              return;
+            }
+            // Course pages under the programme still belong to this row.
+            patchPick(pick.code, pick.year, {
+              detail: progress.code
+                ? `${progress.code}: ${progress.message ?? "Fetching"}`
+                : (progress.message ?? null),
+              runStatus: "Fetching",
+            });
+          },
+        );
 
+        finished += 1;
+        if (runIdForPick) lastRunId = runIdForPick;
+        setPicks((currentPicks) =>
+          currentPicks.map((row) =>
+            row.code === pick.code && row.year === pick.year
+              ? {
+                  ...row,
+                  detail: null,
+                  runStatus:
+                    row.runStatus === "Failed"
+                      ? "Failed"
+                      : row.runStatus === "Fetching" ||
+                          row.runStatus === "Queued"
+                        ? "Updated"
+                        : row.runStatus,
+                }
+              : row,
+          ),
+        );
+      }
+
+      if (lastRunId) setRunId(lastRunId);
+      setActiveKey(null);
       setDone(true);
-      toast.success(`Imported ${normalisedCode}.`);
+      toast.success(
+        `Imported ${picks.length} ${picks.length === 1 ? "programme" : "programmes"}.`,
+      );
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Import failed.");
       setCurrent(null);
+      setActiveKey(null);
     } finally {
       setRunning(false);
     }
   }
 
+  const pagination = (
+    <Pagination
+      alwaysShowControls
+      itemName="programmes"
+      page={safePage}
+      pageSize={PAGE_SIZE}
+      pathname={pathname}
+      searchParams={{
+        page: safePage > 1 ? String(safePage) : undefined,
+      }}
+      total={picks.length}
+    />
+  );
+
   return (
     <ImportFormShell
       title="Import programmes"
-      progress={
-        running || done ? (
-          <ImportRunStatus
-            current={current}
-            done={done}
-            headline={current?.code ?? normalisedCode}
-            log={log}
-            runHref={
-              runId ? `/admin/imports/sync/${runId}` : "/admin/imports/sync"
-            }
-            successLabel={`Imported ${normalisedCode}${
-              courseTotal > 0
-                ? ` and ${courseTotal} ${courseTotal === 1 ? "course" : "courses"}`
-                : ""
-            }`}
-          />
-        ) : null
-      }
       footer={
         <>
+          {done ? (
+            <span className="mr-auto flex items-center gap-2 text-[13px] text-zinc-600">
+              <CheckCircle2
+                aria-hidden="true"
+                className="size-4 text-emerald-600"
+              />
+              Imported {picks.length}{" "}
+              {picks.length === 1 ? "programme" : "programmes"}
+              {runId ? (
+                <>
+                  {" · "}
+                  <Link
+                    className="font-medium text-brand-700 hover:text-brand-800"
+                    href={`/admin/imports/sync/${runId}`}
+                  >
+                    View run
+                  </Link>
+                </>
+              ) : null}
+            </span>
+          ) : running && current?.total ? (
+            <span
+              aria-live="polite"
+              className="mr-auto text-[13px] text-zinc-500 tabular-nums"
+            >
+              {completedCount} of {current.total} finished
+            </span>
+          ) : null}
           <ButtonLink href="/admin/imports/sync" variant="secondary">
             {done ? "Back to sync" : "Cancel"}
           </ButtonLink>
           <Button
             aria-busy={running}
-            disabled={running || !valid}
+            disabled={running || picks.length === 0}
             onClick={() => void runImport()}
             variant="primary"
           >
             {running ? (
               <Loader2 aria-hidden="true" className="animate-spin" size={16} />
             ) : null}
-            {running ? "Importing" : "Import programme"}
+            {running ? "Importing" : "Import"}
           </Button>
         </>
       }
@@ -152,38 +495,291 @@ export function ProgrammeImport({
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-end">
-        <Field label="Programme code">
-          <Input
-            autoComplete="off"
-            className="font-mono"
-            disabled={running}
-            onChange={(event) => {
-              setCode(event.target.value);
-              setDone(false);
-              setRunId(null);
+        <Field label="Find a programme">
+          <Command
+            shouldFilter={false}
+            onBlur={(event) => {
+              if (event.currentTarget.contains(event.relatedTarget as Node)) {
+                return;
+              }
+              setOpen(false);
             }}
             onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              void runImport();
+              if (event.key === "Escape") setOpen(false);
             }}
-            placeholder="e.g. BCOMP"
-            value={code}
-          />
+          >
+            <div className="relative">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400"
+              />
+              <Command.Input
+                aria-label="Find a programme"
+                autoComplete="off"
+                className={inputClasses("pl-9")}
+                disabled={running}
+                onFocus={() => {
+                  if (normalisedQuery.length >= 2) setOpen(true);
+                }}
+                onValueChange={updateQuery}
+                placeholder="Code or name, e.g. BCOMP"
+                ref={input}
+                value={query}
+              />
+              {searching ? (
+                <Loader2
+                  aria-hidden="true"
+                  className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-zinc-400"
+                />
+              ) : null}
+
+              {showList ? (
+                <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
+                  <CommandList className="max-h-72">
+                    {!searching &&
+                    results.length === 0 &&
+                    !unmatchedCode ? (
+                      <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
+                        No match. Type a full code like BCOMP to pull one
+                        Coursemap has never seen.
+                      </p>
+                    ) : null}
+
+                    {unmatchedCode ? (
+                      <CommandItem
+                        disabled={addYears.every((year) =>
+                          picked.has(rowKey(unmatchedCode, year)),
+                        )}
+                        onSelect={() =>
+                          add({
+                            code: unmatchedCode,
+                            kind: null,
+                            title: null,
+                            years: [],
+                          })
+                        }
+                        value={unmatchedCode}
+                      >
+                        <Plus
+                          aria-hidden="true"
+                          className="size-4 shrink-0 text-brand-600"
+                        />
+                        <span className="font-mono text-zinc-900">
+                          {unmatchedCode}
+                        </span>
+                        <Badge className="ml-auto" tone="info">
+                          New
+                        </Badge>
+                      </CommandItem>
+                    ) : null}
+
+                    {results.map((result) => {
+                      const chip = planChip(result.years);
+                      const queued = addYears.every((year) =>
+                        picked.has(rowKey(result.code, year)),
+                      );
+                      return (
+                        <CommandItem
+                          disabled={queued}
+                          key={result.code}
+                          onSelect={() =>
+                            add({
+                              code: result.code,
+                              kind: result.kind,
+                              title: result.title,
+                              years: result.years,
+                            })
+                          }
+                          value={result.code}
+                        >
+                          <span className="w-[88px] shrink-0 font-mono text-zinc-900">
+                            {result.code}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-zinc-700">
+                            {result.title ?? "Untitled"}
+                          </span>
+                          <Badge tone={queued ? "neutral" : chip.tone}>
+                            {queued ? "Queued" : chip.label}
+                          </Badge>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandList>
+                </div>
+              ) : null}
+            </div>
+          </Command>
         </Field>
+
         <Field label="Catalogue year">
           <Select
             aria-label="Catalogue year"
             disabled={running}
-            onChange={setYear}
-            options={catalogueYears.map((value) => ({
-              label: String(value),
-              value,
-            }))}
-            value={year}
+            onChange={setYearScope}
+            options={[
+              { label: "All years", value: "all" },
+              ...catalogueYears.map((year) => ({
+                label: String(year),
+                value: String(year),
+              })),
+            ]}
+            value={yearScope}
           />
         </Field>
       </div>
+
+      <section aria-label="Import queue" className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-zinc-900">Add</p>
+          {picks.length > 0 && !running ? (
+            <Button
+              onClick={() => {
+                setPicks([]);
+                setDone(false);
+                setRunId(null);
+                router.replace(pathname);
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              Clear
+            </Button>
+          ) : null}
+        </div>
+
+        <DataTableShell footer={pagination}>
+          {picks.length === 0 ? (
+            <DataTableEmpty
+              description="Search by code or name, then add rows to the queue."
+              title="No programmes queued"
+            />
+          ) : (
+            <Table>
+              <TableCaption>
+                Programmes queued for catalogue import
+              </TableCaption>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Code</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-12">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pageRows.map((pick) => {
+                  const chip = planChip(pick.years);
+                  const key = rowKey(pick.code, pick.year);
+                  const active = running && activeKey === key;
+                  const otherYears = catalogueYears.filter(
+                    (value) =>
+                      value !== pick.year &&
+                      !picked.has(rowKey(pick.code, value)),
+                  );
+                  return (
+                    <TableRow
+                      className={cn(active && "bg-brand-50/50")}
+                      key={key}
+                    >
+                      <TableCell className="font-mono text-zinc-900">
+                        {pick.code}
+                      </TableCell>
+                      <TableCell className="max-w-[16rem] truncate">
+                        {pick.title ?? (
+                          <span className="text-zinc-400">Untitled</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="tabular-nums text-zinc-700">
+                        {pick.year}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-0.5">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {active ? (
+                              <Loader2
+                                aria-hidden="true"
+                                className="size-3.5 animate-spin text-brand-600"
+                              />
+                            ) : null}
+                            {pick.runStatus ? (
+                              <Badge tone={runTone(pick.runStatus)}>
+                                {pick.runStatus}
+                              </Badge>
+                            ) : (
+                              <Badge tone={chip.tone}>{chip.label}</Badge>
+                            )}
+                          </div>
+                          {pick.detail ? (
+                            <p className="text-[12px] text-zinc-500">
+                              {pick.detail}
+                            </p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {running ? null : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className="ml-auto grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none data-[state=open]:bg-zinc-100 data-[state=open]:text-zinc-900"
+                                type="button"
+                              >
+                                <MoreHorizontal
+                                  aria-hidden="true"
+                                  size={16}
+                                />
+                                <span className="sr-only">
+                                  Actions for {pick.code}
+                                </span>
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <a
+                                  href={anuProgrammeUrl(pick.year, pick.code)}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  <ExternalLink aria-hidden="true" />
+                                  View ANU page
+                                  <span className="sr-only">
+                                    {" "}
+                                    (opens in a new tab)
+                                  </span>
+                                </a>
+                              </DropdownMenuItem>
+                              {otherYears.map((year) => (
+                                <DropdownMenuItem
+                                  key={year}
+                                  onSelect={() => queueForYear(pick, year)}
+                                >
+                                  <Plus aria-hidden="true" />
+                                  Also queue for {year}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-rose-600 data-[highlighted]:bg-rose-50 data-[highlighted]:text-rose-700 [&>svg]:text-rose-500"
+                                onSelect={() => remove(pick.code, pick.year)}
+                              >
+                                <Trash2 aria-hidden="true" />
+                                Remove from list
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </DataTableShell>
+      </section>
     </ImportFormShell>
   );
 }

@@ -128,3 +128,118 @@ export async function searchImportableCourses(
 export async function isImportableCourseCode(code: string) {
   return COURSE_CODE_PATTERN.test(code.trim().toUpperCase());
 }
+
+export type ProgrammeImportSearchResult = {
+  code: string;
+  kind: string | null;
+  title: string | null;
+  years: number[];
+};
+
+const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]{4,}$/u;
+
+const DEMO_PROGRAMME_RESULTS: ProgrammeImportSearchResult[] = [
+  {
+    code: "BCOMP",
+    kind: "degree",
+    title: "Bachelor of Computing",
+    years: [2027, 2026],
+  },
+  {
+    code: "BACCT",
+    kind: "degree",
+    title: "Bachelor of Accounting",
+    years: [2026],
+  },
+  {
+    code: "SOFT-MAJ",
+    kind: "major",
+    title: "Software Development",
+    years: [2026],
+  },
+];
+
+/**
+ * Searches programmes Coursemap already holds. Unknown codes are still
+ * offered by the picker when the typed value looks like an ANU programme code.
+ */
+export async function searchImportableProgrammes(
+  query: string,
+): Promise<ProgrammeImportSearchResult[]> {
+  const term = query.trim().toUpperCase();
+  if (term.length < 2) return [];
+  if (!(await canManageCatalogueImports())) return [];
+  if (isDemoMode()) {
+    return DEMO_PROGRAMME_RESULTS.filter(
+      (result) =>
+        result.code.includes(term) ||
+        (result.title?.toUpperCase().includes(term) ?? false),
+    );
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: structures, error } = await supabase
+      .from("academic_structures")
+      .select("id,code,kind")
+      .ilike("code", `%${term}%`)
+      .order("code")
+      .limit(25);
+    if (error) throw error;
+
+    const rows = structures ?? [];
+    if (rows.length === 0) return [];
+
+    const { data: versions, error: versionsError } = await supabase
+      .from("academic_structure_versions")
+      .select("structure_id,name,catalogue_year_id")
+      .in(
+        "structure_id",
+        rows.map((structure) => structure.id),
+      );
+    if (versionsError) throw versionsError;
+
+    const { data: years, error: yearsError } = await supabase
+      .from("catalogue_years")
+      .select("id,year");
+    if (yearsError) throw yearsError;
+    const yearById = new Map((years ?? []).map((row) => [row.id, row.year]));
+
+    const byStructure = new Map<
+      number,
+      { title: string | null; years: Set<number> }
+    >();
+    for (const version of versions ?? []) {
+      const year = yearById.get(version.catalogue_year_id);
+      const existing = byStructure.get(version.structure_id) ?? {
+        title: version.name,
+        years: new Set<number>(),
+      };
+      if (year != null) existing.years.add(year);
+      if (
+        year != null &&
+        [...existing.years].every((held) => held <= year)
+      ) {
+        existing.title = version.name;
+      }
+      byStructure.set(version.structure_id, existing);
+    }
+
+    return rows.map((structure) => {
+      const version = byStructure.get(structure.id);
+      const held = version ? [...version.years].sort((a, b) => b - a) : [];
+      return {
+        code: structure.code,
+        kind: structure.kind,
+        title: version?.title ?? null,
+        years: held,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function isImportableProgrammeCode(code: string) {
+  return PROGRAMME_CODE_PATTERN.test(code.trim().toUpperCase());
+}
