@@ -579,10 +579,10 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
       </div>
 
       <section aria-label="Import queue" className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-zinc-900">Add</p>
-          {picks.length > 0 && !running ? (
+        {picks.length > 0 && !running ? (
+          <div className="flex justify-end">
             <Button
+              className="text-zinc-500 hover:bg-rose-50 hover:text-rose-700"
               onClick={() => {
                 setPicks([]);
                 setDone(false);
@@ -594,8 +594,8 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
             >
               Clear
             </Button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         <DataTableShell footer={pagination}>
           {picks.length === 0 ? (
