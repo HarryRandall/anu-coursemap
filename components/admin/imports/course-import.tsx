@@ -1,7 +1,15 @@
 "use client";
 
 import { Command } from "cmdk";
-import { CheckCircle2, Loader2, Plus, Search, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +23,7 @@ import {
 } from "@/lib/catalogue-import/search-actions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink, IconButton } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { CommandItem, CommandList } from "@/components/ui/command";
 import {
   DataTableEmpty,
@@ -28,9 +36,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/data-table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Field, inputClasses } from "@/components/ui/field";
 import { Pagination } from "@/components/ui/pagination";
-import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 import type { Tone } from "@/lib/ui";
 
@@ -40,13 +54,10 @@ const PAGE_SIZE = 10;
 type QueueRow = {
   code: string;
   detail: string | null;
-  /** Live import step, null while the row is only queued. */
   runStatus: string | null;
   subject: string | null;
   title: string | null;
-  /** Catalogue year this row will be pulled into. */
   year: number;
-  /** Years Coursemap already holds for this code. */
   years: number[];
 };
 
@@ -54,16 +65,10 @@ function rowKey(code: string, year: number) {
   return `${code}:${year}`;
 }
 
-/**
- * What pulling this code into the row's catalogue year will do, relative to
- * what Coursemap already holds.
- */
 function planChip(
   years: readonly number[],
-  targetYear: number,
 ): { label: string; tone: Tone } {
   if (years.length === 0) return { label: "New", tone: "info" };
-  if (years.includes(targetYear)) return { label: "Refresh", tone: "warning" };
   return { label: "Update", tone: "brand" };
 }
 
@@ -99,15 +104,15 @@ function runTone(status: string | null): Tone {
   return "neutral";
 }
 
+function anuCourseUrl(year: number, code: string) {
+  return `https://programsandcourses.anu.edu.au/${year}/course/${code}`;
+}
+
 export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // Newest year first; each queued row keeps its own year so 2026 and 2027 can
-  // sit in the same import.
-  const [year, setYear] = useState(
-    catalogueYears[0] ?? new Date().getFullYear(),
-  );
+  const defaultYear = catalogueYears[0] ?? new Date().getFullYear();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ImportSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -190,13 +195,15 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     );
   }).length;
 
-  function add(pick: {
-    code: string;
-    subject: string | null;
-    title: string | null;
-    years: number[];
-  }) {
-    const targetYear = year;
+  function add(
+    pick: {
+      code: string;
+      subject: string | null;
+      title: string | null;
+      years: number[];
+    },
+    targetYear = defaultYear,
+  ) {
     setError(null);
     setDone(false);
     setRunId(null);
@@ -229,26 +236,16 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     );
   }
 
-  function setRowYear(code: string, fromYear: number, toYear: number) {
-    if (fromYear === toYear) return;
-    setPicks((currentPicks) => {
-      if (
-        currentPicks.some(
-          (entry) => entry.code === code && entry.year === toYear,
-        )
-      ) {
-        return currentPicks.filter(
-          (entry) => !(entry.code === code && entry.year === fromYear),
-        );
-      }
-      return currentPicks.map((entry) =>
-        entry.code === code && entry.year === fromYear
-          ? { ...entry, year: toYear, runStatus: null, detail: null }
-          : entry,
-      );
-    });
-    setDone(false);
-    setRunId(null);
+  function queueForYear(pick: QueueRow, targetYear: number) {
+    add(
+      {
+        code: pick.code,
+        subject: pick.subject,
+        title: pick.title,
+        years: pick.years,
+      },
+      targetYear,
+    );
   }
 
   function patchPick(
@@ -257,10 +254,10 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     patch: Partial<Pick<QueueRow, "detail" | "runStatus">>,
   ) {
     setPicks((currentPicks) =>
-      currentPicks.map((pick) =>
-        pick.code === code && pick.year === targetYear
-          ? { ...pick, ...patch }
-          : pick,
+      currentPicks.map((row) =>
+        row.code === code && row.year === targetYear
+          ? { ...row, ...patch }
+          : row,
       ),
     );
   }
@@ -367,6 +364,20 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
     }
   }
 
+  const pagination = (
+    <Pagination
+      alwaysShowControls
+      itemName="courses"
+      page={safePage}
+      pageSize={PAGE_SIZE}
+      pathname={pathname}
+      searchParams={{
+        page: safePage > 1 ? String(safePage) : undefined,
+      }}
+      total={picks.length}
+    />
+  );
+
   return (
     <ImportFormShell
       title="Import courses"
@@ -423,143 +434,121 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-end">
-        <Field label="Find a course">
-          <Command
-            shouldFilter={false}
-            onBlur={(event) => {
-              if (event.currentTarget.contains(event.relatedTarget as Node)) {
-                return;
-              }
-              setOpen(false);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setOpen(false);
-            }}
-          >
-            <div className="relative">
-              <Search
+      <Field label="Find a course">
+        <Command
+          shouldFilter={false}
+          onBlur={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget as Node)) {
+              return;
+            }
+            setOpen(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setOpen(false);
+          }}
+        >
+          <div className="relative">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400"
+            />
+            <Command.Input
+              aria-label="Find a course"
+              autoComplete="off"
+              className={inputClasses("pl-9")}
+              disabled={running}
+              onFocus={() => {
+                if (normalisedQuery.length >= 2) setOpen(true);
+              }}
+              onValueChange={updateQuery}
+              placeholder="Code or title, e.g. COMP1100"
+              ref={input}
+              value={query}
+            />
+            {searching ? (
+              <Loader2
                 aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400"
+                className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-zinc-400"
               />
-              <Command.Input
-                aria-label="Find a course"
-                autoComplete="off"
-                className={inputClasses("pl-9")}
-                disabled={running}
-                onFocus={() => {
-                  if (normalisedQuery.length >= 2) setOpen(true);
-                }}
-                onValueChange={updateQuery}
-                placeholder="Code or title, e.g. COMP1100"
-                ref={input}
-                value={query}
-              />
-              {searching ? (
-                <Loader2
-                  aria-hidden="true"
-                  className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-zinc-400"
-                />
-              ) : null}
+            ) : null}
 
-              {showList ? (
-                <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
-                  <CommandList className="max-h-72">
-                    {!searching &&
-                    results.length === 0 &&
-                    !unmatchedCode ? (
-                      <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
-                        No match. Type a full code like COMP1100 to pull one
-                        Coursemap has never seen.
-                      </p>
-                    ) : null}
+            {showList ? (
+              <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
+                <CommandList className="max-h-72">
+                  {!searching && results.length === 0 && !unmatchedCode ? (
+                    <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
+                      No match. Type a full code like COMP1100 to pull one
+                      Coursemap has never seen.
+                    </p>
+                  ) : null}
 
-                    {unmatchedCode ? (
+                  {unmatchedCode ? (
+                    <CommandItem
+                      disabled={picked.has(rowKey(unmatchedCode, defaultYear))}
+                      onSelect={() =>
+                        add({
+                          code: unmatchedCode,
+                          subject: unmatchedCode.slice(0, 4),
+                          title: null,
+                          years: [],
+                        })
+                      }
+                      value={unmatchedCode}
+                    >
+                      <Plus
+                        aria-hidden="true"
+                        className="size-4 shrink-0 text-brand-600"
+                      />
+                      <span className="font-mono text-zinc-900">
+                        {unmatchedCode}
+                      </span>
+                      <Badge className="ml-auto" tone="info">
+                        New
+                      </Badge>
+                    </CommandItem>
+                  ) : null}
+
+                  {results.map((result) => {
+                    const chip = planChip(result.years);
+                    const queued = picked.has(
+                      rowKey(result.code, defaultYear),
+                    );
+                    return (
                       <CommandItem
-                        disabled={picked.has(rowKey(unmatchedCode, year))}
+                        disabled={queued}
+                        key={result.code}
                         onSelect={() =>
                           add({
-                            code: unmatchedCode,
-                            subject: unmatchedCode.slice(0, 4),
-                            title: null,
-                            years: [],
+                            code: result.code,
+                            subject: result.subject,
+                            title: result.title,
+                            years: result.years,
                           })
                         }
-                        value={unmatchedCode}
+                        value={result.code}
                       >
-                        <Plus
-                          aria-hidden="true"
-                          className="size-4 shrink-0 text-brand-600"
-                        />
-                        <span className="font-mono text-zinc-900">
-                          {unmatchedCode}
+                        <span className="w-[76px] shrink-0 font-mono text-zinc-900">
+                          {result.code}
                         </span>
-                        <Badge className="ml-auto" tone="info">
-                          New
+                        <span className="min-w-0 flex-1 truncate text-zinc-700">
+                          {result.title ?? "Untitled"}
+                        </span>
+                        <Badge tone={queued ? "neutral" : chip.tone}>
+                          {queued ? "Queued" : chip.label}
                         </Badge>
                       </CommandItem>
-                    ) : null}
-
-                    {results.map((result) => {
-                      const chip = planChip(result.years, year);
-                      const queued = picked.has(rowKey(result.code, year));
-                      return (
-                        <CommandItem
-                          disabled={queued}
-                          key={result.code}
-                          onSelect={() =>
-                            add({
-                              code: result.code,
-                              subject: result.subject,
-                              title: result.title,
-                              years: result.years,
-                            })
-                          }
-                          value={result.code}
-                        >
-                          <span className="w-[76px] shrink-0 font-mono text-zinc-900">
-                            {result.code}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-zinc-700">
-                            {result.title ?? "Untitled"}
-                          </span>
-                          <Badge tone={queued ? "neutral" : chip.tone}>
-                            {queued ? "Queued" : chip.label}
-                          </Badge>
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandList>
-                </div>
-              ) : null}
-            </div>
-          </Command>
-        </Field>
-
-        <Field
-          hint="Applied to courses you add next."
-          label="Catalogue year"
-        >
-          <Select
-            aria-label="Catalogue year"
-            disabled={running}
-            onChange={setYear}
-            options={catalogueYears.map((value) => ({
-              label: String(value),
-              value,
-            }))}
-            value={year}
-          />
-        </Field>
-      </div>
+                    );
+                  })}
+                </CommandList>
+              </div>
+            ) : null}
+          </div>
+        </Command>
+      </Field>
 
       <section aria-label="Import queue" className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium text-zinc-900">
-            {picks.length === 0
-              ? "Queue"
-              : `${picks.length} ${picks.length === 1 ? "course" : "courses"}`}
-          </p>
+          <p className="text-sm font-medium text-zinc-900">Add</p>
           {picks.length > 0 && !running ? (
             <Button
               onClick={() => {
@@ -576,7 +565,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
           ) : null}
         </div>
 
-        <DataTableShell>
+        <DataTableShell footer={pagination}>
           {picks.length === 0 ? (
             <DataTableEmpty
               description="Search by code or title, then add rows to the queue."
@@ -592,17 +581,22 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                   <TableHead>Year</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-12">
-                    <span className="sr-only">Remove</span>
+                    <span className="sr-only">Actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pageRows.map((pick) => {
-                  const chip = planChip(pick.years, pick.year);
+                  const chip = planChip(pick.years);
                   const active =
                     running &&
                     current?.code === pick.code &&
                     pick.runStatus === "Fetching";
+                  const otherYears = catalogueYears.filter(
+                    (value) =>
+                      value !== pick.year &&
+                      !picked.has(rowKey(pick.code, value)),
+                  );
                   return (
                     <TableRow
                       className={cn(active && "bg-brand-50/50")}
@@ -616,24 +610,8 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                           <span className="text-zinc-400">Untitled</span>
                         )}
                       </TableCell>
-                      <TableCell className="w-[7.5rem]">
-                        {running ? (
-                          <span className="tabular-nums text-zinc-700">
-                            {pick.year}
-                          </span>
-                        ) : (
-                          <Select
-                            aria-label={`Catalogue year for ${pick.code}`}
-                            onChange={(next) =>
-                              setRowYear(pick.code, pick.year, next)
-                            }
-                            options={catalogueYears.map((value) => ({
-                              label: String(value),
-                              value,
-                            }))}
-                            value={pick.year}
-                          />
-                        )}
+                      <TableCell className="tabular-nums text-zinc-700">
+                        {pick.year}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap items-center gap-1.5">
@@ -656,15 +634,55 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
                       </TableCell>
                       <TableCell className="text-right">
                         {running ? null : (
-                          <IconButton
-                            className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            label={`Remove ${pick.code} ${pick.year}`}
-                            onClick={() => remove(pick.code, pick.year)}
-                            size="icon-sm"
-                            variant="ghost"
-                          >
-                            <X aria-hidden="true" size={15} />
-                          </IconButton>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className="ml-auto grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none data-[state=open]:bg-zinc-100 data-[state=open]:text-zinc-900"
+                                type="button"
+                              >
+                                <MoreHorizontal
+                                  aria-hidden="true"
+                                  size={16}
+                                />
+                                <span className="sr-only">
+                                  Actions for {pick.code}
+                                </span>
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <a
+                                  href={anuCourseUrl(pick.year, pick.code)}
+                                  rel="noreferrer"
+                                  target="_blank"
+                                >
+                                  <ExternalLink aria-hidden="true" />
+                                  View ANU page
+                                  <span className="sr-only">
+                                    {" "}
+                                    (opens in a new tab)
+                                  </span>
+                                </a>
+                              </DropdownMenuItem>
+                              {otherYears.map((year) => (
+                                <DropdownMenuItem
+                                  key={year}
+                                  onSelect={() => queueForYear(pick, year)}
+                                >
+                                  <Plus aria-hidden="true" />
+                                  Also queue for {year}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-rose-600 data-[highlighted]:bg-rose-50 data-[highlighted]:text-rose-700 [&>svg]:text-rose-500"
+                                onSelect={() => remove(pick.code, pick.year)}
+                              >
+                                <Trash2 aria-hidden="true" />
+                                Remove from list
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                       </TableCell>
                     </TableRow>
@@ -674,18 +692,6 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
             </Table>
           )}
         </DataTableShell>
-
-        <Pagination
-          alwaysShowControls
-          itemName="courses"
-          page={safePage}
-          pageSize={PAGE_SIZE}
-          pathname={pathname}
-          searchParams={{
-            page: safePage > 1 ? String(safePage) : undefined,
-          }}
-          total={picks.length}
-        />
       </section>
     </ImportFormShell>
   );
