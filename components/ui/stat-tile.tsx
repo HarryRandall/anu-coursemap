@@ -13,6 +13,7 @@ export function StatTile({
   action,
   href,
   trend,
+  trendDomainMax,
   trendLabel,
   trendVariant = "area",
   className,
@@ -25,6 +26,7 @@ export function StatTile({
   action?: ReactNode;
   href?: string;
   trend?: readonly number[];
+  trendDomainMax?: number;
   trendLabel?: string;
   trendVariant?: SparklineVariant;
   className?: string;
@@ -65,12 +67,14 @@ export function StatTile({
           ) : null}
         </div>
         {showTrend ? (
-          <Sparkline
-            className="mb-1 min-w-0 flex-1"
-            label={chartLabel}
-            values={trend ?? []}
-            variant={trendVariant}
-          />
+          <div className="mb-0.5 flex min-w-0 flex-1 justify-end">
+            <Sparkline
+              domainMax={trendDomainMax}
+              label={chartLabel}
+              values={trend ?? []}
+              variant={trendVariant}
+            />
+          </div>
         ) : null}
       </div>
       {action ? (

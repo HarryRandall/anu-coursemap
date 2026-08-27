@@ -1,4 +1,4 @@
-import { catalogueHistorySeries } from "@/lib/coursemap/admin-catalogue-history";
+import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -222,7 +222,7 @@ export async function loadAdminUserSummary(): Promise<AdminUserSummary> {
   if (error) throw new Error("Coursemap could not load user totals.");
   const rows = data ?? [];
   return {
-    history: catalogueHistorySeries(
+    history: cumulativeGrowthSeries(
       rows
         .map((row) => row.created_at)
         .filter((value): value is string => typeof value === "string"),

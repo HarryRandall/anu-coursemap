@@ -76,3 +76,35 @@ export function countsByYear(
   }
   return years.map((year) => counts.get(year) ?? 0);
 }
+
+/**
+ * Cumulative count sampled across the real span of the timestamps, so the
+ * series ends on the total and empty leading calendar weeks do not flatten
+ * every tile into the same step shape.
+ */
+export function cumulativeGrowthSeries(
+  timestamps: readonly string[],
+  options?: { points?: number },
+): number[] {
+  const points = options?.points ?? 16;
+  const times = timestamps
+    .map((value) => new Date(value).getTime())
+    .filter((time) => !Number.isNaN(time))
+    .sort((left, right) => left - right);
+  if (times.length === 0) return [];
+  if (times.length === 1 || times[0] === times[times.length - 1]) {
+    return Array.from({ length: points }, (_, index) =>
+      index === points - 1 ? times.length : 0,
+    );
+  }
+
+  const start = times[0]!;
+  const end = times[times.length - 1]!;
+  const span = end - start;
+  let cursor = 0;
+  return Array.from({ length: points }, (_, index) => {
+    const edge = start + (span * index) / (points - 1);
+    while (cursor < times.length && times[cursor]! <= edge) cursor += 1;
+    return cursor;
+  });
+}

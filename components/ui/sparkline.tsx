@@ -1,18 +1,18 @@
 import { cn } from "@/lib/cn";
 
-const width = 120;
-const height = 32;
+const width = 96;
+const height = 28;
 const padX = 3;
 const padY = 4;
 
 export type SparklineVariant = "area" | "bar" | "line";
 
 /**
- * Plot from zero so series with different totals keep different shapes, and
- * inset the path so the end marker is not clipped by the SVG edge.
+ * Inset the path so the end marker is not clipped. Pass `domainMax` to plot
+ * several tiles on the same absolute scale so larger totals read taller.
  */
-function points(values: readonly number[]) {
-  const max = Math.max(...values, 1);
+function points(values: readonly number[], domainMax: number) {
+  const max = Math.max(domainMax, 1);
   const plotWidth = width - padX * 2;
   const plotHeight = height - padY * 2;
   return values.map((value, index) => {
@@ -20,13 +20,19 @@ function points(values: readonly number[]) {
       values.length <= 1
         ? width / 2
         : padX + (index / (values.length - 1)) * plotWidth;
-    const y = padY + plotHeight - (value / max) * plotHeight;
+    const y = padY + plotHeight - (Math.max(value, 0) / max) * plotHeight;
     return { x, y };
   });
 }
 
-function Bars({ values }: { values: readonly number[] }) {
-  const max = Math.max(...values, 1);
+function Bars({
+  values,
+  domainMax,
+}: {
+  values: readonly number[];
+  domainMax: number;
+}) {
+  const max = Math.max(domainMax, 1);
   const gap = values.length > 6 ? 1.5 : 2;
   const plotWidth = width - padX * 2;
   const barWidth = (plotWidth - gap * (values.length - 1)) / values.length;
@@ -55,17 +61,21 @@ function Bars({ values }: { values: readonly number[] }) {
 /** Compact SVG trend used inside dashboard stat tiles. */
 export function Sparkline({
   className,
+  domainMax,
   label,
   values,
   variant = "area",
 }: {
   className?: string;
+  /** Absolute ceiling for the Y axis. Defaults to the series maximum. */
+  domainMax?: number;
   label: string;
   values: readonly number[];
   variant?: SparklineVariant;
 }) {
   if (values.length === 0) return null;
-  const plotted = points(values);
+  const resolvedMax = domainMax ?? Math.max(...values, 1);
+  const plotted = points(values, resolvedMax);
   const line = plotted
     .map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`)
     .join(" ");
@@ -75,15 +85,16 @@ export function Sparkline({
   return (
     <svg
       aria-label={label}
-      className={cn("h-8 w-full overflow-visible text-brand-600", className)}
+      className={cn("overflow-visible text-brand-600", className)}
       fill="none"
-      preserveAspectRatio="none"
+      height={height}
       role="img"
       viewBox={`0 0 ${width} ${height}`}
+      width={width}
     >
       <title>{label}</title>
       {variant === "bar" ? (
-        <Bars values={values} />
+        <Bars domainMax={resolvedMax} values={values} />
       ) : (
         <>
           {variant === "area" ? (
@@ -94,25 +105,12 @@ export function Sparkline({
             stroke="currentColor"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth="2"
-            vectorEffect="non-scaling-stroke"
+            strokeWidth="1.75"
           />
           {last ? (
             <>
-              <circle
-                cx={last.x}
-                cy={last.y}
-                fill="white"
-                r="3.25"
-                vectorEffect="non-scaling-stroke"
-              />
-              <circle
-                cx={last.x}
-                cy={last.y}
-                fill="currentColor"
-                r="2"
-                vectorEffect="non-scaling-stroke"
-              />
+              <circle cx={last.x} cy={last.y} fill="white" r="3" />
+              <circle cx={last.x} cy={last.y} fill="currentColor" r="1.75" />
             </>
           ) : null}
         </>

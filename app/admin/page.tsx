@@ -17,6 +17,14 @@ export default async function AdminOverviewPage() {
     loadAdminUserSummary(),
   ]);
 
+  const trendDomainMax = Math.max(
+    summary.courses,
+    summary.structures,
+    summary.courseDrafts + summary.structureDrafts,
+    users.users,
+    1,
+  );
+
   return (
     <AppShell admin>
       <div className="mx-auto w-full max-w-6xl space-y-5">
@@ -27,6 +35,7 @@ export default async function AdminOverviewPage() {
             icon={<BookOpen aria-hidden="true" />}
             label="Courses"
             trend={summary.courseHistory}
+            trendDomainMax={trendDomainMax}
             trendLabel="Course catalogue growth to the current total"
             value={summary.courses}
           />
@@ -35,6 +44,7 @@ export default async function AdminOverviewPage() {
             icon={<GraduationCap aria-hidden="true" />}
             label="Programmes"
             trend={summary.structureHistory}
+            trendDomainMax={trendDomainMax}
             trendLabel="Programme catalogue growth to the current total"
             value={summary.structures}
           />
@@ -43,6 +53,7 @@ export default async function AdminOverviewPage() {
             icon={<AlertTriangle aria-hidden="true" />}
             label="Drafts"
             trend={summary.draftHistory}
+            trendDomainMax={trendDomainMax}
             trendLabel="Draft catalogue growth to the current total"
             value={summary.courseDrafts + summary.structureDrafts}
           />
@@ -51,6 +62,7 @@ export default async function AdminOverviewPage() {
             icon={<UsersRound aria-hidden="true" />}
             label="Users"
             trend={users.history}
+            trendDomainMax={trendDomainMax}
             trendLabel="Account growth to the current total"
             value={users.users}
           />

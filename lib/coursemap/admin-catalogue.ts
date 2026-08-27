@@ -1,6 +1,6 @@
 import "server-only";
 
-import { catalogueHistorySeries } from "@/lib/coursemap/admin-catalogue-history";
+import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -553,15 +553,15 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
   return {
     courses: courses.count ?? 0,
     courseDrafts: courseDrafts.count ?? 0,
-    courseHistory: catalogueHistorySeries(
+    courseHistory: cumulativeGrowthSeries(
       courseRows.map((row) => row.created_at),
     ),
     structures: structures.count ?? 0,
     structureDrafts: structureDrafts.count ?? 0,
-    structureHistory: catalogueHistorySeries(
+    structureHistory: cumulativeGrowthSeries(
       structureRows.map((row) => row.created_at),
     ),
-    draftHistory: catalogueHistorySeries(draftCreatedAt),
+    draftHistory: cumulativeGrowthSeries(draftCreatedAt),
   };
 }
 

@@ -29,6 +29,7 @@ async function loadHistory() {
 const {
   catalogueHistorySeries,
   countsByYear,
+  cumulativeGrowthSeries,
   startOfUtcWeek,
   weeklyCountSeries,
 } = await loadHistory();
@@ -82,4 +83,25 @@ test("countsByYear keeps empty years", () => {
     ),
     [0, 2, 1],
   );
+});
+
+test("cumulativeGrowthSeries follows the real timestamp span", () => {
+  const series = cumulativeGrowthSeries(
+    [
+      "2026-01-01T00:00:00Z",
+      "2026-02-01T00:00:00Z",
+      "2026-03-01T00:00:00Z",
+      "2026-04-01T00:00:00Z",
+    ],
+    { points: 4 },
+  );
+  assert.deepEqual(series, [1, 2, 3, 4]);
+});
+
+test("cumulativeGrowthSeries ends on a single batch import", () => {
+  const series = cumulativeGrowthSeries(
+    ["2026-08-27T12:00:00Z", "2026-08-27T12:00:00Z", "2026-08-27T12:00:00Z"],
+    { points: 5 },
+  );
+  assert.deepEqual(series, [0, 0, 0, 0, 3]);
 });
