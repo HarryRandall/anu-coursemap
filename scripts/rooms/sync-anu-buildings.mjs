@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { format } from "prettier";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const rawSnapshotPath = resolve(
@@ -770,7 +771,10 @@ async function fetchSnapshot() {
     query: overpassQuery,
     overpass,
   };
-  await writeFile(rawSnapshotPath, `${JSON.stringify(raw, null, 2)}\n`);
+  await writeFile(
+    rawSnapshotPath,
+    await format(JSON.stringify(raw), { parser: "json" }),
+  );
   console.log(
     `Saved ${overpass.elements.length} elements to ${rawSnapshotPath}.`,
   );
@@ -802,6 +806,9 @@ async function generate(migrationFilename = initialMigrationFilename) {
   ]);
   const snapshot = buildSnapshot(raw, baseDemo);
   const demoData = toDemoData(baseDemo, snapshot);
+  const formattedDemoData = await format(JSON.stringify(demoData), {
+    parser: "json",
+  });
   const generatedMigration = migrationSql(snapshot);
   const outputPath = migrationOutputPath(migrationFilename);
   const existingMigration = await readExistingFile(outputPath);
@@ -810,9 +817,7 @@ async function generate(migrationFilename = initialMigrationFilename) {
     `Refusing to rewrite ${migrationFilename}. Generate a new forward migration by passing a new timestamped filename.`,
   );
 
-  const writes = [
-    writeFile(demoDataPath, `${JSON.stringify(demoData, null, 2)}\n`),
-  ];
+  const writes = [writeFile(demoDataPath, formattedDemoData)];
   if (existingMigration === null) {
     writes.push(writeFile(outputPath, generatedMigration));
   }
