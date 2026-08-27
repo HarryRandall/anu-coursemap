@@ -89,9 +89,9 @@ test("cumulativeGrowthSeries follows the real timestamp span", () => {
   const series = cumulativeGrowthSeries(
     [
       "2026-01-01T00:00:00Z",
-      "2026-02-01T00:00:00Z",
-      "2026-03-01T00:00:00Z",
-      "2026-04-01T00:00:00Z",
+      "2026-01-02T00:00:00Z",
+      "2026-01-03T00:00:00Z",
+      "2026-01-04T00:00:00Z",
     ],
     { points: 4 },
   );
