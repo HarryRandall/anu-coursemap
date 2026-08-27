@@ -41,6 +41,15 @@ export function StatTile({
           <div className="mb-1 text-[11px] font-medium text-zinc-500">
             {label}
           </div>
+        </div>
+        {icon ? (
+          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-brand-100 bg-brand-50 text-brand-700 [&>svg]:size-4">
+            {icon}
+          </span>
+        ) : null}
+      </div>
+      <div className="mt-1 flex items-end justify-between gap-3">
+        <div className="min-w-0">
           <div className="text-2xl font-semibold tracking-tight tabular-nums">
             {value}
             {unit ? (
@@ -55,24 +64,15 @@ export function StatTile({
             </p>
           ) : null}
         </div>
-        {icon ? (
-          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-brand-100 bg-brand-50 text-brand-700 [&>svg]:size-4">
-            {icon}
-          </span>
-        ) : null}
-      </div>
-      {showTrend ? (
-        <div className="mt-3 min-w-0" title={chartLabel}>
+        {showTrend ? (
           <Sparkline
+            className="mb-1 shrink-0"
             label={chartLabel}
             values={trend ?? []}
             variant={trendVariant}
           />
-          <p className="mt-1.5 text-[11px] leading-none text-zinc-400">
-            Last 8 weeks
-          </p>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       {action ? (
         <div className="mt-auto border-t border-zinc-100 pt-3">{action}</div>
       ) : null}

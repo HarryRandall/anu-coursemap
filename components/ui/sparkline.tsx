@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 
-const width = 160;
-const height = 40;
+const width = 72;
+const height = 28;
 
 export type SparklineVariant = "area" | "bar" | "line";
 
@@ -15,7 +15,7 @@ function points(values: readonly number[]) {
     const y =
       range === 0
         ? height / 2
-        : height - 3 - ((value - min) / range) * (height - 6);
+        : height - 2 - ((value - min) / range) * (height - 4);
     return { x, y };
   });
 }
@@ -28,7 +28,7 @@ function Bars({ values }: { values: readonly number[] }) {
     <>
       {values.map((value, index) => {
         const barHeight =
-          value <= 0 ? 0 : Math.max(3, (value / max) * (height - 4));
+          value <= 0 ? 0 : Math.max(2, (value / max) * (height - 2));
         const x = gap + index * (barWidth + gap);
         return (
           <rect
@@ -69,11 +69,12 @@ export function Sparkline({
   return (
     <svg
       aria-label={label}
-      className={cn("h-10 w-full text-brand-600", className)}
+      className={cn("text-brand-600", className)}
       fill="none"
-      preserveAspectRatio="none"
+      height={height}
       role="img"
       viewBox={`0 0 ${width} ${height}`}
+      width={width}
     >
       <title>{label}</title>
       {variant === "bar" ? (
@@ -89,16 +90,9 @@ export function Sparkline({
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="1.75"
-            vectorEffect="non-scaling-stroke"
           />
           {last ? (
-            <circle
-              cx={last.x}
-              cy={last.y}
-              fill="currentColor"
-              r="2.25"
-              vectorEffect="non-scaling-stroke"
-            />
+            <circle cx={last.x} cy={last.y} fill="currentColor" r="2" />
           ) : null}
         </>
       )}

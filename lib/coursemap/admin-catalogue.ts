@@ -1,9 +1,6 @@
 import "server-only";
 
-import {
-  catalogueHistorySeries,
-  weeklyCountSeries,
-} from "@/lib/coursemap/admin-catalogue-history";
+import { catalogueHistorySeries } from "@/lib/coursemap/admin-catalogue-history";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -564,7 +561,7 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
     structureHistory: catalogueHistorySeries(
       structureRows.map((row) => row.created_at),
     ),
-    draftHistory: weeklyCountSeries(draftCreatedAt),
+    draftHistory: catalogueHistorySeries(draftCreatedAt),
   };
 }
 

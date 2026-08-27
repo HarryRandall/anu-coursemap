@@ -27,7 +27,7 @@ export default async function AdminOverviewPage() {
             icon={<BookOpen aria-hidden="true" />}
             label="Courses"
             trend={summary.courseHistory}
-            trendLabel="Course catalogue size over the last eight weeks"
+            trendLabel="Course catalogue growth to the current total"
             value={summary.courses}
           />
           <StatTile
@@ -35,7 +35,7 @@ export default async function AdminOverviewPage() {
             icon={<GraduationCap aria-hidden="true" />}
             label="Programmes"
             trend={summary.structureHistory}
-            trendLabel="Programme catalogue size over the last eight weeks"
+            trendLabel="Programme catalogue growth to the current total"
             value={summary.structures}
           />
           <StatTile
@@ -43,7 +43,7 @@ export default async function AdminOverviewPage() {
             icon={<AlertTriangle aria-hidden="true" />}
             label="Drafts"
             trend={summary.draftHistory}
-            trendLabel="Draft records added in the last eight weeks"
+            trendLabel="Draft catalogue growth to the current total"
             value={summary.courseDrafts + summary.structureDrafts}
           />
           <StatTile
@@ -51,7 +51,7 @@ export default async function AdminOverviewPage() {
             icon={<UsersRound aria-hidden="true" />}
             label="Users"
             trend={users.history}
-            trendLabel="New accounts in the last eight weeks"
+            trendLabel="Account growth to the current total"
             value={users.users}
           />
         </div>
