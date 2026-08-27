@@ -6,6 +6,11 @@ import {
   fetchAnuCourseDirectory,
   parseAnuCourseDirectory,
 } from "../lib/catalogue-import/anu-course-directory.ts";
+import {
+  createAnuProgrammeSearchUrls,
+  fetchAnuProgrammeDirectory,
+  mergeAnuProgrammeDirectory,
+} from "../lib/catalogue-import/anu-programme-directory.ts";
 import { fetchSourceWithRetry } from "../lib/catalogue-import/source-http.ts";
 
 function jsonResponse(payload, init = {}) {
@@ -146,4 +151,137 @@ test("surfaces the final failure after exhausting retries", async () => {
     /HTTP 503/,
   );
   assert.equal(attempts, 2);
+});
+
+test("builds programme search URLs for each career endpoint", () => {
+  const urls = createAnuProgrammeSearchUrls(2026);
+  assert.equal(urls.length, 4);
+  assert.deepEqual(
+    urls.map((entry) => entry.kind),
+    ["undergraduate", "postgraduate", "research", "non_award"],
+  );
+  for (const entry of urls) {
+    const url = new URL(entry.sourceUrl);
+    assert.equal(url.origin, "https://programsandcourses.anu.edu.au");
+    assert.equal(url.searchParams.get("SelectedYear"), "2026");
+    assert.equal(url.searchParams.get("PageSize"), "Infinity");
+    assert.equal(url.searchParams.get("ShowAll"), "true");
+  }
+  assert.throws(
+    () => createAnuProgrammeSearchUrls(1999),
+    /between 2000 and 2200/,
+  );
+});
+
+test("merges programme directory payloads and deduplicates codes", () => {
+  const directory = mergeAnuProgrammeDirectory(
+    [
+      {
+        kind: "undergraduate",
+        payload: {
+          Items: [
+            {
+              AcademicPlanCode: "BCOMP",
+              ProgramName: "Bachelor of Computing",
+              AcademicCareer: "Undergraduate",
+              Duration: 3,
+            },
+            {
+              AcademicPlanCode: "bad",
+              ProgramName: "Too short",
+            },
+          ],
+        },
+      },
+      {
+        kind: "postgraduate",
+        payload: {
+          Items: [
+            {
+              AcademicPlanCode: "BCOMP",
+              ProgramName: "Duplicate postgraduate copy",
+            },
+            {
+              AcademicPlanCode: "MCOMP",
+              ProgramName: "Master of Computing",
+              Duration: 2,
+            },
+          ],
+        },
+      },
+    ],
+    2026,
+  );
+
+  assert.deepEqual(directory.programmeCodes, ["BCOMP", "MCOMP"]);
+  assert.equal(directory.entries[0].title, "Bachelor of Computing");
+  assert.equal(directory.entries[0].kind, "undergraduate");
+  assert.equal(directory.entries[1].kind, "postgraduate");
+  assert.deepEqual(
+    directory.diagnostics.map((diagnostic) => diagnostic.code),
+    ["INVALID_DIRECTORY_PROGRAMME", "DUPLICATE_DIRECTORY_PROGRAMME_CODE"],
+  );
+});
+
+test("reports an error when programme directory has no usable rows", () => {
+  const directory = mergeAnuProgrammeDirectory(
+    [{ kind: "undergraduate", payload: { Items: [] } }],
+    2026,
+  );
+  assert.deepEqual(directory.programmeCodes, []);
+  assert.equal(directory.diagnostics.at(-1)?.code, "EMPTY_PROGRAMME_DIRECTORY");
+  assert.equal(directory.diagnostics.at(-1)?.severity, "error");
+});
+
+test("parses the captured programme directory fixture", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { fileURLToPath } = await import("node:url");
+  const { dirname, join } = await import("node:path");
+  const fixturePath = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "fixtures/anu-programme-directory-sample.json",
+  );
+  const items = JSON.parse(await readFile(fixturePath, "utf8"));
+  const directory = mergeAnuProgrammeDirectory(
+    [{ kind: "undergraduate", payload: { Items: items } }],
+    2026,
+  );
+  assert.deepEqual(directory.programmeCodes, ["BCOMP", "MCOMP"]);
+  assert.equal(
+    directory.diagnostics.some(
+      (diagnostic) => diagnostic.code === "INVALID_DIRECTORY_PROGRAMME",
+    ),
+    true,
+  );
+});
+
+test("fetches programme directory across career endpoints", async () => {
+  const requests = [];
+  const directory = await fetchAnuProgrammeDirectory(2025, {
+    fetchImpl: async (url) => {
+      requests.push(String(url));
+      return jsonResponse({
+        Items: [
+          {
+            AcademicPlanCode: "BCOMP",
+            ProgramName: "Bachelor of Computing",
+          },
+        ],
+      });
+    },
+    now: () => new Date("2026-08-19T00:00:00.000Z"),
+  });
+
+  assert.equal(requests.length, 4);
+  assert.ok(requests.every((url) => url.includes("SelectedYear=2025")));
+  assert.equal(directory.catalogueYear, 2025);
+  assert.equal(directory.fetchedAt, "2026-08-19T00:00:00.000Z");
+  // Same code across four endpoints collapses to one entry.
+  assert.deepEqual(directory.programmeCodes, ["BCOMP"]);
+  assert.equal(
+    directory.diagnostics.filter(
+      (diagnostic) => diagnostic.code === "DUPLICATE_DIRECTORY_PROGRAMME_CODE",
+    ).length,
+    3,
+  );
 });

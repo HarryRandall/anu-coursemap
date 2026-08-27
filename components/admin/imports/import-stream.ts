@@ -27,9 +27,7 @@ export async function readImportStream(
       const event = JSON.parse(payload) as Record<string, unknown>;
       if (event.type === "error") {
         throw new Error(
-          typeof event.message === "string"
-            ? event.message
-            : "Import failed.",
+          typeof event.message === "string" ? event.message : "Import failed.",
         );
       }
       onEvent(event);

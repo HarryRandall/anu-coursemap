@@ -96,43 +96,43 @@ export function Pagination({
             </span>
           )}
 
-          {pageCount > 1
-            ? pageWindow(safePage, pageCount).map((entry, index) =>
-                entry === "gap" ? (
-                  <span
-                    aria-hidden="true"
-                    className="grid size-8 place-items-center text-xs text-zinc-400"
-                    key={`gap-${index}`}
-                  >
-                    &hellip;
-                  </span>
-                ) : entry === safePage ? (
-                  <span
-                    aria-current="page"
-                    className="grid size-8 place-items-center rounded-md bg-zinc-900 text-xs font-semibold text-white tabular-nums"
-                    key={entry}
-                  >
-                    {entry}
-                  </span>
-                ) : (
-                  <Link
-                    className="grid size-8 place-items-center rounded-md text-xs font-medium text-zinc-600 tabular-nums transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                    href={href(entry)}
-                    key={entry}
-                  >
-                    <span className="sr-only">Page </span>
-                    {entry}
-                  </Link>
-                ),
-              )
-            : (
+          {pageCount > 1 ? (
+            pageWindow(safePage, pageCount).map((entry, index) =>
+              entry === "gap" ? (
+                <span
+                  aria-hidden="true"
+                  className="grid size-8 place-items-center text-xs text-zinc-400"
+                  key={`gap-${index}`}
+                >
+                  &hellip;
+                </span>
+              ) : entry === safePage ? (
                 <span
                   aria-current="page"
                   className="grid size-8 place-items-center rounded-md bg-zinc-900 text-xs font-semibold text-white tabular-nums"
+                  key={entry}
                 >
-                  1
+                  {entry}
                 </span>
-              )}
+              ) : (
+                <Link
+                  className="grid size-8 place-items-center rounded-md text-xs font-medium text-zinc-600 tabular-nums transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                  href={href(entry)}
+                  key={entry}
+                >
+                  <span className="sr-only">Page </span>
+                  {entry}
+                </Link>
+              ),
+            )
+          ) : (
+            <span
+              aria-current="page"
+              className="grid size-8 place-items-center rounded-md bg-zinc-900 text-xs font-semibold text-white tabular-nums"
+            >
+              1
+            </span>
+          )}
 
           {safePage < pageCount && total > 0 ? (
             <Link className={stepClasses} href={href(safePage + 1)}>

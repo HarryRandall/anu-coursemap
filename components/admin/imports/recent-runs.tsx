@@ -101,6 +101,15 @@ function outcome(run: ImportRun) {
  * touches too many to list, and its page count is the honest summary.
  */
 function Scope({ run }: { run: ImportRun }) {
+  if (run.type === "Directory courses" || run.type === "Directory programmes") {
+    return (
+      <span className="text-zinc-800">
+        {run.type}
+        <span className="text-zinc-500"> · {run.year}</span>
+      </span>
+    );
+  }
+
   if (run.courseCodes.length === 0) {
     return (
       <span className="text-zinc-500">
@@ -130,7 +139,7 @@ export function RecentRuns({ runs }: { runs: ImportRun[] }) {
     return (
       <DataTableShell>
         <DataTableEmpty
-          description="Import a course or a programme and the run will appear here."
+          description="Refresh the directory or import a course or programme and the run will appear here."
           title="No imports yet"
         />
       </DataTableShell>

@@ -1,4 +1,4 @@
-import { AutoSyncCard } from "@/components/admin/imports/auto-sync-card";
+import { DirectorySyncPanel } from "@/components/admin/imports/directory-sync-panel";
 import { loadImportsDashboard } from "@/components/admin/imports/imports-overview-data";
 import { RecentRuns } from "@/components/admin/imports/recent-runs";
 import { AppShell } from "@/components/shell";
@@ -21,7 +21,7 @@ export default async function ImportsSyncPage() {
           </Alert>
         ) : null}
 
-        <AutoSyncCard />
+        <DirectorySyncPanel catalogueYears={data.catalogueYears} />
         <RecentRuns runs={data.runs} />
       </div>
     </AppShell>

@@ -305,8 +305,7 @@ export function ProgrammeImport({
       }
       if (event.type === "complete") {
         const result = event.result as
-          | { programme?: { runId?: string; action?: string } }
-          | undefined;
+          { programme?: { runId?: string; action?: string } } | undefined;
         if (typeof result?.programme?.runId === "string") {
           lastRunId = result.programme.runId;
         }
@@ -536,9 +535,7 @@ export function ProgrammeImport({
               {showList ? (
                 <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
                   <CommandList className="max-h-72">
-                    {!searching &&
-                    results.length === 0 &&
-                    !unmatchedCode ? (
+                    {!searching && results.length === 0 && !unmatchedCode ? (
                       <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
                         No match. Type a full code like BCOMP to pull one
                         Coursemap has never seen.
@@ -692,7 +689,7 @@ export function ProgrammeImport({
                           <span className="text-zinc-400">Untitled</span>
                         )}
                       </TableCell>
-                      <TableCell className="tabular-nums text-zinc-700">
+                      <TableCell className="text-zinc-700 tabular-nums">
                         {pick.year}
                       </TableCell>
                       <TableCell>
@@ -727,10 +724,7 @@ export function ProgrammeImport({
                                 className="ml-auto grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none data-[state=open]:bg-zinc-100 data-[state=open]:text-zinc-900"
                                 type="button"
                               >
-                                <MoreHorizontal
-                                  aria-hidden="true"
-                                  size={16}
-                                />
+                                <MoreHorizontal aria-hidden="true" size={16} />
                                 <span className="sr-only">
                                   Actions for {pick.code}
                                 </span>

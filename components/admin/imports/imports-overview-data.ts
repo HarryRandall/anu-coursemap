@@ -47,7 +47,7 @@ export type ImportRun = {
   sourcePageCount: number;
   startedAt: string;
   status: string;
-  type: "Courses" | "Programmes";
+  type: "Courses" | "Programmes" | "Directory courses" | "Directory programmes";
   year: number;
 };
 
@@ -318,6 +318,8 @@ function validFlagStatus(status: string): status is ImportFlagStatus {
 }
 
 function runType(scope: string): ImportRun["type"] | null {
+  if (scope === "directory:courses") return "Directory courses";
+  if (scope === "directory:programmes") return "Directory programmes";
   if (scope.startsWith("course_codes:")) return "Courses";
   if (scope.startsWith("programme_codes:")) return "Programmes";
   return null;

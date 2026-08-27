@@ -307,6 +307,137 @@ export type Database = {
           },
         ]
       }
+      catalogue_directory_courses: {
+        Row: {
+          career: string | null
+          catalogue_year_id: number
+          code: string
+          created_at: string
+          id: number
+          import_run_id: string
+          mode_of_delivery: string | null
+          session: string | null
+          source_document_id: number
+          title: string
+          units: number | null
+          updated_at: string
+        }
+        Insert: {
+          career?: string | null
+          catalogue_year_id: number
+          code: string
+          created_at?: string
+          id?: never
+          import_run_id: string
+          mode_of_delivery?: string | null
+          session?: string | null
+          source_document_id: number
+          title: string
+          units?: number | null
+          updated_at?: string
+        }
+        Update: {
+          career?: string | null
+          catalogue_year_id?: number
+          code?: string
+          created_at?: string
+          id?: never
+          import_run_id?: string
+          mode_of_delivery?: string | null
+          session?: string | null
+          source_document_id?: number
+          title?: string
+          units?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogue_directory_courses_catalogue_year_id_fkey"
+            columns: ["catalogue_year_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogue_directory_courses_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogue_directory_courses_source_document_year_fkey"
+            columns: ["source_document_id", "catalogue_year_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_source_documents"
+            referencedColumns: ["id", "catalogue_year_id"]
+          },
+        ]
+      }
+      catalogue_directory_programmes: {
+        Row: {
+          career: string | null
+          catalogue_year_id: number
+          code: string
+          created_at: string
+          duration: number | null
+          id: number
+          import_run_id: string
+          kind: string
+          source_document_id: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          career?: string | null
+          catalogue_year_id: number
+          code: string
+          created_at?: string
+          duration?: number | null
+          id?: never
+          import_run_id: string
+          kind: string
+          source_document_id: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          career?: string | null
+          catalogue_year_id?: number
+          code?: string
+          created_at?: string
+          duration?: number | null
+          id?: never
+          import_run_id?: string
+          kind?: string
+          source_document_id?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogue_directory_programmes_catalogue_year_id_fkey"
+            columns: ["catalogue_year_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogue_directory_programmes_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalogue_directory_programmes_source_document_year_fkey"
+            columns: ["source_document_id", "catalogue_year_id"]
+            isOneToOne: false
+            referencedRelation: "catalogue_source_documents"
+            referencedColumns: ["id", "catalogue_year_id"]
+          },
+        ]
+      }
       catalogue_import_diagnostics: {
         Row: {
           created_at: string

@@ -8,7 +8,7 @@ export type ImportSearchResult = {
   code: string;
   subject: string | null;
   title: string | null;
-  /** Catalogue years already stored for this course, newest first. */
+  /** Catalogue years with a full course version, newest first. */
   years: number[];
 };
 
@@ -36,10 +36,8 @@ const DEMO_RESULTS: ImportSearchResult[] = [
 ];
 
 /**
- * Searches what Coursemap already holds so a re-import can be picked from a
- * list rather than retyped. A course that has never been imported will not
- * appear here at all -- that is the normal case for a first import, so the
- * caller also offers any well-formed code the search did not match.
+ * Searches the directory index and any full course versions already held.
+ * Directory-only hits show as New; years with a version show as Update.
  */
 export async function searchImportableCourses(
   query: string,
@@ -57,48 +55,79 @@ export async function searchImportableCourses(
 
   try {
     const supabase = await createClient();
-    const [{ data: byCode, error: codeError }, { data: byTitle, error: titleError }] =
-      await Promise.all([
-        supabase
-          .from("courses")
-          .select("id")
-          .ilike("code", `%${term}%`)
-          .limit(25),
-        supabase
-          .from("course_versions")
-          .select("course_id")
-          .ilike("title", `%${term}%`)
-          .limit(50),
-      ]);
+    const [
+      { data: dirByCode, error: dirCodeError },
+      { data: dirByTitle, error: dirTitleError },
+      { data: byCode, error: codeError },
+      { data: byTitle, error: titleError },
+    ] = await Promise.all([
+      supabase
+        .from("catalogue_directory_courses")
+        .select("code,title")
+        .ilike("code", `%${term}%`)
+        .limit(25),
+      supabase
+        .from("catalogue_directory_courses")
+        .select("code,title")
+        .ilike("title", `%${term}%`)
+        .limit(50),
+      supabase
+        .from("courses")
+        .select("id,code")
+        .ilike("code", `%${term}%`)
+        .limit(25),
+      supabase
+        .from("course_versions")
+        .select("course_id,title")
+        .ilike("title", `%${term}%`)
+        .limit(50),
+    ]);
+    if (dirCodeError) throw dirCodeError;
+    if (dirTitleError) throw dirTitleError;
     if (codeError) throw codeError;
     if (titleError) throw titleError;
 
-    const matchedIds = [
-      ...new Set([
-        ...(byCode ?? []).map((course) => course.id),
-        ...(byTitle ?? []).map((version) => version.course_id),
-      ]),
+    const directoryTitle = new Map<string, string>();
+    for (const row of [...(dirByCode ?? []), ...(dirByTitle ?? [])]) {
+      if (!directoryTitle.has(row.code))
+        directoryTitle.set(row.code, row.title);
+    }
+
+    const titleMatchedCourseIds = [
+      ...new Set((byTitle ?? []).map((row) => row.course_id)),
     ];
-    if (matchedIds.length === 0) return [];
+    const { data: titleCourses, error: titleCoursesError } =
+      titleMatchedCourseIds.length > 0
+        ? await supabase
+            .from("courses")
+            .select("id,code")
+            .in("id", titleMatchedCourseIds)
+        : { data: [], error: null };
+    if (titleCoursesError) throw titleCoursesError;
 
-    const { data: courses, error } = await supabase
-      .from("courses")
-      .select("id,code")
-      .in("id", matchedIds)
-      .order("code")
-      .limit(25);
-    if (error) throw error;
+    const courseByCode = new Map<string, number>();
+    for (const course of [...(byCode ?? []), ...(titleCourses ?? [])]) {
+      courseByCode.set(course.code, course.id);
+    }
 
-    const rows = courses ?? [];
-    if (rows.length === 0) return [];
+    const codes = [
+      ...new Set([...directoryTitle.keys(), ...courseByCode.keys()]),
+    ]
+      .sort((left, right) => left.localeCompare(right))
+      .slice(0, 25);
+    if (codes.length === 0) return [];
 
-    const { data: versions, error: versionsError } = await supabase
-      .from("course_versions")
-      .select("course_id,title,subject,catalogue_year_id")
-      .in(
-        "course_id",
-        rows.map((course) => course.id),
-      );
+    const courseIds = codes
+      .map((code) => courseByCode.get(code))
+      .filter((id): id is number => id != null);
+
+    const { data: versions, error: versionsError } =
+      courseIds.length > 0
+        ? await supabase
+            .from("course_versions")
+            .select("course_id,title,subject,catalogue_year_id")
+            .in("course_id", courseIds)
+        : { data: [], error: null };
     if (versionsError) throw versionsError;
 
     const { data: years, error: yearsError } = await supabase
@@ -106,9 +135,12 @@ export async function searchImportableCourses(
       .select("id,year");
     if (yearsError) throw yearsError;
     const yearById = new Map((years ?? []).map((row) => [row.id, row.year]));
+    const codeById = new Map(
+      [...courseByCode.entries()].map(([code, id]) => [id, code]),
+    );
 
     const byCourse = new Map<
-      number,
+      string,
       {
         subject: string | null;
         title: string | null;
@@ -116,31 +148,29 @@ export async function searchImportableCourses(
       }
     >();
     for (const version of versions ?? []) {
+      const code = codeById.get(version.course_id);
+      if (!code) continue;
       const year = yearById.get(version.catalogue_year_id);
-      const existing = byCourse.get(version.course_id) ?? {
+      const existing = byCourse.get(code) ?? {
         subject: version.subject,
         title: version.title,
         years: new Set<number>(),
       };
       if (year != null) existing.years.add(year);
-      // Prefer the newest year's title when several versions exist.
-      if (
-        year != null &&
-        [...existing.years].every((held) => held <= year)
-      ) {
+      if (year != null && [...existing.years].every((held) => held <= year)) {
         existing.subject = version.subject;
         existing.title = version.title;
       }
-      byCourse.set(version.course_id, existing);
+      byCourse.set(code, existing);
     }
 
-    return rows.map((course) => {
-      const version = byCourse.get(course.id);
+    return codes.map((code) => {
+      const version = byCourse.get(code);
       const held = version ? [...version.years].sort((a, b) => b - a) : [];
       return {
-        code: course.code,
-        subject: version?.subject ?? null,
-        title: version?.title ?? null,
+        code,
+        subject: version?.subject ?? code.slice(0, 4),
+        title: version?.title ?? directoryTitle.get(code) ?? null,
         years: held,
       };
     });
@@ -184,8 +214,7 @@ const DEMO_PROGRAMME_RESULTS: ProgrammeImportSearchResult[] = [
 ];
 
 /**
- * Searches programmes Coursemap already holds. Unknown codes are still
- * offered by the picker when the typed value looks like an ANU programme code.
+ * Searches the programme directory and any structure versions already held.
  */
 export async function searchImportableProgrammes(
   query: string,
@@ -204,12 +233,24 @@ export async function searchImportableProgrammes(
   try {
     const supabase = await createClient();
     const [
+      { data: dirByCode, error: dirCodeError },
+      { data: dirByTitle, error: dirTitleError },
       { data: byCode, error: codeError },
       { data: byName, error: nameError },
     ] = await Promise.all([
       supabase
+        .from("catalogue_directory_programmes")
+        .select("code,title,kind")
+        .ilike("code", `%${term}%`)
+        .limit(25),
+      supabase
+        .from("catalogue_directory_programmes")
+        .select("code,title,kind")
+        .ilike("title", `%${term}%`)
+        .limit(50),
+      supabase
         .from("academic_structures")
-        .select("id")
+        .select("id,code,kind")
         .ilike("code", `%${term}%`)
         .limit(25),
       supabase
@@ -218,35 +259,62 @@ export async function searchImportableProgrammes(
         .ilike("name", `%${term}%`)
         .limit(50),
     ]);
+    if (dirCodeError) throw dirCodeError;
+    if (dirTitleError) throw dirTitleError;
     if (codeError) throw codeError;
     if (nameError) throw nameError;
 
-    const matchedIds = [
-      ...new Set([
-        ...(byCode ?? []).map((structure) => structure.id),
-        ...(byName ?? []).map((version) => version.structure_id),
-      ]),
+    const directoryByCode = new Map<
+      string,
+      { title: string; kind: string | null }
+    >();
+    for (const row of [...(dirByCode ?? []), ...(dirByTitle ?? [])]) {
+      if (!directoryByCode.has(row.code)) {
+        directoryByCode.set(row.code, { title: row.title, kind: row.kind });
+      }
+    }
+
+    const nameMatchedIds = [
+      ...new Set((byName ?? []).map((row) => row.structure_id)),
     ];
-    if (matchedIds.length === 0) return [];
+    const { data: nameStructures, error: nameStructuresError } =
+      nameMatchedIds.length > 0
+        ? await supabase
+            .from("academic_structures")
+            .select("id,code,kind")
+            .in("id", nameMatchedIds)
+        : { data: [], error: null };
+    if (nameStructuresError) throw nameStructuresError;
 
-    const { data: structures, error } = await supabase
-      .from("academic_structures")
-      .select("id,code,kind")
-      .in("id", matchedIds)
-      .order("code")
-      .limit(25);
-    if (error) throw error;
+    const structureByCode = new Map<
+      string,
+      { id: number; kind: string | null }
+    >();
+    for (const structure of [...(byCode ?? []), ...(nameStructures ?? [])]) {
+      structureByCode.set(structure.code, {
+        id: structure.id,
+        kind: structure.kind,
+      });
+    }
 
-    const rows = structures ?? [];
-    if (rows.length === 0) return [];
+    const codes = [
+      ...new Set([...directoryByCode.keys(), ...structureByCode.keys()]),
+    ]
+      .sort((left, right) => left.localeCompare(right))
+      .slice(0, 25);
+    if (codes.length === 0) return [];
 
-    const { data: versions, error: versionsError } = await supabase
-      .from("academic_structure_versions")
-      .select("structure_id,name,catalogue_year_id")
-      .in(
-        "structure_id",
-        rows.map((structure) => structure.id),
-      );
+    const structureIds = codes
+      .map((code) => structureByCode.get(code)?.id)
+      .filter((id): id is number => id != null);
+
+    const { data: versions, error: versionsError } =
+      structureIds.length > 0
+        ? await supabase
+            .from("academic_structure_versions")
+            .select("structure_id,name,catalogue_year_id")
+            .in("structure_id", structureIds)
+        : { data: [], error: null };
     if (versionsError) throw versionsError;
 
     const { data: years, error: yearsError } = await supabase
@@ -254,34 +322,37 @@ export async function searchImportableProgrammes(
       .select("id,year");
     if (yearsError) throw yearsError;
     const yearById = new Map((years ?? []).map((row) => [row.id, row.year]));
+    const codeById = new Map(
+      [...structureByCode.entries()].map(([code, value]) => [value.id, code]),
+    );
 
     const byStructure = new Map<
-      number,
+      string,
       { title: string | null; years: Set<number> }
     >();
     for (const version of versions ?? []) {
+      const code = codeById.get(version.structure_id);
+      if (!code) continue;
       const year = yearById.get(version.catalogue_year_id);
-      const existing = byStructure.get(version.structure_id) ?? {
+      const existing = byStructure.get(code) ?? {
         title: version.name,
         years: new Set<number>(),
       };
       if (year != null) existing.years.add(year);
-      if (
-        year != null &&
-        [...existing.years].every((held) => held <= year)
-      ) {
+      if (year != null && [...existing.years].every((held) => held <= year)) {
         existing.title = version.name;
       }
-      byStructure.set(version.structure_id, existing);
+      byStructure.set(code, existing);
     }
 
-    return rows.map((structure) => {
-      const version = byStructure.get(structure.id);
+    return codes.map((code) => {
+      const version = byStructure.get(code);
+      const directory = directoryByCode.get(code);
       const held = version ? [...version.years].sort((a, b) => b - a) : [];
       return {
-        code: structure.code,
-        kind: structure.kind,
-        title: version?.title ?? null,
+        code,
+        kind: structureByCode.get(code)?.kind ?? directory?.kind ?? null,
+        title: version?.title ?? directory?.title ?? null,
         years: held,
       };
     });

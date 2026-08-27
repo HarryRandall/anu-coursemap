@@ -98,7 +98,10 @@ export function ImportRunStatus({
       {log && log.length > 0 ? (
         <ol className="max-h-36 space-y-1 overflow-y-auto text-[12px] text-zinc-500">
           {[...log].reverse().map((entry, index) => (
-            <li className="flex gap-2 tabular-nums" key={`${entry.code}-${index}`}>
+            <li
+              className="flex gap-2 tabular-nums"
+              key={`${entry.code}-${index}`}
+            >
               <span className="w-[76px] shrink-0 font-mono text-zinc-700">
                 {entry.code ?? "-"}
               </span>
