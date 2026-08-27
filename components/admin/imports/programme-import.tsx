@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { CatalogueYearFilter } from "@/components/admin/imports/catalogue-year-filter";
 import { ImportFormShell } from "@/components/admin/imports/import-form-shell";
 import {
   ImportRunStatus,
@@ -14,6 +13,7 @@ import { readImportStream } from "@/components/admin/imports/import-stream";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 
 const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]{4,}$/u;
 
@@ -24,7 +24,7 @@ export function ProgrammeImport({
 }) {
   const router = useRouter();
   const defaultYear = catalogueYears[0] ?? new Date().getFullYear();
-  const [yearFilter, setYearFilter] = useState(String(defaultYear));
+  const [year, setYear] = useState(defaultYear);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -36,17 +36,12 @@ export function ProgrammeImport({
 
   const normalisedCode = code.trim().toUpperCase();
   const valid = PROGRAMME_CODE_PATTERN.test(normalisedCode);
-  const year = yearFilter ? Number(yearFilter) : defaultYear;
 
   async function runImport() {
     if (running) return;
     setError(null);
     if (!valid) {
       setError("Enter a programme code, for example BCOMP.");
-      return;
-    }
-    if (!Number.isFinite(year)) {
-      setError("Choose a catalogue year.");
       return;
     }
 
@@ -156,11 +151,8 @@ export function ProgrammeImport({
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap items-end gap-2">
-        <Field
-          className="min-w-0 flex-1 basis-[min(100%,20rem)]"
-          label="Programme code"
-        >
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-end">
+        <Field label="Programme code">
           <Input
             autoComplete="off"
             className="font-mono"
@@ -179,11 +171,18 @@ export function ProgrammeImport({
             value={code}
           />
         </Field>
-        <CatalogueYearFilter
-          onChange={(next) => setYearFilter(next || String(defaultYear))}
-          value={yearFilter}
-          years={catalogueYears}
-        />
+        <Field label="Catalogue year">
+          <Select
+            aria-label="Catalogue year"
+            disabled={running}
+            onChange={setYear}
+            options={catalogueYears.map((value) => ({
+              label: String(value),
+              value,
+            }))}
+            value={year}
+          />
+        </Field>
       </div>
     </ImportFormShell>
   );

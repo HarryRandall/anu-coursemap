@@ -15,7 +15,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ImportFormShell } from "@/components/admin/imports/import-form-shell";
-import { CatalogueYearFilter } from "@/components/admin/imports/catalogue-year-filter";
 import type { ImportProgressEvent } from "@/components/admin/imports/import-run-status";
 import { readImportStream } from "@/components/admin/imports/import-stream";
 import {
@@ -46,6 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field, inputClasses } from "@/components/ui/field";
 import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 import type { Tone } from "@/lib/ui";
 
@@ -114,7 +114,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const defaultYear = catalogueYears[0] ?? new Date().getFullYear();
-  const [yearFilter, setYearFilter] = useState("");
+  const [yearScope, setYearScope] = useState<string>(String(defaultYear));
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ImportSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -130,19 +130,14 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const normalisedQuery = query.trim().toUpperCase();
-  const selectedYear = yearFilter ? Number(yearFilter) : null;
   const addYears =
-    selectedYear && Number.isFinite(selectedYear)
-      ? [selectedYear]
-      : [defaultYear];
-  const visiblePicks =
-    selectedYear && Number.isFinite(selectedYear)
-      ? picks.filter((pick) => pick.year === selectedYear)
-      : picks;
+    yearScope === "all"
+      ? catalogueYears
+      : [Number(yearScope)].filter((year) => Number.isFinite(year));
   const page = Math.max(1, Number(searchParams.get("page") ?? "1") || 1);
-  const pageCount = Math.max(1, Math.ceil(visiblePicks.length / PAGE_SIZE) || 1);
+  const pageCount = Math.max(1, Math.ceil(picks.length / PAGE_SIZE) || 1);
   const safePage = Math.min(page, pageCount);
-  const pageRows = visiblePicks.slice(
+  const pageRows = picks.slice(
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE,
   );
@@ -389,7 +384,7 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
       searchParams={{
         page: safePage > 1 ? String(safePage) : undefined,
       }}
-      total={visiblePicks.length}
+      total={picks.length}
     />
   );
 
@@ -449,128 +444,138 @@ export function CourseImport({ catalogueYears }: { catalogueYears: number[] }) {
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap items-end gap-2">
-          <Field className="min-w-0 flex-1 basis-[min(100%,20rem)]" label="Find a course">
-            <Command
-              shouldFilter={false}
-              onBlur={(event) => {
-                if (event.currentTarget.contains(event.relatedTarget as Node)) {
-                  return;
-                }
-                setOpen(false);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") setOpen(false);
-              }}
-            >
-              <div className="relative">
-                <Search
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-end">
+        <Field label="Find a course">
+          <Command
+            shouldFilter={false}
+            onBlur={(event) => {
+              if (event.currentTarget.contains(event.relatedTarget as Node)) {
+                return;
+              }
+              setOpen(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setOpen(false);
+            }}
+          >
+            <div className="relative">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400"
+              />
+              <Command.Input
+                aria-label="Find a course"
+                autoComplete="off"
+                className={inputClasses("pl-9")}
+                disabled={running}
+                onFocus={() => {
+                  if (normalisedQuery.length >= 2) setOpen(true);
+                }}
+                onValueChange={updateQuery}
+                placeholder="Code or title, e.g. COMP1100"
+                ref={input}
+                value={query}
+              />
+              {searching ? (
+                <Loader2
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-zinc-400"
+                  className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-zinc-400"
                 />
-                <Command.Input
-                  aria-label="Find a course"
-                  autoComplete="off"
-                  className={inputClasses("pl-9")}
-                  disabled={running}
-                  onFocus={() => {
-                    if (normalisedQuery.length >= 2) setOpen(true);
-                  }}
-                  onValueChange={updateQuery}
-                  placeholder="Code or title, e.g. COMP1100"
-                  ref={input}
-                  value={query}
-                />
-                {searching ? (
-                  <Loader2
-                    aria-hidden="true"
-                    className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-zinc-400"
-                  />
-                ) : null}
+              ) : null}
 
-                {showList ? (
-                  <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
-                    <CommandList className="max-h-72">
-                      {!searching &&
-                      results.length === 0 &&
-                      !unmatchedCode ? (
-                        <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
-                          No match. Type a full code like COMP1100 to pull one
-                          Coursemap has never seen.
-                        </p>
-                      ) : null}
+              {showList ? (
+                <div className="absolute top-full right-0 left-0 z-30 mt-1.5 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
+                  <CommandList className="max-h-72">
+                    {!searching &&
+                    results.length === 0 &&
+                    !unmatchedCode ? (
+                      <p className="px-2.5 py-4 text-center text-[13px] text-zinc-500">
+                        No match. Type a full code like COMP1100 to pull one
+                        Coursemap has never seen.
+                      </p>
+                    ) : null}
 
-                      {unmatchedCode ? (
+                    {unmatchedCode ? (
+                      <CommandItem
+                        disabled={addYears.every((year) =>
+                          picked.has(rowKey(unmatchedCode, year)),
+                        )}
+                        onSelect={() =>
+                          add({
+                            code: unmatchedCode,
+                            subject: unmatchedCode.slice(0, 4),
+                            title: null,
+                            years: [],
+                          })
+                        }
+                        value={unmatchedCode}
+                      >
+                        <Plus
+                          aria-hidden="true"
+                          className="size-4 shrink-0 text-brand-600"
+                        />
+                        <span className="font-mono text-zinc-900">
+                          {unmatchedCode}
+                        </span>
+                        <Badge className="ml-auto" tone="info">
+                          New
+                        </Badge>
+                      </CommandItem>
+                    ) : null}
+
+                    {results.map((result) => {
+                      const chip = planChip(result.years);
+                      const queued = addYears.every((year) =>
+                        picked.has(rowKey(result.code, year)),
+                      );
+                      return (
                         <CommandItem
-                          disabled={addYears.every((year) =>
-                            picked.has(rowKey(unmatchedCode, year)),
-                          )}
+                          disabled={queued}
+                          key={result.code}
                           onSelect={() =>
                             add({
-                              code: unmatchedCode,
-                              subject: unmatchedCode.slice(0, 4),
-                              title: null,
-                              years: [],
+                              code: result.code,
+                              subject: result.subject,
+                              title: result.title,
+                              years: result.years,
                             })
                           }
-                          value={unmatchedCode}
+                          value={result.code}
                         >
-                          <Plus
-                            aria-hidden="true"
-                            className="size-4 shrink-0 text-brand-600"
-                          />
-                          <span className="font-mono text-zinc-900">
-                            {unmatchedCode}
+                          <span className="w-[76px] shrink-0 font-mono text-zinc-900">
+                            {result.code}
                           </span>
-                          <Badge className="ml-auto" tone="info">
-                            New
+                          <span className="min-w-0 flex-1 truncate text-zinc-700">
+                            {result.title ?? "Untitled"}
+                          </span>
+                          <Badge tone={queued ? "neutral" : chip.tone}>
+                            {queued ? "Queued" : chip.label}
                           </Badge>
                         </CommandItem>
-                      ) : null}
+                      );
+                    })}
+                  </CommandList>
+                </div>
+              ) : null}
+            </div>
+          </Command>
+        </Field>
 
-                      {results.map((result) => {
-                        const chip = planChip(result.years);
-                        const queued = addYears.every((year) =>
-                          picked.has(rowKey(result.code, year)),
-                        );
-                        return (
-                          <CommandItem
-                            disabled={queued}
-                            key={result.code}
-                            onSelect={() =>
-                              add({
-                                code: result.code,
-                                subject: result.subject,
-                                title: result.title,
-                                years: result.years,
-                              })
-                            }
-                            value={result.code}
-                          >
-                            <span className="w-[76px] shrink-0 font-mono text-zinc-900">
-                              {result.code}
-                            </span>
-                            <span className="min-w-0 flex-1 truncate text-zinc-700">
-                              {result.title ?? "Untitled"}
-                            </span>
-                            <Badge tone={queued ? "neutral" : chip.tone}>
-                              {queued ? "Queued" : chip.label}
-                            </Badge>
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandList>
-                  </div>
-                ) : null}
-              </div>
-            </Command>
-          </Field>
-
-          <CatalogueYearFilter
-            onChange={setYearFilter}
-            value={yearFilter}
-            years={catalogueYears}
+        <Field label="Catalogue year">
+          <Select
+            aria-label="Catalogue year"
+            disabled={running}
+            onChange={setYearScope}
+            options={[
+              { label: "All years", value: "all" },
+              ...catalogueYears.map((year) => ({
+                label: String(year),
+                value: String(year),
+              })),
+            ]}
+            value={yearScope}
           />
+        </Field>
       </div>
 
       <section aria-label="Import queue" className="space-y-3">
