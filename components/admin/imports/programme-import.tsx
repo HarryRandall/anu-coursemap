@@ -112,6 +112,7 @@ export function ProgrammeImport({
   return (
     <ImportFormShell
       title="Import programmes"
+      wide
       progress={
         running || done ? (
           <ImportRunStatus
