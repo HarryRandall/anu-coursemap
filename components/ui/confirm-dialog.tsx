@@ -43,19 +43,26 @@ export function ConfirmDialog({
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [pending, setPending] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const resolvedOpen = open ?? internalOpen;
+
+  function changeOpen(nextOpen: boolean) {
+    if (open === undefined) setInternalOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
 
   async function confirm() {
     setPending(true);
     try {
       await onConfirm();
-      onOpenChange?.(false);
+      changeOpen(false);
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog onOpenChange={changeOpen} open={resolvedOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent
         className="max-w-[25rem]"
@@ -102,7 +109,7 @@ export function ConfirmDialog({
         <DialogFooter className="border-t-0 bg-white px-5 pt-0 pb-4">
           <Button
             data-confirm-cancel
-            onClick={() => onOpenChange?.(false)}
+            onClick={() => changeOpen(false)}
             type="button"
           >
             {cancelLabel}

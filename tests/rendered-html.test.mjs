@@ -213,7 +213,9 @@ test("server-renders the complete student workspace", async () => {
   assert.match(roomsPage("button").text(), /Directions/i);
   assert.equal(roomsPage('[aria-label="Search results"]').length, 0);
   assert.equal(searchResults.length, 1);
-  assert.equal(searchResults.find("li").length, 8);
+  // Group headings are list items too, so count the rows a reader can pick.
+  assert.equal(searchResults.find("li button").length, 8);
+  assert.match(searchResults.text(), /Buildings/);
   assert.match(searchResults.text(), /Showing the first 8 matches/i);
   assert.equal(
     roomsPage(
@@ -735,4 +737,115 @@ test("removes the disposable starter and keeps product metadata", async () => {
   ]) {
     await assert.rejects(access(new URL(`../${path}`, import.meta.url)));
   }
+});
+
+test("serves the indoor map picker and a per-building floor plan editor", async () => {
+  const [pickerResponse, editorResponse, unknownResponse] = await Promise.all([
+    render("/admin/rooms"),
+    render("/admin/rooms/osm-way-52333714"),
+    render("/admin/rooms/not-a-real-building"),
+  ]);
+
+  assert.equal(pickerResponse.status, 200);
+  assert.equal(editorResponse.status, 200);
+  assert.equal(
+    unknownResponse.status,
+    404,
+    "an unknown building slug is not a floor plan",
+  );
+
+  const picker = load(await pickerResponse.text());
+  assert.equal(
+    picker('[aria-label="Search ANU buildings"]').length,
+    1,
+    "the picker leads with a search",
+  );
+  assert.equal(
+    picker('nav[aria-label="Published ANU buildings"]').length,
+    0,
+    "the permanent list of every building is gone",
+  );
+  assert.equal(
+    picker('[aria-label="Interactive vector map of ANU and central Canberra"]')
+      .length,
+    1,
+  );
+
+  const editor = load(await editorResponse.text());
+  assert.equal(
+    editor('[role="tablist"][aria-label="Indoor map sections"]').length,
+    1,
+  );
+  for (const label of [
+    "Floors",
+    "Floor plan",
+    "Entrances & routes",
+    "Preview",
+  ]) {
+    assert.equal(editor(`[role="tab"]:contains("${label}")`).length, 1);
+  }
+  assert.equal(editor('[aria-label="Building floors"]').length, 1);
+  assert.equal(editor('[aria-label="Indoor map name"]').length, 0);
+  assert.equal(editor('[aria-label="Save indoor map"]').length, 1);
+  const editorMainText = editor("main").text();
+  assert.match(editorMainText, /Forestry Building/u);
+
+  // Naming and selected-item details are on demand, so the canvas is no
+  // longer compressed by permanent settings or properties rails.
+  assert.doesNotMatch(editorMainText, /Floor settings|Properties/u);
+  assert.doesNotMatch(editorMainText, /Revision \d+|Unsaved/u);
+});
+
+test("drops the indoor map features that were removed", async () => {
+  const [picker, editor] = await Promise.all([
+    render("/admin/rooms").then((response) => response.text()),
+    render("/admin/rooms/osm-way-52333714").then((response) => response.text()),
+  ]);
+
+  for (const html of [picker, editor]) {
+    assert.doesNotMatch(
+      html,
+      /Import SVG|Start mapping paths|Use building footprint|Automatic route preview/u,
+    );
+  }
+});
+
+test("returns rooms as results in their own right, not just their building", async () => {
+  const [roomQuery, buildingLink, deepLink] = await Promise.all([
+    render("/rooms?q=G01").then((response) => response.text()),
+    render("/rooms?place=osm-way-52333714").then((response) => response.text()),
+    render("/rooms?room=demo-room-1-1").then((response) => response.text()),
+  ]);
+
+  const results = load(roomQuery)('[aria-label="Search results"]');
+  assert.equal(results.length, 1);
+  assert.match(results.text(), /Rooms/);
+  assert.match(results.text(), /G01/);
+  assert.match(results.text(), /Forestry Building/);
+
+  // Selecting a mapped building exposes every floor and its findable rooms in
+  // the controls, without making someone search for a room they can already
+  // see on the building.
+  const buildingRooms = load(buildingLink)(
+    '[aria-labelledby="building-rooms-heading"]',
+  );
+  assert.equal(buildingRooms.length, 1);
+  assert.match(buildingRooms.text(), /Rooms in Forestry Building/);
+  assert.match(buildingRooms.text(), /G · Ground floor/);
+  assert.match(buildingRooms.text(), /1 · Level 1/);
+  assert.equal(buildingRooms.find("button").length, 14);
+
+  // A room link resolves its own building and opens it, with no building
+  // parameter needed in the URL.
+  const linked = load(deepLink);
+  assert.match(linked("body").text(), /1\.01/);
+  assert.equal(linked('[aria-label="Building floors"]').length, 1);
+  // The same deep link exposes concise indoor steps in the left-hand controls.
+  const indoorDirections = linked(
+    '[aria-labelledby="indoor-directions-heading"]',
+  );
+  assert.equal(indoorDirections.length, 1);
+  assert.match(indoorDirections.text(), /Enter Forestry Building/);
+  assert.match(indoorDirections.text(), /Take the lift/);
+  assert.match(indoorDirections.text(), /Continue to 1\.01/);
 });

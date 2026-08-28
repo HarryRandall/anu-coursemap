@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(38);
+select extensions.plan(39);
 
 select extensions.ok(
   has_table_privilege('anon', 'public.campus_map_layers', 'select')
@@ -51,7 +51,7 @@ select extensions.is(
     from public.campus_indoor_maps
     where building_place_id = '85c7bba8-af82-525a-9689-1da96813c244'
       and status = 'draft'
-      and document ->> 'version' = '1'
+      and document ->> 'version' = '2'
       and jsonb_array_length(document -> 'levels') = 3
   ),
   1,
@@ -480,6 +480,12 @@ select set_config('request.jwt.claim.sub', '', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 set local role authenticated;
 
+select extensions.is(
+  (select count(*)::integer from public.campus_indoor_maps),
+  0,
+  'an authenticated user without permission cannot see indoor drafts'
+);
+
 select extensions.throws_ok(
   $$
     insert into public.campus_map_layers (campus_id, slug, name)
@@ -600,7 +606,7 @@ select extensions.is(
     from public.campus_indoor_maps
     where building_place_id = '85c7bba8-af82-525a-9689-1da96813c244'
   ),
-  2,
+  3,
   'indoor map revisions are persisted'
 );
 

@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Box, LoaderCircle, MapPinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
+  addIndoorLayers,
+  INDOOR_LAYER_IDS,
+  INDOOR_LAYER_ID_LIST,
+  updateIndoorLayers,
+} from "@/components/rooms/indoor-3d-layers";
+import type { IndoorScene } from "@/lib/rooms/indoor-3d";
+import {
   campusLayerControlsStyleLayer,
   getControlledStyleLayerVisibility,
   type CampusMapBuildingGeometry,
@@ -29,6 +36,22 @@ type CampusMapProps = {
   }> | null;
   onSelect: (slug: string) => void;
   onClearSelection: () => void;
+  /**
+   * The interior of the selected building, drawn as extrusions on the same map.
+   * Passing this is what turns a footprint into a building you can see inside.
+   */
+  indoorScene?: IndoorScene | null;
+  /** Camera framing for a building being looked into. */
+  indoorFocus?: Readonly<{
+    placeSlug: string;
+    /** Changes when an indoor control explicitly asks to reframe the building. */
+    requestKey?: number;
+    pitch?: number;
+    bearing?: number;
+    maxZoom?: number;
+    padding?: number;
+  }> | null;
+  onCameraSettled?: () => void;
 };
 
 const MAP_STYLE_URL =
@@ -57,9 +80,17 @@ type StoredBuildingFeature = CampusMapFeature &
 
 const ANU_BUILDING_SOURCE_ID = "coursemap-anu-buildings";
 const ANU_BUILDING_LAYER_ID = "coursemap-anu-buildings-3d";
+const SELECTED_ANU_BUILDING_LAYER_ID = "coursemap-selected-anu-building-3d";
 const SELECTED_BUILDING_LABEL_SOURCE_ID = "coursemap-selected-building-label";
 const SELECTED_BUILDING_LABEL_LAYER_ID = "coursemap-selected-building-label";
 const NATIVE_BUILDING_MAX_ZOOM = 24;
+const CAMPUS_PITCH = 35;
+const CAMPUS_BEARING = -12;
+const INDOOR_LAYER_ID_SET: ReadonlySet<string> = new Set(INDOOR_LAYER_ID_LIST);
+
+type MapSelectionHit =
+  | Readonly<{ kind: "building"; placeSlug: string }>
+  | Readonly<{ kind: "indoor" }>;
 
 function isStoredBuildingFeature(
   feature: CampusMapFeature,
@@ -131,6 +162,7 @@ function buildAnuBuildingCollection(
           name: feature.name,
           placeId: feature.placeId ?? "",
           placeSlug: place?.slug ?? "",
+          selected: feature.placeId === highlights.selectedPlaceId,
           sourceIdentifier: feature.sourceIdentifier,
         },
         geometry: toBuildingGeometry(feature.geometry),
@@ -177,18 +209,32 @@ function syncSelectedBuildingLabel(
   });
 }
 
-function getLinkedBuildingSlugAtPoint(
+function getMapSelectionHitAtPoint(
   map: import("maplibre-gl").Map,
   point: import("maplibre-gl").PointLike,
-) {
-  return map
+): MapSelectionHit | null {
+  // A room, route or floor belongs to the building that is already open. Do
+  // not let the shell behind it re-select the building and clear the current
+  // room or floor focus.
+  const hitsIndoorScene = map
+    .queryRenderedFeatures(point, { layers: [...INDOOR_LAYER_ID_LIST] })
+    .some((feature) => INDOOR_LAYER_ID_SET.has(feature.layer.id));
+  if (hitsIndoorScene) return { kind: "indoor" };
+
+  const placeSlug = map
     .queryRenderedFeatures(point, {
-      layers: [ANU_BUILDING_LAYER_ID, SELECTED_BUILDING_LABEL_LAYER_ID],
+      layers: [
+        ANU_BUILDING_LAYER_ID,
+        SELECTED_ANU_BUILDING_LAYER_ID,
+        SELECTED_BUILDING_LABEL_LAYER_ID,
+      ],
     })
     .map((feature) => feature.properties?.placeSlug)
     .find((placeSlug): placeSlug is string =>
       Boolean(placeSlug && typeof placeSlug === "string"),
     );
+
+  return placeSlug ? { kind: "building", placeSlug } : null;
 }
 
 function getBuildingFeaturesForPlace(
@@ -254,6 +300,8 @@ function isNativeBuildingExtrusionLayer(
 ) {
   return (
     styleLayer.id !== ANU_BUILDING_LAYER_ID &&
+    styleLayer.id !== SELECTED_ANU_BUILDING_LAYER_ID &&
+    !INDOOR_LAYER_ID_LIST.some((layerId) => layerId === styleLayer.id) &&
     styleLayer.type === "fill-extrusion"
   );
 }
@@ -281,7 +329,14 @@ function applyStyleLayerVisibility(
 
   if (map.getLayer(ANU_BUILDING_LAYER_ID)) {
     const visibility = visibleLayerSlugs.has("buildings") ? "visible" : "none";
-    map.setLayoutProperty(ANU_BUILDING_LAYER_ID, "visibility", visibility);
+    for (const layerId of [
+      ANU_BUILDING_LAYER_ID,
+      SELECTED_ANU_BUILDING_LAYER_ID,
+    ]) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, "visibility", visibility);
+      }
+    }
     if (map.getLayer(SELECTED_BUILDING_LABEL_LAYER_ID)) {
       map.setLayoutProperty(
         SELECTED_BUILDING_LABEL_LAYER_ID,
@@ -303,6 +358,9 @@ export function CampusMap({
   routeEndpoints,
   onSelect,
   onClearSelection,
+  indoorScene = null,
+  indoorFocus = null,
+  onCameraSettled,
 }: CampusMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("maplibre-gl").Map | null>(null);
@@ -310,7 +368,7 @@ export function CampusMap({
   const visibleLayerSlugsRef = useRef(visibleLayerSlugs);
   const placesRef = useRef(places);
   const featuresRef = useRef(features);
-  const focusedPlaceSlugRef = useRef<string | null>(null);
+  const focusedPlaceKeyRef = useRef<string | null>(null);
   const buildingHighlightsRef = useRef<BuildingHighlights>({
     selectedPlaceId: null,
     routeFromPlaceId: null,
@@ -361,7 +419,7 @@ export function CampusMap({
         const [west, south, east, north] = campus.bounds;
         const map = new maplibregl.Map({
           attributionControl: false,
-          bearing: -12,
+          bearing: CAMPUS_BEARING,
           canvasContextAttributes: { antialias: true },
           center: toLngLat(campus.initialCoordinates),
           container,
@@ -375,7 +433,7 @@ export function CampusMap({
           maxZoom: campus.maxZoom,
           minPitch: 0,
           minZoom: campus.minZoom,
-          pitch: 35,
+          pitch: CAMPUS_PITCH,
           renderWorldCopies: false,
           style: MAP_STYLE_URL,
           zoom: campus.initialZoom,
@@ -517,6 +575,7 @@ export function CampusMap({
               id: ANU_BUILDING_LAYER_ID,
               type: "fill-extrusion",
               source: ANU_BUILDING_SOURCE_ID,
+              filter: ["!=", ["get", "selected"], true],
               paint: {
                 "fill-extrusion-base": ["get", "minimumHeightMetres"],
                 "fill-extrusion-color": [
@@ -536,6 +595,42 @@ export function CampusMap({
               },
             },
             firstLabelLayer,
+          );
+
+          map.addLayer(
+            {
+              id: SELECTED_ANU_BUILDING_LAYER_ID,
+              type: "fill-extrusion",
+              source: ANU_BUILDING_SOURCE_ID,
+              filter: ["==", ["get", "selected"], true],
+              paint: {
+                "fill-extrusion-base": ["get", "minimumHeightMetres"],
+                "fill-extrusion-color": [
+                  "match",
+                  ["get", "highlight"],
+                  "selected",
+                  "#7c3aed",
+                  "routeFrom",
+                  "#7c3aed",
+                  "routeTo",
+                  "#059669",
+                  "#a1a1aa",
+                ],
+                "fill-extrusion-height": ["get", "heightMetres"],
+                "fill-extrusion-opacity": 0.88,
+                "fill-extrusion-vertical-gradient": true,
+              },
+            },
+            firstLabelLayer,
+          );
+
+          addIndoorLayers(map, firstLabelLayer);
+          // The selected shell is glass only while its interior is visible.
+          // It must draw after the indoor extrusions or its depth would hide
+          // the rooms that the transparency is meant to reveal.
+          map.moveLayer(
+            SELECTED_ANU_BUILDING_LAYER_ID,
+            INDOOR_LAYER_IDS.labels,
           );
 
           map.addSource(SELECTED_BUILDING_LABEL_SOURCE_ID, {
@@ -592,21 +687,26 @@ export function CampusMap({
           });
 
           map.on("click", (event) => {
-            const placeSlug = visibleLayerSlugsRef.current.has("buildings")
-              ? getLinkedBuildingSlugAtPoint(map, event.point)
+            const selectionHit = visibleLayerSlugsRef.current.has("buildings")
+              ? getMapSelectionHitAtPoint(map, event.point)
               : undefined;
-            if (placeSlug) {
-              onSelectRef.current(placeSlug);
+            if (selectionHit?.kind === "building") {
+              onSelectRef.current(selectionHit.placeSlug);
+            } else if (selectionHit?.kind === "indoor") {
+              // Keep the selected room and floor while interacting with the
+              // interior. Their own controls own any more specific action.
+              return;
             } else {
               onClearSelectionRef.current();
             }
           });
 
           map.on("mousemove", (event) => {
-            const placeSlug = visibleLayerSlugsRef.current.has("buildings")
-              ? getLinkedBuildingSlugAtPoint(map, event.point)
+            const selectionHit = visibleLayerSlugsRef.current.has("buildings")
+              ? getMapSelectionHitAtPoint(map, event.point)
               : null;
-            map.getCanvas().style.cursor = placeSlug ? "pointer" : "";
+            map.getCanvas().style.cursor =
+              selectionHit?.kind === "building" ? "pointer" : "";
           });
           map.on("mouseout", () => {
             map.getCanvas().style.cursor = "";
@@ -633,7 +733,7 @@ export function CampusMap({
         routeFromPlaceId: null,
         routeToPlaceId: null,
       };
-      focusedPlaceSlugRef.current = null;
+      focusedPlaceKeyRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
       mapLibreRef.current = null;
@@ -650,6 +750,24 @@ export function CampusMap({
     const map = mapRef.current;
     if (!mapReady || !map) return;
 
+    const visibleIndoorScene = visibleLayerSlugs.has("buildings")
+      ? indoorScene
+      : null;
+    updateIndoorLayers(map, visibleIndoorScene);
+    if (map.getLayer(SELECTED_ANU_BUILDING_LAYER_ID)) {
+      // Only the selected shell turns to glass while its interior is visible.
+      map.setPaintProperty(
+        SELECTED_ANU_BUILDING_LAYER_ID,
+        "fill-extrusion-opacity",
+        visibleIndoorScene ? 0.07 : 0.88,
+      );
+    }
+  }, [indoorScene, mapReady, visibleLayerSlugs]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return;
+
     const selectedPlace = places.find((place) => place.slug === selectedSlug);
     if (
       selectedPlace?.mapDisplayKind !== "building" ||
@@ -658,7 +776,7 @@ export function CampusMap({
       buildingHighlightsRef.current.selectedPlaceId = null;
       syncAnuBuildings(map, features, places, buildingHighlightsRef.current);
       syncSelectedBuildingLabel(map, null);
-      focusedPlaceSlugRef.current = null;
+      focusedPlaceKeyRef.current = null;
       const container = map.getContainer();
       container.dataset.selectedBuilding = "false";
       delete container.dataset.selectedBuildingHeight;
@@ -693,24 +811,61 @@ export function CampusMap({
       firstFeature?.sourceProperties ?? {},
     ).join(",");
 
-    if (focusedPlaceSlugRef.current === selectedPlace.slug) return;
     const bounds = getBuildingBounds(selectedFeatures);
     if (!bounds) return;
 
-    focusedPlaceSlugRef.current = selectedPlace.slug;
+    const explicitFocus =
+      indoorFocus && indoorFocus.placeSlug === selectedPlace.slug
+        ? indoorFocus
+        : null;
+    // A building with an interior is an indoor destination even when no room
+    // has been chosen yet. Frame it for looking through the glass shell as soon
+    // as it is selected; a later floor or room choice keeps the same focus.
+    const focus =
+      explicitFocus ??
+      (indoorScene && indoorScene.slabs.features.length > 0
+        ? {
+            placeSlug: selectedPlace.slug,
+            pitch: 55,
+            bearing: -20,
+            maxZoom: 19.25,
+            padding: 88,
+          }
+        : null);
+    const focusKey = [
+      selectedPlace.slug,
+      focus ? "indoor" : "building",
+      focus?.pitch ?? "",
+      focus?.bearing ?? "",
+      focus?.maxZoom ?? "",
+      focus?.padding ?? "",
+      focus?.requestKey ?? "",
+    ].join(":");
+    if (focusedPlaceKeyRef.current === focusKey) return;
+
+    focusedPlaceKeyRef.current = focusKey;
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+
+    if (onCameraSettled) map.once("moveend", onCameraSettled);
     map.fitBounds(bounds, {
       animate: !reduceMotion,
       duration: reduceMotion ? 0 : 450,
-      maxZoom: Math.min(18.5, campus?.maxZoom ?? 18.5),
-      padding: 72,
+      maxZoom: Math.min(focus?.maxZoom ?? 18.5, campus?.maxZoom ?? 18.5),
+      padding: focus?.padding ?? 72,
+      // Looking into a building wants a low angle; the campus view does not.
+      ...(focus
+        ? { pitch: focus.pitch ?? 55, bearing: focus.bearing ?? -20 }
+        : { pitch: CAMPUS_PITCH, bearing: CAMPUS_BEARING }),
     });
   }, [
     campus?.maxZoom,
     features,
+    indoorFocus,
+    indoorScene,
     mapReady,
+    onCameraSettled,
     places,
     selectedSlug,
     visibleLayerSlugs,
@@ -750,6 +905,17 @@ export function CampusMap({
       },
     });
 
+    // Room destinations keep the camera inside the building. The outdoor leg
+    // remains drawn, but must not pull the user away from the floor or indoor
+    // step they have just chosen.
+    if (
+      indoorFocus &&
+      indoorScene &&
+      routeEndpoints.to.slug === indoorFocus.placeSlug
+    ) {
+      return;
+    }
+
     const bounds = route.coordinates.reduce(
       (result, coordinate) => result.extend(toLngLat(coordinate)),
       new maplibregl.LngLatBounds(
@@ -762,7 +928,14 @@ export function CampusMap({
       maxZoom: Math.min(17, campus?.maxZoom ?? 17),
       padding: 64,
     });
-  }, [campus?.maxZoom, mapReady, route, routeEndpoints]);
+  }, [
+    campus?.maxZoom,
+    indoorFocus,
+    indoorScene,
+    mapReady,
+    route,
+    routeEndpoints,
+  ]);
 
   function togglePerspective() {
     const map = mapRef.current;

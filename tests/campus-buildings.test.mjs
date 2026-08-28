@@ -1,60 +1,23 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { loadLibModules } from "./helpers/lib-modules.mjs";
 
-async function compileModule(sourcePath, targetPath, replacements = []) {
-  const source = await readFile(sourcePath, "utf8");
-  let compiled = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ES2022,
-      target: ts.ScriptTarget.ES2022,
-    },
-  }).outputText;
-  for (const [pattern, replacement] of replacements) {
-    compiled = compiled.replace(pattern, replacement);
-  }
-  await writeFile(targetPath, compiled);
-}
+const modules = await loadLibModules(
+  [
+    "rooms/campus-map",
+    "rooms/campus-map-query",
+    "rooms/indoor-map",
+    "rooms/indoor-geometry",
+    "rooms/routing",
+  ],
+  "room-finder",
+);
+const campusMap = modules["campus-map"];
+const campusMapQuery = modules["campus-map-query"];
+const indoorMap = modules["indoor-map"];
+const routing = modules["routing"];
 
-async function loadCampusMapModules() {
-  const directory = await mkdtemp(join(tmpdir(), "coursemap-room-finder-"));
-  const campusMapTarget = join(directory, "campus-map.js");
-  const campusMapQueryTarget = join(directory, "campus-map-query.js");
-  const indoorMapTarget = join(directory, "indoor-map.js");
-  const routingTarget = join(directory, "routing.js");
-
-  await compileModule(
-    new URL("../lib/rooms/campus-map.ts", import.meta.url),
-    campusMapTarget,
-  );
-  await compileModule(
-    new URL("../lib/rooms/campus-map-query.ts", import.meta.url),
-    campusMapQueryTarget,
-  );
-  await compileModule(
-    new URL("../lib/rooms/indoor-map.ts", import.meta.url),
-    indoorMapTarget,
-  );
-  await compileModule(
-    new URL("../lib/rooms/routing.ts", import.meta.url),
-    routingTarget,
-    [[/from "\.\/campus-map";/, 'from "./campus-map.js";']],
-  );
-
-  return Promise.all([
-    import(pathToFileURL(campusMapTarget).href),
-    import(pathToFileURL(campusMapQueryTarget).href),
-    import(pathToFileURL(indoorMapTarget).href),
-    import(pathToFileURL(routingTarget).href),
-  ]);
-}
-
-const [campusMap, campusMapQuery, indoorMap, routing] =
-  await loadCampusMapModules();
 const demoData = JSON.parse(
   await readFile(
     new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
@@ -64,8 +27,9 @@ const demoData = JSON.parse(
 const visibleLayers = campusMap.getDefaultVisibleLayerSlugs(demoData.layers);
 
 const indoorDocument = {
-  version: 1,
+  version: 2,
   viewBox: { width: 1000, height: 700 },
+  walls: [],
   levels: [
     {
       id: "level-ground",
@@ -117,6 +81,10 @@ const indoorDocument = {
 
 test("validates and lists searchable multi-shape indoor rooms", () => {
   const parsed = indoorMap.parseCampusIndoorDocument(indoorDocument);
+  assert.ok(
+    !("routingMode" in parsed),
+    "a stored routing mode is accepted and discarded",
+  );
   assert.equal(parsed.levels[0].ref, "G");
   assert.deepEqual(
     indoorMap.listIndoorRoomDetails(parsed).map((room) => room.label),
@@ -160,8 +128,11 @@ test("rejects invalid indoor geometry and unknown level references", () => {
     /simple polygon/u,
   );
 });
-
-test("builds deterministic level-to-level routes and honours accessibility", () => {
+/**
+ * A two level explicit document: a ground room and an upper room joined by a
+ * lift, with the walking segments an author would draw on each level.
+ */
+function twoLevelExplicitDocument(liftAccessibility = "accessible") {
   const upperLevel = {
     ...indoorDocument.levels[0],
     id: "level-one",
@@ -177,49 +148,297 @@ test("builds deterministic level-to-level routes and honours accessibility", () 
     ref: "1.01",
     name: "Upper room",
   };
-  const routeDocument = {
+  const lift = {
+    id: "main-lift",
+    kind: "lift",
+    name: "Main lift",
+    levelIds: ["level-ground", "level-one"],
+    position: { x: 500, y: 400 },
+    accessibility: liftAccessibility,
+  };
+  const groundLiftNodeId = indoorMap.indoorConnectorRouteNodeId(
+    lift.id,
+    "level-ground",
+  );
+  const upperLiftNodeId = indoorMap.indoorConnectorRouteNodeId(
+    lift.id,
+    "level-one",
+  );
+  const explicitDocument = {
     ...indoorDocument,
     levels: [...indoorDocument.levels, upperLevel],
-    spaces: [...indoorDocument.spaces, upperRoom],
-    connectors: [
+    spaces: [indoorDocument.spaces[1], upperRoom],
+    connectors: [lift],
+    routeNodes: [
       {
-        id: "main-lift",
-        kind: "lift",
-        name: "Main lift",
-        levelIds: ["level-ground", "level-one"],
-        position: { x: 500, y: 400 },
+        id: "door-ground",
+        levelId: "level-ground",
+        kind: "door",
+        position: { x: 420, y: 250 },
+        spaceId: "room-g01",
+        accessibility: "accessible",
+      },
+      {
+        id: "junction-ground",
+        levelId: "level-ground",
+        kind: "junction",
+        position: { x: 460, y: 400 },
+      },
+      {
+        id: "junction-upper",
+        levelId: "level-one",
+        kind: "junction",
+        position: { x: 540, y: 400 },
+      },
+      {
+        id: "door-upper",
+        levelId: "level-one",
+        kind: "door",
+        position: { x: 550, y: 250 },
+        spaceId: "room-101",
+        accessibility: "accessible",
+      },
+    ],
+    routeEdges: [
+      {
+        id: "ground-door-path",
+        fromNodeId: "door-ground",
+        toNodeId: "junction-ground",
+        kind: "walking",
+        bidirectional: true,
+        distanceMetres: 15.5,
+        accessibility: "accessible",
+      },
+      {
+        id: "ground-lift-path",
+        fromNodeId: "junction-ground",
+        toNodeId: groundLiftNodeId,
+        kind: "walking",
+        bidirectional: true,
+        distanceMetres: 4,
+        accessibility: "accessible",
+      },
+      {
+        id: "upper-lift-path",
+        fromNodeId: upperLiftNodeId,
+        toNodeId: "junction-upper",
+        kind: "walking",
+        bidirectional: true,
+        distanceMetres: 4,
+        accessibility: "accessible",
+      },
+      {
+        id: "upper-door-path",
+        fromNodeId: "junction-upper",
+        toNodeId: "door-upper",
+        kind: "walking",
+        bidirectional: true,
+        distanceMetres: 15,
         accessibility: "accessible",
       },
     ],
   };
 
-  const routed = indoorMap.buildIndoorRouteGraph(routeDocument);
+  return { explicitDocument, groundLiftNodeId, upperLiftNodeId };
+}
+
+test("blocks an accessible route through an inaccessible connector", () => {
+  const { explicitDocument } = twoLevelExplicitDocument("inaccessible");
+  const routed = indoorMap.buildIndoorRouteGraph(explicitDocument);
+
+  assert.deepEqual(
+    indoorMap.buildIndoorRouteGraph(routed).routeNodes,
+    routed.routeNodes,
+    "rebuilding an already routed document must be a no-op",
+  );
+  assert.ok(
+    indoorMap.findIndoorRoute(routed, "room-g01", "room-101"),
+    "the lift is still the only way between the levels",
+  );
+  assert.equal(
+    indoorMap.findIndoorRoute(routed, "room-g01", "room-101", {
+      accessibleOnly: true,
+    }),
+    null,
+  );
+});
+
+test("routes explicit paths through room doors without centre shortcuts", () => {
+  const explicitDocument = {
+    ...indoorDocument,
+    routeNodes: [
+      {
+        id: "door-g01",
+        levelId: "level-ground",
+        kind: "door",
+        position: { x: 420, y: 250 },
+        spaceId: "room-g01",
+        accessibility: "accessible",
+      },
+      {
+        id: "path-left",
+        levelId: "level-ground",
+        kind: "junction",
+        position: { x: 450, y: 400 },
+      },
+      {
+        id: "path-right",
+        levelId: "level-ground",
+        kind: "junction",
+        position: { x: 550, y: 400 },
+      },
+      {
+        id: "door-g02",
+        levelId: "level-ground",
+        kind: "door",
+        position: { x: 550, y: 250 },
+        spaceId: "room-g02",
+        accessibility: "accessible",
+      },
+    ],
+    routeEdges: [
+      {
+        id: "path-g01",
+        fromNodeId: "door-g01",
+        toNodeId: "path-left",
+        kind: "walking",
+        bidirectional: true,
+        distanceMetres: 15.3,
+        accessibility: "accessible",
+      },
+      {
+        id: "path-centre",
+        fromNodeId: "path-left",
+        toNodeId: "path-right",
+        kind: "walking",
+        bidirectional: true,
+        distanceMetres: 10,
+        accessibility: "accessible",
+      },
+      {
+        id: "path-g02",
+        fromNodeId: "path-right",
+        toNodeId: "door-g02",
+        kind: "walking",
+        bidirectional: true,
+        distanceMetres: 15,
+        accessibility: "accessible",
+      },
+    ],
+  };
+
+  const routed = indoorMap.buildIndoorRouteGraph(explicitDocument);
   const rebuilt = indoorMap.buildIndoorRouteGraph(routed);
   assert.deepEqual(rebuilt.routeNodes, routed.routeNodes);
   assert.deepEqual(rebuilt.routeEdges, routed.routeEdges);
+  assert.deepEqual(
+    [...indoorMap.indoorAuthoredRouteEdgeIds(routed)].sort(),
+    ["path-centre", "path-g01", "path-g02"],
+    "generated room-entry links stay out of the editor drawing",
+  );
+  assert.doesNotMatch(
+    routed.routeEdges.map((edge) => edge.id).join(" "),
+    /walking-\d/u,
+  );
 
+  const route = indoorMap.findIndoorRoute(routed, "room-g01", "room-g02", {
+    accessibleOnly: true,
+  });
+  assert.ok(route);
+  assert.deepEqual(route.nodeIds, [
+    indoorMap.indoorSpaceRouteNodeId("room-g01"),
+    "door-g01",
+    "path-left",
+    "path-right",
+    "door-g02",
+    indoorMap.indoorSpaceRouteNodeId("room-g02"),
+  ]);
+  assert.deepEqual(route.edgeIds, [
+    "room-entry-door-g01",
+    "path-g01",
+    "path-centre",
+    "path-g02",
+    "room-entry-door-g02",
+  ]);
+
+  const disconnected = indoorMap.buildIndoorRouteGraph({
+    ...explicitDocument,
+    routeEdges: explicitDocument.routeEdges.filter(
+      (edge) => edge.id !== "path-centre",
+    ),
+  });
+  assert.equal(
+    indoorMap.findIndoorRoute(disconnected, "room-g01", "room-g02"),
+    null,
+  );
+
+  const inaccessibleDoor = indoorMap.buildIndoorRouteGraph({
+    ...explicitDocument,
+    routeNodes: explicitDocument.routeNodes.map((node) =>
+      node.id === "door-g02"
+        ? { ...node, accessibility: "inaccessible" }
+        : node,
+    ),
+  });
+  assert.equal(
+    indoorMap.findIndoorRoute(inaccessibleDoor, "room-g01", "room-g02", {
+      accessibleOnly: true,
+    }),
+    null,
+  );
+});
+test("keeps explicit paths connected through multi-level connectors", () => {
+  const { explicitDocument, groundLiftNodeId, upperLiftNodeId } =
+    twoLevelExplicitDocument();
+
+  const routed = indoorMap.buildIndoorRouteGraph(explicitDocument);
   const route = indoorMap.findIndoorRoute(routed, "room-g01", "room-101", {
     accessibleOnly: true,
   });
   assert.ok(route);
   assert.deepEqual(route.levelIds, ["level-ground", "level-one"]);
-  assert.ok(route.distanceMetres > 0);
-  assert.ok(route.edgeIds.some((edgeId) => edgeId.startsWith("vertical-")));
-
-  const inaccessible = indoorMap.buildIndoorRouteGraph({
-    ...routeDocument,
-    connectors: [
-      {
-        ...routeDocument.connectors[0],
-        accessibility: "inaccessible",
-      },
-    ],
-  });
+  assert.ok(route.nodeIds.includes(groundLiftNodeId));
+  assert.ok(route.nodeIds.includes(upperLiftNodeId));
   assert.equal(
-    indoorMap.findIndoorRoute(inaccessible, "room-g01", "room-101", {
-      accessibleOnly: true,
-    }),
-    null,
+    route.edgeIds.filter((edgeId) => edgeId.startsWith("vertical-")).length,
+    1,
+  );
+  assert.deepEqual(
+    indoorMap.buildIndoorRouteGraph(routed).routeEdges,
+    routed.routeEdges,
+  );
+});
+test("validates explicit room route-node relationships", () => {
+  assert.throws(
+    () =>
+      indoorMap.parseCampusIndoorDocument({
+        ...indoorDocument,
+        routeNodes: [
+          {
+            id: "missing-room-door",
+            levelId: "level-ground",
+            kind: "door",
+            position: { x: 420, y: 250 },
+          },
+        ],
+      }),
+    /required for a door route node/u,
+  );
+  assert.throws(
+    () =>
+      indoorMap.parseCampusIndoorDocument({
+        ...indoorDocument,
+        routeNodes: [
+          {
+            id: "wrong-room-door",
+            levelId: "level-ground",
+            kind: "door",
+            position: { x: 420, y: 250 },
+            spaceId: "missing-room",
+          },
+        ],
+      }),
+    /unknown space identifier/u,
   );
 });
 
@@ -558,6 +777,63 @@ test("renders only stored ANU buildings in 3D", async () => {
   assert.match(mapComponent, /type: "fill-extrusion"/);
   assert.match(mapComponent, /"fill-extrusion-opacity": 0\.88/);
   assert.doesNotMatch(mapComponent, /"fill-extrusion-opacity": \[/);
+  assert.match(mapComponent, /coursemap-selected-anu-building-3d/);
+  assert.match(
+    mapComponent,
+    /selected: feature\.placeId === highlights\.selectedPlaceId/,
+  );
+  assert.match(mapComponent, /filter: \["!=", \["get", "selected"\], true\]/);
+  assert.match(mapComponent, /filter: \["==", \["get", "selected"\], true\]/);
+  assert.match(
+    mapComponent,
+    /setPaintProperty\(\s*SELECTED_ANU_BUILDING_LAYER_ID,\s*"fill-extrusion-opacity"/,
+  );
+  assert.match(
+    mapComponent,
+    /const visibleIndoorScene = visibleLayerSlugs\.has/,
+  );
+  assert.match(mapComponent, /function getMapSelectionHitAtPoint/);
+  assert.match(
+    mapComponent,
+    /queryRenderedFeatures\(point, \{ layers: \[\.\.\.INDOOR_LAYER_ID_LIST\] \}\)/,
+  );
+  assert.match(mapComponent, /selectionHit\?\.kind === "indoor"/);
+  assert.match(mapComponent, /const explicitFocus =/);
+  assert.match(
+    mapComponent,
+    /indoorScene && indoorScene\.slabs\.features\.length > 0/,
+  );
+  assert.match(mapComponent, /const focusKey = \[/);
+  assert.match(mapComponent, /focus\?\.requestKey \?\? ""/);
+  assert.match(mapComponent, /focusedPlaceKeyRef\.current === focusKey/);
+  assert.match(
+    mapComponent,
+    /routeEndpoints\.to\.slug === indoorFocus\.placeSlug/,
+  );
+  assert.match(
+    mapComponent,
+    /: \{ pitch: CAMPUS_PITCH, bearing: CAMPUS_BEARING \}/,
+  );
+  assert.match(roomFinder, /const buildingsVisible = visibleLayerSlugs\.has/);
+  assert.match(
+    roomFinder,
+    /indoorScene=\{buildingsVisible \? indoorScene : null\}/,
+  );
+  assert.match(
+    roomFinder,
+    /buildingsVisible && indoorScene && indoorLevels\.length > 0/,
+  );
+  assert.match(roomFinder, /const selectedIndoorDocument = useMemo/);
+  assert.match(roomFinder, /remapIndoorDocumentToFootprint\(/);
+  assert.match(roomFinder, /buildIndoorRouteGraph\(alignedDocument\)/);
+  assert.match(
+    roomFinder,
+    /buildIndoorScene\(selectedIndoorDocument, selectedFootprint/,
+  );
+  assert.doesNotMatch(
+    mapComponent,
+    /setPaintProperty\(\s*ANU_BUILDING_LAYER_ID,\s*"fill-extrusion-opacity"/,
+  );
   assert.match(mapComponent, /coursemap-selected-building-label/);
   assert.match(mapComponent, /type: "symbol"/);
   assert.match(mapComponent, /"text-field": \["get", "name"\]/);
@@ -576,21 +852,269 @@ test("renders only stored ANU buildings in 3D", async () => {
   assert.doesNotMatch(mapComponent, /campus-features|campus-mask/);
 });
 
-test("keeps indoor map hydration and initial building focus deterministic", async () => {
-  const mapComponent = await readFile(
-    new URL("../components/rooms/campus-map.tsx", import.meta.url),
-    "utf8",
-  );
-  const indoorMapEditor = await readFile(
-    new URL("../components/admin/indoor-map-editor.tsx", import.meta.url),
+test("lists a selected building's rooms and turns a room into the destination", async () => {
+  const roomFinder = await readFile(
+    new URL("../components/rooms/room-finder.tsx", import.meta.url),
     "utf8",
   );
 
+  assert.match(roomFinder, /room\.buildingPlaceId === selectedPlace\.id/);
+  assert.match(roomFinder, /Rooms in \{selectedPlace\?\.name\}/);
+  assert.match(
+    roomFinder,
+    /Choose a findable room to use it as your destination/,
+  );
+  assert.match(roomFinder, /setDirectionsOpen\(true\)/);
+  assert.match(roomFinder, /fromSlug === room\.buildingSlug/);
+  assert.match(roomFinder, /setFromSlug\(nextFromSlug\)/);
+  assert.match(roomFinder, /setToSlug\(room\.buildingSlug\)/);
+  assert.match(roomFinder, /options=\{destinationOptions\}/);
+  assert.match(roomFinder, /<IndoorDirections/);
+  assert.match(roomFinder, /journey\.steps\.map/);
+  assert.match(roomFinder, /onShowLevel=\{showIndoorLevel\}/);
+  assert.match(roomFinder, /requestKey: indoorFocusRequest/);
+  assert.match(roomFinder, /aria-label=\{`Show \$\{level\.name\}`\}/);
+  assert.match(roomFinder, /min-h-11 min-w-11/);
+  assert.match(roomFinder, /initialRoomBuilding \?\?/);
+});
+
+test("the indoor editor is split into a picker, a shared canvas and pure modules", async () => {
+  const read = (path) =>
+    readFile(new URL(`../${path}`, import.meta.url), "utf8");
+
+  const [mapComponent, picker, editor, surface, indoorLayers] =
+    await Promise.all([
+      read("components/rooms/campus-map.tsx"),
+      read("components/admin/rooms/building-picker.tsx"),
+      read("components/admin/rooms/indoor-editor.tsx"),
+      read("components/admin/rooms/indoor-map-surface.tsx"),
+      read("components/rooms/indoor-3d-layers.ts"),
+    ]);
+
   assert.match(
     mapComponent,
-    /focusedPlaceSlugRef = useRef<string \| null>\(null\)/,
+    /focusedPlaceKeyRef = useRef<string \| null>\(null\)/,
   );
-  assert.match(indoorMapEditor, /timeZone: "Australia\/Sydney"/);
+  assert.match(mapComponent, /addIndoorLayers\(map, firstLabelLayer\)/);
+  assert.match(
+    mapComponent,
+    /map\.moveLayer\(\s*SELECTED_ANU_BUILDING_LAYER_ID,\s*INDOOR_LAYER_IDS\.labels/,
+  );
+
+  // The picker is a map plus a search, not a list of every building.
+  assert.match(picker, /<CampusMap/);
+  assert.match(picker, /router\.push\(`\/admin\/rooms\//);
+  assert.doesNotMatch(picker, /Published ANU buildings/);
+
+  // Editing runs through the shared canvas and the pure modules, so nothing is
+  // drawn or dragged twice.
+  assert.match(editor, /<IndoorMapSurface/);
+  assert.match(editor, /routingSignature\(document\)/);
+  assert.match(editor, /buildIndoorScene\(/);
+  assert.match(
+    editor,
+    /indoorAuthoredRouteEdgeIds\(document\)[\s\S]*routeEdgeIds: authoredRouteEdgeIds/,
+  );
+  // Rooms are drawn on the real building, so the surface has to convert
+  // between map coordinates and the units a document is authored in.
+  assert.match(surface, /projectIndoorPoint\(/);
+  assert.match(surface, /queryRenderedFeatures\(/);
+  assert.match(surface, /INDOOR_PICKABLE_LAYER_ID_LIST\.filter/);
+  assert.match(surface, /map\.getLayer\(layerId\)/);
+  assert.match(
+    surface,
+    /kind: "space" \| "wall" \| "opening" \| "connector" \| "route-node"/,
+  );
+  assert.match(surface, /typeof properties\.openingId === "string"/);
+  assert.match(
+    surface,
+    /pick\(\{ kind: "opening", id: properties\.openingId \}\)/,
+  );
+  assert.match(surface, /typeof properties\.routeNodeId === "string"/);
+  assert.match(
+    surface,
+    /pick\(\{ kind: "route-node", id: properties\.routeNodeId \}\)/,
+  );
+  assert.match(
+    indoorLayers,
+    /INDOOR_PICKABLE_LAYER_ID_LIST = \[[\s\S]*INDOOR_LAYER_IDS\.route,/,
+  );
+  assert.match(surface, /const EDITOR_MAP_STYLE/);
+  assert.match(surface, /sources: \{\}/);
+  assert.match(surface, /coursemap-indoor-editor-background/);
+  assert.match(surface, /style: EDITOR_MAP_STYLE/);
+  assert.doesNotMatch(surface, /NEXT_PUBLIC_ROOM_MAP_STYLE_URL/);
+  assert.match(surface, /const canvas = map\.getCanvas\(\)/);
+  assert.match(editor, /onPick=\{editable \? pointer\.onSelect : undefined\}/);
+  assert.match(editor, /return remapIndoorDocumentToFootprint\(/);
+  assert.match(surface, /const EDITOR_MAX_ZOOM = 22/);
+  assert.match(surface, /cameraForBounds\(/);
+  assert.match(surface, /camera\.zoom - EDITOR_ZOOM_OUT_LEVELS/);
+  assert.match(surface, /setMinZoom\(minimumZoom\)/);
+  assert.match(surface, /setMaxBounds\(\[/);
+  assert.match(surface, /const observer = new ResizeObserver/);
+  assert.match(
+    surface,
+    /const pitch = perspective \? PERSPECTIVE_PITCH : PLAN_PITCH/,
+  );
+  assert.doesNotMatch(surface, /map\.fitBounds\(/);
+  assert.match(
+    editor,
+    /showingAllFloors = section === "floors" \|\| section === "preview"/,
+  );
+  assert.match(editor, /showInactiveLevels: showingAllFloors/);
+  assert.match(editor, /explode: showingAllFloors \? 2\.25 : 1/);
+  assert.match(
+    editor,
+    /editingEnabled = section === "floor-plan" \|\| section === "routes"/,
+  );
+  assert.match(editor, /drawing=\{editable && tool !== "select"\}/);
+  assert.match(editor, /pointer\.cancel\(\);\s*setTool\("select"\)/);
+
+  // The breadcrumb owns the building identity and four focused tabs replace
+  // the permanent floor and properties rails.
+  assert.match(editor, /currentBreadcrumbLabel=\{building\.name\}/);
+  assert.match(editor, /<EditorActions/);
+  assert.match(editor, /tabs=\{<EditorSectionTabs \/>\}/);
+  assert.match(editor, /label: "Floors"/);
+  assert.match(editor, /label: "Floor plan"/);
+  assert.match(editor, /label: "Entrances & routes"/);
+  assert.match(editor, /label: "Preview"/);
+  assert.match(editor, /<FloorsPanel/);
+  assert.match(editor, /<SelectionDetailsSheet/);
+  assert.doesNotMatch(editor, /<footer|<FloorsRail|<PropertiesPanel/);
+
+  // Features that were removed must not creep back.
+  for (const source of [picker, editor, surface]) {
+    assert.doesNotMatch(
+      source,
+      /Import SVG|Start mapping paths|Use building footprint|routingMode|MAXIMUM_ZOOM = 16/,
+    );
+  }
+});
+
+test("validates every saved indoor element against its building footprint", async () => {
+  const admin = await readFile(
+    new URL("../lib/rooms/indoor-map-admin.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(admin, /projectBuildingFootprint\(buildingFeature\.geometry\)/);
+  assert.match(admin, /isIndoorDocumentWithinFootprint\(document, footprint\)/);
+  assert.match(
+    admin,
+    /Keep every room, wall, path and connector inside the building outline\./,
+  );
+});
+
+test("keeps draft indoor previews permission-scoped in the public room finder", async () => {
+  const [page, loader, migration] = await Promise.all([
+    readFile(new URL("../app/rooms/page.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../lib/rooms/campus-map-data.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../supabase/migrations/20260828183000_add_indoor_map_editor.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(
+    page,
+    /loadCampusMapData\(\{ includeManageableDrafts: true \}\)/,
+  );
+  assert.match(loader, /includeManageableDrafts\s*\? await createClient\(\)/);
+  assert.match(loader, /const publicSupabase = createPublicClient\(\)/);
+  assert.match(loader, /const query = indoorSupabase/);
+  assert.match(loader, /const campusResult = await publicSupabase/);
+  assert.match(loader, /query\.in\("status", \["published", "draft"\]\)/);
+  assert.match(loader, /query\.eq\("status", "published"\)/);
+  assert.match(
+    migration,
+    /campus_indoor_maps_read_authenticated[\s\S]*private\.has_permission\('rooms\.manage'\)/,
+  );
+});
+
+test("uses fixed-opacity sibling layers for indoor floor emphasis", async () => {
+  const indoorLayers = await readFile(
+    new URL("../components/rooms/indoor-3d-layers.ts", import.meta.url),
+    "utf8",
+  );
+
+  const extrusionOpacities = [
+    ...indoorLayers.matchAll(/"fill-extrusion-opacity": ([^,\n]+)/gu),
+  ];
+  assert.ok(extrusionOpacities.length >= 14);
+  for (const [, opacity] of extrusionOpacities) {
+    assert.match(opacity.trim(), /^(?:0(?:\.\d+)?|1)$/u);
+  }
+  assert.doesNotMatch(indoorLayers, /"fill-extrusion-opacity": \[/u);
+  assert.match(indoorLayers, /slabsInactive/);
+  assert.match(indoorLayers, /roomsInactive/);
+  assert.match(indoorLayers, /perimeters/);
+  assert.match(indoorLayers, /perimetersInactive/);
+  assert.match(indoorLayers, /wallsInactive/);
+  assert.match(indoorLayers, /openingsInactive/);
+  assert.match(indoorLayers, /INDOOR_LAYER_IDS\.openings,/);
+  assert.match(indoorLayers, /INDOOR_SOURCE_IDS\.openings/);
+  assert.match(indoorLayers, /connectorsRoute/);
+  assert.match(indoorLayers, /routeInactive/);
+  assert.match(indoorLayers, /labelsInactive/);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.1,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.2,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.28,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.35,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.12,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.24,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.98,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.48,/u);
+  assert.match(indoorLayers, /"fill-extrusion-opacity": 0\.32,/u);
+  assert.match(indoorLayers, /\["get", "exterior"\]/u);
+  assert.match(indoorLayers, /"text-font": \["Noto Sans Regular"\]/u);
+  assert.match(
+    indoorLayers,
+    /source: INDOOR_SOURCE_IDS\.labels,\s*[^]*?filter: \["==", \["get", "active"\], true\]/u,
+  );
+  assert.doesNotMatch(
+    indoorLayers,
+    /"text-opacity": \["case", \["get", "active"\]/u,
+  );
+  assert.match(indoorLayers, /"text-opacity": 0\.48,/u);
+  assert.match(indoorLayers, /"text-allow-overlap": true,/u);
+  assert.match(indoorLayers, /"text-ignore-placement": true,/u);
+  assert.match(indoorLayers, /filter: \["==", \["get", "active"\], false\]/u);
+  assert.match(indoorLayers, /filter: \["==", \["get", "active"\], true\]/u);
+  assert.match(indoorLayers, /\["==", \["get", "perimeter"\], true\]/u);
+  assert.match(indoorLayers, /\["!=", \["get", "perimeter"\], true\]/u);
+  assert.match(indoorLayers, /map\.moveLayer\(layerId, insertionPoint\)/u);
+  const drawOrder = indoorLayers.slice(
+    indoorLayers.indexOf("const INDOOR_LAYER_DRAW_ORDER"),
+    indoorLayers.indexOf("export function addIndoorLayers"),
+  );
+  assert.ok(
+    drawOrder.indexOf("INDOOR_LAYER_IDS.route,") <
+      drawOrder.indexOf("INDOOR_LAYER_IDS.slabsInactive"),
+  );
+  assert.ok(
+    drawOrder.indexOf("INDOOR_LAYER_IDS.slabsInactive") <
+      drawOrder.indexOf("INDOOR_LAYER_IDS.roomsInactive"),
+  );
+  assert.ok(
+    drawOrder.indexOf("INDOOR_LAYER_IDS.roomsInactive") <
+      drawOrder.indexOf("INDOOR_LAYER_IDS.openingsInactive"),
+  );
+  assert.ok(
+    drawOrder.indexOf("INDOOR_LAYER_IDS.openingsInactive") <
+      drawOrder.indexOf("INDOOR_LAYER_IDS.labelsInactive"),
+  );
+  assert.ok(
+    drawOrder.indexOf("INDOOR_LAYER_IDS.labelsInactive") <
+      drawOrder.indexOf("INDOOR_LAYER_IDS.labels,"),
+  );
 });
 
 test("builds an HTTPS walking route request for the selected places", () => {

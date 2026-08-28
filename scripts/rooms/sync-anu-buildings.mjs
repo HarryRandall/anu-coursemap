@@ -557,6 +557,9 @@ function toDemoData(baseDemo, snapshot) {
     layers,
     places,
     features: [...features, ...walkingFeatures],
+    // Indoor maps are demo fixture data, unrelated to the building import, so
+    // a resync carries them through rather than dropping them.
+    ...(baseDemo.indoorMaps ? { indoorMaps: baseDemo.indoorMaps } : {}),
     snapshot: snapshot.metadata,
   };
 }
