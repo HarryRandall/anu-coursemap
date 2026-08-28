@@ -24,6 +24,7 @@ async function loadCampusMapModules() {
   const directory = await mkdtemp(join(tmpdir(), "coursemap-room-finder-"));
   const campusMapTarget = join(directory, "campus-map.js");
   const campusMapQueryTarget = join(directory, "campus-map-query.js");
+  const indoorMapTarget = join(directory, "indoor-map.js");
   const routingTarget = join(directory, "routing.js");
 
   await compileModule(
@@ -35,6 +36,10 @@ async function loadCampusMapModules() {
     campusMapQueryTarget,
   );
   await compileModule(
+    new URL("../lib/rooms/indoor-map.ts", import.meta.url),
+    indoorMapTarget,
+  );
+  await compileModule(
     new URL("../lib/rooms/routing.ts", import.meta.url),
     routingTarget,
     [[/from "\.\/campus-map";/, 'from "./campus-map.js";']],
@@ -43,11 +48,13 @@ async function loadCampusMapModules() {
   return Promise.all([
     import(pathToFileURL(campusMapTarget).href),
     import(pathToFileURL(campusMapQueryTarget).href),
+    import(pathToFileURL(indoorMapTarget).href),
     import(pathToFileURL(routingTarget).href),
   ]);
 }
 
-const [campusMap, campusMapQuery, routing] = await loadCampusMapModules();
+const [campusMap, campusMapQuery, indoorMap, routing] =
+  await loadCampusMapModules();
 const demoData = JSON.parse(
   await readFile(
     new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
@@ -55,6 +62,166 @@ const demoData = JSON.parse(
   ),
 );
 const visibleLayers = campusMap.getDefaultVisibleLayerSlugs(demoData.layers);
+
+const indoorDocument = {
+  version: 1,
+  viewBox: { width: 1000, height: 700 },
+  levels: [
+    {
+      id: "level-ground",
+      number: 0,
+      ref: "G",
+      name: "Ground floor",
+      elevationMetres: 0,
+      heightMetres: 3.6,
+      outline: [
+        { x: 50, y: 50 },
+        { x: 950, y: 50 },
+        { x: 950, y: 650 },
+        { x: 50, y: 650 },
+      ],
+    },
+  ],
+  spaces: [
+    {
+      id: "room-g02",
+      levelId: "level-ground",
+      kind: "room",
+      ref: "G02",
+      name: "Round room",
+      searchable: true,
+      geometry: { type: "ellipse", cx: 650, cy: 250, rx: 100, ry: 80 },
+    },
+    {
+      id: "room-g01",
+      levelId: "level-ground",
+      kind: "room",
+      ref: "G01",
+      name: "Seminar room",
+      searchable: true,
+      geometry: {
+        type: "polygon",
+        points: [
+          { x: 100, y: 100 },
+          { x: 400, y: 100 },
+          { x: 420, y: 280 },
+          { x: 100, y: 280 },
+        ],
+      },
+    },
+  ],
+  connectors: [],
+  routeNodes: [],
+  routeEdges: [],
+};
+
+test("validates and lists searchable multi-shape indoor rooms", () => {
+  const parsed = indoorMap.parseCampusIndoorDocument(indoorDocument);
+  assert.equal(parsed.levels[0].ref, "G");
+  assert.deepEqual(
+    indoorMap.listIndoorRoomDetails(parsed).map((room) => room.label),
+    ["Seminar room", "Round room"],
+  );
+});
+
+test("rejects invalid indoor geometry and unknown level references", () => {
+  assert.throws(
+    () =>
+      indoorMap.parseCampusIndoorDocument({
+        ...indoorDocument,
+        spaces: [
+          {
+            ...indoorDocument.spaces[0],
+            levelId: "missing-level",
+          },
+        ],
+      }),
+    /unknown level identifier/u,
+  );
+  assert.throws(
+    () =>
+      indoorMap.parseCampusIndoorDocument({
+        ...indoorDocument,
+        spaces: [
+          {
+            ...indoorDocument.spaces[1],
+            geometry: {
+              type: "polygon",
+              points: [
+                { x: 100, y: 100 },
+                { x: 300, y: 300 },
+                { x: 100, y: 300 },
+                { x: 300, y: 100 },
+              ],
+            },
+          },
+        ],
+      }),
+    /simple polygon/u,
+  );
+});
+
+test("builds deterministic level-to-level routes and honours accessibility", () => {
+  const upperLevel = {
+    ...indoorDocument.levels[0],
+    id: "level-one",
+    number: 1,
+    ref: "1",
+    name: "Level 1",
+    elevationMetres: 3.6,
+  };
+  const upperRoom = {
+    ...indoorDocument.spaces[0],
+    id: "room-101",
+    levelId: upperLevel.id,
+    ref: "1.01",
+    name: "Upper room",
+  };
+  const routeDocument = {
+    ...indoorDocument,
+    levels: [...indoorDocument.levels, upperLevel],
+    spaces: [...indoorDocument.spaces, upperRoom],
+    connectors: [
+      {
+        id: "main-lift",
+        kind: "lift",
+        name: "Main lift",
+        levelIds: ["level-ground", "level-one"],
+        position: { x: 500, y: 400 },
+        accessibility: "accessible",
+      },
+    ],
+  };
+
+  const routed = indoorMap.buildIndoorRouteGraph(routeDocument);
+  const rebuilt = indoorMap.buildIndoorRouteGraph(routed);
+  assert.deepEqual(rebuilt.routeNodes, routed.routeNodes);
+  assert.deepEqual(rebuilt.routeEdges, routed.routeEdges);
+
+  const route = indoorMap.findIndoorRoute(routed, "room-g01", "room-101", {
+    accessibleOnly: true,
+  });
+  assert.ok(route);
+  assert.deepEqual(route.levelIds, ["level-ground", "level-one"]);
+  assert.ok(route.distanceMetres > 0);
+  assert.ok(route.edgeIds.some((edgeId) => edgeId.startsWith("vertical-")));
+
+  const inaccessible = indoorMap.buildIndoorRouteGraph({
+    ...routeDocument,
+    connectors: [
+      {
+        ...routeDocument.connectors[0],
+        accessibility: "inaccessible",
+      },
+    ],
+  });
+  assert.equal(
+    indoorMap.findIndoorRoute(inaccessible, "room-g01", "room-101", {
+      accessibleOnly: true,
+    }),
+    null,
+  );
+});
 
 test("batches large campus map queries below URL limits", () => {
   const placeIds = Array.from({ length: 283 }, (_, index) => `place-${index}`);

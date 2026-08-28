@@ -17,6 +17,7 @@ import {
   ListChecks,
   Map,
   MapPin,
+  MapPinned,
   RefreshCw,
   Route,
   Shield,
@@ -105,6 +106,10 @@ const adminNav: NavSection[] = [
       { href: "/admin/courses", label: "Courses", icon: Table2 },
       { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
     ],
+  },
+  {
+    label: "Campus",
+    items: [{ href: "/admin/rooms", label: "Indoor maps", icon: MapPinned }],
   },
   {
     icon: Import,
