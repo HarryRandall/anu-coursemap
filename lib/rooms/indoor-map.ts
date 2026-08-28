@@ -1,4 +1,12 @@
-export const CAMPUS_INDOOR_DOCUMENT_VERSION = 1 as const;
+import { indoorGeometryCentre } from "@/lib/rooms/indoor-geometry";
+import {
+  openingPoint,
+  wallSegmentCount,
+  wallSegmentLength,
+  wallSegments,
+} from "@/lib/rooms/indoor-walls";
+
+export const CAMPUS_INDOOR_DOCUMENT_VERSION = 2 as const;
 
 export type IndoorAccessibility = "unknown" | "accessible" | "inaccessible";
 
@@ -60,6 +68,50 @@ export type CampusIndoorSpace = Readonly<{
   geometry: IndoorSpaceGeometry;
 }>;
 
+export type IndoorWallKind = "structural" | "partition" | "glazing";
+
+/**
+ * A hole an author cut through a wall. A door route node is derived from one of
+ * these rather than authored loose, so a route can only cross a wall where a
+ * gap was actually drawn.
+ */
+export type CampusIndoorWallOpening = Readonly<{
+  id: string;
+  /** A doorless gap is still an opening a route may pass through. */
+  kind: "door" | "opening";
+  /** Index of the wall segment this opening sits on. */
+  segmentIndex: number;
+  /** Position of the opening centre along that segment, from 0 to 1. */
+  offset: number;
+  /** Clear width in local units. */
+  width: number;
+  accessibility: IndoorAccessibility;
+  /**
+   * The room this opening serves. Derived from the wall normal at draw time and
+   * then stored, so an author can correct it and nothing depends on re-running
+   * the inference.
+   */
+  spaceId?: string;
+  /** Set when the opening leads outside, making it a building entrance. */
+  exterior?: boolean;
+}>;
+
+/**
+ * A drawn wall run. Walls are polylines rather than one record per segment so a
+ * perimeter or corridor selects, moves and reshapes as the single thing an
+ * author drew, and so mitred corners fall out of one stroked path.
+ */
+export type CampusIndoorWall = Readonly<{
+  id: string;
+  levelId: string;
+  kind: IndoorWallKind;
+  points: readonly IndoorPoint[];
+  /** Wall thickness in local units, at ten units per metre. */
+  thickness: number;
+  closed: boolean;
+  openings: readonly CampusIndoorWallOpening[];
+}>;
+
 export type IndoorConnectorKind = "stairs" | "lift" | "escalator" | "ramp";
 
 export type CampusIndoorConnector = Readonly<{
@@ -72,7 +124,7 @@ export type CampusIndoorConnector = Readonly<{
 }>;
 
 export type IndoorRouteNodeKind =
-  "entrance" | "door" | "junction" | "connector";
+  "entrance" | "door" | "junction" | "connector" | "space";
 
 export type CampusIndoorRouteNode = Readonly<{
   id: string;
@@ -80,6 +132,10 @@ export type CampusIndoorRouteNode = Readonly<{
   kind: IndoorRouteNodeKind;
   position: IndoorPoint;
   connectorId?: string;
+  spaceId?: string;
+  /** Set on door and entrance nodes derived from a wall opening. */
+  openingId?: string;
+  accessibility?: IndoorAccessibility;
 }>;
 
 export type IndoorRouteEdgeKind =
@@ -99,6 +155,7 @@ export type CampusIndoorDocument = Readonly<{
   version: typeof CAMPUS_INDOOR_DOCUMENT_VERSION;
   viewBox: CampusIndoorViewBox;
   levels: readonly CampusIndoorLevel[];
+  walls: readonly CampusIndoorWall[];
   spaces: readonly CampusIndoorSpace[];
   connectors: readonly CampusIndoorConnector[];
   routeNodes: readonly CampusIndoorRouteNode[];
@@ -136,8 +193,12 @@ const DEFAULT_CAMPUS_INDOOR_VIEW_BOX: CampusIndoorViewBox = {
 
 const IDENTIFIER_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9._:-]*[A-Za-z0-9])?$/;
 const MAX_IDENTIFIER_LENGTH = 128;
-const INDOOR_METRES_PER_LOCAL_UNIT = 0.1;
+export const INDOOR_METRES_PER_LOCAL_UNIT = 0.1;
 const MINIMUM_ROUTE_DISTANCE_METRES = 0.01;
+const MINIMUM_WALL_THICKNESS = 0.1;
+const MAXIMUM_WALL_THICKNESS = 100;
+const MINIMUM_WALL_SEGMENT_LENGTH = 1;
+const MAXIMUM_WALL_POINTS = 500;
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -634,6 +695,151 @@ function parseSpace(
   };
 }
 
+function parseWallOpening(
+  value: unknown,
+  path: string,
+  wall: Readonly<{ points: readonly IndoorPoint[]; closed: boolean }>,
+): CampusIndoorWallOpening {
+  const opening = expectRecord(value, path);
+  expectExactKeys(
+    opening,
+    ["id", "kind", "segmentIndex", "offset", "width", "accessibility"],
+    path,
+    ["spaceId", "exterior"],
+  );
+
+  const segmentIndex = expectNumber(
+    opening.segmentIndex,
+    `${path}.segmentIndex`,
+  );
+  const segmentCount = wallSegmentCount(wall);
+  if (
+    !Number.isInteger(segmentIndex) ||
+    segmentIndex < 0 ||
+    segmentIndex >= segmentCount
+  ) {
+    invalid(
+      `${path}.segmentIndex`,
+      `expected a segment between 0 and ${segmentCount - 1}`,
+    );
+  }
+
+  const offset = expectNumber(opening.offset, `${path}.offset`);
+  if (offset < 0 || offset > 1) {
+    invalid(`${path}.offset`, "expected a position between 0 and 1");
+  }
+
+  const width = expectNumber(opening.width, `${path}.width`);
+  const segmentLength = wallSegmentLength(wall, segmentIndex);
+  if (width <= 0 || width > segmentLength) {
+    invalid(
+      `${path}.width`,
+      `expected a width between 0 and the segment length of ${segmentLength}`,
+    );
+  }
+
+  return {
+    id: expectIdentifier(opening.id, `${path}.id`),
+    kind: expectEnum(
+      opening.kind,
+      ["door", "opening"] as const,
+      `${path}.kind`,
+    ),
+    segmentIndex,
+    offset,
+    width,
+    accessibility: parseAccessibility(
+      opening.accessibility,
+      `${path}.accessibility`,
+    ),
+    ...(hasOwn(opening, "spaceId")
+      ? { spaceId: expectIdentifier(opening.spaceId, `${path}.spaceId`) }
+      : {}),
+    ...(hasOwn(opening, "exterior")
+      ? { exterior: expectBoolean(opening.exterior, `${path}.exterior`) }
+      : {}),
+  };
+}
+
+function parseWall(
+  value: unknown,
+  index: number,
+  viewBox: CampusIndoorViewBox,
+): CampusIndoorWall {
+  const path = `walls[${index}]`;
+  const wall = expectRecord(value, path);
+  expectExactKeys(
+    wall,
+    ["id", "levelId", "kind", "points", "thickness", "closed", "openings"],
+    path,
+  );
+
+  const points = expectArray(wall.points, `${path}.points`).map(
+    (point, pointIndex) => parsePoint(point, `${path}.points[${pointIndex}]`),
+  );
+  if (points.length < 2) {
+    invalid(`${path}.points`, "expected at least two points");
+  }
+  if (points.length > MAXIMUM_WALL_POINTS) {
+    invalid(`${path}.points`, `expected at most ${MAXIMUM_WALL_POINTS} points`);
+  }
+  points.forEach((point, pointIndex) => {
+    if (!isIndoorPointWithinViewBox(point, viewBox)) {
+      invalid(
+        `${path}.points[${pointIndex}]`,
+        "expected a point inside the viewBox",
+      );
+    }
+  });
+
+  const closed = expectBoolean(wall.closed, `${path}.closed`);
+  if (closed && points.length < 3) {
+    invalid(`${path}.points`, "a closed wall expects at least three points");
+  }
+
+  const shape = { points, closed };
+  wallSegments(shape).forEach((segment) => {
+    const length = Math.hypot(
+      segment.end.x - segment.start.x,
+      segment.end.y - segment.start.y,
+    );
+    if (length < MINIMUM_WALL_SEGMENT_LENGTH) {
+      invalid(
+        `${path}.points[${segment.index}]`,
+        `expected consecutive points at least ${MINIMUM_WALL_SEGMENT_LENGTH} units apart`,
+      );
+    }
+  });
+
+  const thickness = expectNumber(wall.thickness, `${path}.thickness`);
+  if (
+    thickness < MINIMUM_WALL_THICKNESS ||
+    thickness > MAXIMUM_WALL_THICKNESS
+  ) {
+    invalid(
+      `${path}.thickness`,
+      `expected a thickness between ${MINIMUM_WALL_THICKNESS} and ${MAXIMUM_WALL_THICKNESS}`,
+    );
+  }
+
+  return {
+    id: expectIdentifier(wall.id, `${path}.id`),
+    levelId: expectIdentifier(wall.levelId, `${path}.levelId`),
+    kind: expectEnum(
+      wall.kind,
+      ["structural", "partition", "glazing"] as const,
+      `${path}.kind`,
+    ),
+    points,
+    thickness,
+    closed,
+    openings: expectArray(wall.openings, `${path}.openings`).map(
+      (opening, openingIndex) =>
+        parseWallOpening(opening, `${path}.openings[${openingIndex}]`, shape),
+    ),
+  };
+}
+
 function parseAccessibility(value: unknown, path: string) {
   return expectEnum(
     value,
@@ -695,20 +901,50 @@ function parseRouteNode(
   const node = expectRecord(value, path);
   expectExactKeys(node, ["id", "levelId", "kind", "position"], path, [
     "connectorId",
+    "spaceId",
+    "openingId",
+    "accessibility",
   ]);
   const kind = expectEnum(
     node.kind,
-    ["entrance", "door", "junction", "connector"] as const,
+    ["entrance", "door", "junction", "connector", "space"] as const,
     `${path}.kind`,
   );
   const connectorId = hasOwn(node, "connectorId")
     ? expectIdentifier(node.connectorId, `${path}.connectorId`)
     : undefined;
+  const spaceId = hasOwn(node, "spaceId")
+    ? expectIdentifier(node.spaceId, `${path}.spaceId`)
+    : undefined;
+  const openingId = hasOwn(node, "openingId")
+    ? expectIdentifier(node.openingId, `${path}.openingId`)
+    : undefined;
+  const accessibility = hasOwn(node, "accessibility")
+    ? parseAccessibility(node.accessibility, `${path}.accessibility`)
+    : undefined;
+  if (openingId && kind !== "door" && kind !== "entrance") {
+    invalid(
+      `${path}.openingId`,
+      "only valid for a door or entrance route node",
+    );
+  }
   if (kind === "connector" && !connectorId) {
     invalid(`${path}.connectorId`, "required for a connector route node");
   }
   if (kind !== "connector" && connectorId) {
     invalid(`${path}.connectorId`, "only valid for a connector route node");
+  }
+  if (kind === "space" && !spaceId) {
+    invalid(`${path}.spaceId`, "required for a space route node");
+  }
+  if (kind !== "space" && kind !== "door" && spaceId) {
+    invalid(`${path}.spaceId`, "only valid for a space or door route node");
+  }
+  if (kind !== "door" && kind !== "entrance" && accessibility) {
+    invalid(
+      `${path}.accessibility`,
+      "only valid for a door or entrance route node",
+    );
   }
   const position = parsePoint(node.position, `${path}.position`);
   if (!isIndoorPointWithinViewBox(position, viewBox)) {
@@ -721,6 +957,9 @@ function parseRouteNode(
     kind,
     position,
     ...(connectorId ? { connectorId } : {}),
+    ...(spaceId ? { spaceId } : {}),
+    ...(openingId ? { openingId } : {}),
+    ...(accessibility ? { accessibility } : {}),
   };
 }
 
@@ -765,6 +1004,7 @@ function ensureUniqueIds(document: CampusIndoorDocument) {
   const ids = new Set<string>();
   const collections = [
     ["levels", document.levels],
+    ["walls", document.walls],
     ["spaces", document.spaces],
     ["connectors", document.connectors],
     ["routeNodes", document.routeNodes],
@@ -782,10 +1022,25 @@ function ensureUniqueIds(document: CampusIndoorDocument) {
       ids.add(item.id);
     });
   }
+
+  // Openings share the document identifier space because the route graph
+  // derives a door node from each one.
+  document.walls.forEach((wall, wallIndex) => {
+    wall.openings.forEach((opening, openingIndex) => {
+      if (ids.has(opening.id)) {
+        invalid(
+          `walls[${wallIndex}].openings[${openingIndex}].id`,
+          `duplicate identifier '${opening.id}'`,
+        );
+      }
+      ids.add(opening.id);
+    });
+  });
 }
 
 function validateReferences(document: CampusIndoorDocument) {
   const levels = new Set(document.levels.map((level) => level.id));
+  const spaces = new Map(document.spaces.map((space) => [space.id, space]));
   const connectors = new Map(
     document.connectors.map((connector) => [connector.id, connector]),
   );
@@ -800,6 +1055,34 @@ function validateReferences(document: CampusIndoorDocument) {
         `unknown level identifier '${space.levelId}'`,
       );
     }
+  });
+
+  const openings = new Map<string, CampusIndoorWall>();
+  document.walls.forEach((wall, wallIndex) => {
+    if (!levels.has(wall.levelId)) {
+      invalid(
+        `walls[${wallIndex}].levelId`,
+        `unknown level identifier '${wall.levelId}'`,
+      );
+    }
+    wall.openings.forEach((opening, openingIndex) => {
+      openings.set(opening.id, wall);
+      if (!opening.spaceId) return;
+
+      const space = spaces.get(opening.spaceId);
+      if (!space) {
+        invalid(
+          `walls[${wallIndex}].openings[${openingIndex}].spaceId`,
+          `unknown space identifier '${opening.spaceId}'`,
+        );
+      }
+      if (space.levelId !== wall.levelId) {
+        invalid(
+          `walls[${wallIndex}].openings[${openingIndex}].spaceId`,
+          `space '${space.id}' is on level '${space.levelId}' but the wall is on '${wall.levelId}'`,
+        );
+      }
+    });
   });
 
   document.connectors.forEach((connector, connectorIndex) => {
@@ -820,20 +1103,61 @@ function validateReferences(document: CampusIndoorDocument) {
         `unknown level identifier '${node.levelId}'`,
       );
     }
-    if (!node.connectorId) return;
-
-    const connector = connectors.get(node.connectorId);
-    if (!connector) {
-      invalid(
-        `routeNodes[${index}].connectorId`,
-        `unknown connector identifier '${node.connectorId}'`,
-      );
+    if (node.connectorId) {
+      const connector = connectors.get(node.connectorId);
+      if (!connector) {
+        invalid(
+          `routeNodes[${index}].connectorId`,
+          `unknown connector identifier '${node.connectorId}'`,
+        );
+      }
+      if (!connector.levelIds.includes(node.levelId)) {
+        invalid(
+          `routeNodes[${index}].levelId`,
+          `connector '${connector.id}' does not serve level '${node.levelId}'`,
+        );
+      }
     }
-    if (!connector.levelIds.includes(node.levelId)) {
-      invalid(
-        `routeNodes[${index}].levelId`,
-        `connector '${connector.id}' does not serve level '${node.levelId}'`,
-      );
+
+    if (node.openingId) {
+      const wall = openings.get(node.openingId);
+      if (!wall) {
+        invalid(
+          `routeNodes[${index}].openingId`,
+          `unknown wall opening identifier '${node.openingId}'`,
+        );
+      }
+      if (wall.levelId !== node.levelId) {
+        invalid(
+          `routeNodes[${index}].levelId`,
+          `wall opening '${node.openingId}' is on level '${wall.levelId}'`,
+        );
+      }
+    }
+
+    if (node.kind === "door" && !node.spaceId) {
+      invalid(`routeNodes[${index}].spaceId`, "required for a door route node");
+    }
+    if (node.spaceId) {
+      const space = spaces.get(node.spaceId);
+      if (!space) {
+        invalid(
+          `routeNodes[${index}].spaceId`,
+          `unknown space identifier '${node.spaceId}'`,
+        );
+      }
+      if (space.kind !== "room") {
+        invalid(
+          `routeNodes[${index}].spaceId`,
+          `space '${space.id}' is not a room`,
+        );
+      }
+      if (space.levelId !== node.levelId) {
+        invalid(
+          `routeNodes[${index}].levelId`,
+          `space '${space.id}' is on level '${space.levelId}'`,
+        );
+      }
     }
   });
 
@@ -865,6 +1189,20 @@ function validateReferences(document: CampusIndoorDocument) {
           `routeEdges[${index}].kind`,
           "a walking edge cannot cross levels",
         );
+      }
+      if (fromNode.kind === "space" || toNode.kind === "space") {
+        const spaceNode = fromNode.kind === "space" ? fromNode : toNode;
+        const otherNode = fromNode.kind === "space" ? toNode : fromNode;
+        if (
+          otherNode.kind !== "door" ||
+          !spaceNode.spaceId ||
+          otherNode.spaceId !== spaceNode.spaceId
+        ) {
+          invalid(
+            `routeEdges[${index}]`,
+            "a space route node may only connect to a door for the same room",
+          );
+        }
       }
       return;
     }
@@ -908,6 +1246,7 @@ export function createEmptyCampusIndoorDocument(
     version: CAMPUS_INDOOR_DOCUMENT_VERSION,
     viewBox: { width: viewBox.width, height: viewBox.height },
     levels: [],
+    walls: [],
     spaces: [],
     connectors: [],
     routeNodes: [],
@@ -921,12 +1260,18 @@ export function parseCampusIndoorDocument(
   value: unknown,
 ): CampusIndoorDocument {
   const document = expectRecord(value, "document");
+  // Check the version first, so an older document reports the version it is
+  // rather than whichever key that version happened not to have.
+  if (document.version !== CAMPUS_INDOOR_DOCUMENT_VERSION) {
+    invalid("version", `expected version ${CAMPUS_INDOOR_DOCUMENT_VERSION}`);
+  }
   expectExactKeys(
     document,
     [
       "version",
       "viewBox",
       "levels",
+      "walls",
       "spaces",
       "connectors",
       "routeNodes",
@@ -934,9 +1279,6 @@ export function parseCampusIndoorDocument(
     ],
     "document",
   );
-  if (document.version !== CAMPUS_INDOOR_DOCUMENT_VERSION) {
-    invalid("version", `expected version ${CAMPUS_INDOOR_DOCUMENT_VERSION}`);
-  }
 
   const viewBox = parseViewBox(document.viewBox);
   const parsed: CampusIndoorDocument = {
@@ -944,6 +1286,9 @@ export function parseCampusIndoorDocument(
     viewBox,
     levels: expectArray(document.levels, "levels").map((level, index) =>
       parseLevel(level, index, viewBox),
+    ),
+    walls: expectArray(document.walls, "walls").map((wall, index) =>
+      parseWall(wall, index, viewBox),
     ),
     spaces: expectArray(document.spaces, "spaces").map((space, index) =>
       parseSpace(space, index, viewBox),
@@ -1019,42 +1364,6 @@ function compareLevels(left: CampusIndoorLevel, right: CampusIndoorLevel) {
   );
 }
 
-function geometryCentre(geometry: IndoorSpaceGeometry): IndoorPoint {
-  if (geometry.type === "rectangle") {
-    return {
-      x: geometry.x + geometry.width / 2,
-      y: geometry.y + geometry.height / 2,
-    };
-  }
-  if (geometry.type === "ellipse") {
-    return { x: geometry.cx, y: geometry.cy };
-  }
-
-  const points = normalisePolygonPoints(geometry.points);
-  let signedDoubleArea = 0;
-  let weightedX = 0;
-  let weightedY = 0;
-  points.forEach((point, index) => {
-    const nextPoint = points[(index + 1) % points.length];
-    const cross = point.x * nextPoint.y - nextPoint.x * point.y;
-    signedDoubleArea += cross;
-    weightedX += (point.x + nextPoint.x) * cross;
-    weightedY += (point.y + nextPoint.y) * cross;
-  });
-
-  if (signedDoubleArea === 0) {
-    return {
-      x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
-      y: points.reduce((sum, point) => sum + point.y, 0) / points.length,
-    };
-  }
-
-  return {
-    x: weightedX / (3 * signedDoubleArea),
-    y: weightedY / (3 * signedDoubleArea),
-  };
-}
-
 function generatedIdentifier(value: string, path: string) {
   if (value.length > MAX_IDENTIFIER_LENGTH || !IDENTIFIER_PATTERN.test(value)) {
     invalid(path, `generated identifier '${value}' is not valid`);
@@ -1062,90 +1371,25 @@ function generatedIdentifier(value: string, path: string) {
   return value;
 }
 
-function roomRouteNodeId(spaceId: string) {
+export function indoorSpaceRouteNodeId(spaceId: string) {
   return generatedIdentifier(`space-${spaceId}`, `spaces['${spaceId}'].id`);
 }
 
-function connectorRouteNodeId(connectorId: string, levelId: string) {
+export function indoorConnectorRouteNodeId(
+  connectorId: string,
+  levelId: string,
+) {
   return generatedIdentifier(
     `connector-${connectorId}-${levelId}`,
     `connectors['${connectorId}'].levelIds['${levelId}']`,
   );
 }
 
-function localDistanceMetres(left: IndoorPoint, right: IndoorPoint) {
+export function indoorDistanceMetres(left: IndoorPoint, right: IndoorPoint) {
   const distance =
     Math.hypot(right.x - left.x, right.y - left.y) *
     INDOOR_METRES_PER_LOCAL_UNIT;
   return Math.max(Number(distance.toFixed(3)), MINIMUM_ROUTE_DISTANCE_METRES);
-}
-
-type WalkingEdgeCandidate = Readonly<{
-  from: CampusIndoorRouteNode;
-  to: CampusIndoorRouteNode;
-  distanceMetres: number;
-}>;
-
-function buildLevelWalkingEdges(
-  levelNodes: readonly CampusIndoorRouteNode[],
-  levelIndex: number,
-): CampusIndoorRouteEdge[] {
-  if (levelNodes.length < 2) return [];
-
-  const nodes = [...levelNodes].sort((left, right) =>
-    compareIdentifiers(left.id, right.id),
-  );
-  const candidates: WalkingEdgeCandidate[] = [];
-  for (let fromIndex = 0; fromIndex < nodes.length; fromIndex++) {
-    for (let toIndex = fromIndex + 1; toIndex < nodes.length; toIndex++) {
-      candidates.push({
-        from: nodes[fromIndex],
-        to: nodes[toIndex],
-        distanceMetres: localDistanceMetres(
-          nodes[fromIndex].position,
-          nodes[toIndex].position,
-        ),
-      });
-    }
-  }
-  candidates.sort(
-    (left, right) =>
-      left.distanceMetres - right.distanceMetres ||
-      compareIdentifiers(left.from.id, right.from.id) ||
-      compareIdentifiers(left.to.id, right.to.id),
-  );
-
-  const parents = new Map(nodes.map((node) => [node.id, node.id]));
-  function findRoot(nodeId: string): string {
-    const parent = parents.get(nodeId)!;
-    if (parent === nodeId) return parent;
-    const root = findRoot(parent);
-    parents.set(nodeId, root);
-    return root;
-  }
-
-  const edges: CampusIndoorRouteEdge[] = [];
-  for (const candidate of candidates) {
-    const fromRoot = findRoot(candidate.from.id);
-    const toRoot = findRoot(candidate.to.id);
-    if (fromRoot === toRoot) continue;
-
-    parents.set(toRoot, fromRoot);
-    edges.push({
-      id: generatedIdentifier(
-        `walking-${levelIndex}-${edges.length}`,
-        `levels[${levelIndex}].routeEdges[${edges.length}].id`,
-      ),
-      fromNodeId: candidate.from.id,
-      toNodeId: candidate.to.id,
-      kind: "walking",
-      bidirectional: true,
-      distanceMetres: candidate.distanceMetres,
-      accessibility: "accessible",
-    });
-    if (edges.length === nodes.length - 1) break;
-  }
-  return edges;
 }
 
 function buildConnectorEdges(
@@ -1168,8 +1412,8 @@ function buildConnectorEdges(
         `vertical-${connectorIndex}-${levelIndex}`,
         `connectors[${connectorIndex}].routeEdges[${levelIndex}].id`,
       ),
-      fromNodeId: connectorRouteNodeId(connector.id, level.id),
-      toNodeId: connectorRouteNodeId(connector.id, nextLevel.id),
+      fromNodeId: indoorConnectorRouteNodeId(connector.id, level.id),
+      toNodeId: indoorConnectorRouteNodeId(connector.id, nextLevel.id),
       kind: connector.kind,
       bidirectional: true,
       distanceMetres: Math.max(
@@ -1181,6 +1425,182 @@ function buildConnectorEdges(
   });
 }
 
+function buildRoomRouteNodes(
+  document: CampusIndoorDocument,
+  kind: "junction" | "space",
+) {
+  return document.spaces
+    .filter((space) => space.kind === "room" && space.searchable)
+    .sort((left, right) => compareIdentifiers(left.id, right.id))
+    .map((space): CampusIndoorRouteNode => ({
+      id: indoorSpaceRouteNodeId(space.id),
+      levelId: space.levelId,
+      kind,
+      position: indoorGeometryCentre(space.geometry),
+      ...(kind === "space" ? { spaceId: space.id } : {}),
+    }));
+}
+
+function buildConnectorRouteNodes(
+  connectors: readonly CampusIndoorConnector[],
+  levelsById: ReadonlyMap<string, CampusIndoorLevel>,
+) {
+  return connectors.flatMap((connector) =>
+    connector.levelIds
+      .map((levelId) => levelsById.get(levelId)!)
+      .sort(compareLevels)
+      .map((level): CampusIndoorRouteNode => ({
+        id: indoorConnectorRouteNodeId(connector.id, level.id),
+        levelId: level.id,
+        kind: "connector",
+        position: connector.position,
+        connectorId: connector.id,
+      })),
+  );
+}
+
+/**
+ * Identifier of the route node derived from a wall opening. Doors are not
+ * authored loose: each one is a hole an author cut in a wall, so a route can
+ * only cross a wall where a gap was actually drawn.
+ */
+export function indoorOpeningRouteNodeId(openingId: string) {
+  return generatedIdentifier(
+    `opening-${openingId}`,
+    `walls.openings['${openingId}'].id`,
+  );
+}
+
+/**
+ * One route node per wall opening. An opening that leads outside becomes an
+ * `entrance`, which is where an outdoor route joins the building; one that
+ * serves a room becomes that room's `door`.
+ */
+function buildOpeningRouteNodes(
+  document: CampusIndoorDocument,
+  spaces: ReadonlyMap<string, CampusIndoorSpace>,
+): CampusIndoorRouteNode[] {
+  return document.walls
+    .flatMap((wall) =>
+      wall.openings.map((opening) => {
+        const space = opening.spaceId ? spaces.get(opening.spaceId) : undefined;
+        const servesRoom =
+          space?.kind === "room" && space.levelId === wall.levelId;
+        return {
+          id: indoorOpeningRouteNodeId(opening.id),
+          levelId: wall.levelId,
+          kind: opening.exterior ? ("entrance" as const) : ("door" as const),
+          position: openingPoint(wall, opening),
+          openingId: opening.id,
+          ...(servesRoom && !opening.exterior ? { spaceId: space.id } : {}),
+          accessibility: opening.accessibility,
+        };
+      }),
+    )
+    .filter((node) => node.kind === "entrance" || node.spaceId !== undefined)
+    .sort((left, right) => compareIdentifiers(left.id, right.id));
+}
+
+function indoorRoomEntryRouteEdgeId(doorId: string) {
+  return generatedIdentifier(
+    `room-entry-${doorId}`,
+    `routeNodes['${doorId}'].id`,
+  );
+}
+
+function buildExplicitRouteGraph(
+  baseDocument: CampusIndoorDocument,
+  sourceNodes: readonly CampusIndoorRouteNode[],
+  sourceEdges: readonly CampusIndoorRouteEdge[],
+) {
+  const levels = [...baseDocument.levels].sort(compareLevels);
+  const levelIds = new Set(levels.map((level) => level.id));
+  const levelsById = new Map(levels.map((level) => [level.id, level]));
+  const spaces = new Map(baseDocument.spaces.map((space) => [space.id, space]));
+  const roomNodes = buildRoomRouteNodes(baseDocument, "space");
+  const roomNodesBySpaceId = new Map(
+    roomNodes.flatMap((node) =>
+      node.spaceId ? [[node.spaceId, node] as const] : [],
+    ),
+  );
+  const connectors = [...baseDocument.connectors].sort((left, right) =>
+    compareIdentifiers(left.id, right.id),
+  );
+  const connectorNodes = buildConnectorRouteNodes(connectors, levelsById);
+  const openingNodes = buildOpeningRouteNodes(baseDocument, spaces);
+  const openingNodeIds = new Set(openingNodes.map((node) => node.id));
+  const authoredNodes = sourceNodes
+    .filter((node) => node.kind !== "space" && node.kind !== "connector")
+    // A node derived from an opening is regenerated, never carried over.
+    .filter((node) => !node.openingId && !openingNodeIds.has(node.id))
+    .filter((node) => levelIds.has(node.levelId))
+    .filter((node) => {
+      if (node.kind !== "door") return true;
+      if (!node.spaceId) return true;
+      const space = spaces.get(node.spaceId);
+      return space?.kind === "room" && space.levelId === node.levelId;
+    })
+    .sort((left, right) => compareIdentifiers(left.id, right.id));
+  const routeNodes = [
+    ...authoredNodes,
+    ...openingNodes,
+    ...roomNodes,
+    ...connectorNodes,
+  ].sort((left, right) => compareIdentifiers(left.id, right.id));
+  const routeNodesById = new Map(routeNodes.map((node) => [node.id, node]));
+  const sourceEdgesById = new Map(sourceEdges.map((edge) => [edge.id, edge]));
+
+  const roomEntryEdges = [...authoredNodes, ...openingNodes].flatMap((node) => {
+    if (node.kind !== "door" || !node.spaceId) return [];
+    const roomNode = roomNodesBySpaceId.get(node.spaceId);
+    if (!roomNode) return [];
+    const id = indoorRoomEntryRouteEdgeId(node.id);
+    const existingEdge = sourceEdgesById.get(id);
+    return [
+      {
+        id,
+        fromNodeId: roomNode.id,
+        toNodeId: node.id,
+        kind: "walking" as const,
+        bidirectional: true,
+        distanceMetres: indoorDistanceMetres(roomNode.position, node.position),
+        accessibility:
+          node.accessibility ?? existingEdge?.accessibility ?? "unknown",
+      },
+    ];
+  });
+  const connectorEdges = connectors.flatMap((connector, connectorIndex) =>
+    buildConnectorEdges(connector, connectorIndex, levelsById),
+  );
+  const generatedEdgeIds = new Set(
+    [...roomEntryEdges, ...connectorEdges].map((edge) => edge.id),
+  );
+  const authoredEdges = sourceEdges
+    .filter((edge) => edge.kind === "walking")
+    .filter((edge) => !generatedEdgeIds.has(edge.id))
+    .filter((edge) => {
+      const fromNode = routeNodesById.get(edge.fromNodeId);
+      const toNode = routeNodesById.get(edge.toNodeId);
+      return (
+        fromNode !== undefined &&
+        toNode !== undefined &&
+        fromNode.kind !== "space" &&
+        toNode.kind !== "space"
+      );
+    });
+  const routeEdges = [
+    ...authoredEdges,
+    ...roomEntryEdges,
+    ...connectorEdges,
+  ].sort((left, right) => compareIdentifiers(left.id, right.id));
+
+  return parseCampusIndoorDocument({
+    ...baseDocument,
+    routeNodes,
+    routeEdges,
+  });
+}
+
 export function buildIndoorRouteGraph(
   document: CampusIndoorDocument,
 ): CampusIndoorDocument {
@@ -1189,52 +1609,33 @@ export function buildIndoorRouteGraph(
     routeNodes: [],
     routeEdges: [],
   });
-  const levels = [...baseDocument.levels].sort(compareLevels);
-  const levelsById = new Map(levels.map((level) => [level.id, level]));
-  const roomNodes: CampusIndoorRouteNode[] = baseDocument.spaces
-    .filter((space) => space.kind === "room" && space.searchable)
-    .sort((left, right) => compareIdentifiers(left.id, right.id))
-    .map((space) => ({
-      id: roomRouteNodeId(space.id),
-      levelId: space.levelId,
-      kind: "junction",
-      position: geometryCentre(space.geometry),
-    }));
-  const connectors = [...baseDocument.connectors].sort((left, right) =>
-    compareIdentifiers(left.id, right.id),
+  const sourceNodes = document.routeNodes.map((node, index) =>
+    parseRouteNode(node, index, baseDocument.viewBox),
   );
-  const connectorNodes: CampusIndoorRouteNode[] = connectors.flatMap(
-    (connector) =>
-      connector.levelIds
-        .map((levelId) => levelsById.get(levelId)!)
-        .sort(compareLevels)
-        .map((level) => ({
-          id: connectorRouteNodeId(connector.id, level.id),
-          levelId: level.id,
-          kind: "connector" as const,
-          position: connector.position,
-          connectorId: connector.id,
-        })),
-  );
-  const routeNodes = [...roomNodes, ...connectorNodes].sort((left, right) =>
-    compareIdentifiers(left.id, right.id),
-  );
+  const sourceEdges = document.routeEdges.map(parseRouteEdge);
+  return buildExplicitRouteGraph(baseDocument, sourceNodes, sourceEdges);
+}
 
-  const walkingEdges = levels.flatMap((level, levelIndex) =>
-    buildLevelWalkingEdges(
-      routeNodes.filter((node) => node.levelId === level.id),
-      levelIndex,
-    ),
+/**
+ * The route graph also contains generated room-entry and vertical connector
+ * links. The editor should draw only the walking paths an author placed.
+ */
+export function indoorAuthoredRouteEdgeIds(
+  document: CampusIndoorDocument,
+): ReadonlySet<string> {
+  const nodes = new Map(document.routeNodes.map((node) => [node.id, node]));
+  return new Set(
+    document.routeEdges
+      .filter((edge) => {
+        if (edge.kind !== "walking") return false;
+        const from = nodes.get(edge.fromNodeId);
+        const to = nodes.get(edge.toNodeId);
+        return Boolean(
+          from && to && from.kind !== "space" && to.kind !== "space",
+        );
+      })
+      .map((edge) => edge.id),
   );
-  const connectorEdges = connectors.flatMap((connector, connectorIndex) =>
-    buildConnectorEdges(connector, connectorIndex, levelsById),
-  );
-
-  return parseCampusIndoorDocument({
-    ...baseDocument,
-    routeNodes,
-    routeEdges: [...walkingEdges, ...connectorEdges],
-  });
 }
 
 type RouteTraversal = Readonly<{
@@ -1248,21 +1649,39 @@ export function findIndoorRoute(
   toSpaceId: string,
   options: IndoorRouteOptions = {},
 ): CampusIndoorRoute | null {
-  const routedDocument = parseCampusIndoorDocument(document);
-  const routableSpaces = new Map(
+  return findIndoorRouteFromNode(
+    document,
+    indoorSpaceRouteNodeId(fromSpaceId),
+    toSpaceId,
+    options,
+  );
+}
+
+/**
+ * Routes from any node to a room. The public journey starts at a building
+ * entrance rather than another room, which is what this generalises.
+ */
+export function findIndoorRouteFromNode(
+  document: CampusIndoorDocument,
+  fromNodeId: string,
+  toSpaceId: string,
+  options: IndoorRouteOptions = {},
+): CampusIndoorRoute | null {
+  // Callers already hold a parsed document; parsing again here made every
+  // route lookup re-validate the whole floor plan.
+  const routedDocument = document;
+  const routableSpaces = new Set(
     routedDocument.spaces
       .filter((space) => space.kind === "room" && space.searchable)
-      .map((space) => [space.id, space]),
+      .map((space) => space.id),
   );
-  if (!routableSpaces.has(fromSpaceId) || !routableSpaces.has(toSpaceId)) {
-    return null;
-  }
+  if (!routableSpaces.has(toSpaceId)) return null;
 
   const nodes = new Map(
     routedDocument.routeNodes.map((node) => [node.id, node]),
   );
-  const sourceNodeId = roomRouteNodeId(fromSpaceId);
-  const targetNodeId = roomRouteNodeId(toSpaceId);
+  const sourceNodeId = fromNodeId;
+  const targetNodeId = indoorSpaceRouteNodeId(toSpaceId);
   if (!nodes.has(sourceNodeId) || !nodes.has(targetNodeId)) return null;
 
   const adjacency = new Map<string, RouteTraversal[]>();

@@ -1,4 +1,5 @@
 import type { CampusIndoorDocument } from "@/lib/rooms/indoor-map";
+import type { CampusRoomSearchEntry } from "@/lib/rooms/indoor-room-index";
 
 export type CampusMapLayer = Readonly<{
   id: string;
@@ -92,6 +93,7 @@ export type CampusMapIndoorMap = Readonly<{
   id: string;
   buildingPlaceId: string;
   name: string;
+  status: "draft" | "published";
   revision: number;
   document: CampusIndoorDocument;
 }>;
@@ -102,6 +104,8 @@ export type CampusMapData = Readonly<{
   places: readonly CampusMapPlace[];
   features: readonly CampusMapFeature[];
   indoorMaps: readonly CampusMapIndoorMap[];
+  /** Every visible searchable room, so a room is a first class result. */
+  rooms: readonly CampusRoomSearchEntry[];
 }>;
 
 export type CampusWalkingRoute = Readonly<{

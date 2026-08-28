@@ -26,7 +26,7 @@ function layerValues(value: string | string[] | undefined) {
 export default async function RoomsPage({ searchParams }: RoomsPageProps) {
   const [params, mapResult] = await Promise.all([
     searchParams,
-    loadCampusMapData(),
+    loadCampusMapData({ includeManageableDrafts: true }),
   ]);
 
   return (
@@ -38,6 +38,7 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
           firstValue(params.place) ?? firstValue(params.building)
         }
         initialQuery={firstValue(params.q)}
+        initialRoomId={firstValue(params.room)}
         initialFromSlug={firstValue(params.from)}
         initialToSlug={firstValue(params.to)}
         initialLayerSlugs={layerValues(params.layers)}

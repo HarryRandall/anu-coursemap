@@ -2,13 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { canManageRooms } from "@/lib/auth/viewer";
-import type { CampusMapData, CampusMapPlace } from "@/lib/rooms/campus-map";
+import {
+  isCampusMapBuildingGeometry,
+  type CampusMapData,
+  type CampusMapPlace,
+} from "@/lib/rooms/campus-map";
 import { loadCampusMapData } from "@/lib/rooms/campus-map-data";
+import {
+  isIndoorDocumentWithinFootprint,
+  projectBuildingFootprint,
+} from "@/lib/rooms/indoor-footprint";
 import {
   createEmptyCampusIndoorDocument,
   parseCampusIndoorDocument,
   type CampusIndoorDocument,
 } from "@/lib/rooms/indoor-map";
+import { readCampusIndoorDocument } from "@/lib/rooms/indoor-map-migrate";
 import { getSupabaseConfig, isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
@@ -30,9 +39,27 @@ export type CampusIndoorMapEditorRecord = Readonly<{
   updatedAt: string | null;
 }>;
 
+/** What the picker needs: which buildings exist and which already have a map. */
+export type CampusIndoorMapSummary = Readonly<{
+  buildingPlaceId: string;
+  name: string;
+  status: CampusIndoorMapStatus;
+  revision: number;
+  updatedAt: string | null;
+  levelCount: number;
+  roomCount: number;
+}>;
+
+export type CampusIndoorMapPickerData = Readonly<{
+  mapData: CampusMapData;
+  buildings: readonly CampusMapPlace[];
+  summaries: readonly CampusIndoorMapSummary[];
+}>;
+
 export type CampusIndoorMapEditorData = Readonly<{
   mapData: CampusMapData;
-  indoorMaps: CampusIndoorMapEditorRecord[];
+  building: CampusMapPlace;
+  record: CampusIndoorMapEditorRecord;
 }>;
 
 export type SaveCampusIndoorMapInput = Readonly<{
@@ -93,7 +120,7 @@ function editorRecord(row: CampusIndoorMapRow): CampusIndoorMapEditorRecord {
     name: row.name,
     status: row.status,
     revision: row.revision,
-    document: parseCampusIndoorDocument(row.document),
+    document: readCampusIndoorDocument(row.document),
     updatedAt: row.updated_at,
   };
 }
@@ -102,58 +129,115 @@ function failure(message: string, revision = 0): SaveCampusIndoorMapResult {
   return { ok: false, message, revision };
 }
 
-/**
- * Load the published building directory first, then add draft and published
- * indoor documents visible through the authenticated rooms.manage policy.
- */
-export async function loadIndoorMapEditorData(): Promise<CampusIndoorMapEditorData> {
-  const { data: mapData, error: mapError } = await loadCampusMapData();
-  const buildingPlaces = mapData.places.filter((place) =>
-    isBuildingPlace(place, mapData),
-  );
+const EDITOR_COLUMNS =
+  "id,building_place_id,name,document,status,revision,source_provider,source_url,source_license,published_at,created_at,updated_at";
 
-  if (mapError || buildingPlaces.length === 0) {
-    return { mapData, indoorMaps: [] };
-  }
-
-  if (isDemoMode()) {
-    return {
-      mapData,
-      indoorMaps: buildingPlaces.map(emptyEditorRecord),
-    };
-  }
-
-  if (!getSupabaseConfig() || !(await canManageRooms())) {
-    return { mapData, indoorMaps: [] };
+async function loadEditorRows(
+  buildingPlaceId?: string,
+): Promise<CampusIndoorMapEditorRecord[]> {
+  if (isDemoMode() || !getSupabaseConfig() || !(await canManageRooms())) {
+    return [];
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("campus_indoor_maps")
-    .select(
-      "id,building_place_id,name,document,status,revision,source_provider,source_url,source_license,published_at,created_at,updated_at",
-    )
-    .order("updated_at", { ascending: false })
-    .limit(1000);
+  const query = supabase.from("campus_indoor_maps").select(EDITOR_COLUMNS);
+  const { data, error } = await (buildingPlaceId
+    ? query.eq("building_place_id", buildingPlaceId).limit(1)
+    : query.order("updated_at", { ascending: false }).limit(1000));
 
   if (error) {
     throw new Error("Indoor map editor data could not be loaded.", {
       cause: error,
     });
   }
+  return ((data ?? []) as CampusIndoorMapRow[]).map(editorRecord);
+}
 
-  const buildingIds = new Set(buildingPlaces.map((place) => place.id));
-  const rowsByBuilding = new Map(
-    ((data ?? []) as CampusIndoorMapRow[])
-      .filter((row) => buildingIds.has(row.building_place_id))
-      .map((row) => [row.building_place_id, editorRecord(row)]),
-  );
+/**
+ * Everything the building picker needs. Deliberately no documents: shipping a
+ * floor plan for all 280 buildings to choose between them would be absurd.
+ */
+export async function loadIndoorMapPickerData(): Promise<CampusIndoorMapPickerData> {
+  const { data: mapData, error: mapError } = await loadCampusMapData();
+  const buildings = mapData.places
+    .filter((place) => isBuildingPlace(place, mapData))
+    .toSorted((left, right) => left.name.localeCompare(right.name, "en-AU"));
+
+  if (mapError || buildings.length === 0) {
+    return { mapData, buildings, summaries: [] };
+  }
+
+  const buildingIds = new Set(buildings.map((place) => place.id));
+  const records = isDemoMode()
+    ? mapData.indoorMaps.map(
+        (map) =>
+          ({
+            id: map.id,
+            buildingPlaceId: map.buildingPlaceId,
+            name: map.name,
+            status: "published",
+            revision: map.revision,
+            document: map.document,
+            updatedAt: null,
+          }) satisfies CampusIndoorMapEditorRecord,
+      )
+    : await loadEditorRows();
 
   return {
     mapData,
-    indoorMaps: buildingPlaces.map(
-      (place) => rowsByBuilding.get(place.id) ?? emptyEditorRecord(place),
-    ),
+    buildings,
+    summaries: records
+      .filter((record) => buildingIds.has(record.buildingPlaceId))
+      .map((record) => ({
+        buildingPlaceId: record.buildingPlaceId,
+        name: record.name,
+        status: record.status,
+        revision: record.revision,
+        updatedAt: record.updatedAt,
+        levelCount: record.document.levels.length,
+        roomCount: record.document.spaces.filter(
+          (space) => space.kind === "room",
+        ).length,
+      })),
+  };
+}
+
+/**
+ * Loads one building's map for editing. A building with no saved document
+ * starts against its real OpenStreetMap footprint, so the canvas is the real
+ * building from the moment it opens rather than something to opt into later.
+ */
+export async function loadIndoorMapForBuilding(
+  slug: string,
+): Promise<CampusIndoorMapEditorData | null> {
+  const { data: mapData } = await loadCampusMapData();
+  const building = mapData.places.find(
+    (place) => place.slug === slug && isBuildingPlace(place, mapData),
+  );
+  if (!building) return null;
+
+  const saved = isDemoMode()
+    ? mapData.indoorMaps
+        .filter((map) => map.buildingPlaceId === building.id)
+        .map(
+          (map) =>
+            ({
+              id: map.id,
+              buildingPlaceId: map.buildingPlaceId,
+              name: map.name,
+              status: "published" as const,
+              revision: map.revision,
+              document: map.document,
+              updatedAt: null,
+            }) satisfies CampusIndoorMapEditorRecord,
+        )
+        .at(0)
+    : (await loadEditorRows(building.id)).at(0);
+
+  return {
+    mapData,
+    building,
+    record: saved ?? emptyEditorRecord(building),
   };
 }
 
@@ -206,6 +290,29 @@ export async function saveCampusIndoorMap(
   );
   if (mapError || !building) {
     return failure("That published campus building could not be found.");
+  }
+
+  const buildingFeature = mapData.features.find(
+    (feature) =>
+      feature.featureKind === "building" &&
+      feature.placeId === buildingPlaceId &&
+      isCampusMapBuildingGeometry(feature.geometry),
+  );
+  if (
+    !buildingFeature ||
+    !isCampusMapBuildingGeometry(buildingFeature.geometry)
+  ) {
+    return failure("That building footprint could not be found.");
+  }
+  try {
+    const footprint = projectBuildingFootprint(buildingFeature.geometry);
+    if (!isIndoorDocumentWithinFootprint(document, footprint)) {
+      return failure(
+        "Keep every room, wall, path and connector inside the building outline.",
+      );
+    }
+  } catch {
+    return failure("That building footprint is not valid.");
   }
 
   try {

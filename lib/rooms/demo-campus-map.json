@@ -9371,7 +9371,10 @@
       "sourceIdentifier": "way/1509391109",
       "sourceUrl": "https://www.openstreetmap.org/way/1509391109",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "name": "Building 101A" },
+      "sourceProperties": {
+        "building": "yes",
+        "name": "Building 101A"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 340
@@ -9399,7 +9402,10 @@
       "sourceIdentifier": "way/1509391108",
       "sourceUrl": "https://www.openstreetmap.org/way/1509391108",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "name": "Building 101B" },
+      "sourceProperties": {
+        "building": "yes",
+        "name": "Building 101B"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 350
@@ -9459,7 +9465,10 @@
       "sourceIdentifier": "way/652872862",
       "sourceUrl": "https://www.openstreetmap.org/way/652872862",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "service", "name": "Building 140A" },
+      "sourceProperties": {
+        "building": "service",
+        "name": "Building 140A"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 370
@@ -9724,7 +9733,10 @@
       "sourceIdentifier": "way/5032696",
       "sourceUrl": "https://www.openstreetmap.org/way/5032696",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "block", "name": "Building 58A" },
+      "sourceProperties": {
+        "building": "block",
+        "name": "Building 58A"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 440
@@ -9793,7 +9805,10 @@
       "sourceIdentifier": "way/653028844",
       "sourceUrl": "https://www.openstreetmap.org/way/653028844",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "shed", "name": "Building 58F" },
+      "sourceProperties": {
+        "building": "shed",
+        "name": "Building 58F"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 460
@@ -9833,7 +9848,10 @@
       "sourceIdentifier": "way/1509391112",
       "sourceUrl": "https://www.openstreetmap.org/way/1509391112",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "name": "Building 63A" },
+      "sourceProperties": {
+        "building": "yes",
+        "name": "Building 63A"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 470
@@ -9927,7 +9945,10 @@
       "sourceIdentifier": "way/1509391111",
       "sourceUrl": "https://www.openstreetmap.org/way/1509391111",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "name": "Building 64-4" },
+      "sourceProperties": {
+        "building": "yes",
+        "name": "Building 64-4"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 500
@@ -10474,7 +10495,10 @@
       "sourceIdentifier": "way/1509391110",
       "sourceUrl": "https://www.openstreetmap.org/way/1509391110",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "name": "Buildiung 72A" },
+      "sourceProperties": {
+        "building": "yes",
+        "name": "Buildiung 72A"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 640
@@ -13113,7 +13137,10 @@
       "sourceIdentifier": "way/159645006",
       "sourceUrl": "https://www.openstreetmap.org/way/159645006",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "name": "Jaeger 5" },
+      "sourceProperties": {
+        "building": "yes",
+        "name": "Jaeger 5"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 1240
@@ -13724,7 +13751,10 @@
       "sourceIdentifier": "way/1069446192",
       "sourceUrl": "https://www.openstreetmap.org/way/1069446192",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "name": "LInk Building - 58D" },
+      "sourceProperties": {
+        "building": "yes",
+        "name": "LInk Building - 58D"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 1350
@@ -16313,7 +16343,10 @@
       "sourceIdentifier": "way/1077280718",
       "sourceUrl": "https://www.openstreetmap.org/way/1077280718",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 1890
@@ -16343,7 +16376,9 @@
       "sourceIdentifier": "way/1091159376",
       "sourceUrl": "https://www.openstreetmap.org/way/1091159376",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 1900
@@ -16421,7 +16456,10 @@
       "sourceIdentifier": "way/116933587",
       "sourceUrl": "https://www.openstreetmap.org/way/116933587",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 1920
@@ -16459,7 +16497,10 @@
       "sourceIdentifier": "way/116933588",
       "sourceUrl": "https://www.openstreetmap.org/way/116933588",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 1930
@@ -16499,7 +16540,10 @@
       "sourceIdentifier": "way/116933589",
       "sourceUrl": "https://www.openstreetmap.org/way/116933589",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 1940
@@ -16534,7 +16578,9 @@
       "sourceIdentifier": "way/1191540640",
       "sourceUrl": "https://www.openstreetmap.org/way/1191540640",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 1950
@@ -16565,7 +16611,9 @@
       "sourceIdentifier": "way/1250096126",
       "sourceUrl": "https://www.openstreetmap.org/way/1250096126",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "roof" },
+      "sourceProperties": {
+        "building": "roof"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 1960
@@ -16595,7 +16643,9 @@
       "sourceIdentifier": "way/1250096845",
       "sourceUrl": "https://www.openstreetmap.org/way/1250096845",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "roof" },
+      "sourceProperties": {
+        "building": "roof"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 1970
@@ -16625,7 +16675,9 @@
       "sourceIdentifier": "way/1271150003",
       "sourceUrl": "https://www.openstreetmap.org/way/1271150003",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university" },
+      "sourceProperties": {
+        "building": "university"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 1980
@@ -16654,7 +16706,9 @@
       "sourceIdentifier": "way/1271150004",
       "sourceUrl": "https://www.openstreetmap.org/way/1271150004",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university" },
+      "sourceProperties": {
+        "building": "university"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 1990
@@ -16683,7 +16737,9 @@
       "sourceIdentifier": "way/1374936026",
       "sourceUrl": "https://www.openstreetmap.org/way/1374936026",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2000
@@ -16711,7 +16767,9 @@
       "sourceIdentifier": "way/1374936030",
       "sourceUrl": "https://www.openstreetmap.org/way/1374936030",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2010
@@ -16741,7 +16799,9 @@
       "sourceIdentifier": "way/1387886710",
       "sourceUrl": "https://www.openstreetmap.org/way/1387886710",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2020
@@ -16780,7 +16840,10 @@
       "sourceIdentifier": "way/144533071",
       "sourceUrl": "https://www.openstreetmap.org/way/144533071",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 2030
@@ -16808,7 +16871,10 @@
       "sourceIdentifier": "way/1509386306",
       "sourceUrl": "https://www.openstreetmap.org/way/1509386306",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "yes",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2040
@@ -16836,7 +16902,9 @@
       "sourceIdentifier": "way/1509386307",
       "sourceUrl": "https://www.openstreetmap.org/way/1509386307",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2050
@@ -16864,7 +16932,9 @@
       "sourceIdentifier": "way/1509391114",
       "sourceUrl": "https://www.openstreetmap.org/way/1509391114",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2060
@@ -16892,7 +16962,9 @@
       "sourceIdentifier": "way/1509391115",
       "sourceUrl": "https://www.openstreetmap.org/way/1509391115",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2070
@@ -16922,7 +16994,9 @@
       "sourceIdentifier": "way/1524246198",
       "sourceUrl": "https://www.openstreetmap.org/way/1524246198",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2080
@@ -16960,7 +17034,9 @@
       "sourceIdentifier": "way/1535476895",
       "sourceUrl": "https://www.openstreetmap.org/way/1535476895",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2090
@@ -16995,7 +17071,9 @@
       "sourceIdentifier": "way/159645003",
       "sourceUrl": "https://www.openstreetmap.org/way/159645003",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2100
@@ -17023,7 +17101,9 @@
       "sourceIdentifier": "way/159645013",
       "sourceUrl": "https://www.openstreetmap.org/way/159645013",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "roof" },
+      "sourceProperties": {
+        "building": "roof"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2110
@@ -17052,7 +17132,9 @@
       "sourceIdentifier": "way/159645018",
       "sourceUrl": "https://www.openstreetmap.org/way/159645018",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "roof" },
+      "sourceProperties": {
+        "building": "roof"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2120
@@ -17080,7 +17162,10 @@
       "sourceIdentifier": "way/159645022",
       "sourceUrl": "https://www.openstreetmap.org/way/159645022",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2130
@@ -17112,7 +17197,9 @@
       "sourceIdentifier": "way/165915346",
       "sourceUrl": "https://www.openstreetmap.org/way/165915346",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "roof" },
+      "sourceProperties": {
+        "building": "roof"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2140
@@ -17140,7 +17227,9 @@
       "sourceIdentifier": "way/165915347",
       "sourceUrl": "https://www.openstreetmap.org/way/165915347",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "garage" },
+      "sourceProperties": {
+        "building": "garage"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2150
@@ -17178,7 +17267,10 @@
       "sourceIdentifier": "way/165916138",
       "sourceUrl": "https://www.openstreetmap.org/way/165916138",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2160
@@ -17214,7 +17306,10 @@
       "sourceIdentifier": "way/165916140",
       "sourceUrl": "https://www.openstreetmap.org/way/165916140",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2170
@@ -17242,7 +17337,9 @@
       "sourceIdentifier": "way/256154253",
       "sourceUrl": "https://www.openstreetmap.org/way/256154253",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "shed" },
+      "sourceProperties": {
+        "building": "shed"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2180
@@ -17270,7 +17367,10 @@
       "sourceIdentifier": "way/263915857",
       "sourceUrl": "https://www.openstreetmap.org/way/263915857",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2190
@@ -17299,7 +17399,9 @@
       "sourceIdentifier": "way/337167427",
       "sourceUrl": "https://www.openstreetmap.org/way/337167427",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "roof" },
+      "sourceProperties": {
+        "building": "roof"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2200
@@ -17328,7 +17430,9 @@
       "sourceIdentifier": "way/337167429",
       "sourceUrl": "https://www.openstreetmap.org/way/337167429",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "roof" },
+      "sourceProperties": {
+        "building": "roof"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2210
@@ -17357,7 +17461,10 @@
       "sourceIdentifier": "way/41655760",
       "sourceUrl": "https://www.openstreetmap.org/way/41655760",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "parking", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "parking",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 2220
@@ -17394,7 +17501,10 @@
       "sourceIdentifier": "way/50632653",
       "sourceUrl": "https://www.openstreetmap.org/way/50632653",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2230
@@ -17473,7 +17583,9 @@
       "sourceIdentifier": "way/52333817",
       "sourceUrl": "https://www.openstreetmap.org/way/52333817",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university" },
+      "sourceProperties": {
+        "building": "university"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2250
@@ -17525,7 +17637,10 @@
       "sourceIdentifier": "way/52334415",
       "sourceUrl": "https://www.openstreetmap.org/way/52334415",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 2260
@@ -17556,7 +17671,9 @@
       "sourceIdentifier": "way/543211554",
       "sourceUrl": "https://www.openstreetmap.org/way/543211554",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2270
@@ -17588,7 +17705,9 @@
       "sourceIdentifier": "way/545138554",
       "sourceUrl": "https://www.openstreetmap.org/way/545138554",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory" },
+      "sourceProperties": {
+        "building": "dormitory"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2280
@@ -17658,7 +17777,10 @@
       "sourceIdentifier": "way/652872863",
       "sourceUrl": "https://www.openstreetmap.org/way/652872863",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "3" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "3"
+      },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
       "sortOrder": 2300
@@ -17686,7 +17808,9 @@
       "sourceIdentifier": "way/652872864",
       "sourceUrl": "https://www.openstreetmap.org/way/652872864",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "shed" },
+      "sourceProperties": {
+        "building": "shed"
+      },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
       "sortOrder": 2310
@@ -17714,7 +17838,10 @@
       "sourceIdentifier": "way/652872865",
       "sourceUrl": "https://www.openstreetmap.org/way/652872865",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "service", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "service",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2320
@@ -17742,7 +17869,10 @@
       "sourceIdentifier": "way/652872866",
       "sourceUrl": "https://www.openstreetmap.org/way/652872866",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "service", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "service",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2330
@@ -17777,7 +17907,10 @@
       "sourceIdentifier": "way/653028837",
       "sourceUrl": "https://www.openstreetmap.org/way/653028837",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2340
@@ -17809,7 +17942,10 @@
       "sourceIdentifier": "way/653028841",
       "sourceUrl": "https://www.openstreetmap.org/way/653028841",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2350
@@ -17839,7 +17975,10 @@
       "sourceIdentifier": "way/653131061",
       "sourceUrl": "https://www.openstreetmap.org/way/653131061",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "university", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "university",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2360
@@ -17867,7 +18006,9 @@
       "sourceIdentifier": "way/653347910",
       "sourceUrl": "https://www.openstreetmap.org/way/653347910",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2370
@@ -17897,7 +18038,10 @@
       "sourceIdentifier": "way/653347911",
       "sourceUrl": "https://www.openstreetmap.org/way/653347911",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "apartments", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "apartments",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2380
@@ -17929,7 +18073,10 @@
       "sourceIdentifier": "way/653347912",
       "sourceUrl": "https://www.openstreetmap.org/way/653347912",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "apartments", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "apartments",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2390
@@ -17967,7 +18114,10 @@
       "sourceIdentifier": "way/653347913",
       "sourceUrl": "https://www.openstreetmap.org/way/653347913",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "apartments", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "apartments",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2400
@@ -18003,7 +18153,10 @@
       "sourceIdentifier": "way/653347914",
       "sourceUrl": "https://www.openstreetmap.org/way/653347914",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "apartments", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "apartments",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2410
@@ -18047,7 +18200,10 @@
       "sourceIdentifier": "way/653347916",
       "sourceUrl": "https://www.openstreetmap.org/way/653347916",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "apartments", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "apartments",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2420
@@ -18083,7 +18239,10 @@
       "sourceIdentifier": "way/653347918",
       "sourceUrl": "https://www.openstreetmap.org/way/653347918",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "apartments", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "apartments",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2430
@@ -18129,7 +18288,10 @@
       "sourceIdentifier": "way/653347920",
       "sourceUrl": "https://www.openstreetmap.org/way/653347920",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "apartments", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "apartments",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2440
@@ -18160,7 +18322,10 @@
       "sourceIdentifier": "way/653347922",
       "sourceUrl": "https://www.openstreetmap.org/way/653347922",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2450
@@ -18188,7 +18353,10 @@
       "sourceIdentifier": "way/653347924",
       "sourceUrl": "https://www.openstreetmap.org/way/653347924",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2460
@@ -18219,7 +18387,10 @@
       "sourceIdentifier": "way/653347926",
       "sourceUrl": "https://www.openstreetmap.org/way/653347926",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2470
@@ -18248,7 +18419,10 @@
       "sourceIdentifier": "way/653347927",
       "sourceUrl": "https://www.openstreetmap.org/way/653347927",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2480
@@ -18278,7 +18452,10 @@
       "sourceIdentifier": "way/653347929",
       "sourceUrl": "https://www.openstreetmap.org/way/653347929",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2490
@@ -18306,7 +18483,10 @@
       "sourceIdentifier": "way/653347930",
       "sourceUrl": "https://www.openstreetmap.org/way/653347930",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2500
@@ -18336,7 +18516,10 @@
       "sourceIdentifier": "way/653347932",
       "sourceUrl": "https://www.openstreetmap.org/way/653347932",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2510
@@ -18364,7 +18547,10 @@
       "sourceIdentifier": "way/653347934",
       "sourceUrl": "https://www.openstreetmap.org/way/653347934",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2520
@@ -18392,7 +18578,10 @@
       "sourceIdentifier": "way/653347935",
       "sourceUrl": "https://www.openstreetmap.org/way/653347935",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2530
@@ -18420,7 +18609,10 @@
       "sourceIdentifier": "way/653347937",
       "sourceUrl": "https://www.openstreetmap.org/way/653347937",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2540
@@ -18448,7 +18640,10 @@
       "sourceIdentifier": "way/653347938",
       "sourceUrl": "https://www.openstreetmap.org/way/653347938",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2550
@@ -18476,7 +18671,10 @@
       "sourceIdentifier": "way/653347939",
       "sourceUrl": "https://www.openstreetmap.org/way/653347939",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "dormitory", "building:levels": "2" },
+      "sourceProperties": {
+        "building": "dormitory",
+        "building:levels": "2"
+      },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
       "sortOrder": 2560
@@ -18650,7 +18848,9 @@
       "sourceIdentifier": "way/683878854",
       "sourceUrl": "https://www.openstreetmap.org/way/683878854",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "service" },
+      "sourceProperties": {
+        "building": "service"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2610
@@ -18678,7 +18878,9 @@
       "sourceIdentifier": "way/683878856",
       "sourceUrl": "https://www.openstreetmap.org/way/683878856",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "service" },
+      "sourceProperties": {
+        "building": "service"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2620
@@ -18706,7 +18908,10 @@
       "sourceIdentifier": "way/687265477",
       "sourceUrl": "https://www.openstreetmap.org/way/687265477",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "service", "building:levels": "1" },
+      "sourceProperties": {
+        "building": "service",
+        "building:levels": "1"
+      },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
       "sortOrder": 2630
@@ -18736,7 +18941,9 @@
       "sourceIdentifier": "way/701039850",
       "sourceUrl": "https://www.openstreetmap.org/way/701039850",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "service" },
+      "sourceProperties": {
+        "building": "service"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2640
@@ -18764,7 +18971,9 @@
       "sourceIdentifier": "way/879585726",
       "sourceUrl": "https://www.openstreetmap.org/way/879585726",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2650
@@ -18792,7 +19001,9 @@
       "sourceIdentifier": "way/879585727",
       "sourceUrl": "https://www.openstreetmap.org/way/879585727",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2660
@@ -18824,7 +19035,9 @@
       "sourceIdentifier": "way/897744724",
       "sourceUrl": "https://www.openstreetmap.org/way/897744724",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2670
@@ -18856,7 +19069,9 @@
       "sourceIdentifier": "way/897744725",
       "sourceUrl": "https://www.openstreetmap.org/way/897744725",
       "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "yes" },
+      "sourceProperties": {
+        "building": "yes"
+      },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
       "sortOrder": 2680
@@ -19615,5 +19830,1308 @@
     "buildingCount": 282,
     "namedSourceCount": 207,
     "excludedNonBuildingSourceIdentifiers": ["way/673823968"]
-  }
+  },
+  "indoorMaps": [
+    {
+      "id": "demo-indoor-map-forestry",
+      "buildingPlaceId": "550970c7-8000-5720-b604-f5de9c29b607",
+      "name": "Forestry Building indoor map",
+      "revision": 1,
+      "document": {
+        "version": 2,
+        "viewBox": {
+          "width": 845,
+          "height": 426
+        },
+        "levels": [
+          {
+            "id": "demo-level-0",
+            "number": 0,
+            "ref": "G",
+            "name": "Ground floor",
+            "elevationMetres": 0,
+            "heightMetres": 3.6,
+            "outline": [
+              {
+                "x": 60.398,
+                "y": 68.502
+              },
+              {
+                "x": 182.218,
+                "y": 60.385
+              },
+              {
+                "x": 784.148,
+                "y": 67.279
+              },
+              {
+                "x": 784.33,
+                "y": 174.916
+              },
+              {
+                "x": 784.602,
+                "y": 364.392
+              },
+              {
+                "x": 186.757,
+                "y": 361.501
+              },
+              {
+                "x": 60.852,
+                "y": 365.615
+              }
+            ]
+          },
+          {
+            "id": "demo-level-1",
+            "number": 1,
+            "ref": "1",
+            "name": "Level 1",
+            "elevationMetres": 3.6,
+            "heightMetres": 3.6,
+            "outline": [
+              {
+                "x": 60.398,
+                "y": 68.502
+              },
+              {
+                "x": 182.218,
+                "y": 60.385
+              },
+              {
+                "x": 784.148,
+                "y": 67.279
+              },
+              {
+                "x": 784.33,
+                "y": 174.916
+              },
+              {
+                "x": 784.602,
+                "y": 364.392
+              },
+              {
+                "x": 186.757,
+                "y": 361.501
+              },
+              {
+                "x": 60.852,
+                "y": 365.615
+              }
+            ]
+          }
+        ],
+        "walls": [
+          {
+            "id": "demo-perimeter-0",
+            "levelId": "demo-level-0",
+            "kind": "structural",
+            "points": [
+              {
+                "x": 60.398,
+                "y": 68.502
+              },
+              {
+                "x": 182.218,
+                "y": 60.385
+              },
+              {
+                "x": 784.148,
+                "y": 67.279
+              },
+              {
+                "x": 784.33,
+                "y": 174.916
+              },
+              {
+                "x": 784.602,
+                "y": 364.392
+              },
+              {
+                "x": 186.757,
+                "y": 361.501
+              },
+              {
+                "x": 60.852,
+                "y": 365.615
+              }
+            ],
+            "thickness": 2,
+            "closed": true,
+            "openings": [
+              {
+                "id": "demo-entrance-0",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.5,
+                "width": 20,
+                "accessibility": "accessible",
+                "exterior": true
+              }
+            ]
+          },
+          {
+            "id": "demo-perimeter-1",
+            "levelId": "demo-level-1",
+            "kind": "structural",
+            "points": [
+              {
+                "x": 60.398,
+                "y": 68.502
+              },
+              {
+                "x": 182.218,
+                "y": 60.385
+              },
+              {
+                "x": 784.148,
+                "y": 67.279
+              },
+              {
+                "x": 784.33,
+                "y": 174.916
+              },
+              {
+                "x": 784.602,
+                "y": 364.392
+              },
+              {
+                "x": 186.757,
+                "y": 361.501
+              },
+              {
+                "x": 60.852,
+                "y": 365.615
+              }
+            ],
+            "thickness": 2,
+            "closed": true,
+            "openings": []
+          },
+          {
+            "id": "demo-partition-0-0",
+            "levelId": "demo-level-0",
+            "kind": "partition",
+            "points": [
+              {
+                "x": 78.398,
+                "y": 201
+              },
+              {
+                "x": 766.602,
+                "y": 201
+              }
+            ],
+            "thickness": 1.5,
+            "closed": false,
+            "openings": [
+              {
+                "id": "demo-door-0-north-1",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.125,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-1"
+              },
+              {
+                "id": "demo-door-0-north-2",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.375,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-2"
+              },
+              {
+                "id": "demo-door-0-north-3",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.625,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-3"
+              },
+              {
+                "id": "demo-door-0-north-4",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.875,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-4"
+              }
+            ]
+          },
+          {
+            "id": "demo-partition-0-1",
+            "levelId": "demo-level-0",
+            "kind": "partition",
+            "points": [
+              {
+                "x": 78.398,
+                "y": 225
+              },
+              {
+                "x": 766.602,
+                "y": 225
+              }
+            ],
+            "thickness": 1.5,
+            "closed": false,
+            "openings": [
+              {
+                "id": "demo-door-0-south-5",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.125,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-5"
+              },
+              {
+                "id": "demo-door-0-south-6",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.375,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-6"
+              },
+              {
+                "id": "demo-door-0-south-7",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.625,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-7"
+              },
+              {
+                "id": "demo-door-0-south-8",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.875,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-0-8"
+              }
+            ]
+          },
+          {
+            "id": "demo-partition-1-0",
+            "levelId": "demo-level-1",
+            "kind": "partition",
+            "points": [
+              {
+                "x": 78.398,
+                "y": 201
+              },
+              {
+                "x": 766.602,
+                "y": 201
+              }
+            ],
+            "thickness": 1.5,
+            "closed": false,
+            "openings": [
+              {
+                "id": "demo-door-1-north-1",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.16666666666666666,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-1-1"
+              },
+              {
+                "id": "demo-door-1-north-2",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.5,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-1-2"
+              },
+              {
+                "id": "demo-door-1-north-3",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.8333333333333334,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-1-3"
+              }
+            ]
+          },
+          {
+            "id": "demo-partition-1-1",
+            "levelId": "demo-level-1",
+            "kind": "partition",
+            "points": [
+              {
+                "x": 78.398,
+                "y": 225
+              },
+              {
+                "x": 766.602,
+                "y": 225
+              }
+            ],
+            "thickness": 1.5,
+            "closed": false,
+            "openings": [
+              {
+                "id": "demo-door-1-south-4",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.16666666666666666,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-1-4"
+              },
+              {
+                "id": "demo-door-1-south-5",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.5,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-1-5"
+              },
+              {
+                "id": "demo-door-1-south-6",
+                "kind": "door",
+                "segmentIndex": 0,
+                "offset": 0.8333333333333334,
+                "width": 9,
+                "accessibility": "accessible",
+                "spaceId": "demo-room-1-6"
+              }
+            ]
+          }
+        ],
+        "spaces": [
+          {
+            "id": "demo-corridor-0-0",
+            "levelId": "demo-level-0",
+            "kind": "corridor",
+            "ref": "",
+            "name": "Main corridor",
+            "searchable": false,
+            "geometry": {
+              "type": "rectangle",
+              "x": 78.398,
+              "y": 201,
+              "width": 688.204,
+              "height": 24,
+              "cornerRadius": 0
+            }
+          },
+          {
+            "id": "demo-room-0-1",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G01",
+            "name": "Teaching room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 80.398,
+              "y": 80.38499999999999,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-0-2",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G02",
+            "name": "Meeting room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 252.44899999999998,
+              "y": 80.38499999999999,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-0-3",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G03",
+            "name": "Seminar room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 424.5,
+              "y": 80.38499999999999,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-0-4",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G04",
+            "name": "Teaching room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 596.551,
+              "y": 80.38499999999999,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-0-5",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G05",
+            "name": "Meeting room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 80.398,
+              "y": 227,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-0-6",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G06",
+            "name": "Seminar room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 252.44899999999998,
+              "y": 227,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-0-7",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G07",
+            "name": "Teaching room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 424.5,
+              "y": 227,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-0-8",
+            "levelId": "demo-level-0",
+            "kind": "room",
+            "ref": "G08",
+            "name": "Meeting room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 596.551,
+              "y": 227,
+              "width": 168.051,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-corridor-1-0",
+            "levelId": "demo-level-1",
+            "kind": "corridor",
+            "ref": "",
+            "name": "Main corridor",
+            "searchable": false,
+            "geometry": {
+              "type": "rectangle",
+              "x": 78.398,
+              "y": 201,
+              "width": 688.204,
+              "height": 24,
+              "cornerRadius": 0
+            }
+          },
+          {
+            "id": "demo-room-1-1",
+            "levelId": "demo-level-1",
+            "kind": "room",
+            "ref": "1.01",
+            "name": "Teaching room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 80.398,
+              "y": 80.38499999999999,
+              "width": 225.40133333333333,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-1-2",
+            "levelId": "demo-level-1",
+            "kind": "room",
+            "ref": "1.02",
+            "name": "Meeting room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 309.7993333333333,
+              "y": 80.38499999999999,
+              "width": 225.40133333333333,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-1-3",
+            "levelId": "demo-level-1",
+            "kind": "room",
+            "ref": "1.03",
+            "name": "Seminar room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 539.2006666666666,
+              "y": 80.38499999999999,
+              "width": 225.40133333333333,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-1-4",
+            "levelId": "demo-level-1",
+            "kind": "room",
+            "ref": "1.04",
+            "name": "Teaching room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 80.398,
+              "y": 227,
+              "width": 225.40133333333333,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-1-5",
+            "levelId": "demo-level-1",
+            "kind": "room",
+            "ref": "1.05",
+            "name": "Meeting room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 309.7993333333333,
+              "y": 227,
+              "width": 225.40133333333333,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          },
+          {
+            "id": "demo-room-1-6",
+            "levelId": "demo-level-1",
+            "kind": "room",
+            "ref": "1.06",
+            "name": "Seminar room",
+            "searchable": true,
+            "geometry": {
+              "type": "rectangle",
+              "x": 539.2006666666666,
+              "y": 227,
+              "width": 225.40133333333333,
+              "height": 118.61500000000001,
+              "cornerRadius": 2
+            }
+          }
+        ],
+        "connectors": [
+          {
+            "id": "demo-lift",
+            "kind": "lift",
+            "name": "Main lift",
+            "levelIds": ["demo-level-0", "demo-level-1"],
+            "position": {
+              "x": 422.5,
+              "y": 213
+            },
+            "accessibility": "accessible"
+          }
+        ],
+        "routeNodes": [
+          {
+            "id": "connector-demo-lift-demo-level-0",
+            "levelId": "demo-level-0",
+            "kind": "connector",
+            "position": {
+              "x": 422.5,
+              "y": 213
+            },
+            "connectorId": "demo-lift"
+          },
+          {
+            "id": "connector-demo-lift-demo-level-1",
+            "levelId": "demo-level-1",
+            "kind": "connector",
+            "position": {
+              "x": 422.5,
+              "y": 213
+            },
+            "connectorId": "demo-lift"
+          },
+          {
+            "id": "demo-junction-demo-level-0",
+            "levelId": "demo-level-0",
+            "kind": "junction",
+            "position": {
+              "x": 422.5,
+              "y": 213
+            }
+          },
+          {
+            "id": "demo-junction-demo-level-1",
+            "levelId": "demo-level-1",
+            "kind": "junction",
+            "position": {
+              "x": 422.5,
+              "y": 213
+            }
+          },
+          {
+            "id": "opening-demo-door-0-north-1",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 164.4235,
+              "y": 201
+            },
+            "spaceId": "demo-room-0-1",
+            "openingId": "demo-door-0-north-1",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-0-north-2",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 336.47450000000003,
+              "y": 201
+            },
+            "spaceId": "demo-room-0-2",
+            "openingId": "demo-door-0-north-2",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-0-north-3",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 508.52549999999997,
+              "y": 201
+            },
+            "spaceId": "demo-room-0-3",
+            "openingId": "demo-door-0-north-3",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-0-north-4",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 680.5765,
+              "y": 201
+            },
+            "spaceId": "demo-room-0-4",
+            "openingId": "demo-door-0-north-4",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-0-south-5",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 164.4235,
+              "y": 225
+            },
+            "spaceId": "demo-room-0-5",
+            "openingId": "demo-door-0-south-5",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-0-south-6",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 336.47450000000003,
+              "y": 225
+            },
+            "spaceId": "demo-room-0-6",
+            "openingId": "demo-door-0-south-6",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-0-south-7",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 508.52549999999997,
+              "y": 225
+            },
+            "spaceId": "demo-room-0-7",
+            "openingId": "demo-door-0-south-7",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-0-south-8",
+            "levelId": "demo-level-0",
+            "kind": "door",
+            "position": {
+              "x": 680.5765,
+              "y": 225
+            },
+            "spaceId": "demo-room-0-8",
+            "openingId": "demo-door-0-south-8",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-1-north-1",
+            "levelId": "demo-level-1",
+            "kind": "door",
+            "position": {
+              "x": 193.09866666666665,
+              "y": 201
+            },
+            "spaceId": "demo-room-1-1",
+            "openingId": "demo-door-1-north-1",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-1-north-2",
+            "levelId": "demo-level-1",
+            "kind": "door",
+            "position": {
+              "x": 422.5,
+              "y": 201
+            },
+            "spaceId": "demo-room-1-2",
+            "openingId": "demo-door-1-north-2",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-1-north-3",
+            "levelId": "demo-level-1",
+            "kind": "door",
+            "position": {
+              "x": 651.9013333333334,
+              "y": 201
+            },
+            "spaceId": "demo-room-1-3",
+            "openingId": "demo-door-1-north-3",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-1-south-4",
+            "levelId": "demo-level-1",
+            "kind": "door",
+            "position": {
+              "x": 193.09866666666665,
+              "y": 225
+            },
+            "spaceId": "demo-room-1-4",
+            "openingId": "demo-door-1-south-4",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-1-south-5",
+            "levelId": "demo-level-1",
+            "kind": "door",
+            "position": {
+              "x": 422.5,
+              "y": 225
+            },
+            "spaceId": "demo-room-1-5",
+            "openingId": "demo-door-1-south-5",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-door-1-south-6",
+            "levelId": "demo-level-1",
+            "kind": "door",
+            "position": {
+              "x": 651.9013333333334,
+              "y": 225
+            },
+            "spaceId": "demo-room-1-6",
+            "openingId": "demo-door-1-south-6",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "opening-demo-entrance-0",
+            "levelId": "demo-level-0",
+            "kind": "entrance",
+            "position": {
+              "x": 121.30799999999999,
+              "y": 64.4435
+            },
+            "openingId": "demo-entrance-0",
+            "accessibility": "accessible"
+          },
+          {
+            "id": "space-demo-room-0-1",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 164.4235,
+              "y": 139.6925
+            },
+            "spaceId": "demo-room-0-1"
+          },
+          {
+            "id": "space-demo-room-0-2",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 336.4745,
+              "y": 139.6925
+            },
+            "spaceId": "demo-room-0-2"
+          },
+          {
+            "id": "space-demo-room-0-3",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 508.52549999999997,
+              "y": 139.6925
+            },
+            "spaceId": "demo-room-0-3"
+          },
+          {
+            "id": "space-demo-room-0-4",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 680.5765,
+              "y": 139.6925
+            },
+            "spaceId": "demo-room-0-4"
+          },
+          {
+            "id": "space-demo-room-0-5",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 164.4235,
+              "y": 286.3075
+            },
+            "spaceId": "demo-room-0-5"
+          },
+          {
+            "id": "space-demo-room-0-6",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 336.4745,
+              "y": 286.3075
+            },
+            "spaceId": "demo-room-0-6"
+          },
+          {
+            "id": "space-demo-room-0-7",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 508.52549999999997,
+              "y": 286.3075
+            },
+            "spaceId": "demo-room-0-7"
+          },
+          {
+            "id": "space-demo-room-0-8",
+            "levelId": "demo-level-0",
+            "kind": "space",
+            "position": {
+              "x": 680.5765,
+              "y": 286.3075
+            },
+            "spaceId": "demo-room-0-8"
+          },
+          {
+            "id": "space-demo-room-1-1",
+            "levelId": "demo-level-1",
+            "kind": "space",
+            "position": {
+              "x": 193.09866666666665,
+              "y": 139.6925
+            },
+            "spaceId": "demo-room-1-1"
+          },
+          {
+            "id": "space-demo-room-1-2",
+            "levelId": "demo-level-1",
+            "kind": "space",
+            "position": {
+              "x": 422.5,
+              "y": 139.6925
+            },
+            "spaceId": "demo-room-1-2"
+          },
+          {
+            "id": "space-demo-room-1-3",
+            "levelId": "demo-level-1",
+            "kind": "space",
+            "position": {
+              "x": 651.9013333333332,
+              "y": 139.6925
+            },
+            "spaceId": "demo-room-1-3"
+          },
+          {
+            "id": "space-demo-room-1-4",
+            "levelId": "demo-level-1",
+            "kind": "space",
+            "position": {
+              "x": 193.09866666666665,
+              "y": 286.3075
+            },
+            "spaceId": "demo-room-1-4"
+          },
+          {
+            "id": "space-demo-room-1-5",
+            "levelId": "demo-level-1",
+            "kind": "space",
+            "position": {
+              "x": 422.5,
+              "y": 286.3075
+            },
+            "spaceId": "demo-room-1-5"
+          },
+          {
+            "id": "space-demo-room-1-6",
+            "levelId": "demo-level-1",
+            "kind": "space",
+            "position": {
+              "x": 651.9013333333332,
+              "y": 286.3075
+            },
+            "spaceId": "demo-room-1-6"
+          }
+        ],
+        "routeEdges": [
+          {
+            "id": "demo-door-path-demo-level-0-0",
+            "fromNodeId": "opening-demo-door-0-north-1",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 25.836,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-1",
+            "fromNodeId": "opening-demo-door-0-north-2",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 8.686,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-2",
+            "fromNodeId": "opening-demo-door-0-north-3",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 8.686,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-3",
+            "fromNodeId": "opening-demo-door-0-north-4",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 25.836,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-4",
+            "fromNodeId": "opening-demo-door-0-south-5",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 25.836,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-5",
+            "fromNodeId": "opening-demo-door-0-south-6",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 8.686,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-6",
+            "fromNodeId": "opening-demo-door-0-south-7",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 8.686,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-7",
+            "fromNodeId": "opening-demo-door-0-south-8",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 25.836,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-0-8",
+            "fromNodeId": "opening-demo-entrance-0",
+            "toNodeId": "demo-junction-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 33.584,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-1-0",
+            "fromNodeId": "opening-demo-door-1-north-1",
+            "toNodeId": "demo-junction-demo-level-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 22.971,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-1-1",
+            "fromNodeId": "opening-demo-door-1-north-2",
+            "toNodeId": "demo-junction-demo-level-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 1.2,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-1-2",
+            "fromNodeId": "opening-demo-door-1-north-3",
+            "toNodeId": "demo-junction-demo-level-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 22.971,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-1-3",
+            "fromNodeId": "opening-demo-door-1-south-4",
+            "toNodeId": "demo-junction-demo-level-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 22.971,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-1-4",
+            "fromNodeId": "opening-demo-door-1-south-5",
+            "toNodeId": "demo-junction-demo-level-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 1.2,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-door-path-demo-level-1-5",
+            "fromNodeId": "opening-demo-door-1-south-6",
+            "toNodeId": "demo-junction-demo-level-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 22.971,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-lift-path-demo-level-0",
+            "fromNodeId": "demo-junction-demo-level-0",
+            "toNodeId": "connector-demo-lift-demo-level-0",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 0.01,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "demo-lift-path-demo-level-1",
+            "fromNodeId": "demo-junction-demo-level-1",
+            "toNodeId": "connector-demo-lift-demo-level-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 0.01,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-north-1",
+            "fromNodeId": "space-demo-room-0-1",
+            "toNodeId": "opening-demo-door-0-north-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-north-2",
+            "fromNodeId": "space-demo-room-0-2",
+            "toNodeId": "opening-demo-door-0-north-2",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-north-3",
+            "fromNodeId": "space-demo-room-0-3",
+            "toNodeId": "opening-demo-door-0-north-3",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-north-4",
+            "fromNodeId": "space-demo-room-0-4",
+            "toNodeId": "opening-demo-door-0-north-4",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-south-5",
+            "fromNodeId": "space-demo-room-0-5",
+            "toNodeId": "opening-demo-door-0-south-5",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-south-6",
+            "fromNodeId": "space-demo-room-0-6",
+            "toNodeId": "opening-demo-door-0-south-6",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-south-7",
+            "fromNodeId": "space-demo-room-0-7",
+            "toNodeId": "opening-demo-door-0-south-7",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-0-south-8",
+            "fromNodeId": "space-demo-room-0-8",
+            "toNodeId": "opening-demo-door-0-south-8",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-1-north-1",
+            "fromNodeId": "space-demo-room-1-1",
+            "toNodeId": "opening-demo-door-1-north-1",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-1-north-2",
+            "fromNodeId": "space-demo-room-1-2",
+            "toNodeId": "opening-demo-door-1-north-2",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-1-north-3",
+            "fromNodeId": "space-demo-room-1-3",
+            "toNodeId": "opening-demo-door-1-north-3",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-1-south-4",
+            "fromNodeId": "space-demo-room-1-4",
+            "toNodeId": "opening-demo-door-1-south-4",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-1-south-5",
+            "fromNodeId": "space-demo-room-1-5",
+            "toNodeId": "opening-demo-door-1-south-5",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "room-entry-opening-demo-door-1-south-6",
+            "fromNodeId": "space-demo-room-1-6",
+            "toNodeId": "opening-demo-door-1-south-6",
+            "kind": "walking",
+            "bidirectional": true,
+            "distanceMetres": 6.131,
+            "accessibility": "accessible"
+          },
+          {
+            "id": "vertical-0-0",
+            "fromNodeId": "connector-demo-lift-demo-level-0",
+            "toNodeId": "connector-demo-lift-demo-level-1",
+            "kind": "lift",
+            "bidirectional": true,
+            "distanceMetres": 3.6,
+            "accessibility": "accessible"
+          }
+        ]
+      }
+    }
+  ]
 }

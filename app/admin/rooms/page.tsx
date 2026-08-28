@@ -1,20 +1,24 @@
 import { notFound } from "next/navigation";
-import { IndoorMapEditor } from "@/components/admin/indoor-map-editor";
-import { AppShell } from "@/components/shell";
+import { BuildingPicker } from "@/components/admin/rooms/building-picker";
+import { AppShell } from "@/components/shell/app-shell";
 import { canManageRooms } from "@/lib/auth/viewer";
-import { loadIndoorMapEditorData } from "@/lib/rooms/indoor-map-admin";
+import { loadIndoorMapPickerData } from "@/lib/rooms/indoor-map-admin";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminIndoorMapsPage() {
+export default async function AdminRoomsPage() {
   if (!(await canManageRooms())) notFound();
 
-  const { indoorMaps, mapData } = await loadIndoorMapEditorData();
+  const { mapData, buildings, summaries } = await loadIndoorMapPickerData();
 
   return (
     <AppShell admin fullBleed>
       <h1 className="sr-only">Indoor maps</h1>
-      <IndoorMapEditor indoorMaps={indoorMaps} mapData={mapData} />
+      <BuildingPicker
+        buildings={buildings}
+        mapData={mapData}
+        summaries={summaries}
+      />
     </AppShell>
   );
 }
