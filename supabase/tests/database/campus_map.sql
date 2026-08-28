@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(31);
+select extensions.plan(32);
 
 select extensions.ok(
   has_table_privilege('anon', 'public.campus_map_layers', 'select')
@@ -98,7 +98,7 @@ select extensions.is(
     from public.campus_map_places
     where status = 'published'
   ),
-  283,
+  282,
   'the migration publishes every canonical mapped ANU building footprint'
 );
 
@@ -109,7 +109,7 @@ select extensions.is(
     where status = 'published'
       and map_display_kind = 'building'
   ),
-  283,
+  282,
   'every published place selects its stored building footprint'
 );
 
@@ -124,7 +124,7 @@ select extensions.is(
       and source_url ~ '^https://www.openstreetmap.org/(way|relation)/'
       and source_license = 'OpenStreetMap contributors, ODbL 1.0'
   ),
-  283,
+  282,
   'every published building place retains OpenStreetMap provenance'
 );
 
@@ -141,7 +141,7 @@ select extensions.is(
           and features.status = 'published'
       )
   ),
-  283,
+  282,
   'every directory place links to a published building geometry'
 );
 
@@ -151,7 +151,7 @@ select extensions.is(
     from public.campus_map_places
     where source_provider = 'openstreetmap'
   ),
-  283,
+  282,
   'mapped place source identities are unique'
 );
 
@@ -219,7 +219,7 @@ select extensions.is(
     from public.campus_map_features
     where status = 'published'
   ),
-  286,
+  285,
   'the migration publishes all building footprints and walking paths'
 );
 
@@ -229,7 +229,7 @@ select extensions.is(
     from public.campus_map_features
     where feature_kind = 'building'
   ),
-  283,
+  282,
   'all canonical ANU building geometries are published'
 );
 
@@ -252,8 +252,19 @@ select extensions.is(
       and minimum_height_metres >= 0
       and jsonb_typeof(source_properties) = 'object'
   ),
-  283,
+  282,
   'every building has valid extrusion measurements and source properties'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_map_features
+    where feature_kind = 'building'
+      and source_properties ->> 'building' in ('0', 'false', 'no')
+  ),
+  0,
+  'false OpenStreetMap building tags are not published as buildings'
 );
 
 select extensions.lives_ok(
@@ -403,7 +414,7 @@ select extensions.is(
 
 select extensions.is(
   (select count(*)::integer from public.campus_map_places),
-  283,
+  282,
   'anonymous users only see places in published layers'
 );
 
@@ -415,7 +426,7 @@ select extensions.is(
 
 select extensions.is(
   (select count(*)::integer from public.campus_map_features),
-  286,
+  285,
   'anonymous users only see published ANU vector features'
 );
 

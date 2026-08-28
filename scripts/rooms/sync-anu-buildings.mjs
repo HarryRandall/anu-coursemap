@@ -11,12 +11,13 @@ const rawSnapshotPath = resolve(
 );
 const demoDataPath = resolve(projectRoot, "lib/rooms/demo-campus-map.json");
 const initialMigrationFilename =
-  "20260828170100_import_anu_acton_buildings.sql";
+  "20260828170200_import_anu_acton_buildings.sql";
 
 const campusSourceIdentifier = "way/279984863";
 const overpassUrl = "https://overpass-api.de/api/interpreter";
 const sourceLicense = "OpenStreetMap contributors, ODbL 1.0";
 const sourceProvider = "openstreetmap";
+const falseBuildingValues = new Set(["0", "false", "no"]);
 const buildingsLayerId = "10000000-0000-4000-8000-000000000001";
 const campusId = "00000000-0000-4000-8000-000000000001";
 const specialSlugs = new Set([
@@ -49,6 +50,13 @@ function sourceIdentifier(element) {
 
 function sourceUrl(element) {
   return `https://www.openstreetmap.org/${element.type}/${element.id}`;
+}
+
+function isMappedBuilding(tags) {
+  const building = String(tags?.building ?? "")
+    .trim()
+    .toLowerCase();
+  return building !== "" && !falseBuildingValues.has(building);
 }
 
 function coordinatesEqual(left, right) {
@@ -348,8 +356,17 @@ function buildSnapshot(raw, baseDemo) {
   const polygonElements = elements.filter(
     (element) =>
       (element.type === "way" || element.type === "relation") &&
+      isMappedBuilding(element.tags) &&
       !(element.type === "way" && relationMemberWayIds.has(element.id)),
   );
+  const excludedNonBuildingSourceIdentifiers = elements
+    .filter(
+      (element) =>
+        (element.type === "way" || element.type === "relation") &&
+        !isMappedBuilding(element.tags),
+    )
+    .map(sourceIdentifier)
+    .toSorted();
   const specialPlaces = new Map(
     baseDemo.places
       .filter((place) => specialSlugs.has(place.slug))
@@ -476,6 +493,7 @@ function buildSnapshot(raw, baseDemo) {
         .length,
       buildingCount: buildings.length,
       namedSourceCount: elements.filter((element) => element.tags?.name).length,
+      excludedNonBuildingSourceIdentifiers,
     },
     buildings,
   };
@@ -593,6 +611,41 @@ from jsonb_to_recordset(
   "minimumHeightMetres" double precision,
   "sortOrder" integer
 );
+
+create temporary table anu_non_building_exclusion on commit drop as
+select excluded.source_identifier
+from jsonb_array_elements_text(
+  ($snapshot$${payload}$snapshot$::jsonb)
+    #> '{metadata,excludedNonBuildingSourceIdentifiers}'
+) as excluded(source_identifier);
+
+delete from public.campus_map_features as features
+using anu_non_building_exclusion as excluded,
+  public.campus_map_places as places
+where features.campus_id = '${campusId}'
+  and features.layer_id = '${buildingsLayerId}'
+  and features.place_id = places.id
+  and features.feature_kind = 'building'
+  and features.source_license = ${sqlString(sourceLicense)}
+  and features.source_identifier = excluded.source_identifier
+  and places.layer_id = '${buildingsLayerId}'
+  and places.map_display_kind = 'building'
+  and places.source_provider = '${sourceProvider}'
+  and places.source_identifier = excluded.source_identifier
+  and places.data_status <> 'verified';
+
+delete from public.campus_map_places as places
+using anu_non_building_exclusion as excluded
+where places.layer_id = '${buildingsLayerId}'
+  and places.map_display_kind = 'building'
+  and places.source_provider = '${sourceProvider}'
+  and places.source_identifier = excluded.source_identifier
+  and places.data_status <> 'verified'
+  and not exists (
+    select 1
+    from public.campus_map_features as remaining_features
+    where remaining_features.place_id = places.id
+  );
 
 update public.campus_map_places as places
 set
@@ -745,7 +798,13 @@ do update set
   source_properties = excluded.source_properties,
   source_url = excluded.source_url,
   sort_order = excluded.sort_order,
-  status = 'published';
+  status = 'published'
+where not exists (
+  select 1
+  from public.campus_map_places as protected_places
+  where protected_places.data_status = 'verified'
+    and protected_places.id in (features.place_id, excluded.place_id)
+);
 
 comment on table public.campus_map_places is
   'Searchable Room Finder places, including the mapped ANU Acton building directory.';
@@ -842,8 +901,10 @@ export {
   buildSnapshot,
   buildingAddress,
   buildingName,
+  isMappedBuilding,
   migrationOutputPath,
   migrationSql,
+  overpassQuery,
   relationGeometry,
   safeBuildingHeights,
   sourceIdentifier,
