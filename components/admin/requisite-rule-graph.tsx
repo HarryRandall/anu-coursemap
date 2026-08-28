@@ -86,7 +86,7 @@ const GROUP_NODE_WIDTH = 156;
 const CONDITION_NODE_WIDTH = 420;
 const GROUP_NODE_HEIGHT = 48;
 const CONDITION_NODE_HEIGHT = 56;
-const HORIZONTAL_GAP = 72;
+const HORIZONTAL_GAP = 56;
 const VERTICAL_GAP = 14;
 
 function stopPanePan(event: { stopPropagation: () => void }) {
@@ -276,7 +276,7 @@ function GroupNode({ data }: NodeProps<Node<GroupData, "ruleGroup">>) {
             <span className="text-sm font-semibold">{title}</span>
           )}
           {data.canEdit ? (
-            <>
+            <span className="hidden md:contents">
               <AddJoinMenu
                 align="end"
                 canNest={data.canNest}
@@ -293,9 +293,10 @@ function GroupNode({ data }: NodeProps<Node<GroupData, "ruleGroup">>) {
                   className="nodrag nopan size-9"
                   label={`Remove group: ${title}`}
                   onClick={data.onRemove}
+                  variant="muted"
                 />
               ) : null}
-            </>
+            </span>
           ) : null}
         </>
       )}
@@ -326,7 +327,7 @@ function ConditionNode({ data }: NodeProps<Node<ConditionData, "condition">>) {
         type="target"
       />
       {data.canEdit ? (
-        <span className="nodrag nopan nowheel inline-flex items-center gap-1">
+        <span className="nodrag nopan nowheel hidden items-center gap-1 md:inline-flex">
           <ConditionInlineEditor
             condition={condition}
             onChange={data.actions.onChange}
@@ -338,7 +339,15 @@ function ConditionNode({ data }: NodeProps<Node<ConditionData, "condition">>) {
         <span className="text-sm whitespace-nowrap">{summary}</span>
       )}
       {data.canEdit ? (
-        <>
+        <span
+          className="line-clamp-2 max-w-44 px-1 text-sm leading-5 font-medium text-zinc-700 md:hidden"
+          title={summary}
+        >
+          {summary}
+        </span>
+      ) : null}
+      {data.canEdit ? (
+        <span className="hidden md:contents">
           <AddJoinMenu
             align="end"
             canNest={data.canNest}
@@ -354,8 +363,9 @@ function ConditionNode({ data }: NodeProps<Node<ConditionData, "condition">>) {
             className="nodrag nopan size-9"
             label={`Remove condition: ${summary}`}
             onClick={data.actions.onRemove}
+            variant="muted"
           />
-        </>
+        </span>
       ) : null}
       <Handle
         className={handleClasses}
@@ -567,9 +577,9 @@ export function RequisiteRuleGraph({
         edges={graph.edges}
         edgesFocusable={false}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ maxZoom: 1, minZoom: 0.46, padding: 0.1 }}
         maxZoom={1.5}
-        minZoom={0.4}
+        minZoom={0.46}
         nodes={graph.nodes}
         nodesConnectable={false}
         nodesDraggable={false}

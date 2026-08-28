@@ -321,13 +321,15 @@ export function moveInTree(
   const node = findInTree(tree, nodeId);
   if (!node) return tree;
   const stripped = removeFromTree(tree, nodeId);
-  return updateTree(stripped, targetGroupId, (group) => {
-    if (group.type !== "group") return group;
-    const next = [...group.children];
-    const at = Math.min(index ?? next.length, next.length);
-    next.splice(at, 0, node);
-    return { ...group, children: next };
-  });
+  return pruneEmptyGroups(
+    updateTree(stripped, targetGroupId, (group) => {
+      if (group.type !== "group") return group;
+      const next = [...group.children];
+      const at = Math.min(index ?? next.length, next.length);
+      next.splice(at, 0, node);
+      return { ...group, children: next };
+    }),
+  );
 }
 
 export function setGroupOperator(
