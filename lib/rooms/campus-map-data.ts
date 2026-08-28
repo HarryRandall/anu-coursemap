@@ -10,9 +10,11 @@ import type {
   CampusMapPlaceDetail,
 } from "@/lib/rooms/campus-map";
 import {
+  isCampusMapBuildingGeometry,
   isCampusMapLineString,
   isCampusMapPolygon,
 } from "@/lib/rooms/campus-map";
+import { batchCampusMapQueryValues } from "@/lib/rooms/campus-map-query";
 import { getSupabaseConfig, isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import type { Database } from "@/types/database";
@@ -81,7 +83,7 @@ function mapFeature(row: FeatureRow): CampusMapFeature {
 
   const parsedGeometry =
     featureKind === "building"
-      ? isCampusMapPolygon(geometry)
+      ? isCampusMapBuildingGeometry(geometry)
         ? geometry
         : null
       : isCampusMapLineString(geometry)
@@ -98,6 +100,14 @@ function mapFeature(row: FeatureRow): CampusMapFeature {
     name: row.name,
     featureKind,
     geometry: parsedGeometry,
+    heightMetres: row.height_metres,
+    minimumHeightMetres: row.minimum_height_metres,
+    sourceProperties:
+      row.source_properties &&
+      typeof row.source_properties === "object" &&
+      !Array.isArray(row.source_properties)
+        ? row.source_properties
+        : {},
     sourceIdentifier: row.source_identifier,
     sourceUrl: row.source_url,
     sourceLicense: row.source_license,
@@ -130,6 +140,7 @@ function mapPlace(
     dataStatus: row.data_status as CampusMapPlace["dataStatus"],
     mapDisplayKind: row.map_display_kind as CampusMapPlace["mapDisplayKind"],
     isRoutable: row.is_routable,
+    searchTerms: row.search_terms,
     sortOrder: row.sort_order,
     details: details.map(mapDetail),
   };
@@ -181,7 +192,7 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
       supabase
         .from("campus_map_features")
         .select(
-          "id,campus_id,layer_id,place_id,slug,name,feature_kind,geometry_geojson,source_identifier,source_url,source_license,status,sort_order,created_at,updated_at",
+          "id,campus_id,layer_id,place_id,slug,name,feature_kind,geometry_geojson,height_metres,minimum_height_metres,source_properties,source_identifier,source_url,source_license,status,sort_order,created_at,updated_at",
         )
         .eq("campus_id", campus.id)
         .order("sort_order")
@@ -201,7 +212,7 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
       ? await supabase
           .from("campus_map_places")
           .select(
-            "id,layer_id,slug,name,marker_label,address,longitude,latitude,official_url,data_status,map_display_kind,is_routable,status,sort_order,created_at,updated_at",
+            "id,layer_id,slug,name,marker_label,address,longitude,latitude,official_url,data_status,map_display_kind,is_routable,search_terms,source_provider,source_identifier,source_url,source_license,source_version,source_updated_at,status,sort_order,created_at,updated_at",
           )
           .in("layer_id", layerIds)
           .order("sort_order")
@@ -217,16 +228,18 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
 
     const placeRows = placesResult.data ?? [];
     const placeIds = placeRows.map((place) => place.id);
-    const detailsResult = placeIds.length
-      ? await supabase
+    const detailResults = await Promise.all(
+      batchCampusMapQueryValues(placeIds).map((placeIdBatch) =>
+        supabase
           .from("campus_map_place_details")
           .select("id,place_id,kind,label,sort_order,created_at,updated_at")
-          .in("place_id", placeIds)
+          .in("place_id", placeIdBatch)
           .order("sort_order")
-          .order("label")
-      : { data: [], error: null };
+          .order("label"),
+      ),
+    );
 
-    if (detailsResult.error) {
+    if (detailResults.some((result) => result.error)) {
       return {
         data: EMPTY_CAMPUS_MAP_DATA,
         error: "Room Finder data could not be loaded.",
@@ -234,7 +247,7 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
     }
 
     const detailsByPlace = new Map<string, PlaceDetailRow[]>();
-    for (const detail of detailsResult.data ?? []) {
+    for (const detail of detailResults.flatMap((result) => result.data ?? [])) {
       const details = detailsByPlace.get(detail.place_id) ?? [];
       details.push(detail);
       detailsByPlace.set(detail.place_id, details);

@@ -16,6 +16,14 @@ export type CampusMapPolygon = Readonly<{
   coordinates: readonly (readonly (readonly [number, number])[])[];
 }>;
 
+export type CampusMapMultiPolygon = Readonly<{
+  type: "MultiPolygon";
+  coordinates: readonly (readonly (readonly (readonly [number, number])[])[])[];
+}>;
+
+export type CampusMapBuildingGeometry =
+  CampusMapPolygon | CampusMapMultiPolygon;
+
 export type CampusMapLineString = Readonly<{
   type: "LineString";
   coordinates: readonly (readonly [number, number])[];
@@ -44,7 +52,10 @@ export type CampusMapFeature = Readonly<{
   slug: string;
   name: string;
   featureKind: "building" | "walking_path";
-  geometry: CampusMapPolygon | CampusMapLineString;
+  geometry: CampusMapBuildingGeometry | CampusMapLineString;
+  heightMetres: number;
+  minimumHeightMetres: number;
+  sourceProperties: Readonly<Record<string, unknown>>;
   sourceIdentifier: string;
   sourceUrl: string;
   sourceLicense: string;
@@ -67,9 +78,10 @@ export type CampusMapPlace = Readonly<{
   address: string;
   coordinates: readonly [longitude: number, latitude: number];
   officialUrl: string | null;
-  dataStatus: "example" | "verified";
+  dataStatus: "example" | "mapped" | "verified";
   mapDisplayKind: "building" | "point";
   isRoutable: boolean;
+  searchTerms: readonly string[];
   sortOrder: number;
   details: readonly CampusMapPlaceDetail[];
 }>;
@@ -120,6 +132,33 @@ export function isCampusMapPolygon(value: unknown): value is CampusMapPolygon {
         Array.isArray(ring) && ring.length >= 4 && ring.every(isCoordinate),
     )
   );
+}
+
+export function isCampusMapMultiPolygon(
+  value: unknown,
+): value is CampusMapMultiPolygon {
+  if (!value || typeof value !== "object") return false;
+  const coordinates = Reflect.get(value, "coordinates");
+  return (
+    Reflect.get(value, "type") === "MultiPolygon" &&
+    Array.isArray(coordinates) &&
+    coordinates.length > 0 &&
+    coordinates.every(
+      (polygon) =>
+        Array.isArray(polygon) &&
+        polygon.length > 0 &&
+        polygon.every(
+          (ring) =>
+            Array.isArray(ring) && ring.length >= 4 && ring.every(isCoordinate),
+        ),
+    )
+  );
+}
+
+export function isCampusMapBuildingGeometry(
+  value: unknown,
+): value is CampusMapBuildingGeometry {
+  return isCampusMapPolygon(value) || isCampusMapMultiPolygon(value);
 }
 
 function isCoordinateInRing(
@@ -237,6 +276,7 @@ export function filterCampusPlaces(
       place.name,
       place.address,
       layer.name,
+      ...(place.searchTerms ?? []),
       ...place.details.map((detail) => detail.label),
     ]
       .join(" ")

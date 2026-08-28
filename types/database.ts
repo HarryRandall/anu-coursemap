@@ -382,14 +382,17 @@ export type Database = {
           created_at: string
           feature_kind: string
           geometry_geojson: Json
+          height_metres: number
           id: string
           layer_id: string
+          minimum_height_metres: number
           name: string
           place_id: string | null
           slug: string
           sort_order: number
           source_identifier: string
           source_license: string
+          source_properties: Json
           source_url: string
           status: string
           updated_at: string
@@ -399,14 +402,17 @@ export type Database = {
           created_at?: string
           feature_kind: string
           geometry_geojson: Json
+          height_metres?: number
           id?: string
           layer_id: string
+          minimum_height_metres?: number
           name: string
           place_id?: string | null
           slug: string
           sort_order?: number
           source_identifier: string
           source_license: string
+          source_properties?: Json
           source_url: string
           status?: string
           updated_at?: string
@@ -416,14 +422,17 @@ export type Database = {
           created_at?: string
           feature_kind?: string
           geometry_geojson?: Json
+          height_metres?: number
           id?: string
           layer_id?: string
+          minimum_height_metres?: number
           name?: string
           place_id?: string | null
           slug?: string
           sort_order?: number
           source_identifier?: string
           source_license?: string
+          source_properties?: Json
           source_url?: string
           status?: string
           updated_at?: string
@@ -560,8 +569,15 @@ export type Database = {
           marker_label: string
           name: string
           official_url: string | null
+          search_terms: string[]
           slug: string
           sort_order: number
+          source_identifier: string | null
+          source_license: string | null
+          source_provider: string | null
+          source_updated_at: string | null
+          source_url: string | null
+          source_version: number | null
           status: string
           updated_at: string
         }
@@ -578,8 +594,15 @@ export type Database = {
           marker_label: string
           name: string
           official_url?: string | null
+          search_terms?: string[]
           slug: string
           sort_order?: number
+          source_identifier?: string | null
+          source_license?: string | null
+          source_provider?: string | null
+          source_updated_at?: string | null
+          source_url?: string | null
+          source_version?: number | null
           status?: string
           updated_at?: string
         }
@@ -596,8 +619,15 @@ export type Database = {
           marker_label?: string
           name?: string
           official_url?: string | null
+          search_terms?: string[]
           slug?: string
           sort_order?: number
+          source_identifier?: string | null
+          source_license?: string | null
+          source_provider?: string | null
+          source_updated_at?: string | null
+          source_url?: string | null
+          source_version?: number | null
           status?: string
           updated_at?: string
         }

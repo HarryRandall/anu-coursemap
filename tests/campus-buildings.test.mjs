@@ -23,11 +23,16 @@ async function compileModule(sourcePath, targetPath, replacements = []) {
 async function loadCampusMapModules() {
   const directory = await mkdtemp(join(tmpdir(), "coursemap-room-finder-"));
   const campusMapTarget = join(directory, "campus-map.js");
+  const campusMapQueryTarget = join(directory, "campus-map-query.js");
   const routingTarget = join(directory, "routing.js");
 
   await compileModule(
     new URL("../lib/rooms/campus-map.ts", import.meta.url),
     campusMapTarget,
+  );
+  await compileModule(
+    new URL("../lib/rooms/campus-map-query.ts", import.meta.url),
+    campusMapQueryTarget,
   );
   await compileModule(
     new URL("../lib/rooms/routing.ts", import.meta.url),
@@ -37,11 +42,12 @@ async function loadCampusMapModules() {
 
   return Promise.all([
     import(pathToFileURL(campusMapTarget).href),
+    import(pathToFileURL(campusMapQueryTarget).href),
     import(pathToFileURL(routingTarget).href),
   ]);
 }
 
-const [campusMap, routing] = await loadCampusMapModules();
+const [campusMap, campusMapQuery, routing] = await loadCampusMapModules();
 const demoData = JSON.parse(
   await readFile(
     new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
@@ -49,6 +55,22 @@ const demoData = JSON.parse(
   ),
 );
 const visibleLayers = campusMap.getDefaultVisibleLayerSlugs(demoData.layers);
+
+test("batches large campus map queries below URL limits", () => {
+  const placeIds = Array.from({ length: 283 }, (_, index) => `place-${index}`);
+  const batches = campusMapQuery.batchCampusMapQueryValues(placeIds);
+
+  assert.deepEqual(
+    batches.map((batch) => batch.length),
+    [75, 75, 75, 58],
+  );
+  assert.deepEqual(batches.flat(), placeIds);
+  assert.deepEqual(campusMapQuery.batchCampusMapQueryValues([]), []);
+  assert.throws(
+    () => campusMapQuery.batchCampusMapQueryValues(placeIds, 0),
+    /positive integer/u,
+  );
+});
 
 test("copies both MapLibre worker modules for Next builds", async () => {
   const packageJson = JSON.parse(
@@ -115,6 +137,20 @@ test("filters dynamic places by layer, address and detail", () => {
   );
 });
 
+test("filters mapped buildings by imported aliases and building numbers", () => {
+  const place = {
+    ...demoData.places[0],
+    searchTerms: ["Building 101", "Old Administration Block"],
+  };
+
+  assert.deepEqual(
+    campusMap
+      .filterCampusPlaces([place], demoData.layers, visibleLayers, "old 101")
+      .map((candidate) => candidate.slug),
+    [place.slug],
+  );
+});
+
 test("finds places and honours layer visibility", () => {
   assert.equal(
     campusMap.findCampusPlace(demoData.places, "beryl-rawson-building")?.name,
@@ -137,11 +173,11 @@ test("finds places and honours layer visibility", () => {
 
 test("supplies dynamic map layers and preserves imported feature provenance", () => {
   assert.equal(demoData.layers.length, 13);
-  assert.equal(
-    demoData.features.filter((feature) => feature.featureKind === "building")
-      .length,
-    4,
+  const buildingFeatures = demoData.features.filter(
+    (feature) => feature.featureKind === "building",
   );
+  assert.ok(buildingFeatures.length > 250);
+  assert.equal(buildingFeatures.length, demoData.places.length);
   assert.equal(
     demoData.features.filter(
       (feature) => feature.featureKind === "walking_path",
@@ -155,10 +191,10 @@ test("supplies dynamic map layers and preserves imported feature provenance", ()
     "the campus preview allows exactly three zoom-out steps",
   );
   for (const feature of demoData.features) {
-    assert.match(feature.sourceIdentifier, /^way\/\d+$/);
+    assert.match(feature.sourceIdentifier, /^(?:way|relation)\/\d+$/);
     assert.match(
       feature.sourceUrl,
-      /^https:\/\/www\.openstreetmap\.org\/way\//,
+      /^https:\/\/www\.openstreetmap\.org\/(?:way|relation)\//,
     );
   }
 });
@@ -177,6 +213,13 @@ test("maps OpenFreeMap style layers into independently toggleable groups", () =>
   assert.ok(campusMap.isPlaceFilterLayer(layerBySlug.get("study-spaces")));
   assert.equal(
     campusMap.campusLayerControlsStyleLayer(buildings, "building-3d"),
+    false,
+  );
+  assert.equal(
+    campusMap.campusLayerControlsStyleLayer(
+      buildings,
+      "coursemap-anu-buildings-3d",
+    ),
     true,
   );
   assert.equal(
@@ -241,14 +284,22 @@ test("maps OpenFreeMap style layers into independently toggleable groups", () =>
   );
 });
 
-test("uses native building footprints for building places", () => {
+test("links every building place to a stored building footprint", () => {
   const buildingPlaces = demoData.places.filter(
     (place) => place.mapDisplayKind === "building",
   );
-  assert.equal(buildingPlaces.length, 5);
+  assert.ok(buildingPlaces.length > 250);
   assert.equal(
     demoData.places.filter((place) => place.mapDisplayKind === "point").length,
     0,
+  );
+  assert.equal(
+    demoData.features.filter(
+      (feature) =>
+        feature.featureKind === "building" &&
+        buildingPlaces.some((place) => place.id === feature.placeId),
+    ).length,
+    buildingPlaces.length,
   );
 
   const marieReayFeature = demoData.features.find(
@@ -266,9 +317,61 @@ test("uses native building footprints for building places", () => {
   );
 });
 
-test("renders the live vector style without bespoke building boxes", async () => {
+test("accepts Polygon and MultiPolygon building footprints", () => {
+  assert.equal(
+    campusMap.isCampusMapBuildingGeometry({
+      type: "Polygon",
+      coordinates: [
+        [
+          [149.12, -35.28],
+          [149.13, -35.28],
+          [149.13, -35.27],
+          [149.12, -35.28],
+        ],
+      ],
+    }),
+    true,
+  );
+  assert.equal(
+    campusMap.isCampusMapBuildingGeometry({
+      type: "MultiPolygon",
+      coordinates: [
+        [
+          [
+            [149.12, -35.28],
+            [149.13, -35.28],
+            [149.13, -35.27],
+            [149.12, -35.28],
+          ],
+        ],
+        [
+          [
+            [149.14, -35.28],
+            [149.15, -35.28],
+            [149.15, -35.27],
+            [149.14, -35.28],
+          ],
+        ],
+      ],
+    }),
+    true,
+  );
+  assert.equal(
+    campusMap.isCampusMapBuildingGeometry({
+      type: "MultiPolygon",
+      coordinates: [],
+    }),
+    false,
+  );
+});
+
+test("renders only stored ANU buildings in 3D", async () => {
   const mapComponent = await readFile(
     new URL("../components/rooms/campus-map.tsx", import.meta.url),
+    "utf8",
+  );
+  const roomFinder = await readFile(
+    new URL("../components/rooms/room-finder.tsx", import.meta.url),
     "utf8",
   );
 
@@ -276,9 +379,28 @@ test("renders the live vector style without bespoke building boxes", async () =>
   assert.match(mapComponent, /type: "hillshade"/);
   assert.match(mapComponent, /dragRotate: true/);
   assert.match(mapComponent, /maxPitch: 65/);
-  assert.match(mapComponent, /campus-building-highlights/);
-  assert.match(mapComponent, /geometry: selection\.geometry/);
+  assert.match(mapComponent, /coursemap-anu-buildings/);
+  assert.match(mapComponent, /buildAnuBuildingCollection/);
+  assert.match(mapComponent, /features\.filter\(isStoredBuildingFeature\)/);
+  assert.match(mapComponent, /setLayerZoomRange/);
+  assert.match(mapComponent, /NATIVE_BUILDING_MAX_ZOOM = 24/);
+  assert.match(mapComponent, /isNativeBuildingExtrusionLayer/);
+  assert.match(mapComponent, /minimumHeightMetres/);
+  assert.match(mapComponent, /getBuildingFeaturesForPlace/);
+  assert.match(roomFinder, /features=\{data\.features\}/);
   assert.match(mapComponent, /type: "fill-extrusion"/);
+  assert.match(mapComponent, /"fill-extrusion-opacity": 0\.88/);
+  assert.doesNotMatch(mapComponent, /"fill-extrusion-opacity": \[/);
+  assert.match(mapComponent, /coursemap-selected-building-label/);
+  assert.match(mapComponent, /type: "symbol"/);
+  assert.match(mapComponent, /"text-field": \["get", "name"\]/);
+  assert.match(mapComponent, /syncSelectedBuildingLabel\(/);
+  assert.match(
+    mapComponent,
+    /selectedFeatures\.length > 0 \? selectedPlace : null/,
+  );
+  assert.match(mapComponent, /onClearSelectionRef\.current\(\)/);
+  assert.doesNotMatch(mapComponent, /markerLabel/);
   assert.doesNotMatch(mapComponent, /feature-state/);
   assert.doesNotMatch(
     mapComponent,
@@ -295,11 +417,13 @@ test("builds an HTTPS walking route request for the selected places", () => {
     to,
     "https://routing.example.test/foot/route/v1/driving",
   );
+  const [fromLongitude, fromLatitude] = from.coordinates;
+  const [toLongitude, toLatitude] = to.coordinates;
 
   assert.equal(routeUrl.protocol, "https:");
-  assert.match(
+  assert.equal(
     routeUrl.pathname,
-    /149\.120685,-35\.277786;149\.122333,-35\.278959$/,
+    `/foot/route/v1/driving/${fromLongitude},${fromLatitude};${toLongitude},${toLatitude}`,
   );
   assert.equal(routeUrl.searchParams.get("geometries"), "geojson");
   assert.throws(

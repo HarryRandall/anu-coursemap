@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(25);
+select extensions.plan(31);
 
 select extensions.ok(
   has_table_privilege('anon', 'public.campus_map_layers', 'select')
@@ -98,8 +98,8 @@ select extensions.is(
     from public.campus_map_places
     where status = 'published'
   ),
-  5,
-  'the migration supplies five example places through database rows'
+  283,
+  'the migration publishes every canonical mapped ANU building footprint'
 );
 
 select extensions.is(
@@ -109,8 +109,50 @@ select extensions.is(
     where status = 'published'
       and map_display_kind = 'building'
   ),
-  5,
-  'all five places select their live vector building footprint'
+  283,
+  'every published place selects its stored building footprint'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_map_places
+    where status = 'published'
+      and data_status = 'mapped'
+      and source_provider = 'openstreetmap'
+      and source_identifier is not null
+      and source_url ~ '^https://www.openstreetmap.org/(way|relation)/'
+      and source_license = 'OpenStreetMap contributors, ODbL 1.0'
+  ),
+  283,
+  'every published building place retains OpenStreetMap provenance'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_map_places as places
+    where places.status = 'published'
+      and exists (
+        select 1
+        from public.campus_map_features as features
+        where features.place_id = places.id
+          and features.feature_kind = 'building'
+          and features.status = 'published'
+      )
+  ),
+  283,
+  'every directory place links to a published building geometry'
+);
+
+select extensions.is(
+  (
+    select count(distinct source_identifier)::integer
+    from public.campus_map_places
+    where source_provider = 'openstreetmap'
+  ),
+  283,
+  'mapped place source identities are unique'
 );
 
 select extensions.throws_ok(
@@ -142,14 +184,43 @@ select extensions.throws_ok(
   'places reject unsupported map display kinds'
 );
 
+select extensions.throws_ok(
+  $$
+    insert into public.campus_map_places (
+      layer_id,
+      slug,
+      name,
+      marker_label,
+      address,
+      longitude,
+      latitude,
+      source_provider
+    )
+    select
+      id,
+      'partial-source-provenance',
+      'Partial source provenance',
+      'PS',
+      'Acton',
+      149.12,
+      -35.28,
+      'openstreetmap'
+    from public.campus_map_layers
+    limit 1
+  $$,
+  '23514',
+  null,
+  'places reject partially populated source provenance'
+);
+
 select extensions.is(
   (
     select count(*)::integer
     from public.campus_map_features
     where status = 'published'
   ),
-  7,
-  'the migration publishes seven OSM-sourced campus vectors'
+  286,
+  'the migration publishes all building footprints and walking paths'
 );
 
 select extensions.is(
@@ -158,8 +229,8 @@ select extensions.is(
     from public.campus_map_features
     where feature_kind = 'building'
   ),
-  4,
-  'four published vectors are building polygons'
+  283,
+  'all canonical ANU building geometries are published'
 );
 
 select extensions.is(
@@ -170,6 +241,49 @@ select extensions.is(
   ),
   3,
   'three published vectors are walking paths'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_map_features
+    where feature_kind = 'building'
+      and height_metres >= minimum_height_metres
+      and minimum_height_metres >= 0
+      and jsonb_typeof(source_properties) = 'object'
+  ),
+  283,
+  'every building has valid extrusion measurements and source properties'
+);
+
+select extensions.lives_ok(
+  $$
+    insert into public.campus_map_features (
+      campus_id,
+      layer_id,
+      slug,
+      name,
+      feature_kind,
+      geometry_geojson,
+      source_identifier,
+      source_url,
+      source_license
+    )
+    select
+      campuses.id,
+      layers.id,
+      'valid-multipolygon-building',
+      'Valid multipolygon building',
+      'building',
+      '{"type":"MultiPolygon","coordinates":[[[[149.12,-35.28],[149.121,-35.28],[149.121,-35.281],[149.12,-35.28]]]]}'::jsonb,
+      'relation/0',
+      'https://www.openstreetmap.org/relation/0',
+      'OpenStreetMap contributors, ODbL 1.0'
+    from public.campus_map_campuses as campuses
+    join public.campus_map_layers as layers on layers.campus_id = campuses.id
+    limit 1
+  $$,
+  'building vectors accept valid multipolygon geometry'
 );
 
 select extensions.throws_ok(
@@ -289,7 +403,7 @@ select extensions.is(
 
 select extensions.is(
   (select count(*)::integer from public.campus_map_places),
-  5,
+  283,
   'anonymous users only see places in published layers'
 );
 
@@ -301,7 +415,7 @@ select extensions.is(
 
 select extensions.is(
   (select count(*)::integer from public.campus_map_features),
-  7,
+  286,
   'anonymous users only see published ANU vector features'
 );
 
