@@ -23,11 +23,16 @@ async function compileModule(sourcePath, targetPath, replacements = []) {
 async function loadCampusMapModules() {
   const directory = await mkdtemp(join(tmpdir(), "coursemap-room-finder-"));
   const campusMapTarget = join(directory, "campus-map.js");
+  const campusMapQueryTarget = join(directory, "campus-map-query.js");
   const routingTarget = join(directory, "routing.js");
 
   await compileModule(
     new URL("../lib/rooms/campus-map.ts", import.meta.url),
     campusMapTarget,
+  );
+  await compileModule(
+    new URL("../lib/rooms/campus-map-query.ts", import.meta.url),
+    campusMapQueryTarget,
   );
   await compileModule(
     new URL("../lib/rooms/routing.ts", import.meta.url),
@@ -37,11 +42,12 @@ async function loadCampusMapModules() {
 
   return Promise.all([
     import(pathToFileURL(campusMapTarget).href),
+    import(pathToFileURL(campusMapQueryTarget).href),
     import(pathToFileURL(routingTarget).href),
   ]);
 }
 
-const [campusMap, routing] = await loadCampusMapModules();
+const [campusMap, campusMapQuery, routing] = await loadCampusMapModules();
 const demoData = JSON.parse(
   await readFile(
     new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
@@ -49,6 +55,22 @@ const demoData = JSON.parse(
   ),
 );
 const visibleLayers = campusMap.getDefaultVisibleLayerSlugs(demoData.layers);
+
+test("batches large campus map queries below URL limits", () => {
+  const placeIds = Array.from({ length: 283 }, (_, index) => `place-${index}`);
+  const batches = campusMapQuery.batchCampusMapQueryValues(placeIds);
+
+  assert.deepEqual(
+    batches.map((batch) => batch.length),
+    [75, 75, 75, 58],
+  );
+  assert.deepEqual(batches.flat(), placeIds);
+  assert.deepEqual(campusMapQuery.batchCampusMapQueryValues([]), []);
+  assert.throws(
+    () => campusMapQuery.batchCampusMapQueryValues(placeIds, 0),
+    /positive integer/u,
+  );
+});
 
 test("copies both MapLibre worker modules for Next builds", async () => {
   const packageJson = JSON.parse(

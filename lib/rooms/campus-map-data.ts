@@ -14,6 +14,7 @@ import {
   isCampusMapLineString,
   isCampusMapPolygon,
 } from "@/lib/rooms/campus-map";
+import { batchCampusMapQueryValues } from "@/lib/rooms/campus-map-query";
 import { getSupabaseConfig, isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import type { Database } from "@/types/database";
@@ -227,16 +228,18 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
 
     const placeRows = placesResult.data ?? [];
     const placeIds = placeRows.map((place) => place.id);
-    const detailsResult = placeIds.length
-      ? await supabase
+    const detailResults = await Promise.all(
+      batchCampusMapQueryValues(placeIds).map((placeIdBatch) =>
+        supabase
           .from("campus_map_place_details")
           .select("id,place_id,kind,label,sort_order,created_at,updated_at")
-          .in("place_id", placeIds)
+          .in("place_id", placeIdBatch)
           .order("sort_order")
-          .order("label")
-      : { data: [], error: null };
+          .order("label"),
+      ),
+    );
 
-    if (detailsResult.error) {
+    if (detailResults.some((result) => result.error)) {
       return {
         data: EMPTY_CAMPUS_MAP_DATA,
         error: "Room Finder data could not be loaded.",
@@ -244,7 +247,7 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
     }
 
     const detailsByPlace = new Map<string, PlaceDetailRow[]>();
-    for (const detail of detailsResult.data ?? []) {
+    for (const detail of detailResults.flatMap((result) => result.data ?? [])) {
       const details = detailsByPlace.get(detail.place_id) ?? [];
       details.push(detail);
       detailsByPlace.set(detail.place_id, details);
