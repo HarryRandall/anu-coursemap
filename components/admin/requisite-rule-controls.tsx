@@ -1,6 +1,11 @@
 "use client";
 
-import { createElement, type DragEvent, type ReactNode } from "react";
+import {
+  createElement,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   Ban,
   BookOpen,
@@ -8,11 +13,13 @@ import {
   FileText,
   Gauge,
   GraduationCap,
+  GripVertical,
   KeyRound,
   Layers,
   Split,
   SquareStack,
   Trash2,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -48,18 +55,6 @@ const CONDITION_ICONS: Record<ReviewedConditionKind, LucideIcon> = {
   other: FileText,
 };
 
-const CONDITION_TILES: Record<ReviewedConditionKind, string> = {
-  course: "bg-brand-100 text-brand-700",
-  incompatible: "bg-rose-100 text-rose-700",
-  admission: "bg-sky-100 text-sky-700",
-  units_total: "bg-emerald-100 text-emerald-700",
-  subject_units: "bg-emerald-100 text-emerald-700",
-  level_units: "bg-emerald-100 text-emerald-700",
-  gpa: "bg-amber-100 text-amber-700",
-  permission: "bg-rose-100 text-rose-700",
-  other: "bg-zinc-100 text-zinc-600",
-};
-
 /** Everything a single condition can do, wherever it is being shown. */
 export type ConditionActions = {
   canNest: boolean;
@@ -72,35 +67,40 @@ export type ConditionActions = {
 
 export type ConditionDrag = {
   dragging: boolean;
-  onDragEnd: () => void;
-  onDragLeave: () => void;
-  onDragOver: (event: DragEvent) => void;
-  onDragStart: () => void;
-  onDrop: (event: DragEvent) => void;
-  over: boolean;
+  onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
+  onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
 };
 
 export function RemoveButton({
   className,
   label,
   onClick,
+  variant = "danger",
 }: {
   className?: string;
   label: string;
   onClick: () => void;
+  variant?: "danger" | "muted";
 }) {
   return (
     <button
       aria-label={label}
       className={cn(
-        "grid size-9 shrink-0 cursor-pointer place-items-center rounded-md text-rose-600 transition-colors outline-none hover:bg-rose-50 hover:!text-rose-700 focus-visible:ring-3 focus-visible:ring-brand-500/20",
+        "grid size-9 shrink-0 cursor-pointer place-items-center rounded-md transition-colors outline-none focus-visible:ring-3 focus-visible:ring-brand-500/20",
+        variant === "danger"
+          ? "text-rose-600 hover:bg-rose-50 hover:!text-rose-700"
+          : "text-zinc-400 hover:bg-zinc-500/10 hover:!text-rose-600",
         className,
       )}
       onClick={onClick}
       onPointerDown={(event) => event.stopPropagation()}
       type="button"
     >
-      <Trash2 aria-hidden="true" size={16} />
+      {variant === "danger" ? (
+        <Trash2 aria-hidden="true" size={16} />
+      ) : (
+        <X aria-hidden="true" size={18} />
+      )}
     </button>
   );
 }
@@ -139,13 +139,36 @@ export function ConditionIcon({
   });
 }
 
-export function conditionTile(kind: ReviewedConditionKind) {
-  return CONDITION_TILES[kind] ?? CONDITION_TILES.other;
+function DragHandle({
+  className,
+  drag,
+  summary,
+}: {
+  className?: string;
+  drag?: ConditionDrag;
+  summary: string;
+}) {
+  if (!drag) return null;
+
+  return (
+    <button
+      aria-label={`Drag condition: ${summary}`}
+      aria-pressed={drag.dragging}
+      className={cn(
+        "grid size-9 shrink-0 cursor-grab touch-none place-items-center rounded-md text-zinc-400 transition-colors outline-none select-none hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-3 focus-visible:ring-brand-500/20 active:cursor-grabbing",
+        className,
+      )}
+      onKeyDown={drag.onKeyDown}
+      onPointerDown={drag.onPointerDown}
+      title="Drag to move. Use Alt and the arrow keys to reorder."
+      type="button"
+    >
+      <GripVertical aria-hidden="true" size={16} />
+    </button>
+  );
 }
 
-/**
- * A condition as three dropdowns on one line: type, how it matches, and value.
- */
+/** A stacked condition card with a dedicated Notion-style drag handle. */
 export function ConditionChip({
   actions,
   canEdit,
@@ -160,7 +183,7 @@ export function ConditionChip({
   const summary = conditionSummary(condition);
   const complete = isConditionComplete(condition);
   const shell = cn(
-    "inline-flex min-h-10 w-fit max-w-full items-start rounded-md border bg-white transition-colors",
+    "inline-flex min-h-10 w-full max-w-full items-start rounded-md border bg-white transition-colors shadow-xs",
     complete ? "border-zinc-200" : "border-amber-300",
     drag?.dragging && "opacity-40",
   );
@@ -179,38 +202,45 @@ export function ConditionChip({
   }
 
   return (
-    <span className="relative inline-flex w-fit max-w-full items-center">
-      {drag?.over ? (
-        <span
-          aria-hidden="true"
-          className="absolute inset-y-0 -left-1.5 w-0.5 rounded-full bg-brand-500"
+    <span
+      className={cn(
+        "relative grid w-full max-w-full gap-1.5",
+        drag?.dragging && "opacity-40",
+      )}
+      data-requisite-condition=""
+    >
+      <span className="hidden items-center justify-between gap-1 max-md:flex">
+        <DragHandle className="size-11" drag={drag} summary={summary} />
+        <RemoveButton
+          className="size-11"
+          label={`Remove condition: ${summary}`}
+          onClick={actions.onRemove}
+          variant="muted"
         />
-      ) : null}
-      <span
-        className={cn(shell, "items-start gap-1 p-1 hover:border-zinc-300")}
-        onDragLeave={drag?.onDragLeave}
-        onDragOver={drag?.onDragOver}
-        onDrop={drag?.onDrop}
-      >
-        <span
-          aria-hidden="true"
-          className="grid size-9 shrink-0 cursor-grab place-items-center rounded-md text-zinc-400 hover:text-zinc-600 active:cursor-grabbing"
-          draggable={Boolean(drag)}
-          onDragEnd={drag?.onDragEnd}
-          onDragStart={drag?.onDragStart}
-          title="Drag to move this condition"
-        >
-          <ConditionIcon kind={condition.kind} size={16} />
-        </span>
+      </span>
+      <span className="flex min-w-0 items-start gap-1.5">
+        <DragHandle
+          className="mt-2 max-md:hidden"
+          drag={drag}
+          summary={summary}
+        />
         <ConditionInlineEditor
+          className={cn(
+            "min-w-0 flex-1",
+            complete ? "border-zinc-200" : "border-amber-300",
+          )}
           condition={condition}
+          layout="stacked"
           onChange={actions.onChange}
           onKindChange={actions.onKindChange}
         />
-        <RemoveButton
-          label={`Remove condition: ${summary}`}
-          onClick={actions.onRemove}
-        />
+        <span className="mt-2 flex max-md:hidden">
+          <RemoveButton
+            label={`Remove condition: ${summary}`}
+            onClick={actions.onRemove}
+            variant="muted"
+          />
+        </span>
       </span>
     </span>
   );

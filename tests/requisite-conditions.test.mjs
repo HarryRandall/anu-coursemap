@@ -366,6 +366,34 @@ test("moves a condition under another group and refuses cycles", () => {
   assert.deepEqual(moveInTree(moved, "root", "inner"), moved);
 });
 
+test("moving the last condition out removes its empty group", () => {
+  const condition = {
+    ...createConditionNode("course"),
+    courseCode: "COMP1600",
+  };
+  const root = {
+    type: "group",
+    id: "root",
+    operator: "all_of",
+    minimumCount: null,
+    children: [
+      {
+        type: "group",
+        id: "inner",
+        operator: "any_of",
+        minimumCount: null,
+        children: [condition],
+      },
+    ],
+  };
+
+  const moved = moveInTree(root, condition.id, "root", 1);
+  assert.deepEqual(
+    moved.children.map((child) => child.id),
+    [condition.id],
+  );
+});
+
 test("nested groups read as a sentence instead of a join chip", () => {
   assert.equal(
     groupSentence({ operator: "all_of", minimumCount: null }),
