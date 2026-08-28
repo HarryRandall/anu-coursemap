@@ -3827,28 +3827,6 @@
       "details": []
     },
     {
-      "id": "2797f57e-3311-5c96-8486-46c0534099ac",
-      "layerId": "10000000-0000-4000-8000-000000000001",
-      "slug": "osm-way-673823968",
-      "name": "La Baguette",
-      "markerLabel": "LB",
-      "address": "ANU Acton campus",
-      "coordinates": [149.1221717, -35.2814044],
-      "officialUrl": "https://www.openstreetmap.org/way/673823968",
-      "dataStatus": "mapped",
-      "mapDisplayKind": "building",
-      "isRoutable": true,
-      "sortOrder": 1320,
-      "searchTerms": ["La Baguette", "ANU Acton campus", "way/673823968", "no"],
-      "sourceProvider": "openstreetmap",
-      "sourceIdentifier": "way/673823968",
-      "sourceUrl": "https://www.openstreetmap.org/way/673823968",
-      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceVersion": 4,
-      "sourceUpdatedAt": "2026-03-15T22:46:49Z",
-      "details": []
-    },
-    {
       "id": "91599d10-2b92-58f6-afd7-3ee7dca47384",
       "layerId": "10000000-0000-4000-8000-000000000001",
       "slug": "osm-relation-2209434",
@@ -3860,7 +3838,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1330,
+      "sortOrder": 1320,
       "searchTerms": [
         "Lema Karmel Lodge - X004",
         "26 Barry Drive",
@@ -3887,7 +3865,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1340,
+      "sortOrder": 1330,
       "searchTerms": [
         "Leonard Huxley Building - 56",
         "ANU Acton campus",
@@ -3914,7 +3892,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1350,
+      "sortOrder": 1340,
       "searchTerms": [
         "Licensed Grocer on Balmain - 64B",
         "ANU Acton campus",
@@ -3941,7 +3919,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1360,
+      "sortOrder": 1350,
       "searchTerms": [
         "LInk Building - 58D",
         "ANU Acton campus",
@@ -3968,7 +3946,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1370,
+      "sortOrder": 1360,
       "searchTerms": [
         "Linnaeus Building",
         "ANU Acton campus",
@@ -3995,7 +3973,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1380,
+      "sortOrder": 1370,
       "searchTerms": [
         "Marie Reay Teaching Centre",
         "ANU Acton campus",
@@ -4047,7 +4025,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1390,
+      "sortOrder": 1380,
       "searchTerms": [
         "Melville Hall",
         "ANU Acton campus",
@@ -4074,7 +4052,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1400,
+      "sortOrder": 1390,
       "searchTerms": [
         "National Computational Infrastructure - 143",
         "ANU Acton campus",
@@ -4101,7 +4079,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1410,
+      "sortOrder": 1400,
       "searchTerms": [
         "NCEPH - 65",
         "ANU Acton campus",
@@ -4128,7 +4106,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1420,
+      "sortOrder": 1410,
       "searchTerms": [
         "Nuclear Physics Building",
         "ANU Acton campus",
@@ -4155,7 +4133,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1430,
+      "sortOrder": 1420,
       "searchTerms": [
         "OHB-A",
         "ANU Acton campus",
@@ -4182,7 +4160,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1440,
+      "sortOrder": 1430,
       "searchTerms": [
         "Old Canberra House",
         "ANU Acton campus",
@@ -4209,7 +4187,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1450,
+      "sortOrder": 1440,
       "searchTerms": [
         "Oliphant Building - 60",
         "ANU Acton campus",
@@ -4236,7 +4214,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1460,
+      "sortOrder": 1450,
       "searchTerms": [
         "P.AP. Moran Building - 26B",
         "ANU Acton campus",
@@ -4263,7 +4241,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1470,
+      "sortOrder": 1460,
       "searchTerms": [
         "Peter Baume Building",
         "138",
@@ -4290,7 +4268,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1480,
+      "sortOrder": 1470,
       "searchTerms": [
         "Peter Karmel Building",
         "ANU Acton campus",
@@ -4317,7 +4295,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1490,
+      "sortOrder": 1480,
       "searchTerms": [
         "Physics Building - 38",
         "ANU Acton campus",
@@ -4344,7 +4322,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1500,
+      "sortOrder": 1490,
       "searchTerms": [
         "Physics Link Building",
         "38A Science Road",
@@ -4371,7 +4349,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1510,
+      "sortOrder": 1500,
       "searchTerms": [
         "Psychology - 39",
         "ANU Acton campus",
@@ -4398,7 +4376,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1520,
+      "sortOrder": 1510,
       "searchTerms": [
         "R.G. Menzies Library",
         "ANU Acton campus",
@@ -4425,7 +4403,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1530,
+      "sortOrder": 1520,
       "searchTerms": [
         "Research School of Chemistry",
         "ANU Acton campus",
@@ -4452,7 +4430,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1540,
+      "sortOrder": 1530,
       "searchTerms": [
         "Research School of Chemistry",
         "ANU Acton campus",
@@ -4479,7 +4457,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1550,
+      "sortOrder": 1540,
       "searchTerms": [
         "Research School of Physics",
         "160 Mills Road",
@@ -4506,7 +4484,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1560,
+      "sortOrder": 1550,
       "searchTerms": [
         "Research School of Populaton Health",
         "ANU Acton campus",
@@ -4533,7 +4511,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1570,
+      "sortOrder": 1560,
       "searchTerms": [
         "Research School of Social Sciences",
         "ANU Acton campus",
@@ -4560,7 +4538,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1580,
+      "sortOrder": 1570,
       "searchTerms": [
         "RN Robertson Building",
         "ANU Acton campus",
@@ -4587,7 +4565,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1590,
+      "sortOrder": 1580,
       "searchTerms": [
         "Robertson Banksia Greenhouse",
         "ANU Acton campus",
@@ -4614,7 +4592,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1600,
+      "sortOrder": 1590,
       "searchTerms": [
         "Robertson Controlled Environment Facility",
         "ANU Acton campus",
@@ -4641,7 +4619,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1610,
+      "sortOrder": 1600,
       "searchTerms": [
         "Robertson Correa Greenhouse",
         "ANU Acton campus",
@@ -4668,7 +4646,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1620,
+      "sortOrder": 1610,
       "searchTerms": [
         "Robertson Darwinia Greenhouse",
         "ANU Acton campus",
@@ -4695,7 +4673,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1630,
+      "sortOrder": 1620,
       "searchTerms": [
         "Robertson Eucalyptus Greenhouse",
         "ANU Acton campus",
@@ -4722,7 +4700,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1640,
+      "sortOrder": 1630,
       "searchTerms": [
         "Robertson Waste Handling Shed",
         "ANU Acton campus",
@@ -4749,7 +4727,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1650,
+      "sortOrder": 1640,
       "searchTerms": [
         "Scholars House - 3L",
         "ANU Acton campus",
@@ -4776,7 +4754,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1660,
+      "sortOrder": 1650,
       "searchTerms": [
         "School of Art",
         "ANU Acton campus",
@@ -4803,7 +4781,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1670,
+      "sortOrder": 1660,
       "searchTerms": [
         "School of Art",
         "ANU Acton campus",
@@ -4830,7 +4808,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1680,
+      "sortOrder": 1670,
       "searchTerms": [
         "Science Central Building",
         "ANU Acton campus",
@@ -4857,7 +4835,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1690,
+      "sortOrder": 1680,
       "searchTerms": [
         "Science Teaching Building",
         "ANU Acton campus",
@@ -4884,7 +4862,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1700,
+      "sortOrder": 1690,
       "searchTerms": [
         "Sir Roland Wilson Building",
         "ANU Acton campus",
@@ -4911,7 +4889,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1710,
+      "sortOrder": 1700,
       "searchTerms": [
         "Skaidrite Darius Building - 108",
         "108",
@@ -4938,7 +4916,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1720,
+      "sortOrder": 1710,
       "searchTerms": [
         "South Pavilion - 88",
         "ANU Acton campus",
@@ -4965,7 +4943,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1730,
+      "sortOrder": 1720,
       "searchTerms": [
         "Sport and Recreation Centre - 18",
         "ANU Acton campus",
@@ -4992,7 +4970,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1740,
+      "sortOrder": 1730,
       "searchTerms": [
         "Sports Centre and Pool",
         "ANU Acton campus",
@@ -5019,7 +4997,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1750,
+      "sortOrder": 1740,
       "searchTerms": [
         "Sports Union Extension - 19",
         "ANU Acton campus",
@@ -5046,7 +5024,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1760,
+      "sortOrder": 1750,
       "searchTerms": [
         "Sports Union Extension - 19a",
         "ANU Acton campus",
@@ -5073,7 +5051,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1770,
+      "sortOrder": 1760,
       "searchTerms": [
         "SRES Geography Building",
         "ANU Acton campus",
@@ -5100,7 +5078,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1780,
+      "sortOrder": 1770,
       "searchTerms": [
         "Di Riddell Building",
         "ANU Acton campus",
@@ -5146,7 +5124,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1790,
+      "sortOrder": 1780,
       "searchTerms": [
         "The Lotus Hall - 188A",
         "ANU Acton campus",
@@ -5173,7 +5151,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1800,
+      "sortOrder": 1790,
       "searchTerms": [
         "The Street Theatere",
         "15 Childers Street",
@@ -5200,7 +5178,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1810,
+      "sortOrder": 1800,
       "searchTerms": [
         "The Street Theatere",
         "ANU Acton campus",
@@ -5227,7 +5205,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1820,
+      "sortOrder": 1810,
       "searchTerms": [
         "Theatre 3",
         "3 Repertory Lane",
@@ -5254,7 +5232,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1830,
+      "sortOrder": 1820,
       "searchTerms": [
         "Toad Hall",
         "ANU Acton campus",
@@ -5281,7 +5259,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1840,
+      "sortOrder": 1830,
       "searchTerms": [
         "UniLodge - Davey Lodge",
         "25 25",
@@ -5308,7 +5286,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1850,
+      "sortOrder": 1840,
       "searchTerms": [
         "UniLodge - Kinloch Lodge - X002",
         "35 Childers Street",
@@ -5335,7 +5313,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1860,
+      "sortOrder": 1850,
       "searchTerms": [
         "UniLodge Warrumbul Lodge - X003",
         "ANU Acton campus",
@@ -5362,7 +5340,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1870,
+      "sortOrder": 1860,
       "searchTerms": [
         "University Health Service and Counselling Centre",
         "ANU Acton campus",
@@ -5389,7 +5367,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1880,
+      "sortOrder": 1870,
       "searchTerms": [
         "University House",
         "ANU Acton campus",
@@ -5416,7 +5394,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1890,
+      "sortOrder": 1880,
       "searchTerms": [
         "University Purchadsing and Contracts - 53",
         "ANU Acton campus",
@@ -5443,7 +5421,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1900,
+      "sortOrder": 1890,
       "searchTerms": [
         "Unnamed ANU building (way 1077280718)",
         "ANU Acton campus",
@@ -5470,7 +5448,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1910,
+      "sortOrder": 1900,
       "searchTerms": [
         "Unnamed ANU building (way 1091159376)",
         "ANU Acton campus",
@@ -5497,7 +5475,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1920,
+      "sortOrder": 1910,
       "searchTerms": [
         "Unnamed ANU building (way 1095441556)",
         "ANU Acton campus",
@@ -5524,7 +5502,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1930,
+      "sortOrder": 1920,
       "searchTerms": [
         "Unnamed ANU building (way 116933587)",
         "ANU Acton campus",
@@ -5551,7 +5529,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1940,
+      "sortOrder": 1930,
       "searchTerms": [
         "Unnamed ANU building (way 116933588)",
         "ANU Acton campus",
@@ -5578,7 +5556,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1950,
+      "sortOrder": 1940,
       "searchTerms": [
         "Unnamed ANU building (way 116933589)",
         "ANU Acton campus",
@@ -5605,7 +5583,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1960,
+      "sortOrder": 1950,
       "searchTerms": [
         "Unnamed ANU building (way 1191540640)",
         "ANU Acton campus",
@@ -5632,7 +5610,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1970,
+      "sortOrder": 1960,
       "searchTerms": [
         "Unnamed ANU building (way 1250096126)",
         "ANU Acton campus",
@@ -5659,7 +5637,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1980,
+      "sortOrder": 1970,
       "searchTerms": [
         "Unnamed ANU building (way 1250096845)",
         "ANU Acton campus",
@@ -5686,7 +5664,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 1990,
+      "sortOrder": 1980,
       "searchTerms": [
         "Unnamed ANU building (way 1271150003)",
         "ANU Acton campus",
@@ -5713,7 +5691,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2000,
+      "sortOrder": 1990,
       "searchTerms": [
         "Unnamed ANU building (way 1271150004)",
         "ANU Acton campus",
@@ -5740,7 +5718,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2010,
+      "sortOrder": 2000,
       "searchTerms": [
         "Unnamed ANU building (way 1374936026)",
         "ANU Acton campus",
@@ -5767,7 +5745,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2020,
+      "sortOrder": 2010,
       "searchTerms": [
         "Unnamed ANU building (way 1374936030)",
         "ANU Acton campus",
@@ -5794,7 +5772,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2030,
+      "sortOrder": 2020,
       "searchTerms": [
         "Unnamed ANU building (way 1387886710)",
         "ANU Acton campus",
@@ -5821,7 +5799,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2040,
+      "sortOrder": 2030,
       "searchTerms": [
         "Unnamed ANU building (way 144533071)",
         "ANU Acton campus",
@@ -5848,7 +5826,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2050,
+      "sortOrder": 2040,
       "searchTerms": [
         "Unnamed ANU building (way 1509386306)",
         "ANU Acton campus",
@@ -5875,7 +5853,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2060,
+      "sortOrder": 2050,
       "searchTerms": [
         "Unnamed ANU building (way 1509386307)",
         "ANU Acton campus",
@@ -5902,7 +5880,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2070,
+      "sortOrder": 2060,
       "searchTerms": [
         "Unnamed ANU building (way 1509391114)",
         "ANU Acton campus",
@@ -5929,7 +5907,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2080,
+      "sortOrder": 2070,
       "searchTerms": [
         "Unnamed ANU building (way 1509391115)",
         "ANU Acton campus",
@@ -5956,7 +5934,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2090,
+      "sortOrder": 2080,
       "searchTerms": [
         "Unnamed ANU building (way 1524246198)",
         "ANU Acton campus",
@@ -5983,7 +5961,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2100,
+      "sortOrder": 2090,
       "searchTerms": [
         "Unnamed ANU building (way 1535476895)",
         "ANU Acton campus",
@@ -6010,7 +5988,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2110,
+      "sortOrder": 2100,
       "searchTerms": [
         "Unnamed ANU building (way 159645003)",
         "ANU Acton campus",
@@ -6037,7 +6015,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2120,
+      "sortOrder": 2110,
       "searchTerms": [
         "Unnamed ANU building (way 159645013)",
         "ANU Acton campus",
@@ -6064,7 +6042,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2130,
+      "sortOrder": 2120,
       "searchTerms": [
         "Unnamed ANU building (way 159645018)",
         "ANU Acton campus",
@@ -6091,7 +6069,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2140,
+      "sortOrder": 2130,
       "searchTerms": [
         "Unnamed ANU building (way 159645022)",
         "ANU Acton campus",
@@ -6118,7 +6096,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2150,
+      "sortOrder": 2140,
       "searchTerms": [
         "Unnamed ANU building (way 165915346)",
         "ANU Acton campus",
@@ -6145,7 +6123,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2160,
+      "sortOrder": 2150,
       "searchTerms": [
         "Unnamed ANU building (way 165915347)",
         "ANU Acton campus",
@@ -6172,7 +6150,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2170,
+      "sortOrder": 2160,
       "searchTerms": [
         "Unnamed ANU building (way 165916138)",
         "ANU Acton campus",
@@ -6199,7 +6177,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2180,
+      "sortOrder": 2170,
       "searchTerms": [
         "Unnamed ANU building (way 165916140)",
         "ANU Acton campus",
@@ -6226,7 +6204,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2190,
+      "sortOrder": 2180,
       "searchTerms": [
         "Unnamed ANU building (way 256154253)",
         "ANU Acton campus",
@@ -6253,7 +6231,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2200,
+      "sortOrder": 2190,
       "searchTerms": [
         "Unnamed ANU building (way 263915857)",
         "ANU Acton campus",
@@ -6280,7 +6258,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2210,
+      "sortOrder": 2200,
       "searchTerms": [
         "Unnamed ANU building (way 337167427)",
         "ANU Acton campus",
@@ -6307,7 +6285,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2220,
+      "sortOrder": 2210,
       "searchTerms": [
         "Unnamed ANU building (way 337167429)",
         "ANU Acton campus",
@@ -6334,7 +6312,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2230,
+      "sortOrder": 2220,
       "searchTerms": [
         "Unnamed ANU building (way 41655760)",
         "ANU Acton campus",
@@ -6361,7 +6339,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2240,
+      "sortOrder": 2230,
       "searchTerms": [
         "Unnamed ANU building (way 50632653)",
         "ANU Acton campus",
@@ -6388,7 +6366,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2250,
+      "sortOrder": 2240,
       "searchTerms": [
         "Unnamed ANU building (way 50632732)",
         "ANU Acton campus",
@@ -6415,7 +6393,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2260,
+      "sortOrder": 2250,
       "searchTerms": [
         "Unnamed ANU building (way 52333817)",
         "ANU Acton campus",
@@ -6442,7 +6420,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2270,
+      "sortOrder": 2260,
       "searchTerms": [
         "Unnamed ANU building (way 52334415)",
         "ANU Acton campus",
@@ -6469,7 +6447,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2280,
+      "sortOrder": 2270,
       "searchTerms": [
         "Unnamed ANU building (way 543211554)",
         "ANU Acton campus",
@@ -6496,7 +6474,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2290,
+      "sortOrder": 2280,
       "searchTerms": [
         "Unnamed ANU building (way 545138554)",
         "ANU Acton campus",
@@ -6523,7 +6501,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2300,
+      "sortOrder": 2290,
       "searchTerms": [
         "Unnamed ANU building (way 545142141)",
         "ANU Acton campus",
@@ -6550,7 +6528,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2310,
+      "sortOrder": 2300,
       "searchTerms": [
         "Unnamed ANU building (way 652872863)",
         "ANU Acton campus",
@@ -6577,7 +6555,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2320,
+      "sortOrder": 2310,
       "searchTerms": [
         "Unnamed ANU building (way 652872864)",
         "ANU Acton campus",
@@ -6604,7 +6582,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2330,
+      "sortOrder": 2320,
       "searchTerms": [
         "Unnamed ANU building (way 652872865)",
         "ANU Acton campus",
@@ -6631,7 +6609,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2340,
+      "sortOrder": 2330,
       "searchTerms": [
         "Unnamed ANU building (way 652872866)",
         "ANU Acton campus",
@@ -6658,7 +6636,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2350,
+      "sortOrder": 2340,
       "searchTerms": [
         "Unnamed ANU building (way 653028837)",
         "ANU Acton campus",
@@ -6685,7 +6663,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2360,
+      "sortOrder": 2350,
       "searchTerms": [
         "Unnamed ANU building (way 653028841)",
         "ANU Acton campus",
@@ -6712,7 +6690,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2370,
+      "sortOrder": 2360,
       "searchTerms": [
         "Unnamed ANU building (way 653131061)",
         "ANU Acton campus",
@@ -6739,7 +6717,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2380,
+      "sortOrder": 2370,
       "searchTerms": [
         "Unnamed ANU building (way 653347910)",
         "ANU Acton campus",
@@ -6766,7 +6744,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2390,
+      "sortOrder": 2380,
       "searchTerms": [
         "Unnamed ANU building (way 653347911)",
         "ANU Acton campus",
@@ -6793,7 +6771,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2400,
+      "sortOrder": 2390,
       "searchTerms": [
         "Unnamed ANU building (way 653347912)",
         "ANU Acton campus",
@@ -6820,7 +6798,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2410,
+      "sortOrder": 2400,
       "searchTerms": [
         "Unnamed ANU building (way 653347913)",
         "ANU Acton campus",
@@ -6847,7 +6825,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2420,
+      "sortOrder": 2410,
       "searchTerms": [
         "Unnamed ANU building (way 653347914)",
         "ANU Acton campus",
@@ -6874,7 +6852,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2430,
+      "sortOrder": 2420,
       "searchTerms": [
         "Unnamed ANU building (way 653347916)",
         "ANU Acton campus",
@@ -6901,7 +6879,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2440,
+      "sortOrder": 2430,
       "searchTerms": [
         "Unnamed ANU building (way 653347918)",
         "ANU Acton campus",
@@ -6928,7 +6906,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2450,
+      "sortOrder": 2440,
       "searchTerms": [
         "Unnamed ANU building (way 653347920)",
         "ANU Acton campus",
@@ -6955,7 +6933,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2460,
+      "sortOrder": 2450,
       "searchTerms": [
         "Unnamed ANU building (way 653347922)",
         "ANU Acton campus",
@@ -6982,7 +6960,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2470,
+      "sortOrder": 2460,
       "searchTerms": [
         "Unnamed ANU building (way 653347924)",
         "ANU Acton campus",
@@ -7009,7 +6987,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2480,
+      "sortOrder": 2470,
       "searchTerms": [
         "Unnamed ANU building (way 653347926)",
         "ANU Acton campus",
@@ -7036,7 +7014,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2490,
+      "sortOrder": 2480,
       "searchTerms": [
         "Unnamed ANU building (way 653347927)",
         "ANU Acton campus",
@@ -7063,7 +7041,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2500,
+      "sortOrder": 2490,
       "searchTerms": [
         "Unnamed ANU building (way 653347929)",
         "ANU Acton campus",
@@ -7090,7 +7068,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2510,
+      "sortOrder": 2500,
       "searchTerms": [
         "Unnamed ANU building (way 653347930)",
         "ANU Acton campus",
@@ -7117,7 +7095,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2520,
+      "sortOrder": 2510,
       "searchTerms": [
         "Unnamed ANU building (way 653347932)",
         "ANU Acton campus",
@@ -7144,7 +7122,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2530,
+      "sortOrder": 2520,
       "searchTerms": [
         "Unnamed ANU building (way 653347934)",
         "ANU Acton campus",
@@ -7171,7 +7149,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2540,
+      "sortOrder": 2530,
       "searchTerms": [
         "Unnamed ANU building (way 653347935)",
         "ANU Acton campus",
@@ -7198,7 +7176,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2550,
+      "sortOrder": 2540,
       "searchTerms": [
         "Unnamed ANU building (way 653347937)",
         "ANU Acton campus",
@@ -7225,7 +7203,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2560,
+      "sortOrder": 2550,
       "searchTerms": [
         "Unnamed ANU building (way 653347938)",
         "ANU Acton campus",
@@ -7252,7 +7230,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2570,
+      "sortOrder": 2560,
       "searchTerms": [
         "Unnamed ANU building (way 653347939)",
         "ANU Acton campus",
@@ -7279,7 +7257,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2580,
+      "sortOrder": 2570,
       "searchTerms": [
         "Unnamed ANU building (way 673823960)",
         "ANU Acton campus",
@@ -7306,7 +7284,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2590,
+      "sortOrder": 2580,
       "searchTerms": [
         "Unnamed ANU building (way 673823961)",
         "ANU Acton campus",
@@ -7333,7 +7311,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2600,
+      "sortOrder": 2590,
       "searchTerms": [
         "Unnamed ANU building (way 673823979)",
         "ANU Acton campus",
@@ -7360,7 +7338,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2610,
+      "sortOrder": 2600,
       "searchTerms": [
         "Unnamed ANU building (way 674574896)",
         "152 University Avenue",
@@ -7387,7 +7365,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2620,
+      "sortOrder": 2610,
       "searchTerms": [
         "Unnamed ANU building (way 683878854)",
         "ANU Acton campus",
@@ -7414,7 +7392,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2630,
+      "sortOrder": 2620,
       "searchTerms": [
         "Unnamed ANU building (way 683878856)",
         "ANU Acton campus",
@@ -7441,7 +7419,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2640,
+      "sortOrder": 2630,
       "searchTerms": [
         "Unnamed ANU building (way 687265477)",
         "ANU Acton campus",
@@ -7468,7 +7446,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2650,
+      "sortOrder": 2640,
       "searchTerms": [
         "Unnamed ANU building (way 701039850)",
         "ANU Acton campus",
@@ -7495,7 +7473,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2660,
+      "sortOrder": 2650,
       "searchTerms": [
         "Unnamed ANU building (way 879585726)",
         "ANU Acton campus",
@@ -7522,7 +7500,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2670,
+      "sortOrder": 2660,
       "searchTerms": [
         "Unnamed ANU building (way 879585727)",
         "ANU Acton campus",
@@ -7549,7 +7527,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2680,
+      "sortOrder": 2670,
       "searchTerms": [
         "Unnamed ANU building (way 897744724)",
         "ANU Acton campus",
@@ -7576,7 +7554,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2690,
+      "sortOrder": 2680,
       "searchTerms": [
         "Unnamed ANU building (way 897744725)",
         "ANU Acton campus",
@@ -7603,7 +7581,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2700,
+      "sortOrder": 2690,
       "searchTerms": [
         "Ursula Hall",
         "ANU Acton campus",
@@ -7630,7 +7608,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2710,
+      "sortOrder": 2700,
       "searchTerms": [
         "Ursula Hall Laurus Wing",
         "ANU Acton campus",
@@ -7657,7 +7635,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2720,
+      "sortOrder": 2710,
       "searchTerms": [
         "Vice-Chancellor's Residence - 80",
         "ANU Acton campus",
@@ -7684,7 +7662,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2730,
+      "sortOrder": 2720,
       "searchTerms": [
         "W.E.H. Stanner Building",
         "ANU Acton campus",
@@ -7711,7 +7689,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2740,
+      "sortOrder": 2730,
       "searchTerms": [
         "W.E.H. Stanner Building",
         "ANU Acton campus",
@@ -7738,7 +7716,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2750,
+      "sortOrder": 2740,
       "searchTerms": [
         "Wamburun Hall",
         "150 Dickson Road",
@@ -7765,7 +7743,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2760,
+      "sortOrder": 2750,
       "searchTerms": [
         "Wes Whitten Building - 133",
         "ANU Acton campus",
@@ -7792,7 +7770,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2770,
+      "sortOrder": 2760,
       "searchTerms": [
         "Winston Churchill Memorial Trust - 93",
         "30 Balmain Crescent",
@@ -7819,7 +7797,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2780,
+      "sortOrder": 2770,
       "searchTerms": [
         "Wright Hall",
         "163 Daley Road",
@@ -7846,7 +7824,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2790,
+      "sortOrder": 2780,
       "searchTerms": [
         "Yukeembruk Building - 166",
         "166 Daley Road",
@@ -7873,7 +7851,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2800,
+      "sortOrder": 2790,
       "searchTerms": [
         "Yukeembruk Building 164",
         "164 Daley Road",
@@ -7900,7 +7878,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2810,
+      "sortOrder": 2800,
       "searchTerms": [
         "Yukeembruk Building 165",
         "165 Daley Road",
@@ -7927,7 +7905,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2820,
+      "sortOrder": 2810,
       "searchTerms": [
         "Yukeembruk Building 168",
         "168 Daley Road",
@@ -7954,7 +7932,7 @@
       "dataStatus": "mapped",
       "mapDisplayKind": "building",
       "isRoutable": true,
-      "sortOrder": 2830,
+      "sortOrder": 2820,
       "searchTerms": [
         "Yukeembruk Village Hall",
         "167 Daley Road",
@@ -13581,38 +13559,6 @@
       "sortOrder": 1310
     },
     {
-      "id": "2e0f101e-f338-52f8-8ad0-ba8b78a8f677",
-      "campusId": "00000000-0000-4000-8000-000000000001",
-      "layerId": "10000000-0000-4000-8000-000000000001",
-      "placeId": "2797f57e-3311-5c96-8486-46c0534099ac",
-      "slug": "osm-way-673823968",
-      "name": "La Baguette",
-      "featureKind": "building",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [149.1221717, -35.2814044],
-            [149.1220969, -35.2813636],
-            [149.1220205, -35.2814569],
-            [149.1219877, -35.281497],
-            [149.121869, -35.2814323],
-            [149.121825, -35.2814861],
-            [149.1220185, -35.2815916],
-            [149.1220976, -35.2814949],
-            [149.1221717, -35.2814044]
-          ]
-        ]
-      },
-      "sourceIdentifier": "way/673823968",
-      "sourceUrl": "https://www.openstreetmap.org/way/673823968",
-      "sourceLicense": "OpenStreetMap contributors, ODbL 1.0",
-      "sourceProperties": { "building": "no", "name": "La Baguette" },
-      "heightMetres": 5,
-      "minimumHeightMetres": 0,
-      "sortOrder": 1320
-    },
-    {
       "id": "f74b0e86-f2b5-595d-a3b1-3da018b2b334",
       "campusId": "00000000-0000-4000-8000-000000000001",
       "layerId": "10000000-0000-4000-8000-000000000001",
@@ -13668,7 +13614,7 @@
       },
       "heightMetres": 18.3,
       "minimumHeightMetres": 0,
-      "sortOrder": 1330
+      "sortOrder": 1320
     },
     {
       "id": "f00e47bf-98f2-55ea-adf8-3441afdede45",
@@ -13711,7 +13657,7 @@
       },
       "heightMetres": 14.64,
       "minimumHeightMetres": 0,
-      "sortOrder": 1340
+      "sortOrder": 1330
     },
     {
       "id": "b5404ee3-fe5b-5518-ac23-545a69860796",
@@ -13747,7 +13693,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 1350
+      "sortOrder": 1340
     },
     {
       "id": "e0763d73-44a0-5ca3-976a-6d24a20b6b4a",
@@ -13781,7 +13727,7 @@
       "sourceProperties": { "building": "yes", "name": "LInk Building - 58D" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1360
+      "sortOrder": 1350
     },
     {
       "id": "efc8d414-bd69-586b-877a-5381fad30fc1",
@@ -13830,7 +13776,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1370
+      "sortOrder": 1360
     },
     {
       "id": "40000000-0000-4000-8000-000000000001",
@@ -13864,7 +13810,7 @@
       },
       "heightMetres": 18.3,
       "minimumHeightMetres": 0,
-      "sortOrder": 1380
+      "sortOrder": 1370
     },
     {
       "id": "ec1ab114-6fbc-5497-ad2a-08e402241f21",
@@ -13898,7 +13844,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1390
+      "sortOrder": 1380
     },
     {
       "id": "f599afb3-ccdb-542d-b7f1-357a1067280d",
@@ -13936,7 +13882,7 @@
       },
       "heightMetres": 14.64,
       "minimumHeightMetres": 0,
-      "sortOrder": 1400
+      "sortOrder": 1390
     },
     {
       "id": "f27b5b33-d22f-5a4b-a8be-adc1682f89a3",
@@ -13980,7 +13926,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 1410
+      "sortOrder": 1400
     },
     {
       "id": "262616a4-67df-5340-ae23-7a66f71e103d",
@@ -14016,7 +13962,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1420
+      "sortOrder": 1410
     },
     {
       "id": "df919396-b775-51c9-be10-2c4d3578eae2",
@@ -14060,7 +14006,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 1430
+      "sortOrder": 1420
     },
     {
       "id": "2d6eac81-a9cf-5389-a1b0-f30f9990e0b6",
@@ -14114,7 +14060,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1440
+      "sortOrder": 1430
     },
     {
       "id": "73d8053e-840e-554c-a30c-f5faa956985b",
@@ -14147,7 +14093,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1450
+      "sortOrder": 1440
     },
     {
       "id": "a8dd0172-44db-5f85-9faa-c6b76c220847",
@@ -14192,7 +14138,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1460
+      "sortOrder": 1450
     },
     {
       "id": "7e5b00a7-511a-5807-bce1-3ce4c650f922",
@@ -14245,7 +14191,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1470
+      "sortOrder": 1460
     },
     {
       "id": "ec2851b7-59a7-5633-87c8-139abaf65351",
@@ -14307,7 +14253,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1480
+      "sortOrder": 1470
     },
     {
       "id": "0f6b7f99-2cbc-5436-9d5c-c2a012fda725",
@@ -14360,7 +14306,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1490
+      "sortOrder": 1480
     },
     {
       "id": "016af20b-648e-50bc-82c0-fd5df12d306b",
@@ -14399,7 +14345,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1500
+      "sortOrder": 1490
     },
     {
       "id": "3dc05fd5-6a93-5fda-b54b-7bc362858529",
@@ -14438,7 +14384,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1510
+      "sortOrder": 1500
     },
     {
       "id": "9453099b-c35b-5dac-9cc1-7f88834a74c2",
@@ -14475,7 +14421,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 1520
+      "sortOrder": 1510
     },
     {
       "id": "cf03ab83-3f85-5d37-8819-7aec89d98e69",
@@ -14532,7 +14478,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1530
+      "sortOrder": 1520
     },
     {
       "id": "88f9b1a8-aea9-5da4-8e2a-d5d4ec9ab14e",
@@ -14585,7 +14531,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1540
+      "sortOrder": 1530
     },
     {
       "id": "a8f5591a-1a2d-5e8a-b6f2-a3468bdd11f2",
@@ -14632,7 +14578,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1550
+      "sortOrder": 1540
     },
     {
       "id": "1dc6a237-fcba-590f-9e29-b0f907221613",
@@ -14702,7 +14648,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 1560
+      "sortOrder": 1550
     },
     {
       "id": "bbea2b59-39cd-5a24-a041-0e1a0ca92d67",
@@ -14741,7 +14687,7 @@
       },
       "heightMetres": 21.96,
       "minimumHeightMetres": 0,
-      "sortOrder": 1570
+      "sortOrder": 1560
     },
     {
       "id": "58fea908-f4f1-5229-9a6c-f7de83259258",
@@ -14802,7 +14748,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1580
+      "sortOrder": 1570
     },
     {
       "id": "cef86ce2-d05a-5c58-8bb2-4efd80a331ae",
@@ -14835,7 +14781,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1590
+      "sortOrder": 1580
     },
     {
       "id": "5a4c83e4-055e-50ba-b084-7da193e116af",
@@ -14866,7 +14812,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1600
+      "sortOrder": 1590
     },
     {
       "id": "f57e930e-0dcb-5bf9-b398-fc49100f97fc",
@@ -14897,7 +14843,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1610
+      "sortOrder": 1600
     },
     {
       "id": "b0a3292b-701b-5fa8-9fa7-804a26057ef1",
@@ -14928,7 +14874,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1620
+      "sortOrder": 1610
     },
     {
       "id": "7d043bb2-ec37-5df2-8b56-c01bac624e23",
@@ -14959,7 +14905,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1630
+      "sortOrder": 1620
     },
     {
       "id": "0267090f-1fd7-5667-98f9-af90bf4392a6",
@@ -14990,7 +14936,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1640
+      "sortOrder": 1630
     },
     {
       "id": "54909daa-0175-5763-a349-3d4dc5842835",
@@ -15026,7 +14972,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 1650
+      "sortOrder": 1640
     },
     {
       "id": "5deeec73-5a58-5ac4-8b92-824c0b68c72b",
@@ -15102,7 +15048,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1660
+      "sortOrder": 1650
     },
     {
       "id": "9995e446-a007-58f7-a079-60d4ac8d490d",
@@ -15179,7 +15125,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1670
+      "sortOrder": 1660
     },
     {
       "id": "2346ed2c-13c4-536a-a0a0-522decfec8ca",
@@ -15218,7 +15164,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1680
+      "sortOrder": 1670
     },
     {
       "id": "a87ee52a-c1db-5f99-b163-f0c1d4c9bdc0",
@@ -15256,7 +15202,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1690
+      "sortOrder": 1680
     },
     {
       "id": "4301e26f-b128-5629-968c-aa445b7e2496",
@@ -15326,7 +15272,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1700
+      "sortOrder": 1690
     },
     {
       "id": "d288c2a8-cdcc-556d-8846-9276ba44972f",
@@ -15397,7 +15343,7 @@
       },
       "heightMetres": 15,
       "minimumHeightMetres": 0,
-      "sortOrder": 1710
+      "sortOrder": 1700
     },
     {
       "id": "7497bd55-29b3-5c4c-8e52-f36c24f46f4f",
@@ -15429,7 +15375,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 1720
+      "sortOrder": 1710
     },
     {
       "id": "30938ce7-507c-52c2-b0a1-aff09070e039",
@@ -15486,7 +15432,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1730
+      "sortOrder": 1720
     },
     {
       "id": "0227b61c-14a9-513f-8f19-835fa5376cc0",
@@ -15519,7 +15465,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1740
+      "sortOrder": 1730
     },
     {
       "id": "4216a0b7-3b7a-50e4-999c-74b6dcb71642",
@@ -15557,7 +15503,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1750
+      "sortOrder": 1740
     },
     {
       "id": "4e839e6e-efad-533f-8140-3898e859d6e3",
@@ -15595,7 +15541,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1760
+      "sortOrder": 1750
     },
     {
       "id": "6bd96c7b-1294-55dc-9faf-11dc9be593e1",
@@ -15633,7 +15579,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1770
+      "sortOrder": 1760
     },
     {
       "id": "6cb13bab-1e43-574f-a75e-b188b6881925",
@@ -15668,7 +15614,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1780
+      "sortOrder": 1770
     },
     {
       "id": "6d111fc3-31cb-52ff-a68c-f7f39628b231",
@@ -15703,7 +15649,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1790
+      "sortOrder": 1780
     },
     {
       "id": "163e1bc9-3eba-588f-be73-dcd67723908f",
@@ -15744,7 +15690,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1800
+      "sortOrder": 1790
     },
     {
       "id": "80e3db5e-3087-5d4c-8d8f-7d77ec88d7dd",
@@ -15781,7 +15727,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1810
+      "sortOrder": 1800
     },
     {
       "id": "12ead215-5436-5944-928b-e90ab5327335",
@@ -15816,7 +15762,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1820
+      "sortOrder": 1810
     },
     {
       "id": "5fd7da24-c9b5-5ac7-9fc7-e62567bd44ca",
@@ -16058,7 +16004,7 @@
       },
       "heightMetres": 14.64,
       "minimumHeightMetres": 0,
-      "sortOrder": 1830
+      "sortOrder": 1820
     },
     {
       "id": "a4e61b5d-dc3f-54d2-92bf-709aef6f858e",
@@ -16105,7 +16051,7 @@
       },
       "heightMetres": 21.96,
       "minimumHeightMetres": 0,
-      "sortOrder": 1840
+      "sortOrder": 1830
     },
     {
       "id": "12429bff-22b7-5ce8-83db-0e3293545692",
@@ -16156,7 +16102,7 @@
       },
       "heightMetres": 21.96,
       "minimumHeightMetres": 0,
-      "sortOrder": 1850
+      "sortOrder": 1840
     },
     {
       "id": "4eb6e19b-4e03-5321-b3a8-167cea477d7a",
@@ -16200,7 +16146,7 @@
       },
       "heightMetres": 25.62,
       "minimumHeightMetres": 0,
-      "sortOrder": 1860
+      "sortOrder": 1850
     },
     {
       "id": "5a81ded3-d23a-59da-8be4-f0f9212e09c5",
@@ -16233,7 +16179,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1870
+      "sortOrder": 1860
     },
     {
       "id": "369468bb-39f1-504e-9361-05f6849c02e9",
@@ -16307,7 +16253,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 1880
+      "sortOrder": 1870
     },
     {
       "id": "1d83b382-231b-53b7-b189-e846a9ad0bda",
@@ -16338,7 +16284,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1890
+      "sortOrder": 1880
     },
     {
       "id": "ef56cc1c-2a7b-5780-91a7-f0ffa3c352b0",
@@ -16370,7 +16316,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1900
+      "sortOrder": 1890
     },
     {
       "id": "faff7e4c-41f8-5b00-925f-f514b4dafc5d",
@@ -16400,7 +16346,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1910
+      "sortOrder": 1900
     },
     {
       "id": "fce5c592-fa6a-529e-810a-743b1e82c4ad",
@@ -16437,7 +16383,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 3.66,
-      "sortOrder": 1920
+      "sortOrder": 1910
     },
     {
       "id": "2e9e7044-07c9-531c-a8e5-af3bbcf06a2b",
@@ -16478,7 +16424,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1930
+      "sortOrder": 1920
     },
     {
       "id": "d0a2a986-30f4-5c12-a642-97c5e748c0f6",
@@ -16516,7 +16462,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1940
+      "sortOrder": 1930
     },
     {
       "id": "6febb492-8af3-5a66-bd00-705228a15f81",
@@ -16556,7 +16502,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 1950
+      "sortOrder": 1940
     },
     {
       "id": "b781b77b-e688-5a88-959a-b4005d73d565",
@@ -16591,7 +16537,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1960
+      "sortOrder": 1950
     },
     {
       "id": "323b74c2-cd66-5fb9-aa78-6ab175a721ee",
@@ -16622,7 +16568,7 @@
       "sourceProperties": { "building": "roof" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 1970
+      "sortOrder": 1960
     },
     {
       "id": "39772f60-f07c-5a69-97e1-a19ac58e0348",
@@ -16652,7 +16598,7 @@
       "sourceProperties": { "building": "roof" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 1980
+      "sortOrder": 1970
     },
     {
       "id": "0ce28e51-7c4e-57eb-b2c6-ab1ce38064c4",
@@ -16682,7 +16628,7 @@
       "sourceProperties": { "building": "university" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 1990
+      "sortOrder": 1980
     },
     {
       "id": "99565bdb-4beb-5790-aaa4-1c4cada8ba1e",
@@ -16711,7 +16657,7 @@
       "sourceProperties": { "building": "university" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2000
+      "sortOrder": 1990
     },
     {
       "id": "9e84c230-2037-5e2c-b631-f48bfdcf354d",
@@ -16740,7 +16686,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2010
+      "sortOrder": 2000
     },
     {
       "id": "925f4cba-1b0f-5fa0-9cf0-400caf28504f",
@@ -16768,7 +16714,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2020
+      "sortOrder": 2010
     },
     {
       "id": "2fbe1fef-95fe-5661-a512-dffbc6a51ed8",
@@ -16798,7 +16744,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2030
+      "sortOrder": 2020
     },
     {
       "id": "f5a99c58-8d82-5ab8-bb3c-79fd7bac5cff",
@@ -16837,7 +16783,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 2040
+      "sortOrder": 2030
     },
     {
       "id": "8c51259a-e8b6-554e-af41-523089cfd3f4",
@@ -16865,7 +16811,7 @@
       "sourceProperties": { "building": "yes", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2050
+      "sortOrder": 2040
     },
     {
       "id": "b0d40664-464a-5b13-a65b-45ebd883eade",
@@ -16893,7 +16839,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2060
+      "sortOrder": 2050
     },
     {
       "id": "93b0ec01-cbb5-55a3-8757-e1a4550b5fdb",
@@ -16921,7 +16867,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2070
+      "sortOrder": 2060
     },
     {
       "id": "d0f946dd-2ab9-544b-9e95-8bd4f937fce1",
@@ -16949,7 +16895,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2080
+      "sortOrder": 2070
     },
     {
       "id": "54f563bf-75d9-5b9f-b4f4-e538a08d65a1",
@@ -16979,7 +16925,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2090
+      "sortOrder": 2080
     },
     {
       "id": "12c79cf5-7bbe-5f83-bc05-596350322228",
@@ -17017,7 +16963,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2100
+      "sortOrder": 2090
     },
     {
       "id": "11821da6-7a7b-53f6-8891-62dd634ab92e",
@@ -17052,7 +16998,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2110
+      "sortOrder": 2100
     },
     {
       "id": "e8548335-9177-5f44-9c84-3b7956492647",
@@ -17080,7 +17026,7 @@
       "sourceProperties": { "building": "roof" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2120
+      "sortOrder": 2110
     },
     {
       "id": "005c0e58-a90d-5b27-9826-9de6bd7da6fd",
@@ -17109,7 +17055,7 @@
       "sourceProperties": { "building": "roof" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2130
+      "sortOrder": 2120
     },
     {
       "id": "40c33548-1b71-5260-82f1-78e217b91d9d",
@@ -17137,7 +17083,7 @@
       "sourceProperties": { "building": "university", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2140
+      "sortOrder": 2130
     },
     {
       "id": "d6e0c5e2-9c86-55db-aec6-ae41bd9b5469",
@@ -17169,7 +17115,7 @@
       "sourceProperties": { "building": "roof" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2150
+      "sortOrder": 2140
     },
     {
       "id": "a4837123-f86b-5624-94f8-3fa4eec9cfe6",
@@ -17197,7 +17143,7 @@
       "sourceProperties": { "building": "garage" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2160
+      "sortOrder": 2150
     },
     {
       "id": "89349ae5-088e-5d26-a993-5f355b3df01f",
@@ -17235,7 +17181,7 @@
       "sourceProperties": { "building": "university", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2170
+      "sortOrder": 2160
     },
     {
       "id": "9dceb072-bce9-5ced-89c9-e86b24dcc3e6",
@@ -17271,7 +17217,7 @@
       "sourceProperties": { "building": "university", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2180
+      "sortOrder": 2170
     },
     {
       "id": "5eea9178-3a17-505c-b915-1f808b4fbf73",
@@ -17299,7 +17245,7 @@
       "sourceProperties": { "building": "shed" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2190
+      "sortOrder": 2180
     },
     {
       "id": "ced564d5-f50e-50b0-837e-ce9c44a76f85",
@@ -17327,7 +17273,7 @@
       "sourceProperties": { "building": "university", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2200
+      "sortOrder": 2190
     },
     {
       "id": "27de8387-d221-597f-9797-9d6d935c319d",
@@ -17356,7 +17302,7 @@
       "sourceProperties": { "building": "roof" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2210
+      "sortOrder": 2200
     },
     {
       "id": "5a049a2d-95d4-5270-8032-168b8545d09b",
@@ -17385,7 +17331,7 @@
       "sourceProperties": { "building": "roof" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2220
+      "sortOrder": 2210
     },
     {
       "id": "fe67748f-9e45-5c94-a8df-ba7a6d00fe8e",
@@ -17414,7 +17360,7 @@
       "sourceProperties": { "building": "parking", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 2230
+      "sortOrder": 2220
     },
     {
       "id": "676febb1-69d2-5398-872f-a9df951d559c",
@@ -17451,7 +17397,7 @@
       "sourceProperties": { "building": "university", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2240
+      "sortOrder": 2230
     },
     {
       "id": "c413c056-4c53-57f5-8577-ab1c5d37b2bb",
@@ -17495,7 +17441,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2250
+      "sortOrder": 2240
     },
     {
       "id": "fd8d3b29-1db6-53ca-8642-85195915b8e5",
@@ -17530,7 +17476,7 @@
       "sourceProperties": { "building": "university" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2260
+      "sortOrder": 2250
     },
     {
       "id": "4c90f95d-3e8f-5cd8-afad-1c30c1229458",
@@ -17582,7 +17528,7 @@
       "sourceProperties": { "building": "university", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 2270
+      "sortOrder": 2260
     },
     {
       "id": "456622c8-f37d-5f85-9282-35023352df26",
@@ -17613,7 +17559,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2280
+      "sortOrder": 2270
     },
     {
       "id": "65d7fbd3-372d-5ff7-9888-a06aaa2d1a6e",
@@ -17645,7 +17591,7 @@
       "sourceProperties": { "building": "dormitory" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2290
+      "sortOrder": 2280
     },
     {
       "id": "49229a5e-eff8-5540-8ba5-4c36c8765107",
@@ -17685,7 +17631,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2300
+      "sortOrder": 2290
     },
     {
       "id": "12028d53-ea71-550e-9482-379a9f086eff",
@@ -17715,7 +17661,7 @@
       "sourceProperties": { "building": "university", "building:levels": "3" },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 2310
+      "sortOrder": 2300
     },
     {
       "id": "dcb79d46-7988-5de1-acb2-7c36f36bc679",
@@ -17743,7 +17689,7 @@
       "sourceProperties": { "building": "shed" },
       "heightMetres": 3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2320
+      "sortOrder": 2310
     },
     {
       "id": "79bf7a3b-e7aa-5729-b86d-f82606e15018",
@@ -17771,7 +17717,7 @@
       "sourceProperties": { "building": "service", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2330
+      "sortOrder": 2320
     },
     {
       "id": "82260bd0-c47b-5dd9-b5f2-0d363489a783",
@@ -17799,7 +17745,7 @@
       "sourceProperties": { "building": "service", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2340
+      "sortOrder": 2330
     },
     {
       "id": "4703063d-6dfd-599c-aa30-9b2b04d2dc22",
@@ -17834,7 +17780,7 @@
       "sourceProperties": { "building": "university", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2350
+      "sortOrder": 2340
     },
     {
       "id": "c73e6f38-8952-5d80-84a1-54e0f5fab872",
@@ -17866,7 +17812,7 @@
       "sourceProperties": { "building": "university", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2360
+      "sortOrder": 2350
     },
     {
       "id": "84b1dc09-2247-5a2c-935b-9cc52c8df761",
@@ -17896,7 +17842,7 @@
       "sourceProperties": { "building": "university", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2370
+      "sortOrder": 2360
     },
     {
       "id": "8efadca9-a530-524a-80e1-52a01960c5d9",
@@ -17924,7 +17870,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2380
+      "sortOrder": 2370
     },
     {
       "id": "ead628c8-f0ba-55ca-82a0-dea8ab1762df",
@@ -17954,7 +17900,7 @@
       "sourceProperties": { "building": "apartments", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2390
+      "sortOrder": 2380
     },
     {
       "id": "054bc338-9a64-5a94-a2ab-90f668925618",
@@ -17986,7 +17932,7 @@
       "sourceProperties": { "building": "apartments", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2400
+      "sortOrder": 2390
     },
     {
       "id": "8fbf646b-6ada-5ce5-90ab-e26b3dc11c30",
@@ -18024,7 +17970,7 @@
       "sourceProperties": { "building": "apartments", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2410
+      "sortOrder": 2400
     },
     {
       "id": "661f49e9-2f3f-5d93-a498-ca1410edbfa2",
@@ -18060,7 +18006,7 @@
       "sourceProperties": { "building": "apartments", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2420
+      "sortOrder": 2410
     },
     {
       "id": "87f46c6b-7f8a-5026-9ece-9d6bc90927a4",
@@ -18104,7 +18050,7 @@
       "sourceProperties": { "building": "apartments", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2430
+      "sortOrder": 2420
     },
     {
       "id": "bce00bf2-ff92-5d2e-834f-7a7bc510bcb3",
@@ -18140,7 +18086,7 @@
       "sourceProperties": { "building": "apartments", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2440
+      "sortOrder": 2430
     },
     {
       "id": "d3ddbb71-5668-5b18-aedf-573d0eaf3fe2",
@@ -18186,7 +18132,7 @@
       "sourceProperties": { "building": "apartments", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2450
+      "sortOrder": 2440
     },
     {
       "id": "ef305412-98dc-5690-9efa-6ed246cd4d4d",
@@ -18217,7 +18163,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2460
+      "sortOrder": 2450
     },
     {
       "id": "235aed64-dc7e-59eb-8d0a-afc0c050da1e",
@@ -18245,7 +18191,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2470
+      "sortOrder": 2460
     },
     {
       "id": "6855234c-6bdd-5ca9-8b90-dd7825541c03",
@@ -18276,7 +18222,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2480
+      "sortOrder": 2470
     },
     {
       "id": "4fa6dfa0-ed6d-506a-88a0-fc5cba8bb867",
@@ -18305,7 +18251,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2490
+      "sortOrder": 2480
     },
     {
       "id": "7fc0eac4-8bb2-56af-8aa6-0955dcb0e3e7",
@@ -18335,7 +18281,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2500
+      "sortOrder": 2490
     },
     {
       "id": "b28310d5-3179-552d-8b3b-9064caeae4de",
@@ -18363,7 +18309,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2510
+      "sortOrder": 2500
     },
     {
       "id": "511e2e6b-f9d6-5213-95a3-07238a639ddc",
@@ -18393,7 +18339,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2520
+      "sortOrder": 2510
     },
     {
       "id": "f365c6db-00f3-5df4-bc82-e33bf820a1cd",
@@ -18421,7 +18367,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2530
+      "sortOrder": 2520
     },
     {
       "id": "d6daebc0-a63b-5ac7-b932-6a9936fb8ee3",
@@ -18449,7 +18395,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2540
+      "sortOrder": 2530
     },
     {
       "id": "00f0af71-8576-56ea-b481-9dd1466f28ba",
@@ -18477,7 +18423,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2550
+      "sortOrder": 2540
     },
     {
       "id": "5da9c91b-4e5f-5376-b57d-531b9aec3d30",
@@ -18505,7 +18451,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2560
+      "sortOrder": 2550
     },
     {
       "id": "b3f728f7-bcc3-5d42-9207-3020d954cf7c",
@@ -18533,7 +18479,7 @@
       "sourceProperties": { "building": "dormitory", "building:levels": "2" },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2570
+      "sortOrder": 2560
     },
     {
       "id": "0dd3cbb1-1c58-5870-ab75-89664319b899",
@@ -18565,7 +18511,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2580
+      "sortOrder": 2570
     },
     {
       "id": "c26e6d0a-d671-5461-bb70-d62006d96879",
@@ -18597,7 +18543,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2590
+      "sortOrder": 2580
     },
     {
       "id": "2062ae98-4183-575d-bb74-ebab4fb5eaf8",
@@ -18629,7 +18575,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2600
+      "sortOrder": 2590
     },
     {
       "id": "a6c7b782-2db6-5413-a616-ccb22cc77113",
@@ -18679,7 +18625,7 @@
       },
       "heightMetres": 32.94,
       "minimumHeightMetres": 0,
-      "sortOrder": 2610
+      "sortOrder": 2600
     },
     {
       "id": "e3fa8b03-dd10-532d-8076-df13b04c89b7",
@@ -18707,7 +18653,7 @@
       "sourceProperties": { "building": "service" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2620
+      "sortOrder": 2610
     },
     {
       "id": "9b2ebebd-84fe-51ae-b39a-0c940188ef5d",
@@ -18735,7 +18681,7 @@
       "sourceProperties": { "building": "service" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2630
+      "sortOrder": 2620
     },
     {
       "id": "87f9401e-ed2c-5bdd-bd09-c37409853c7e",
@@ -18763,7 +18709,7 @@
       "sourceProperties": { "building": "service", "building:levels": "1" },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2640
+      "sortOrder": 2630
     },
     {
       "id": "bab28104-672f-5425-80ad-9d8ac425b9c5",
@@ -18793,7 +18739,7 @@
       "sourceProperties": { "building": "service" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2650
+      "sortOrder": 2640
     },
     {
       "id": "e28228c7-9c68-5b44-9a27-e5f7e08ec6a7",
@@ -18821,7 +18767,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2660
+      "sortOrder": 2650
     },
     {
       "id": "6eddba86-f026-5414-b4ff-ef3d1588deea",
@@ -18849,7 +18795,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2670
+      "sortOrder": 2660
     },
     {
       "id": "1ea9fbf9-fb79-57cc-93a8-1932df017a06",
@@ -18881,7 +18827,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2680
+      "sortOrder": 2670
     },
     {
       "id": "27d4766e-2219-5bb4-8906-86d9d0c3ab5a",
@@ -18913,7 +18859,7 @@
       "sourceProperties": { "building": "yes" },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2690
+      "sortOrder": 2680
     },
     {
       "id": "bff9b70b-3e02-5cf2-8e87-49f5b28d5d48",
@@ -18965,7 +18911,7 @@
       },
       "heightMetres": 10.98,
       "minimumHeightMetres": 0,
-      "sortOrder": 2700
+      "sortOrder": 2690
     },
     {
       "id": "1a1da5af-5b79-5e54-93f3-e6649436e5b6",
@@ -19001,7 +18947,7 @@
       },
       "heightMetres": 25.62,
       "minimumHeightMetres": 0,
-      "sortOrder": 2710
+      "sortOrder": 2700
     },
     {
       "id": "5a393fc9-398f-53f8-9bfe-952d771e22d1",
@@ -19036,7 +18982,7 @@
       },
       "heightMetres": 5,
       "minimumHeightMetres": 0,
-      "sortOrder": 2720
+      "sortOrder": 2710
     },
     {
       "id": "5ea6c0ee-6010-55a8-b015-8b4bdf34ba66",
@@ -19070,7 +19016,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2730
+      "sortOrder": 2720
     },
     {
       "id": "bc1ad13d-b5f1-5157-aaca-652edd0fee1a",
@@ -19102,7 +19048,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2740
+      "sortOrder": 2730
     },
     {
       "id": "cbcd594c-3f4b-505e-b923-4d098982b342",
@@ -19181,7 +19127,7 @@
       },
       "heightMetres": 18.3,
       "minimumHeightMetres": 0,
-      "sortOrder": 2750
+      "sortOrder": 2740
     },
     {
       "id": "bfc34c8a-d716-57fc-b9ab-82ae48f62fae",
@@ -19228,7 +19174,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2760
+      "sortOrder": 2750
     },
     {
       "id": "b04bbff5-69e2-5300-ac03-25cb44541bbc",
@@ -19272,7 +19218,7 @@
       },
       "heightMetres": 3.66,
       "minimumHeightMetres": 0,
-      "sortOrder": 2770
+      "sortOrder": 2760
     },
     {
       "id": "95daefc7-acb8-555b-b492-8958b2322290",
@@ -19330,7 +19276,7 @@
       },
       "heightMetres": 25.62,
       "minimumHeightMetres": 0,
-      "sortOrder": 2780
+      "sortOrder": 2770
     },
     {
       "id": "ae009292-2e79-54ca-baa8-6a2a4b88d628",
@@ -19393,7 +19339,7 @@
       },
       "heightMetres": 25.62,
       "minimumHeightMetres": 0,
-      "sortOrder": 2790
+      "sortOrder": 2780
     },
     {
       "id": "33d15d5c-3aad-549b-8d66-576ad5409292",
@@ -19437,7 +19383,7 @@
       },
       "heightMetres": 25.62,
       "minimumHeightMetres": 0,
-      "sortOrder": 2800
+      "sortOrder": 2790
     },
     {
       "id": "f64ccb9e-8d99-5e61-a74e-9bafd62f79db",
@@ -19480,7 +19426,7 @@
       },
       "heightMetres": 25.62,
       "minimumHeightMetres": 0,
-      "sortOrder": 2810
+      "sortOrder": 2800
     },
     {
       "id": "c899a3a4-cc0f-58d6-87fa-7de658c8c486",
@@ -19544,7 +19490,7 @@
       },
       "heightMetres": 25.62,
       "minimumHeightMetres": 0,
-      "sortOrder": 2820
+      "sortOrder": 2810
     },
     {
       "id": "6020344f-e699-5fbf-ae27-fd1d5b1030a1",
@@ -19580,7 +19526,7 @@
       },
       "heightMetres": 7.32,
       "minimumHeightMetres": 0,
-      "sortOrder": 2830
+      "sortOrder": 2820
     },
     {
       "id": "40000000-0000-4000-8000-000000000005",
@@ -19666,7 +19612,8 @@
     "sourceHash": "e9f5d2e54ad35f958bda775042883e8cd89f5e11c889e58e6f7b07912df1d6c8",
     "rawElementCount": 288,
     "skippedNodeCount": 2,
-    "buildingCount": 283,
-    "namedSourceCount": 207
+    "buildingCount": 282,
+    "namedSourceCount": 207,
+    "excludedNonBuildingSourceIdentifiers": ["way/673823968"]
   }
 }

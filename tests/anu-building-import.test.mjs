@@ -5,8 +5,10 @@ import {
   buildSnapshot,
   buildingAddress,
   buildingName,
+  isMappedBuilding,
   migrationOutputPath,
   migrationSql,
+  overpassQuery,
   relationGeometry,
   safeBuildingHeights,
   sourceIdentifier,
@@ -28,7 +30,7 @@ const [raw, demo, migration] = await Promise.all([
   ).then(JSON.parse),
   readFile(
     new URL(
-      "../supabase/migrations/20260828170100_import_anu_acton_buildings.sql",
+      "../supabase/migrations/20260828170200_import_anu_acton_buildings.sql",
       import.meta.url,
     ),
     "utf8",
@@ -40,8 +42,11 @@ test("builds a complete deterministic ANU Acton building snapshot", () => {
 
   assert.equal(snapshot.metadata.rawElementCount, 288);
   assert.equal(snapshot.metadata.skippedNodeCount, 2);
-  assert.equal(snapshot.metadata.buildingCount, 283);
+  assert.equal(snapshot.metadata.buildingCount, 282);
   assert.equal(snapshot.metadata.namedSourceCount, 207);
+  assert.deepEqual(snapshot.metadata.excludedNonBuildingSourceIdentifiers, [
+    "way/673823968",
+  ]);
   assert.match(snapshot.metadata.sourceHash, /^[0-9a-f]{64}$/);
   assert.equal(
     new Set(snapshot.buildings.map((building) => building.sourceIdentifier))
@@ -87,6 +92,32 @@ test("uses honest names and addresses when OpenStreetMap tags are sparse", () =>
     }),
     "10 University Avenue",
   );
+});
+
+test("excludes false OpenStreetMap building tags", () => {
+  assert.match(overpassQuery, /nwr\["building"\]\(area\.campusArea\)/);
+  assert.doesNotMatch(overpassQuery, /building"!="no/);
+  assert.equal(isMappedBuilding({ building: "university" }), true);
+  assert.equal(isMappedBuilding({ building: "yes" }), true);
+  assert.equal(isMappedBuilding({ building: "no" }), false);
+  assert.equal(isMappedBuilding({ building: "false" }), false);
+  assert.equal(isMappedBuilding({ building: "0" }), false);
+  assert.equal(isMappedBuilding({}), false);
+});
+
+test("scopes exclusions and preserves verified map data", () => {
+  assert.match(
+    migration,
+    /where features\.campus_id = '00000000-0000-4000-8000-000000000001'/,
+  );
+  assert.match(
+    migration,
+    /and features\.layer_id = '10000000-0000-4000-8000-000000000001'/,
+  );
+  assert.match(migration, /and places\.map_display_kind = 'building'/);
+  assert.match(migration, /and places\.data_status <> 'verified'/);
+  assert.match(migration, /where remaining_features\.place_id = places\.id/);
+  assert.match(migration, /where protected_places\.data_status = 'verified'/);
 });
 
 test("derives safe building heights without allowing inverted bases", () => {
