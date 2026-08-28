@@ -14,6 +14,10 @@ import {
   isCampusMapLineString,
   isCampusMapPolygon,
 } from "@/lib/rooms/campus-map";
+import {
+  listIndoorRoomDetails,
+  parseCampusIndoorDocument,
+} from "@/lib/rooms/indoor-map";
 import { batchCampusMapQueryValues } from "@/lib/rooms/campus-map-query";
 import { getSupabaseConfig, isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
@@ -25,6 +29,7 @@ type FeatureRow = Database["public"]["Tables"]["campus_map_features"]["Row"];
 type PlaceRow = Database["public"]["Tables"]["campus_map_places"]["Row"];
 type PlaceDetailRow =
   Database["public"]["Tables"]["campus_map_place_details"]["Row"];
+type IndoorMapRow = Database["public"]["Tables"]["campus_indoor_maps"]["Row"];
 
 export type CampusMapLoadResult = Readonly<{
   data: CampusMapData;
@@ -36,6 +41,7 @@ const EMPTY_CAMPUS_MAP_DATA: CampusMapData = {
   layers: [],
   places: [],
   features: [],
+  indoorMaps: [],
 };
 
 function mapCampus(row: CampusRow): CampusMapCampus {
@@ -147,7 +153,20 @@ function mapPlace(
 }
 
 function demoData(): CampusMapData {
-  return demoCampusMapData as unknown as CampusMapData;
+  return {
+    ...(demoCampusMapData as unknown as Omit<CampusMapData, "indoorMaps">),
+    indoorMaps: [],
+  };
+}
+
+function mapIndoorMap(row: IndoorMapRow) {
+  return {
+    id: row.id,
+    buildingPlaceId: row.building_place_id,
+    name: row.name,
+    revision: row.revision,
+    document: parseCampusIndoorDocument(row.document),
+  };
 }
 
 export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
@@ -228,18 +247,36 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
 
     const placeRows = placesResult.data ?? [];
     const placeIds = placeRows.map((place) => place.id);
-    const detailResults = await Promise.all(
-      batchCampusMapQueryValues(placeIds).map((placeIdBatch) =>
-        supabase
-          .from("campus_map_place_details")
-          .select("id,place_id,kind,label,sort_order,created_at,updated_at")
-          .in("place_id", placeIdBatch)
-          .order("sort_order")
-          .order("label"),
+    const placeIdBatches = batchCampusMapQueryValues(placeIds);
+    const [detailResults, indoorMapResults] = await Promise.all([
+      Promise.all(
+        placeIdBatches.map((placeIdBatch) =>
+          supabase
+            .from("campus_map_place_details")
+            .select("id,place_id,kind,label,sort_order,created_at,updated_at")
+            .in("place_id", placeIdBatch)
+            .order("sort_order")
+            .order("label"),
+        ),
       ),
-    );
+      Promise.all(
+        placeIdBatches.map((placeIdBatch) =>
+          supabase
+            .from("campus_indoor_maps")
+            .select(
+              "id,building_place_id,name,document,status,revision,source_provider,source_url,source_license,published_at,created_at,updated_at",
+            )
+            .in("building_place_id", placeIdBatch)
+            .eq("status", "published")
+            .order("name"),
+        ),
+      ),
+    ]);
 
-    if (detailResults.some((result) => result.error)) {
+    if (
+      detailResults.some((result) => result.error) ||
+      indoorMapResults.some((result) => result.error)
+    ) {
       return {
         data: EMPTY_CAMPUS_MAP_DATA,
         error: "Room Finder data could not be loaded.",
@@ -253,6 +290,28 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
       detailsByPlace.set(detail.place_id, details);
     }
 
+    const indoorMaps = indoorMapResults
+      .flatMap((result) => result.data ?? [])
+      .map(mapIndoorMap);
+    for (const indoorMap of indoorMaps) {
+      const details = detailsByPlace.get(indoorMap.buildingPlaceId) ?? [];
+      const indoorDetails = listIndoorRoomDetails(indoorMap.document).map(
+        (room, index) => ({
+          id: `indoor-${room.id}`,
+          place_id: indoorMap.buildingPlaceId,
+          kind: "room",
+          label: room.label,
+          sort_order: 10_000 + index,
+          created_at: "",
+          updated_at: "",
+        }),
+      );
+      detailsByPlace.set(indoorMap.buildingPlaceId, [
+        ...details,
+        ...indoorDetails,
+      ]);
+    }
+
     return {
       data: {
         campus,
@@ -261,6 +320,7 @@ export async function loadCampusMapData(): Promise<CampusMapLoadResult> {
           mapPlace(place, detailsByPlace.get(place.id) ?? []),
         ),
         features: (featuresResult.data ?? []).map(mapFeature),
+        indoorMaps,
       },
       error: null,
     };

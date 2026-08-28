@@ -45,7 +45,7 @@ export function Select<T extends string | number>({
 
   return (
     <SelectPrimitive.Root
-      value={selected ? optionValue(value) : undefined}
+      value={selected ? optionValue(value) : ""}
       disabled={disabled}
       open={open}
       onOpenChange={onOpenChange}

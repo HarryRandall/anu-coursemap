@@ -307,6 +307,59 @@ export type Database = {
           },
         ]
       }
+      campus_indoor_maps: {
+        Row: {
+          building_place_id: string
+          created_at: string
+          document: Json
+          id: string
+          name: string
+          published_at: string | null
+          revision: number
+          source_license: string | null
+          source_provider: string | null
+          source_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          building_place_id: string
+          created_at?: string
+          document: Json
+          id?: string
+          name: string
+          published_at?: string | null
+          revision?: number
+          source_license?: string | null
+          source_provider?: string | null
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          building_place_id?: string
+          created_at?: string
+          document?: Json
+          id?: string
+          name?: string
+          published_at?: string | null
+          revision?: number
+          source_license?: string | null
+          source_provider?: string | null
+          source_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_indoor_maps_building_place_id_fkey"
+            columns: ["building_place_id"]
+            isOneToOne: true
+            referencedRelation: "campus_map_places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campus_map_campuses: {
         Row: {
           boundary_geojson: Json

@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   ListChecks,
   MapPin,
+  MapPinned,
   RefreshCw,
   Shield,
   Table,
@@ -105,13 +106,18 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
     href += `/${segment}`;
     const isLast = index === segments.length - 1;
     const isAdminDashboard = admin && segment === "dashboard";
+    const isAdminRooms = admin && segment === "rooms";
     const label = isAdminDashboard
       ? "Dashboard"
-      : (labels[segment] ?? fallbackLabel(segment));
+      : isAdminRooms
+        ? "Indoor maps"
+        : (labels[segment] ?? fallbackLabel(segment));
     const icon = isAdminDashboard
       ? LayoutDashboard
-      : (icons[segment] ??
-        (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
+      : isAdminRooms
+        ? MapPinned
+        : (icons[segment] ??
+          (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
     crumbs.push({
       icon,
       label,

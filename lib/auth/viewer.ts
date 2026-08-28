@@ -70,3 +70,23 @@ export async function canManageCatalogueImports() {
     return false;
   }
 }
+
+/** Check the narrower permission required to manage Room Finder data. */
+export async function canManageRooms() {
+  if (isDemoMode()) return true;
+  if (!getSupabaseConfig()) return false;
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getClaims();
+    if (error || typeof data?.claims.sub !== "string") return false;
+
+    const { data: allowed, error: permissionError } = await supabase.rpc(
+      "current_user_has_permission",
+      { required_permission: "rooms.manage" },
+    );
+    return !permissionError && allowed === true;
+  } catch {
+    return false;
+  }
+}

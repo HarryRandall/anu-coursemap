@@ -7,9 +7,11 @@ import {
   Layers3,
   LoaderCircle,
   MapPin,
+  PanelsTopLeft,
   Route,
 } from "lucide-react";
 import { CampusMap } from "@/components/rooms/campus-map";
+import { IndoorMapViewer } from "@/components/rooms/indoor-map-viewer";
 import { Button, IconButton } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
@@ -222,6 +224,9 @@ export function RoomFinder({
     visibleLayerSlugs.has(layer.slug),
   ).length;
   const selectedPlace = findCampusPlace(data.places, selectedSlug);
+  const selectedIndoorMap = data.indoorMaps.find(
+    (indoorMap) => indoorMap.buildingPlaceId === selectedPlace?.id,
+  );
   const searchResults = query.trim()
     ? filteredPlaces.slice(0, SEARCH_RESULT_LIMIT)
     : [];
@@ -478,7 +483,7 @@ export function RoomFinder({
             </div>
           ) : null}
 
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button size="sm" className="min-h-11 flex-1">
@@ -537,6 +542,32 @@ export function RoomFinder({
               <Route aria-hidden="true" size={14} />
               Directions
             </Button>
+
+            {selectedPlace && selectedIndoorMap ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="subtle"
+                    className="min-h-11 w-full"
+                  >
+                    <PanelsTopLeft aria-hidden="true" size={14} />
+                    Floor plan
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  side="bottom"
+                  className="w-[min(44rem,calc(100vw-2rem))] overflow-hidden p-0"
+                >
+                  <IndoorMapViewer
+                    buildingName={selectedPlace.name}
+                    document={selectedIndoorMap.document}
+                    query={query}
+                  />
+                </PopoverContent>
+              </Popover>
+            ) : null}
           </div>
 
           {directionsOpen ? (

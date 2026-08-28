@@ -1,3 +1,5 @@
+import type { CampusIndoorDocument } from "@/lib/rooms/indoor-map";
+
 export type CampusMapLayer = Readonly<{
   id: string;
   campusId: string;
@@ -86,11 +88,20 @@ export type CampusMapPlace = Readonly<{
   details: readonly CampusMapPlaceDetail[];
 }>;
 
+export type CampusMapIndoorMap = Readonly<{
+  id: string;
+  buildingPlaceId: string;
+  name: string;
+  revision: number;
+  document: CampusIndoorDocument;
+}>;
+
 export type CampusMapData = Readonly<{
   campus: CampusMapCampus | null;
   layers: readonly CampusMapLayer[];
   places: readonly CampusMapPlace[];
   features: readonly CampusMapFeature[];
+  indoorMaps: readonly CampusMapIndoorMap[];
 }>;
 
 export type CampusWalkingRoute = Readonly<{

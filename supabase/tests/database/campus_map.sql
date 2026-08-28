@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(32);
+select extensions.plan(38);
 
 select extensions.ok(
   has_table_privilege('anon', 'public.campus_map_layers', 'select')
@@ -33,6 +33,29 @@ select extensions.ok(
     'insert,update,delete'
   ),
   'authenticated users have grants that RLS narrows by permission'
+);
+
+select extensions.ok(
+  has_table_privilege('anon', 'public.campus_indoor_maps', 'select')
+  and not has_table_privilege(
+    'anon',
+    'public.campus_indoor_maps',
+    'insert,update,delete'
+  ),
+  'anonymous users have read-only access to published indoor maps'
+);
+
+select extensions.is(
+  (
+    select count(*)::integer
+    from public.campus_indoor_maps
+    where building_place_id = '85c7bba8-af82-525a-9689-1da96813c244'
+      and status = 'draft'
+      and document ->> 'version' = '1'
+      and jsonb_array_length(document -> 'levels') = 3
+  ),
+  1,
+  'the migration creates one three-level Copland editor draft'
 );
 
 select extensions.is(
@@ -430,6 +453,12 @@ select extensions.is(
   'anonymous users only see published ANU vector features'
 );
 
+select extensions.is(
+  (select count(*)::integer from public.campus_indoor_maps),
+  0,
+  'anonymous users cannot see the Copland indoor draft'
+);
+
 select extensions.throws_ok(
   $$
     insert into public.campus_map_layers (campus_id, slug, name)
@@ -463,6 +492,24 @@ select extensions.throws_ok(
   '42501',
   null,
   'an authenticated user without permission cannot create layers'
+);
+
+select extensions.throws_ok(
+  $$
+    insert into public.campus_indoor_maps (
+      building_place_id,
+      name,
+      document
+    )
+    values (
+      '20000000-0000-4000-8000-000000000001',
+      'Unauthorised indoor map',
+      '{"version":1,"viewBox":{},"levels":[],"spaces":[],"connectors":[],"routeNodes":[],"routeEdges":[]}'::jsonb
+    )
+  $$,
+  '42501',
+  null,
+  'an authenticated user without permission cannot create indoor maps'
 );
 
 reset role;
@@ -536,6 +583,25 @@ select extensions.is(
   public.current_user_has_permission('rooms.manage'),
   true,
   'the admin role receives the Room Finder management permission'
+);
+
+select extensions.lives_ok(
+  $$
+    update public.campus_indoor_maps
+    set revision = revision + 1
+    where building_place_id = '85c7bba8-af82-525a-9689-1da96813c244'
+  $$,
+  'an administrator with rooms.manage can update an indoor draft'
+);
+
+select extensions.is(
+  (
+    select revision
+    from public.campus_indoor_maps
+    where building_place_id = '85c7bba8-af82-525a-9689-1da96813c244'
+  ),
+  2,
+  'indoor map revisions are persisted'
 );
 
 reset role;
