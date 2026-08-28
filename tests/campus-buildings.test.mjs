@@ -576,6 +576,23 @@ test("renders only stored ANU buildings in 3D", async () => {
   assert.doesNotMatch(mapComponent, /campus-features|campus-mask/);
 });
 
+test("keeps indoor map hydration and initial building focus deterministic", async () => {
+  const mapComponent = await readFile(
+    new URL("../components/rooms/campus-map.tsx", import.meta.url),
+    "utf8",
+  );
+  const indoorMapEditor = await readFile(
+    new URL("../components/admin/indoor-map-editor.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    mapComponent,
+    /focusedPlaceSlugRef = useRef<string \| null>\(null\)/,
+  );
+  assert.match(indoorMapEditor, /timeZone: "Australia\/Sydney"/);
+});
+
 test("builds an HTTPS walking route request for the selected places", () => {
   const from = demoData.places[0];
   const to = demoData.places[1];

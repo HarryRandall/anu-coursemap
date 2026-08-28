@@ -164,6 +164,7 @@ function formatUpdatedAt(value: string | null) {
     month: "short",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: "Australia/Sydney",
   }).format(date);
 }
 

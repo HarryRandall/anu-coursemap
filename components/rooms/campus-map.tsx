@@ -310,7 +310,7 @@ export function CampusMap({
   const visibleLayerSlugsRef = useRef(visibleLayerSlugs);
   const placesRef = useRef(places);
   const featuresRef = useRef(features);
-  const focusedPlaceSlugRef = useRef<string | null>(selectedSlug ?? null);
+  const focusedPlaceSlugRef = useRef<string | null>(null);
   const buildingHighlightsRef = useRef<BuildingHighlights>({
     selectedPlaceId: null,
     routeFromPlaceId: null,
