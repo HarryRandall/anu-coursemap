@@ -389,6 +389,18 @@ test("renders only stored ANU buildings in 3D", async () => {
   assert.match(mapComponent, /getBuildingFeaturesForPlace/);
   assert.match(roomFinder, /features=\{data\.features\}/);
   assert.match(mapComponent, /type: "fill-extrusion"/);
+  assert.match(mapComponent, /"fill-extrusion-opacity": 0\.88/);
+  assert.doesNotMatch(mapComponent, /"fill-extrusion-opacity": \[/);
+  assert.match(mapComponent, /coursemap-selected-building-label/);
+  assert.match(mapComponent, /type: "symbol"/);
+  assert.match(mapComponent, /"text-field": \["get", "name"\]/);
+  assert.match(mapComponent, /syncSelectedBuildingLabel\(/);
+  assert.match(
+    mapComponent,
+    /selectedFeatures\.length > 0 \? selectedPlace : null/,
+  );
+  assert.match(mapComponent, /onClearSelectionRef\.current\(\)/);
+  assert.doesNotMatch(mapComponent, /markerLabel/);
   assert.doesNotMatch(mapComponent, /feature-state/);
   assert.doesNotMatch(
     mapComponent,

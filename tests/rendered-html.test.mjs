@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test, { after, before } from "node:test";
+import { load } from "cheerio";
 
 const projectRoot = new URL("../", import.meta.url);
 const origin = "http://127.0.0.1:3217";
@@ -120,6 +121,7 @@ test("server-renders the complete student workspace", async () => {
     "/requirements",
     "/roadmap",
     "/rooms",
+    "/rooms?q=ANU",
     "/help",
     "/help/build-your-plan",
   ];
@@ -134,6 +136,7 @@ test("server-renders the complete student workspace", async () => {
     requirementsHtml,
     roadmapHtml,
     roomsHtml,
+    roomsSearchHtml,
     helpHtml,
     helpGuideHtml,
   ] = await Promise.all(responses.map((response) => response.text()));
@@ -197,16 +200,27 @@ test("server-renders the complete student workspace", async () => {
   );
   assert.doesNotMatch(roadmapHtml, /Build the useful things first/i);
   assert.doesNotMatch(roadmapHtml, /Something important missing/i);
-  assert.match(roomsHtml, /ANU Acton campus/i);
-  assert.match(roomsHtml, /Marie Reay Teaching Centre/i);
-  assert.match(roomsHtml, />Layers</i);
-  assert.match(roomsHtml, /Directions/i);
-  assert.match(roomsHtml, /live OpenStreetMap vectors/i);
-  assert.match(
-    roomsHtml,
-    /Interactive vector map of ANU and central Canberra/i,
+  const roomsPage = load(roomsHtml);
+  const roomsSearchPage = load(roomsSearchHtml);
+  const searchResults = roomsSearchPage('[aria-label="Search results"]');
+
+  assert.equal(
+    roomsPage('input[placeholder="Search ANU buildings, rooms or services..."]')
+      .length,
+    1,
   );
-  assert.match(roomsHtml, /Open source page/i);
+  assert.match(roomsPage("button").text(), /Layers/i);
+  assert.match(roomsPage("button").text(), /Directions/i);
+  assert.equal(roomsPage('[aria-label="Search results"]').length, 0);
+  assert.equal(searchResults.length, 1);
+  assert.equal(searchResults.find("li").length, 8);
+  assert.match(searchResults.text(), /Showing the first 8 matches/i);
+  assert.equal(
+    roomsPage(
+      '[aria-label="Interactive vector map of ANU and central Canberra"]',
+    ).length,
+    1,
+  );
   assert.doesNotMatch(
     roomsHtml,
     /Find the right room|Room Finder will connect/i,

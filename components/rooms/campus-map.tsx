@@ -28,6 +28,7 @@ type CampusMapProps = {
     to: CampusMapPlace;
   }> | null;
   onSelect: (slug: string) => void;
+  onClearSelection: () => void;
 };
 
 const MAP_STYLE_URL =
@@ -56,6 +57,8 @@ type StoredBuildingFeature = CampusMapFeature &
 
 const ANU_BUILDING_SOURCE_ID = "coursemap-anu-buildings";
 const ANU_BUILDING_LAYER_ID = "coursemap-anu-buildings-3d";
+const SELECTED_BUILDING_LABEL_SOURCE_ID = "coursemap-selected-building-label";
+const SELECTED_BUILDING_LABEL_LAYER_ID = "coursemap-selected-building-label";
 const NATIVE_BUILDING_MAX_ZOOM = 24;
 
 function isStoredBuildingFeature(
@@ -149,12 +152,39 @@ function syncAnuBuildings(
   void source.setData(buildAnuBuildingCollection(features, places, highlights));
 }
 
+function syncSelectedBuildingLabel(
+  map: import("maplibre-gl").Map,
+  place: CampusMapPlace | null,
+) {
+  const source = map.getSource(SELECTED_BUILDING_LABEL_SOURCE_ID) as
+    import("maplibre-gl").GeoJSONSource | undefined;
+  if (!source) return;
+
+  void source.setData({
+    type: "FeatureCollection",
+    features: place
+      ? [
+          {
+            type: "Feature",
+            properties: { name: place.name, placeSlug: place.slug },
+            geometry: {
+              type: "Point",
+              coordinates: [place.coordinates[0], place.coordinates[1]],
+            },
+          },
+        ]
+      : [],
+  });
+}
+
 function getLinkedBuildingSlugAtPoint(
   map: import("maplibre-gl").Map,
   point: import("maplibre-gl").PointLike,
 ) {
   return map
-    .queryRenderedFeatures(point, { layers: [ANU_BUILDING_LAYER_ID] })
+    .queryRenderedFeatures(point, {
+      layers: [ANU_BUILDING_LAYER_ID, SELECTED_BUILDING_LABEL_LAYER_ID],
+    })
     .map((feature) => feature.properties?.placeSlug)
     .find((placeSlug): placeSlug is string =>
       Boolean(placeSlug && typeof placeSlug === "string"),
@@ -250,11 +280,15 @@ function applyStyleLayerVisibility(
   }
 
   if (map.getLayer(ANU_BUILDING_LAYER_ID)) {
-    map.setLayoutProperty(
-      ANU_BUILDING_LAYER_ID,
-      "visibility",
-      visibleLayerSlugs.has("buildings") ? "visible" : "none",
-    );
+    const visibility = visibleLayerSlugs.has("buildings") ? "visible" : "none";
+    map.setLayoutProperty(ANU_BUILDING_LAYER_ID, "visibility", visibility);
+    if (map.getLayer(SELECTED_BUILDING_LABEL_LAYER_ID)) {
+      map.setLayoutProperty(
+        SELECTED_BUILDING_LABEL_LAYER_ID,
+        "visibility",
+        visibility,
+      );
+    }
   }
 }
 
@@ -268,6 +302,7 @@ export function CampusMap({
   route,
   routeEndpoints,
   onSelect,
+  onClearSelection,
 }: CampusMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("maplibre-gl").Map | null>(null);
@@ -282,6 +317,7 @@ export function CampusMap({
     routeToPlaceId: null,
   });
   const onSelectRef = useRef(onSelect);
+  const onClearSelectionRef = useRef(onClearSelection);
   const [mapReady, setMapReady] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
   const [isPerspective, setIsPerspective] = useState(true);
@@ -289,6 +325,10 @@ export function CampusMap({
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
+
+  useEffect(() => {
+    onClearSelectionRef.current = onClearSelection;
+  }, [onClearSelection]);
 
   useEffect(() => {
     visibleLayerSlugsRef.current = visibleLayerSlugs;
@@ -491,18 +531,17 @@ export function CampusMap({
                   "#a1a1aa",
                 ],
                 "fill-extrusion-height": ["get", "heightMetres"],
-                "fill-extrusion-opacity": [
-                  "match",
-                  ["get", "highlight"],
-                  "default",
-                  0.72,
-                  0.94,
-                ],
+                "fill-extrusion-opacity": 0.88,
                 "fill-extrusion-vertical-gradient": true,
               },
             },
             firstLabelLayer,
           );
+
+          map.addSource(SELECTED_BUILDING_LABEL_SOURCE_ID, {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
 
           map.addSource("campus-route", {
             type: "geojson",
@@ -519,10 +558,48 @@ export function CampusMap({
             },
           });
 
+          map.addLayer({
+            id: "campus-route-line",
+            type: "line",
+            source: "campus-route",
+            paint: {
+              "line-color": "#7c3aed",
+              "line-opacity": 0.98,
+              "line-width": 6,
+            },
+          });
+          map.addLayer({
+            id: SELECTED_BUILDING_LABEL_LAYER_ID,
+            type: "symbol",
+            source: SELECTED_BUILDING_LABEL_SOURCE_ID,
+            layout: {
+              "symbol-placement": "point",
+              "text-allow-overlap": true,
+              "text-anchor": "bottom",
+              "text-field": ["get", "name"],
+              "text-font": ["Noto Sans Regular"],
+              "text-ignore-placement": true,
+              "text-max-width": 16,
+              "text-offset": [0, -0.6],
+              "text-size": 13,
+            },
+            paint: {
+              "text-color": "#27272a",
+              "text-halo-blur": 0.5,
+              "text-halo-color": "#ffffff",
+              "text-halo-width": 2,
+            },
+          });
+
           map.on("click", (event) => {
-            if (!visibleLayerSlugsRef.current.has("buildings")) return;
-            const placeSlug = getLinkedBuildingSlugAtPoint(map, event.point);
-            if (placeSlug) onSelectRef.current(placeSlug);
+            const placeSlug = visibleLayerSlugsRef.current.has("buildings")
+              ? getLinkedBuildingSlugAtPoint(map, event.point)
+              : undefined;
+            if (placeSlug) {
+              onSelectRef.current(placeSlug);
+            } else {
+              onClearSelectionRef.current();
+            }
           });
 
           map.on("mousemove", (event) => {
@@ -533,16 +610,6 @@ export function CampusMap({
           });
           map.on("mouseout", () => {
             map.getCanvas().style.cursor = "";
-          });
-          map.addLayer({
-            id: "campus-route-line",
-            type: "line",
-            source: "campus-route",
-            paint: {
-              "line-color": "#7c3aed",
-              "line-opacity": 0.98,
-              "line-width": 6,
-            },
           });
 
           applyStyleLayerVisibility(map, layers, visibleLayerSlugsRef.current);
@@ -590,7 +657,14 @@ export function CampusMap({
     ) {
       buildingHighlightsRef.current.selectedPlaceId = null;
       syncAnuBuildings(map, features, places, buildingHighlightsRef.current);
-      map.getContainer().dataset.selectedBuilding = "false";
+      syncSelectedBuildingLabel(map, null);
+      focusedPlaceSlugRef.current = null;
+      const container = map.getContainer();
+      container.dataset.selectedBuilding = "false";
+      delete container.dataset.selectedBuildingHeight;
+      delete container.dataset.selectedBuildingName;
+      delete container.dataset.selectedBuildingId;
+      delete container.dataset.selectedBuildingProperties;
       return;
     }
 
@@ -600,6 +674,10 @@ export function CampusMap({
     );
     buildingHighlightsRef.current.selectedPlaceId = selectedPlace.id;
     syncAnuBuildings(map, features, places, buildingHighlightsRef.current);
+    syncSelectedBuildingLabel(
+      map,
+      selectedFeatures.length > 0 ? selectedPlace : null,
+    );
 
     const firstFeature = selectedFeatures[0];
     const container = map.getContainer();
