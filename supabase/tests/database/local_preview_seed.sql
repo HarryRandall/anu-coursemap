@@ -2,105 +2,29 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(18);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.catalogue_years as years
-    where years.year = 2026
-      and years.status = 'published'
-      and years.published_at is not null
-  ),
-  'the 2026 catalogue year is published'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.academic_structure_versions as versions
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    join public.catalogue_years as years
-      on years.id = versions.catalogue_year_id
-    where years.year = 2026
-      and structures.code = 'BCOMP'
-      and versions.publication_status = 'draft'
-      and versions.review_state = 'review'
-  ),
-  'the official BCOMP version remains in draft review'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.academic_structure_versions as versions
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    join public.catalogue_years as years
-      on years.id = versions.catalogue_year_id
-    where years.year = 2026
-      and structures.code = 'SOFT-MAJ'
-      and versions.publication_status = 'draft'
-      and versions.review_state = 'review'
-  ),
-  'the official SOFT-MAJ version remains in draft review'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.academic_structure_versions as versions
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    join public.catalogue_years as years
-      on years.id = versions.catalogue_year_id
-    where years.year = 2026
-      and structures.code = 'DEMO-BCOMP'
-      and structures.kind = 'degree'
-      and versions.publication_status = 'published'
-  ),
-  'the demo Bachelor of Computing is published'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.academic_structure_versions as versions
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    join public.catalogue_years as years
-      on years.id = versions.catalogue_year_id
-    where years.year = 2026
-      and structures.code = 'DEMO-SOFT'
-      and structures.kind = 'major'
-      and versions.publication_status = 'published'
-  ),
-  'the demo Software Development major is published'
-);
+select extensions.plan(12);
 
 select extensions.is(
   (
     select count(*)
-    from public.requirement_groups as groups
-    join public.academic_structure_versions as versions
-      on versions.id = groups.structure_version_id
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    where structures.code in ('DEMO-BCOMP', 'DEMO-SOFT')
-      and groups.parent_group_id is null
+    from public.academic_years
+    where year between 2020 and 2030
+      and is_import_enabled
   ),
-  2::bigint,
-  'each demo structure has exactly one requirement root'
+  11::bigint,
+  'all agreed import years are selectable'
 );
 
 select extensions.ok(
   exists (
     select 1
-    from public.profiles as profiles
-    where lower(profiles.email) = 'test@test.com'
+    from public.academic_years
+    where year = 2026
+      and source_availability = 'available'
+      and directory_refreshed_at is not null
+      and availability_note = 'Local preview fixture'
   ),
-  'the local preview profile exists'
+  'the local preview marks only its fetched directory as available'
 );
 
 select extensions.ok(
@@ -109,176 +33,125 @@ select extensions.ok(
     from public.profiles as profiles
     join private.user_roles as user_roles
       on user_roles.user_id = profiles.id
-    join private.app_roles as roles
-      on roles.id = user_roles.role_id
+    join private.app_roles as roles on roles.id = user_roles.role_id
     where lower(profiles.email) = 'test@test.com'
       and roles.key = 'admin'
   ),
-  'the local preview account has the admin role'
+  'the local preview account exists with the admin role'
 );
 
-select extensions.ok(
-  exists (
-    select 1
-    from public.profiles as profiles
-    join public.plans as plans
-      on plans.owner_id = profiles.id
-    join public.catalogue_years as years
-      on years.id = plans.catalogue_year_id
-    where lower(profiles.email) = 'test@test.com'
-      and years.year = 2026
-      and plans.is_primary
-      and plans.status = 'active'
-      and plans.extension_years = 0
-  ),
-  'the local preview account has an unextended primary 2026 plan'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.profiles as profiles
-    join public.plans as plans
-      on plans.owner_id = profiles.id
-    join public.plan_structures as plan_structures
-      on plan_structures.plan_id = plans.id
-    join public.academic_structure_versions as versions
-      on versions.id = plan_structures.structure_version_id
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    where lower(profiles.email) = 'test@test.com'
-      and plans.is_primary
-      and structures.code = 'DEMO-BCOMP'
-      and plan_structures.role = 'programme'
-  ),
-  'the primary plan uses the demo Bachelor of Computing'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.profiles as profiles
-    join public.plans as plans
-      on plans.owner_id = profiles.id
-    join public.plan_structures as plan_structures
-      on plan_structures.plan_id = plans.id
-    join public.academic_structure_versions as versions
-      on versions.id = plan_structures.structure_version_id
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    where lower(profiles.email) = 'test@test.com'
-      and plans.is_primary
-      and structures.code = 'DEMO-SOFT'
-      and plan_structures.role = 'major'
-  ),
-  'the primary plan uses the demo Software Development major'
-);
-
-select extensions.ok(
-  (
-    select count(distinct versions.id)
-    from public.course_versions as versions
-    join public.catalogue_years as years
-      on years.id = versions.catalogue_year_id
-    join public.catalogue_source_documents as documents
-      on documents.id = versions.source_document_id
-    join public.catalogue_sources as sources
-      on sources.id = documents.source_id
-    where years.year = 2026
-      and versions.publication_status = 'published'
-      and sources.kind = 'local_mock'
-  ) >= 12,
-  'at least twelve published local mock courses are available'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.profiles as profiles
-    join public.course_attempts as attempts
-      on attempts.owner_id = profiles.id
-    where lower(profiles.email) = 'test@test.com'
-      and attempts.status = 'completed'
-  ),
-  'the local preview account has completed course attempts'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.profiles as profiles
-    join public.course_attempts as attempts
-      on attempts.owner_id = profiles.id
-    where lower(profiles.email) = 'test@test.com'
-      and attempts.status = 'enrolled'
-  ),
-  'the local preview account has enrolled course attempts'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.profiles as profiles
-    join public.plans as plans
-      on plans.owner_id = profiles.id
-    join public.plan_items as items
-      on items.plan_id = plans.id
-    where lower(profiles.email) = 'test@test.com'
-      and plans.is_primary
-      and items.planned_calendar_year > plans.commencement_year
-  ),
-  'the primary plan includes future course items'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.course_offerings as offerings
-    join public.course_versions as versions
-      on versions.id = offerings.course_version_id
-    join public.catalogue_source_documents as documents
-      on documents.id = versions.source_document_id
-    join public.catalogue_sources as sources
-      on sources.id = documents.source_id
-    where offerings.status = 'published'
-      and versions.publication_status = 'published'
-      and sources.kind = 'local_mock'
-  ),
-  'published local mock course offerings exist'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.offering_sessions as sessions
-    join public.course_offerings as offerings
-      on offerings.id = sessions.course_offering_id
-    join public.course_versions as versions
-      on versions.id = offerings.course_version_id
-    join public.catalogue_source_documents as documents
-      on documents.id = versions.source_document_id
-    join public.catalogue_sources as sources
-      on sources.id = documents.source_id
-    where offerings.status = 'published'
-      and versions.publication_status = 'published'
-      and sources.kind = 'local_mock'
-  ),
-  'published local mock offering sessions exist'
-);
-
-select extensions.ok(
+select extensions.is(
   (
     select count(*)
-    from public.university_calendar_events as events
-    join public.catalogue_source_documents as documents
-      on documents.id = events.source_document_id
-    join public.catalogue_sources as sources
-      on sources.id = documents.source_id
-    where events.calendar_year = 2026
-      and events.status = 'published'
-      and sources.kind = 'local_mock'
-  ) >= 12,
-  'published local mock key dates are available'
+    from public.university_calendar_events
+    where calendar_year = 2026
+      and status = 'published'
+  ),
+  16::bigint,
+  'the local preview retains the published university calendar fixture'
+);
+
+select extensions.is(
+  (
+    select count(*)
+    from public.academic_periods
+    where calendar_year between 2026 and 2028
+      and code in ('S1', 'S2')
+      and status = 'published'
+  ),
+  6::bigint,
+  'the local preview retains three years of semester planning periods'
+);
+
+select extensions.is(
+  (
+    select count(*)
+    from public.course_directory_entries
+    where academic_year_id = (
+      select id from public.academic_years where year = 2026
+    )
+      and is_current
+  ),
+  3::bigint,
+  'the preview directory has three lightweight searchable entries'
+);
+
+select extensions.is(
+  (
+    select count(*)
+    from public.course_years
+    where academic_year_id = (
+      select id from public.academic_years where year = 2026
+    )
+      and published_snapshot_id is not null
+  ),
+  2::bigint,
+  'only the two explicitly imported preview courses have published snapshots'
+);
+
+select extensions.ok(
+  exists (
+    select 1
+    from public.courses
+    where code = 'MATH1005'
+  )
+  and not exists (
+    select 1
+    from public.course_years
+    join public.courses on courses.id = course_years.course_id
+    where courses.code = 'MATH1005'
+  ),
+  'the prerequisite remains a placeholder identity without an invented year'
+);
+
+select extensions.ok(
+  public.published_course_detail('COMP1110', 2026::smallint)
+    ->'snapshot'->>'title'
+    = 'Structured Programming'
+  and jsonb_array_length(
+    public.published_course_detail('COMP1110', 2026::smallint)->'fees'
+  ) = 1
+  and jsonb_array_length(
+    public.published_course_detail('COMP1110', 2026::smallint)
+      ->'offeringSessions'
+  ) = 1
+  and jsonb_array_length(
+    public.published_course_detail('COMP1110', 2026::smallint)
+      ->'assessmentItems'
+  ) = 1,
+  'explicit-year detail exposes the rich relational snapshot'
+);
+
+select extensions.ok(
+  exists (
+    select 1
+    from public.published_course_requisite_graph('COMP1110', 2026::smallint)
+    where from_code = 'MATH1005'
+      and to_code = 'COMP1110'
+      and not from_is_available
+      and to_is_available
+  ),
+  'the prerequisite graph reports a referenced placeholder as unavailable'
+);
+
+set local role anon;
+
+select extensions.is(
+  (
+    select count(*)
+    from public.courses
+    where code in ('COMP1100', 'COMP1110', 'MATH1005')
+  ),
+  3::bigint,
+  'anonymous readers can see published identities and prerequisite placeholders'
+);
+
+reset role;
+
+select extensions.ok(
+  (select count(*) from public.plans) = 0
+  and (select count(*) from public.academic_structure_versions) = 0,
+  'the minimal preview does not recreate disposable plans or programme data'
 );
 
 select * from extensions.finish();

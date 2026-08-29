@@ -31,13 +31,28 @@ const catalogue = await compileLib("catalogue");
 const {
   courseIsAvailable,
   degreeUnitProgress,
+  effectiveStatus,
+  evaluateCoursePrerequisites,
+  missingPrereqs,
+  planningCourseByCode,
+  planningCourseForAttempt,
   proposePrerequisiteFix,
   recommendedCoursesForTerm,
   termHasCapacity,
   unitsByCalendarYear,
 } = planner;
 const { courses, terms } = catalogue;
-const demoCatalogue = { courses, terms };
+const planningYears = [
+  ...new Set(
+    terms.filter((term) => term.id !== "unscheduled").map((term) => term.year),
+  ),
+];
+const demoCatalogue = {
+  courses: courses.flatMap((course) =>
+    planningYears.map((year) => ({ ...course, year })),
+  ),
+  terms,
+};
 const s1 = terms.find((term) => term.id === "2026-s1");
 const s2 = terms.find((term) => term.id === "2026-s2");
 const major = [
@@ -49,8 +64,178 @@ const major = [
   "COMP3900",
 ];
 
+test("requires an explicit year when a course has multiple editions", () => {
+  assert.equal(planningCourseByCode("COMP1100", demoCatalogue), undefined);
+  assert.equal(
+    planningCourseByCode("COMP1100", demoCatalogue, 2027)?.year,
+    2027,
+  );
+  assert.equal(
+    planningCourseForAttempt(
+      {
+        id: "selected-year",
+        academicYear: 2028,
+        courseCode: "COMP1100",
+        termId: "unscheduled",
+        status: "planned",
+      },
+      demoCatalogue,
+    )?.year,
+    2028,
+  );
+});
+
+test("resolves recorded history by exact snapshot within the same course year", () => {
+  const published = {
+    ...planningCourseByCode("COMP1100", demoCatalogue, 2026),
+    name: "Published COMP1100",
+    prerequisiteCodes: ["COMP1110"],
+    prerequisiteRule: {
+      confidence: 0.41,
+      expression: null,
+      hardness: "hard",
+      relationalExpression: null,
+      reviewState: "review",
+      sourceText: "Current published prerequisite",
+    },
+    prerequisiteText: "Current published prerequisite",
+    snapshotId: 303,
+    units: 12,
+  };
+  const historicalSixUnitSnapshot = {
+    ...published,
+    name: "Historical six-unit COMP1100",
+    prerequisiteCodes: ["COMP1130"],
+    prerequisiteRule: {
+      confidence: 0.91,
+      expression: null,
+      hardness: "hard",
+      relationalExpression: null,
+      reviewState: "verified",
+      sourceText: "Historical prerequisite",
+    },
+    prerequisiteText: "Historical prerequisite",
+    snapshotId: 101,
+    units: 6,
+  };
+  const historicalTwelveUnitSnapshot = {
+    ...published,
+    name: "Historical twelve-unit COMP1100",
+    snapshotId: 202,
+  };
+  const snapshotCatalogue = {
+    ...demoCatalogue,
+    courses: demoCatalogue.courses.map((course) =>
+      course.code === "COMP1100" && course.year === 2026 ? published : course,
+    ),
+    snapshotCourses: [historicalSixUnitSnapshot, historicalTwelveUnitSnapshot],
+  };
+
+  const sixUnitAttempt = {
+    id: "historical-six",
+    academicYear: 2026,
+    courseCode: "COMP1100",
+    snapshotId: 101,
+    termId: "2026-s1",
+    status: "completed",
+  };
+  const twelveUnitAttempt = {
+    ...sixUnitAttempt,
+    id: "historical-twelve",
+    snapshotId: 202,
+  };
+
+  assert.equal(
+    planningCourseForAttempt(sixUnitAttempt, snapshotCatalogue)?.name,
+    "Historical six-unit COMP1100",
+  );
+  assert.equal(
+    planningCourseForAttempt(sixUnitAttempt, snapshotCatalogue)
+      ?.prerequisiteText,
+    "Historical prerequisite",
+  );
+  assert.deepEqual(
+    planningCourseForAttempt(sixUnitAttempt, snapshotCatalogue)
+      ?.prerequisiteCodes,
+    ["COMP1130"],
+  );
+  assert.equal(
+    planningCourseForAttempt(sixUnitAttempt, snapshotCatalogue)
+      ?.prerequisiteRule?.reviewState,
+    "verified",
+  );
+  assert.equal(
+    planningCourseForAttempt(sixUnitAttempt, snapshotCatalogue)
+      ?.prerequisiteRule?.confidence,
+    0.91,
+  );
+  assert.equal(
+    planningCourseForAttempt(twelveUnitAttempt, snapshotCatalogue)?.name,
+    "Historical twelve-unit COMP1100",
+  );
+  assert.equal(
+    planningCourseForAttempt(
+      { ...sixUnitAttempt, snapshotId: 999 },
+      snapshotCatalogue,
+    ),
+    undefined,
+  );
+});
+
+test("uses units stored on attempts instead of later snapshot units", () => {
+  const course = {
+    ...planningCourseByCode("COMP1100", demoCatalogue, 2026),
+    snapshotId: 303,
+    units: 12,
+  };
+  const snapshotCatalogue = {
+    ...demoCatalogue,
+    courses: demoCatalogue.courses.map((candidate) =>
+      candidate.code === course.code && candidate.year === course.year
+        ? course
+        : candidate,
+    ),
+  };
+  const completed = {
+    id: "completed-variable-units",
+    academicYear: 2026,
+    courseCode: "COMP1100",
+    snapshotId: 303,
+    termId: "2026-s1",
+    status: "completed",
+    unitsAttempted: 3,
+    unitsEarned: 3,
+  };
+  const enrolled = {
+    id: "enrolled-variable-units",
+    academicYear: 2026,
+    courseCode: "COMP1600",
+    termId: "2026-s2",
+    status: "enrolled",
+    unitsAttempted: 9,
+    unitsEarned: 0,
+  };
+
+  assert.equal(
+    degreeUnitProgress([completed], 144, snapshotCatalogue).completed,
+    3,
+  );
+  const year = unitsByCalendarYear(
+    [completed, enrolled],
+    snapshotCatalogue,
+  ).find((item) => item.year === 2026);
+  assert.equal(year?.completed, 3);
+  assert.equal(year?.planned, 9);
+});
+
 function attempt(id, courseCode, termId, status = "planned") {
-  return { id, courseCode, termId, status };
+  return {
+    id,
+    academicYear: Number(termId.slice(0, 4)),
+    courseCode,
+    termId,
+    status,
+  };
 }
 
 test("recommends first-year core courses for an empty Semester 1", () => {
@@ -83,6 +268,114 @@ test("recommends COMP1110 once COMP1100 is sequenced earlier", () => {
     demoCatalogue,
   ).map((course) => course.code);
   assert.ok(recommended.includes("COMP1110"));
+});
+
+function verifiedCourseCondition(code, requirementMode = "completed") {
+  return {
+    kind: "course",
+    code,
+    minimumMark: null,
+    requirementMode,
+    hardness: "hard",
+    reviewState: "verified",
+    confidence: 1,
+    sourceText: code,
+  };
+}
+
+function catalogueWithPrerequisiteRule(relationalExpression) {
+  return {
+    ...demoCatalogue,
+    courses: demoCatalogue.courses.map((course) =>
+      course.code === "COMP1110" && course.year === 2026
+        ? {
+            ...course,
+            prerequisiteCodes: ["COMP1100", "MATH1005"],
+            prerequisiteRule: {
+              confidence: 1,
+              expression: null,
+              hardness: "hard",
+              relationalExpression,
+              reviewState: "verified",
+              sourceText: "Complete COMP1100 or MATH1005.",
+            },
+          }
+        : course,
+    ),
+  };
+}
+
+test("evaluates a published any-of rule instead of requiring every reference", () => {
+  const target = attempt("target", "COMP1110", "2026-s2");
+  const structuredCatalogue = catalogueWithPrerequisiteRule({
+    kind: "group",
+    operator: "any_of",
+    minimumCount: null,
+    conditions: [
+      verifiedCourseCondition("COMP1100"),
+      verifiedCourseCondition("MATH1005"),
+    ],
+  });
+  const attempts = [
+    attempt("completed", "COMP1100", "2026-s1", "completed"),
+    target,
+  ];
+  assert.deepEqual(missingPrereqs(target, attempts, structuredCatalogue), []);
+  assert.equal(
+    effectiveStatus(target, attempts, structuredCatalogue),
+    "planned",
+  );
+});
+
+test("only completed-or-concurrent course conditions accept the same term", () => {
+  const target = attempt("target", "COMP1110", "2026-s2");
+  const sameTerm = attempt("same", "COMP1100", "2026-s2");
+  const completedOnly = catalogueWithPrerequisiteRule({
+    kind: "group",
+    operator: "all_of",
+    minimumCount: null,
+    conditions: [verifiedCourseCondition("COMP1100")],
+  });
+  assert.deepEqual(missingPrereqs(target, [sameTerm, target], completedOnly), [
+    "COMP1100",
+  ]);
+
+  const concurrent = catalogueWithPrerequisiteRule({
+    kind: "group",
+    operator: "all_of",
+    minimumCount: null,
+    conditions: [
+      verifiedCourseCondition("COMP1100", "completed_or_concurrent"),
+    ],
+  });
+  assert.deepEqual(missingPrereqs(target, [sameTerm, target], concurrent), []);
+});
+
+test("keeps unreviewed or non-actionable requirements as manual approval", () => {
+  const target = attempt("target", "COMP1110", "2026-s2");
+  const structuredCatalogue = catalogueWithPrerequisiteRule({
+    kind: "group",
+    operator: "all_of",
+    minimumCount: null,
+    conditions: [
+      {
+        kind: "gpa",
+        minimumGpa: 5,
+        hardness: "hard",
+        reviewState: "verified",
+        confidence: 1,
+        sourceText: "GPA of at least 5",
+      },
+    ],
+  });
+  assert.deepEqual(
+    evaluateCoursePrerequisites(target, [target], structuredCatalogue),
+    { state: "unknown", missingCodes: [] },
+  );
+  assert.equal(
+    effectiveStatus(target, [target], structuredCatalogue),
+    "approval",
+  );
 });
 
 test("skips courses already in the plan", () => {
@@ -118,23 +411,15 @@ test("adds a missing prerequisite to the latest earlier offering with space", ()
   );
 });
 
-test("moves a late prerequisite earlier when that offering is available", () => {
+test("does not move a selected course year into a different year", () => {
   const attempts = [
     attempt("done", "COMP1100", "2026-s1", "completed"),
     attempt("prereq", "COMP1110", "2027-s2"),
     attempt("blocked", "COMP2100", "2027-s1"),
   ];
   const result = proposePrerequisiteFix(attempts[2], attempts, demoCatalogue);
-  assert.equal(result.ok, true);
-  assert.deepEqual(result.steps, [
-    {
-      type: "move",
-      attemptId: "prereq",
-      courseCode: "COMP1110",
-      fromTermId: "2027-s2",
-      toTermId: "2026-s2",
-    },
-  ]);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /in 2027/i);
 });
 
 test("does not invent a fix when no earlier offering has space", () => {

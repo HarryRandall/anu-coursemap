@@ -26,6 +26,7 @@ export const MAX_REVIEWED_GROUP_DEPTH = 5;
 export type ReviewedConditionInput = {
   kind: ReviewedConditionKind;
   courseCode?: string | null;
+  courseRequirementMode?: "completed" | "completed_or_concurrent" | null;
   structureCode?: string | null;
   units?: number | null;
   subjectCode?: string | null;
@@ -97,7 +98,7 @@ export type StoredRuleCondition = {
   position: number;
 };
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/u;
 const SUBJECT_CODE_PATTERN = /^[A-Z]{4}$/u;
 const STRUCTURE_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]*$/u;
 
@@ -605,7 +606,17 @@ function normaliseCondition(
       if (mark != null && (!Number.isFinite(mark) || mark < 0 || mark > 100)) {
         return { message: "The course mark must be between 0 and 100." };
       }
-      return { condition: { kind: "course", courseCode: code, mark } };
+      return {
+        condition: {
+          kind: "course",
+          courseCode: code,
+          mark,
+          courseRequirementMode:
+            condition.courseRequirementMode === "completed_or_concurrent"
+              ? "completed_or_concurrent"
+              : "completed",
+        },
+      };
     }
     case "incompatible": {
       const code = (condition.courseCode ?? "").trim().toUpperCase();
@@ -796,7 +807,9 @@ export function conditionSourceText(condition: ReviewedConditionView) {
     case "course":
       return condition.mark != null
         ? `${condition.courseCode} with a mark of ${condition.mark}`
-        : (condition.courseCode ?? "");
+        : condition.courseRequirementMode === "completed_or_concurrent"
+          ? `${condition.courseCode} completed or taken concurrently`
+          : (condition.courseCode ?? "");
     case "incompatible":
       return condition.courseCode
         ? `Must not have completed ${condition.courseCode}`
@@ -852,7 +865,7 @@ export const CONDITION_FAMILY_KINDS = [
 
 export type ConditionFamilyKind = (typeof CONDITION_FAMILY_KINDS)[number];
 
-export type CourseMatch = "completed" | "not_completed" | "mark";
+export type CourseMatch = "completed" | "concurrent" | "not_completed" | "mark";
 
 export function conditionFamily(
   kind: ReviewedConditionKind,
@@ -863,6 +876,12 @@ export function conditionFamily(
 export function courseMatch(condition: ReviewedConditionView): CourseMatch {
   if (condition.kind === "incompatible") return "not_completed";
   if (condition.kind === "course" && condition.mark != null) return "mark";
+  if (
+    condition.kind === "course" &&
+    condition.courseRequirementMode === "completed_or_concurrent"
+  ) {
+    return "concurrent";
+  }
   return "completed";
 }
 
@@ -886,6 +905,8 @@ export function applyCourseMatch(
     courseCode: condition.courseCode,
     courseTitle: condition.courseTitle,
     mark: match === "mark" ? (condition.mark ?? 50) : null,
+    courseRequirementMode:
+      match === "concurrent" ? "completed_or_concurrent" : "completed",
   };
 }
 

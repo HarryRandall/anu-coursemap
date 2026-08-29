@@ -15,7 +15,7 @@ export function Topbar({
   onOpenNav: () => void;
 }) {
   return (
-    <header className="relative flex min-h-14 items-center justify-between gap-3 overflow-visible bg-white px-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-zinc-200 after:content-[''] sm:px-6">
+    <header className="relative flex min-h-14 flex-wrap items-center justify-between gap-2 overflow-visible bg-white px-4 py-2 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-zinc-200 after:content-[''] sm:flex-nowrap sm:gap-3 sm:px-6 sm:py-0">
       <div className="flex min-w-0 items-center gap-2 overflow-visible">
         <IconButton
           id="mobile-navigation-trigger"
@@ -30,7 +30,9 @@ export function Topbar({
       </div>
 
       {actions && (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
+          {actions}
+        </div>
       )}
     </header>
   );

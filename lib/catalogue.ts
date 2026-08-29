@@ -1168,7 +1168,7 @@ export function courseDetail(course: Course): CourseDetail {
     career: "Undergraduate",
     areasOfInterest: areasBySubject[course.subject] ?? [course.subject],
     coTaught: course.incompatibilities.filter((item) =>
-      /^[A-Z]{4}6\d{3}$/.test(item),
+      /^[A-Z]{4}6\d{3}[A-Z]?$/.test(item),
     ),
     workloadHours: course.units === 12 ? 260 : 130,
     feeBand: 2,

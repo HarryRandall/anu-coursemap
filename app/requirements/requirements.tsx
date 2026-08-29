@@ -23,7 +23,11 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
-import { degreeUnitProgress, planningCourseByCode } from "@/lib/planner";
+import {
+  degreeUnitProgress,
+  planningCourseForAttempt,
+  unitsForAttempt,
+} from "@/lib/planner";
 
 export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
   const { state } = useCoursemap();
@@ -40,14 +44,14 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
       state.attempts
         .map((attempt) => ({
           attempt,
-          course: planningCourseByCode(attempt.courseCode, catalogue),
+          course: planningCourseForAttempt(attempt, catalogue),
         }))
         .filter(
           (
             entry,
           ): entry is {
             attempt: (typeof state.attempts)[number];
-            course: NonNullable<ReturnType<typeof planningCourseByCode>>;
+            course: NonNullable<ReturnType<typeof planningCourseForAttempt>>;
           } => Boolean(entry.course),
         ),
     [catalogue, state],
@@ -150,7 +154,8 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                           {course.code} · {course.name}
                         </span>
                         <span className="mt-0.5 block text-xs text-zinc-500">
-                          {course.units} units · {attempt.status}
+                          {unitsForAttempt(attempt, course)} units ·{" "}
+                          {attempt.status}
                         </span>
                       </span>
                     </div>

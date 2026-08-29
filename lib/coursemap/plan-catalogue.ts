@@ -3,14 +3,19 @@ import "server-only";
 import type { Course, Degree, Major, Term } from "@/lib/coursemap/types";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
-import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-catalogue";
-import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
+import {
+  courseFromSnapshotProjection,
+  loadPublishedCoursesBySelections,
+} from "@/lib/coursemap/published-courses";
+import type { CourseDetails } from "@/lib/coursemap/course-types";
 import { getAuthViewer } from "@/lib/auth/viewer";
 import { createClient } from "@/lib/supabase/server";
 import { collectPlanCatalogueCourseIds } from "@/lib/coursemap/plan-course-ids";
 
 export type PlanCatalogue = {
   courses: Course[];
+  /** Snapshot-pinned course rows used only by recorded attempts. */
+  snapshotCourses?: Course[];
   terms: Term[];
   degrees: Degree[];
   majors: Major[];
@@ -32,6 +37,15 @@ type StructureVersionRow = {
   units: number;
 };
 type StructureIdentityRow = { code: string; id: number; kind: string };
+type PlanCourseRow = { academic_year_id: number; course_id: number };
+type AttemptCourseRow = {
+  course_id: number;
+  course_snapshot_id: number;
+};
+type AttemptSnapshotRow = {
+  academic_year_id: number;
+  id: number;
+};
 
 function formatDateRange(startsOn: string, endsOn: string) {
   const format = new Intl.DateTimeFormat("en-AU", {
@@ -42,12 +56,14 @@ function formatDateRange(startsOn: string, endsOn: string) {
   return `${format.format(new Date(startsOn))} to ${format.format(new Date(endsOn))}`;
 }
 
-function planCourseFromCatalogue(course: CatalogueCourse): Course {
+function planCourseFromDetails(course: CourseDetails): Course {
   return {
     code: course.code,
     name: course.name,
     year: course.year,
+    snapshotId: course.snapshotId,
     units: course.units,
+    unitValue: course.unitValue,
     level: course.level,
     subject: course.subject,
     school: course.school,
@@ -57,6 +73,7 @@ function planCourseFromCatalogue(course: CatalogueCourse): Course {
     description: course.description,
     prerequisiteText: course.prerequisiteText,
     prerequisiteCodes: course.prerequisiteCodes,
+    prerequisiteRule: course.prerequisiteRule,
     incompatibilities: course.incompatibilityText
       ? [course.incompatibilityText]
       : [],
@@ -77,7 +94,7 @@ function planCourseFromCatalogue(course: CatalogueCourse): Course {
 
 export async function loadPublishedPlanCatalogue(
   catalogueYear?: number,
-  courseCodes: readonly string[] = [],
+  courseSelections: readonly { code: string; year: number }[] = [],
 ): Promise<PlanCatalogue> {
   if (isDemoMode()) {
     const {
@@ -86,8 +103,22 @@ export async function loadPublishedPlanCatalogue(
       majors: demoMajors,
       terms: demoTerms,
     } = await import("@/lib/catalogue");
+    const planningYears = [
+      ...new Set(
+        demoTerms
+          .filter((term) => term.id !== "unscheduled")
+          .map((term) => term.year),
+      ),
+    ];
+    const annualDemoCourses = demoCourses.flatMap((course) =>
+      planningYears.map((year) => ({
+        ...course,
+        year,
+        sourceUrl: course.sourceUrl.replace(/\/\d{4}\//u, `/${year}/`),
+      })),
+    );
     return {
-      courses: demoCourses,
+      courses: annualDemoCourses,
       terms: demoTerms,
       degrees: demoDegrees,
       majors: demoMajors,
@@ -123,7 +154,7 @@ export async function loadPublishedPlanCatalogue(
   }
   const [catalogueCourses, periodsResult, structureVersionsResult] =
     await Promise.all([
-      loadPublishedCoursesByCodes(courseCodes, catalogueYearRecord.year),
+      loadPublishedCoursesBySelections(courseSelections),
       supabase
         .from("academic_periods")
         .select("calendar_year,code,ends_on,name,short_name,starts_on")
@@ -211,7 +242,7 @@ export async function loadPublishedPlanCatalogue(
   });
 
   return {
-    courses: catalogueCourses.map(planCourseFromCatalogue),
+    courses: catalogueCourses.map(planCourseFromDetails),
     terms,
     degrees,
     majors,
@@ -243,25 +274,111 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
   if (yearError || !year) return loadPublishedPlanCatalogue();
 
   const [itemsResult, attemptsResult] = await Promise.all([
-    supabase.from("plan_items").select("course_id").eq("plan_id", plan.id),
+    supabase
+      .from("plan_items")
+      .select("course_id,academic_year_id")
+      .eq("plan_id", plan.id),
     supabase
       .from("course_attempts")
-      .select("course_id")
+      .select("course_id,course_snapshot_id")
       .eq("owner_id", viewer.id),
   ]);
   if (itemsResult.error || attemptsResult.error) {
     return loadPublishedPlanCatalogue(year.year);
   }
-  const courseIds = collectPlanCatalogueCourseIds(
-    itemsResult.data ?? [],
-    attemptsResult.data ?? [],
-  );
-  const { data: courses, error: coursesError } = courseIds.length
-    ? await supabase.from("courses").select("code").in("id", courseIds)
+  // These columns are introduced by the clean snapshot cutover migration.
+  // Keep the row contract local while generated database types are refreshed.
+  const planItems = (itemsResult.data ?? []) as unknown as PlanCourseRow[];
+  const courseAttempts = (attemptsResult.data ??
+    []) as unknown as AttemptCourseRow[];
+  const courseIds = collectPlanCatalogueCourseIds(planItems, courseAttempts);
+  const academicYearIds = [
+    ...new Set(planItems.map((item) => item.academic_year_id)),
+  ];
+  const snapshotIds = [
+    ...new Set(courseAttempts.map((attempt) => attempt.course_snapshot_id)),
+  ];
+  const [coursesResult, snapshotsResult] = await Promise.all([
+    courseIds.length
+      ? supabase.from("courses").select("id,code").in("id", courseIds)
+      : Promise.resolve({ data: [], error: null }),
+    snapshotIds.length
+      ? supabase
+          .from("course_snapshots")
+          .select("id,academic_year_id")
+          .in("id", snapshotIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (coursesResult.error || snapshotsResult.error) {
+    return loadPublishedPlanCatalogue(year.year);
+  }
+  const attemptSnapshots = (snapshotsResult.data ?? []) as AttemptSnapshotRow[];
+  const allAcademicYearIds = [
+    ...new Set([
+      ...academicYearIds,
+      ...attemptSnapshots.map((snapshot) => snapshot.academic_year_id),
+    ]),
+  ];
+  const academicYearsResult = allAcademicYearIds.length
+    ? await supabase
+        .from("academic_years")
+        .select("id,year")
+        .in("id", allAcademicYearIds)
     : { data: [], error: null };
-  if (coursesError) return loadPublishedPlanCatalogue(year.year);
-  return loadPublishedPlanCatalogue(
-    year.year,
-    (courses ?? []).map((course) => course.code),
+  if (academicYearsResult.error) {
+    return loadPublishedPlanCatalogue(year.year);
+  }
+  const codeByCourseId = new Map(
+    (coursesResult.data ?? []).map((course) => [course.id, course.code]),
   );
+  const yearByAcademicYearId = new Map(
+    (academicYearsResult.data ?? []).map((academicYear) => [
+      academicYear.id,
+      academicYear.year,
+    ]),
+  );
+  const academicYearIdBySnapshotId = new Map(
+    attemptSnapshots.map((snapshot) => [
+      snapshot.id,
+      snapshot.academic_year_id,
+    ]),
+  );
+  const selections = [
+    ...planItems.flatMap((item) => {
+      const code = codeByCourseId.get(item.course_id);
+      const academicYear = yearByAcademicYearId.get(item.academic_year_id);
+      return code && academicYear ? [{ code, year: academicYear }] : [];
+    }),
+    ...courseAttempts.flatMap((attempt) => {
+      const code = codeByCourseId.get(attempt.course_id);
+      const academicYear = yearByAcademicYearId.get(
+        academicYearIdBySnapshotId.get(attempt.course_snapshot_id) ?? -1,
+      );
+      return code && academicYear ? [{ code, year: academicYear }] : [];
+    }),
+  ];
+  const catalogue = await loadPublishedPlanCatalogue(year.year, selections);
+  const publishedSnapshotIds = new Set(
+    catalogue.courses.flatMap((course) =>
+      course.snapshotId === undefined ? [] : [course.snapshotId],
+    ),
+  );
+  const historicalSnapshotIds = snapshotIds.filter(
+    (snapshotId) => !publishedSnapshotIds.has(snapshotId),
+  );
+  const projectionsResult = historicalSnapshotIds.length
+    ? await supabase.rpc("current_user_course_attempt_snapshot_projections", {
+        p_snapshot_ids: historicalSnapshotIds,
+      })
+    : { data: [], error: null };
+  if (projectionsResult.error) return catalogue;
+
+  const snapshotCourses = (projectionsResult.data ?? []).flatMap((row) => {
+    const course = courseFromSnapshotProjection(
+      row.projection,
+      row.snapshot_id,
+    );
+    return course ? [planCourseFromDetails(course)] : [];
+  });
+  return { ...catalogue, snapshotCourses };
 }

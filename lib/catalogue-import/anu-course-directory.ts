@@ -1,12 +1,16 @@
-import { ANU_PROGRAMS_AND_COURSES_SOURCE } from "./anu-programs-courses.ts";
-import type { CatalogueDiagnostic } from "./manifest.ts";
+import {
+  ANU_PROGRAMS_AND_COURSES_SOURCE,
+  type ImportDiagnostic,
+} from "./import-source.ts";
 import {
   fetchSourceWithRetry,
   type FetchSourceOptions,
 } from "./source-http.ts";
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/;
 const MAX_DIRECTORY_BYTES = 25_000_000;
+export const ANU_COURSE_DIRECTORY_REQUEST_TIMEOUT_MS = 45_000;
+export const ANU_COURSE_DIRECTORY_RETRY_ATTEMPTS = 1;
 
 export type AnuCourseDirectoryEntry = {
   code: string;
@@ -18,43 +22,82 @@ export type AnuCourseDirectoryEntry = {
 };
 
 export type AnuCourseDirectory = {
-  catalogueYear: number;
+  academicYear: number;
   sourceUrl: string;
   fetchedAt: string;
+  totalCount: number | null;
+  receivedItemCount: number;
+  isComplete: boolean;
   courseCodes: string[];
   entries: AnuCourseDirectoryEntry[];
-  diagnostics: CatalogueDiagnostic[];
+  diagnostics: ImportDiagnostic[];
 };
 
 export type FetchAnuCourseDirectoryOptions = FetchSourceOptions & {
   now?: () => Date;
 };
 
+export class AnuCourseDirectoryHttpError extends Error {
+  readonly status: number;
+
+  constructor(status: number, statusText: string) {
+    super(
+      `The course directory request failed: HTTP ${status} ${statusText}`.trim(),
+    );
+    this.name = "AnuCourseDirectoryHttpError";
+    this.status = status;
+  }
+}
+
 /**
  * The search endpoint used by the official Programs and Courses catalogue
  * page. With PageSize=Infinity it returns every course for the selected
  * year in one response, which is how the site's own "show all" view works.
  */
-export function createAnuCourseSearchUrl(catalogueYear: number) {
+export function createAnuCourseSearchUrl(academicYear: number) {
   if (
-    !Number.isInteger(catalogueYear) ||
-    catalogueYear < 2000 ||
-    catalogueYear > 2200
+    !Number.isInteger(academicYear) ||
+    academicYear < 2000 ||
+    academicYear > 2200
   ) {
     throw new TypeError(
-      "catalogueYear must be an integer between 2000 and 2200",
+      "academicYear must be an integer between 2000 and 2200",
     );
   }
   const url = new URL(
     "/data/CourseSearch/GetCourses",
     ANU_PROGRAMS_AND_COURSES_SOURCE.baseUrl,
   );
-  url.searchParams.set("AppliedFilter", "FilterByCourses");
-  url.searchParams.set("ShowAll", "true");
-  url.searchParams.set("PageIndex", "0");
-  url.searchParams.set("PageSize", "Infinity");
-  url.searchParams.set("SelectedYear", String(catalogueYear));
-  url.searchParams.set("SearchText", "");
+  const params = {
+    Source: "",
+    ShowAll: "True",
+    PageIndex: "0",
+    MaxPageSize: "10",
+    PageSize: "Infinity",
+    SortColumn: "",
+    SortDirection: "",
+    InitailSearchRequestedFromExternalPage: "false",
+    SearchText: "",
+    CollegeName: "",
+    ModeOfDelivery: "All Modes",
+    FilterByMajors: "",
+    FilterByMinors: "",
+    FilterBySpecialisations: "",
+    AppliedFilter: "FilterByCourses",
+    SelectedYear: String(academicYear),
+  };
+  for (const [name, value] of Object.entries(params)) {
+    url.searchParams.set(name, value);
+  }
+  for (const [name, count] of [
+    ["Careers", 4],
+    ["Sessions", 6],
+    ["DegreeIdentifiers", 3],
+  ] as const) {
+    for (let index = 0; index < count; index += 1) {
+      url.searchParams.set(`${name}[${index}]`, "");
+    }
+  }
   return url.toString();
 }
 
@@ -66,23 +109,64 @@ function nullableText(value: unknown) {
 
 export function parseAnuCourseDirectory(
   payload: unknown,
-  catalogueYear: number,
-): Pick<AnuCourseDirectory, "courseCodes" | "entries" | "diagnostics"> {
-  const diagnostics: CatalogueDiagnostic[] = [];
+  academicYear: number,
+): Pick<
+  AnuCourseDirectory,
+  | "totalCount"
+  | "receivedItemCount"
+  | "isComplete"
+  | "courseCodes"
+  | "entries"
+  | "diagnostics"
+> {
+  const diagnostics: ImportDiagnostic[] = [];
   const entries: AnuCourseDirectoryEntry[] = [];
   const seen = new Set<string>();
 
-  const items =
-    typeof payload === "object" &&
-    payload !== null &&
-    Array.isArray((payload as { Items?: unknown }).Items)
-      ? ((payload as { Items: unknown[] }).Items ?? [])
+  const payloadRecord =
+    typeof payload === "object" && payload !== null
+      ? (payload as { Items?: unknown; TotalCount?: unknown })
       : null;
+  const items = Array.isArray(payloadRecord?.Items)
+    ? payloadRecord.Items
+    : null;
   if (items === null) {
     throw new TypeError(
       "The course search response did not contain an Items array.",
     );
   }
+
+  const totalCount =
+    typeof payloadRecord?.TotalCount === "number" &&
+    Number.isInteger(payloadRecord.TotalCount) &&
+    payloadRecord.TotalCount >= 0
+      ? payloadRecord.TotalCount
+      : null;
+  const receivedItemCount = items.length;
+  if (totalCount === null) {
+    diagnostics.push({
+      code: "INVALID_DIRECTORY_TOTAL_COUNT",
+      severity: "error",
+      message:
+        "The ANU course search response did not report a valid TotalCount.",
+      field: "directory.totalCount",
+    });
+  } else if (receivedItemCount < totalCount) {
+    diagnostics.push({
+      code: "TRUNCATED_COURSE_DIRECTORY",
+      severity: "error",
+      message: `ANU reported ${totalCount} courses for ${academicYear}, but returned only ${receivedItemCount}.`,
+      field: "directory.courseCodes",
+    });
+  } else if (receivedItemCount > totalCount) {
+    diagnostics.push({
+      code: "INCONSISTENT_DIRECTORY_TOTAL_COUNT",
+      severity: "error",
+      message: `ANU reported ${totalCount} courses for ${academicYear}, but returned ${receivedItemCount}.`,
+      field: "directory.courseCodes",
+    });
+  }
+  const isComplete = totalCount !== null && totalCount === receivedItemCount;
 
   for (const item of items) {
     const record = typeof item === "object" && item !== null ? item : {};
@@ -105,7 +189,7 @@ export function parseAnuCourseDirectory(
       diagnostics.push({
         code: "DUPLICATE_DIRECTORY_COURSE_CODE",
         severity: "warning",
-        message: `${code} appeared more than once in the ${catalogueYear} course search results.`,
+        message: `${code} appeared more than once in the ${academicYear} course search results.`,
         field: "directory.courseCodes",
         sourceFragment: code,
       });
@@ -113,9 +197,19 @@ export function parseAnuCourseDirectory(
     }
     seen.add(code);
     const units = (record as { Units?: unknown }).Units;
+    const name = nullableText((record as { Name?: unknown }).Name);
+    if (!name) {
+      diagnostics.push({
+        code: "MISSING_DIRECTORY_COURSE_TITLE",
+        severity: "warning",
+        message: `${code} did not include a course title and was not safe to publish as a directory row.`,
+        field: "directory.courseTitles",
+        sourceFragment: code,
+      });
+    }
     entries.push({
       code,
-      name: nullableText((record as { Name?: unknown }).Name),
+      name,
       career: nullableText((record as { Career?: unknown }).Career),
       session: nullableText((record as { Session?: unknown }).Session),
       units: typeof units === "number" && Number.isFinite(units) ? units : null,
@@ -129,13 +223,16 @@ export function parseAnuCourseDirectory(
     diagnostics.push({
       code: "EMPTY_COURSE_DIRECTORY",
       severity: "error",
-      message: `The ${catalogueYear} course search returned no usable courses.`,
+      message: `The ${academicYear} course search returned no usable courses.`,
       field: "directory.courseCodes",
     });
   }
 
   entries.sort((left, right) => left.code.localeCompare(right.code));
   return {
+    totalCount,
+    receivedItemCount,
+    isComplete,
     courseCodes: entries.map((entry) => entry.code),
     entries,
     diagnostics,
@@ -143,25 +240,39 @@ export function parseAnuCourseDirectory(
 }
 
 /**
- * Discover every course code published for a catalogue year using the
+ * Discover every course code published for an academic year using the
  * official course search endpoint.
  */
 export async function fetchAnuCourseDirectory(
-  catalogueYear: number,
+  academicYear: number,
   {
     now = () => new Date(),
+    requestTimeoutMs = ANU_COURSE_DIRECTORY_REQUEST_TIMEOUT_MS,
+    retryAttempts = ANU_COURSE_DIRECTORY_RETRY_ATTEMPTS,
+    headers,
     ...fetchOptions
   }: FetchAnuCourseDirectoryOptions = {},
 ): Promise<AnuCourseDirectory> {
-  const sourceUrl = createAnuCourseSearchUrl(catalogueYear);
+  const sourceUrl = createAnuCourseSearchUrl(academicYear);
+  const requestHeaders = new Headers(headers);
+  if (!requestHeaders.has("X-Requested-With")) {
+    requestHeaders.set("X-Requested-With", "XMLHttpRequest");
+  }
+  if (!requestHeaders.has("Referer")) {
+    requestHeaders.set(
+      "Referer",
+      `${ANU_PROGRAMS_AND_COURSES_SOURCE.baseUrl}/catalogue`,
+    );
+  }
   const response = await fetchSourceWithRetry(sourceUrl, {
     ...fetchOptions,
-    accept: "application/json",
+    requestTimeoutMs,
+    retryAttempts,
+    accept: "application/json, text/javascript, */*; q=0.01",
+    headers: requestHeaders,
   });
   if (!response.ok) {
-    throw new Error(
-      `The course directory request failed: HTTP ${response.status} ${response.statusText}`.trim(),
-    );
+    throw new AnuCourseDirectoryHttpError(response.status, response.statusText);
   }
   const body = await response.text();
   if (Buffer.byteLength(body, "utf8") > MAX_DIRECTORY_BYTES) {
@@ -177,9 +288,9 @@ export async function fetchAnuCourseDirectory(
   }
 
   return {
-    catalogueYear,
+    academicYear,
     sourceUrl,
     fetchedAt: now().toISOString(),
-    ...parseAnuCourseDirectory(payload, catalogueYear),
+    ...parseAnuCourseDirectory(payload, academicYear),
   };
 }

@@ -19,8 +19,7 @@
     "db:test": "supabase test db",
     "db:lint": "supabase db lint --local --schema public,private --level warning --fail-on warning",
     "db:types": "supabase gen types typescript --local --schema public > types/database.ts",
-    "catalogue:fetch": "node scripts/catalogue/fetch-anu-manifest.mjs",
-    "catalogue:import": "node scripts/catalogue/import-manifest.mjs",
+    "db:storage:buckets:linked": "supabase seed buckets --linked",
     "calendar:fetch": "node scripts/catalogue/fetch-anu-calendar.mjs",
     "calendar:import": "node scripts/catalogue/import-calendar.mjs",
     "rooms:buildings:fetch": "node scripts/rooms/sync-anu-buildings.mjs fetch",
@@ -31,8 +30,8 @@
     "lint": "eslint . --ignore-pattern .next",
     "lint:fix": "npm run lint -- --fix",
     "test": "npm run test:unit && npm run test:build:demo && npm run test:rendered && npm run test:build:auth && npm run test:auth-access",
-    "test:unit": "node --test tests/admin-catalogue-history.test.mjs tests/admin-user-study.test.mjs tests/anu-building-import.test.mjs tests/auth-config.test.mjs tests/auth-redirect.test.mjs tests/campus-buildings.test.mjs tests/catalogue-directory.test.mjs tests/catalogue-fetch-cli.test.mjs tests/catalogue-import-cli.test.mjs tests/catalogue-import-local-database.test.mjs tests/catalogue-import-parser.test.mjs tests/dashboard-series.test.mjs tests/indoor-3d.test.mjs tests/indoor-drag.test.mjs tests/indoor-editor-state.test.mjs tests/indoor-footprint.test.mjs tests/indoor-geometry.test.mjs tests/indoor-journey.test.mjs tests/indoor-map-migrate.test.mjs tests/indoor-snap.test.mjs tests/indoor-walls.test.mjs tests/local-preview-seed.test.mjs tests/plan-catalogue.test.mjs tests/plan-timeline.test.mjs tests/planner.test.mjs tests/published-requisite-rule.test.mjs tests/requisite-conditions.test.mjs tests/requisite-summary.test.mjs tests/university-calendar-cli.test.mjs tests/university-calendar-parser.test.mjs tests/university-calendar-view.test.mjs",
-    "test:catalogue-db": "node --test tests/catalogue-directory-sync.test.mjs tests/catalogue-import-database-integration.test.mjs tests/university-calendar-import-database.test.mjs",
+    "test:unit": "node --test tests/admin-catalogue-history.test.mjs tests/admin-user-study.test.mjs tests/anu-building-import.test.mjs tests/attempt-units.test.mjs tests/auth-config.test.mjs tests/auth-redirect.test.mjs tests/campus-buildings.test.mjs tests/course-artifact-store.test.mjs tests/course-directory-policy.test.mjs tests/course-directory.test.mjs tests/course-import-process-target.test.mjs tests/course-import-queue.test.mjs tests/course-import-source.test.mjs tests/course-import-transform.test.mjs tests/course-snapshot-projection.test.mjs tests/dashboard-series.test.mjs tests/import-stream.test.mjs tests/indoor-3d.test.mjs tests/indoor-drag.test.mjs tests/indoor-editor-state.test.mjs tests/indoor-footprint.test.mjs tests/indoor-geometry.test.mjs tests/indoor-journey.test.mjs tests/indoor-map-migrate.test.mjs tests/indoor-snap.test.mjs tests/indoor-walls.test.mjs tests/local-preview-seed.test.mjs tests/openrouter-course-extraction.test.mjs tests/plan-catalogue.test.mjs tests/plan-timeline.test.mjs tests/planner.test.mjs tests/published-requisite-rule.test.mjs tests/requisite-conditions.test.mjs tests/requisite-summary.test.mjs tests/snapshot-prerequisite-codes.test.mjs tests/university-calendar-cli.test.mjs tests/university-calendar-parser.test.mjs tests/university-calendar-view.test.mjs",
+    "test:catalogue-db": "node --test --test-concurrency=1 tests/course-directory-refresh-database.test.mjs tests/course-import-concurrency-database.test.mjs tests/course-snapshot-persistence-database.test.mjs tests/university-calendar-import-database.test.mjs",
     "test:build:demo": "COURSEMAP_DEMO_MODE=true NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3217 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:9 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_test npm run build",
     "test:rendered": "node --test tests/rendered-html.test.mjs",
     "test:build:auth": "COURSEMAP_DEMO_MODE=false NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3218 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:9 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_test npm run build",
@@ -50,6 +49,7 @@
     "@radix-ui/react-tabs": "1.1.21",
     "@supabase/ssr": "0.12.5",
     "@supabase/supabase-js": "2.112.4",
+    "@vercel/queue": "0.5.1",
     "@xyflow/react": "12.11.5",
     "cheerio": "1.2.0",
     "class-variance-authority": "0.7.1",
@@ -65,7 +65,8 @@
     "react-dom": "19.2.8",
     "recharts": "3.10.1",
     "sonner": "2.0.8",
-    "tailwind-merge": "3.6.0"
+    "tailwind-merge": "3.6.0",
+    "zod": "4.5.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",

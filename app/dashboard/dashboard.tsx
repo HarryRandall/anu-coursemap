@@ -49,7 +49,8 @@ import {
 import {
   degreeUnitProgress,
   effectiveStatus,
-  planningCourseByCode,
+  planningCourseForAttempt,
+  unitsForAttempt,
 } from "@/lib/planner";
 
 export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
@@ -57,26 +58,38 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
   );
-  const timelineYears = planTimelineYears({
-    degree,
-    commencementYear: state.profile.commencementYear,
-    extensionYears: state.profile.extensionYears,
-  });
-  const timelineTerms = planTimelineTerms({
-    terms: catalogue.terms,
-    years: timelineYears,
-  });
+  const timelineYears = useMemo(
+    () =>
+      planTimelineYears({
+        degree,
+        commencementYear: state.profile.commencementYear,
+        extensionYears: state.profile.extensionYears,
+      }),
+    [degree, state.profile.commencementYear, state.profile.extensionYears],
+  );
+  const timelineTerms = useMemo(
+    () =>
+      planTimelineTerms({
+        terms: catalogue.terms,
+        years: timelineYears,
+      }),
+    [catalogue.terms, timelineYears],
+  );
+  const planningCatalogue = useMemo(
+    () => ({ ...catalogue, terms: timelineTerms }),
+    [catalogue, timelineTerms],
+  );
   const progress = degreeUnitProgress(
     state.attempts,
     degree?.units ?? 0,
-    catalogue,
+    planningCatalogue,
   );
   const planned = useMemo(
     () =>
       state.attempts
         .map((attempt) => ({
           attempt,
-          course: planningCourseByCode(attempt.courseCode, catalogue),
+          course: planningCourseForAttempt(attempt, planningCatalogue),
           term: timelineTerms.find((term) => term.id === attempt.termId),
         }))
         .filter(
@@ -84,19 +97,22 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
             item,
           ): item is {
             attempt: (typeof state.attempts)[number];
-            course: NonNullable<ReturnType<typeof planningCourseByCode>>;
+            course: NonNullable<ReturnType<typeof planningCourseForAttempt>>;
             term: (typeof timelineTerms)[number] | undefined;
           } => Boolean(item.course),
         ),
-    [catalogue, state, timelineTerms],
+    [planningCatalogue, state, timelineTerms],
   );
   const blocked = planned.filter(
     (item) =>
-      effectiveStatus(item.attempt, state.attempts, catalogue) === "blocked",
+      effectiveStatus(item.attempt, state.attempts, planningCatalogue) ===
+      "blocked",
   );
   const plannedUnits = planned.reduce(
     (total, item) =>
-      item.attempt.status === "failed" ? total : total + item.course.units,
+      item.attempt.status === "failed"
+        ? total
+        : total + unitsForAttempt(item.attempt, item.course),
     0,
   );
   const nextCourses = planned
@@ -108,8 +124,8 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
     )
     .slice(0, 5);
   const dashboardCatalogue = useMemo(
-    () => ({ courses: catalogue.courses, terms: timelineTerms }),
-    [catalogue.courses, timelineTerms],
+    () => planningCatalogue,
+    [planningCatalogue],
   );
   const termLoads = useMemo(
     () =>
@@ -201,7 +217,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
             value={progress.percent}
           />
           <StatTile
-            description="Only published catalogue courses are shown."
+            description="Only published course years are shown."
             icon={<BookOpen aria-hidden="true" />}
             label="Courses in your plan"
             value={planned.length}
@@ -260,7 +276,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
                   const status = effectiveStatus(
                     attempt,
                     state.attempts,
-                    catalogue,
+                    planningCatalogue,
                   );
                   return (
                     <div

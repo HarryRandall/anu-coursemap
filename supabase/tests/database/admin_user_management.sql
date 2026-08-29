@@ -378,7 +378,11 @@ select extensions.ok(
     select 1
     from public.admin_roles
     where role_key = 'admin'
-      and permission_keys @> array['admin.access', 'catalogue.write']::text[]
+      and permission_keys @> array[
+        'admin.access',
+        'catalogue.write',
+        'courses.write'
+      ]::text[]
   ),
   'the role catalogue includes effective permissions'
 );
@@ -396,6 +400,14 @@ select extensions.ok(
     where permission_key = 'catalogue.read_drafts'
       and permission_name = 'View draft catalogue'
       and permission_category = 'catalogue'
+      and permission_description is not null
+  )
+  and exists (
+    select 1
+    from public.admin_permissions
+    where permission_key = 'courses.read_drafts'
+      and permission_name = 'View draft courses'
+      and permission_category = 'courses'
       and permission_description is not null
   ),
   'the editable role catalogue includes display metadata'

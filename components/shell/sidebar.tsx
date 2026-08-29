@@ -7,8 +7,8 @@ import {
   BookOpen,
   CalendarDays,
   CalendarRange,
-  GitCompareArrows,
   GraduationCap,
+  History,
   House,
   Import,
   KeyRound,
@@ -18,7 +18,6 @@ import {
   Map,
   MapPin,
   MapPinned,
-  RefreshCw,
   Route,
   Shield,
   Table2,
@@ -29,7 +28,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
-import { useAdminNav } from "@/components/admin/admin-nav-context";
 import { BrandMark } from "@/components/brand-mark";
 import { CourseFind } from "@/components/course-find";
 import { IconButton } from "@/components/ui/button";
@@ -45,8 +43,6 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   badge?: string;
-  /** Renders a live numeric badge, resolved from the admin nav context. */
-  count?: "openChanges";
   dividerAfter?: boolean;
 };
 
@@ -84,14 +80,8 @@ type NavSection = {
 };
 
 /**
- * Grouped rather than one flat list. The admin destinations do three unrelated
- * jobs -- editing the catalogue, pulling it in from ANU, and controlling who
- * gets in -- and running them together made the whole console read as
- * undifferentiated.
- *
- * Importing is deliberately three destinations rather than one page with tabs:
- * pulling courses, pulling programmes and reviewing what changed are separate
- * tasks that no operator does in one sitting.
+ * Grouped around the operator's jobs: course data, campus data, durable
+ * imports and access control.
  */
 const adminNav: NavSection[] = [
   {
@@ -101,7 +91,7 @@ const adminNav: NavSection[] = [
     ],
   },
   {
-    label: "Catalogue",
+    label: "Academic data",
     items: [
       { href: "/admin/courses", label: "Courses", icon: Table2 },
       { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
@@ -115,23 +105,7 @@ const adminNav: NavSection[] = [
     icon: Import,
     label: "Imports",
     items: [
-      { href: "/admin/imports/sync", label: "Sync", icon: RefreshCw },
-      {
-        href: "/admin/imports/courses",
-        label: "Import courses",
-        icon: BookOpen,
-      },
-      {
-        href: "/admin/imports/programmes",
-        label: "Import programmes",
-        icon: GraduationCap,
-      },
-      {
-        count: "openChanges",
-        href: "/admin/imports/changes",
-        label: "Changes",
-        icon: GitCompareArrows,
-      },
+      { href: "/admin/imports/runs", label: "Course runs", icon: History },
     ],
   },
   {
@@ -166,13 +140,11 @@ function NavLink({
   onNavigate: () => void;
 }) {
   const pathname = usePathname();
-  const { openChangeCount } = useAdminNav();
   const isActive =
     item.href === "/admin/dashboard"
       ? pathname === item.href || pathname === "/admin"
       : pathname === item.href || pathname.startsWith(`${item.href}/`);
   const Icon = item.icon;
-  const count = item.count === "openChanges" ? openChangeCount : 0;
   return (
     <Link
       href={item.href}
@@ -189,13 +161,6 @@ function NavLink({
     >
       <Icon size={17} strokeWidth={1.9} />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
-      {count > 0 && (
-        // Tabular so a two-digit count does not shift the pill's centre.
-        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] leading-4 font-medium text-amber-800 tabular-nums">
-          {count}
-          <span className="sr-only"> awaiting review</span>
-        </span>
-      )}
       {item.badge && (
         <span
           className={cn(

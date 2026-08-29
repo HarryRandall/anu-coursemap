@@ -12,16 +12,25 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
+  attemptedUnitsError,
+  attemptedUnitsFromInput,
+  attemptUnitRequirement,
+} from "@/lib/coursemap/attempt-units";
+import {
   effectiveStatus,
   missingPrereqs,
-  planningCourseByCode,
+  planningCourseForAttempt,
+  unitsForAttempt,
 } from "@/lib/planner";
 import { Drawer } from "@/components/ui/overlay";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, ButtonLink, IconButton } from "@/components/ui/button";
+import { Field, FieldError, Input, Select } from "@/components/ui/field";
 import { StatusPill } from "@/components/ui/status-pill";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
 
@@ -38,18 +47,32 @@ export function CourseDrawer({
     useCoursemap();
   const attempt = state.attempts.find((item) => item.id === attemptId);
   const course = attempt
-    ? planningCourseByCode(attempt.courseCode, catalogue)
+    ? planningCourseForAttempt(attempt, catalogue)
     : undefined;
+  const [attemptedUnitsInput, setAttemptedUnitsInput] = useState(() =>
+    attempt?.unitsAttempted === undefined ? "" : String(attempt.unitsAttempted),
+  );
+  const unitRequirement = course ? attemptUnitRequirement(course) : null;
   const status = attempt
     ? effectiveStatus(attempt, state.attempts, catalogue)
     : "planned";
 
-  if (!attempt || !course) return null;
+  if (!attempt || !course || !unitRequirement) return null;
 
   const missing = new Set(missingPrereqs(attempt, state.attempts, catalogue));
   const prereqsMet = missing.size === 0;
-  const recorded =
-    attempt.status === "completed" || attempt.status === "failed";
+  const recorded = attempt.status !== "planned";
+  const selectedAttemptedUnits = attemptedUnitsFromInput(
+    unitRequirement,
+    attemptedUnitsInput,
+  );
+  const unitError = attemptedUnitsError(unitRequirement, attemptedUnitsInput);
+  const unitSelectionRequired = unitRequirement.kind !== "fixed";
+  const unitSelectionMissing =
+    unitSelectionRequired && selectedAttemptedUnits === null;
+  const submittedAttemptedUnits = unitSelectionRequired
+    ? (selectedAttemptedUnits ?? undefined)
+    : undefined;
   const remove = async () => {
     const result = await removeAttempt(attempt.id);
     notify(result.message, result.ok ? "success" : "warning");
@@ -86,7 +109,7 @@ export function CourseDrawer({
 
         <div className="mt-4 grid grid-cols-3 divide-x divide-zinc-200 rounded-xl ring-1 ring-zinc-200">
           {[
-            ["Units", String(course.units)],
+            ["Units", String(unitsForAttempt(attempt, course))],
             ["Level", String(course.level)],
             [
               "Offered",
@@ -130,7 +153,7 @@ export function CourseDrawer({
         <ButtonLink
           variant="secondary"
           size="md"
-          href={`/courses/${course.code}`}
+          href={`/courses/${course.code}?year=${course.year}`}
           className="mt-3 !h-auto w-full justify-between px-3 py-2.5 text-left"
         >
           <span className="min-w-0 whitespace-normal">
@@ -143,6 +166,70 @@ export function CourseDrawer({
           </span>
           <ExternalLink size={14} className="shrink-0 text-zinc-400" />
         </ButtonLink>
+
+        {!recorded && unitRequirement.kind === "unavailable" ? (
+          <Alert className="mt-5" tone="warning">
+            <AlertDescription>
+              This course has no published unit value, so an attempt cannot be
+              recorded yet.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {!recorded &&
+        unitSelectionRequired &&
+        unitRequirement.kind !== "unavailable" ? (
+          <section className="mt-5 border-t border-zinc-100 pt-5">
+            <Field
+              hint={
+                unitRequirement.kind === "range"
+                  ? `Published range: ${unitRequirement.minimumUnits} to ${unitRequirement.maximumUnits} units.`
+                  : unitRequirement.kind === "choice"
+                    ? "Choose the published unit value you attempted."
+                    : null
+              }
+              label="Units attempted"
+            >
+              {unitRequirement.kind === "choice" ? (
+                <Select
+                  aria-label="Units attempted"
+                  onChange={setAttemptedUnitsInput}
+                  options={unitRequirement.options.map((option) => ({
+                    label: option.label
+                      ? `${option.units} units · ${option.label}`
+                      : `${option.units} units`,
+                    value: String(option.units),
+                  }))}
+                  placeholder="Choose units"
+                  value={attemptedUnitsInput}
+                />
+              ) : (
+                <Input
+                  aria-invalid={unitError ? true : undefined}
+                  inputMode="decimal"
+                  max={
+                    unitRequirement.kind === "range"
+                      ? unitRequirement.maximumUnits
+                      : 999.99
+                  }
+                  min={
+                    unitRequirement.kind === "range"
+                      ? unitRequirement.minimumUnits
+                      : 0.01
+                  }
+                  onChange={(event) =>
+                    setAttemptedUnitsInput(event.target.value)
+                  }
+                  placeholder="Enter units"
+                  step="0.01"
+                  type="number"
+                  value={attemptedUnitsInput}
+                />
+              )}
+              {unitError ? <FieldError>{unitError}</FieldError> : null}
+            </Field>
+          </section>
+        ) : null}
 
         <section className="mt-5 border-t border-zinc-100 pt-5">
           <h3 className="text-[13px] font-semibold text-zinc-900">
@@ -269,7 +356,7 @@ export function CourseDrawer({
             variant="secondary"
             size="sm"
             fullWidth
-            disabled={attempt.status === "failed"}
+            disabled={recorded || unitSelectionMissing}
             className={cn(
               attempt.status === "completed" &&
                 "!bg-white !text-emerald-700 !ring-emerald-300 hover:!bg-emerald-50 disabled:opacity-100",
@@ -277,7 +364,12 @@ export function CourseDrawer({
                 "hover:!bg-emerald-50 hover:!text-emerald-700 hover:!ring-emerald-200",
             )}
             onClick={async () => {
-              const result = await updateAttempt(attempt.id, "completed");
+              const result = await updateAttempt(
+                attempt.id,
+                "completed",
+                undefined,
+                submittedAttemptedUnits,
+              );
               notify(
                 result.ok
                   ? `${course.code} marked as completed`
@@ -293,14 +385,19 @@ export function CourseDrawer({
             variant={attempt.status === "failed" ? "danger" : "secondary"}
             size="sm"
             fullWidth
-            disabled={attempt.status === "completed"}
+            disabled={recorded || unitSelectionMissing}
             className={cn(
               attempt.status === "failed" && "opacity-100",
               attempt.status !== "failed" &&
                 "hover:!bg-rose-50 hover:!text-rose-700 hover:!ring-rose-200",
             )}
             onClick={async () => {
-              const result = await updateAttempt(attempt.id, "failed");
+              const result = await updateAttempt(
+                attempt.id,
+                "failed",
+                undefined,
+                submittedAttemptedUnits,
+              );
               notify(
                 result.ok
                   ? `${course.code} recorded as a failed attempt`

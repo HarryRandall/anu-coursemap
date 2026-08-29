@@ -2,6 +2,25 @@ import type { AppState } from "@/app/providers";
 import type { AuthViewer } from "@/lib/auth/viewer";
 import { createClient } from "@/lib/supabase/server";
 
+type PlanItemRow = {
+  academic_year_id: number;
+  course_id: number;
+  id: string;
+  planned_calendar_year: number | null;
+  planned_period_code: string | null;
+};
+
+type CourseAttemptRow = {
+  academic_period_id: number;
+  course_id: number;
+  course_snapshot_id: number;
+  id: string;
+  mark: number | null;
+  status: string;
+  units_attempted: number;
+  units_earned: number;
+};
+
 export function emptyCoursemapState(viewer: AuthViewer): AppState {
   return {
     schemaVersion: 1,
@@ -83,13 +102,15 @@ export async function loadCoursemapState(
         supabase
           .from("plan_items")
           .select(
-            "id,course_id,planned_calendar_year,planned_period_code,sort_order",
+            "id,course_id,academic_year_id,planned_calendar_year,planned_period_code,sort_order",
           )
           .eq("plan_id", plan.id)
           .order("sort_order"),
         supabase
           .from("course_attempts")
-          .select("id,course_id,academic_period_id,status,mark")
+          .select(
+            "id,course_id,course_snapshot_id,academic_period_id,status,mark,units_attempted,units_earned",
+          )
           .eq("owner_id", viewer.id)
           .order("created_at"),
       ]);
@@ -120,8 +141,11 @@ export async function loadCoursemapState(
       ]),
     );
 
-    const items = itemsResult.data ?? [];
-    const attempts = attemptsResult.data ?? [];
+    // These columns are introduced by the clean snapshot cutover migration.
+    // Keep the row contract local while generated database types are refreshed.
+    const items = (itemsResult.data ?? []) as unknown as PlanItemRow[];
+    const attempts = (attemptsResult.data ??
+      []) as unknown as CourseAttemptRow[];
     const courseIds = [
       ...new Set([
         ...items.map((item) => item.course_id),
@@ -131,17 +155,50 @@ export async function loadCoursemapState(
     const periodIds = [
       ...new Set(attempts.map((item) => item.academic_period_id)),
     ];
-    const [{ data: courseIdentities }, { data: periods }] = await Promise.all([
-      courseIds.length
-        ? supabase.from("courses").select("id,code").in("id", courseIds)
-        : Promise.resolve({ data: [] }),
-      periodIds.length
-        ? supabase
-            .from("academic_periods")
-            .select("id,calendar_year,code")
-            .in("id", periodIds)
-        : Promise.resolve({ data: [] }),
-    ]);
+    const snapshotIds = [
+      ...new Set(attempts.map((item) => item.course_snapshot_id)),
+    ];
+    const [{ data: courseIdentities }, { data: periods }, snapshotsResult] =
+      await Promise.all([
+        courseIds.length
+          ? supabase.from("courses").select("id,code").in("id", courseIds)
+          : Promise.resolve({ data: [] }),
+        periodIds.length
+          ? supabase
+              .from("academic_periods")
+              .select("id,calendar_year,code")
+              .in("id", periodIds)
+          : Promise.resolve({ data: [] }),
+        snapshotIds.length
+          ? supabase
+              .from("course_snapshots")
+              .select("id,academic_year_id")
+              .in("id", snapshotIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+    const academicYearIds = [
+      ...new Set([
+        ...items.map((item) => item.academic_year_id),
+        ...(snapshotsResult.data ?? []).map(
+          (snapshot) => snapshot.academic_year_id,
+        ),
+      ]),
+    ];
+    const { data: academicYears } = academicYearIds.length
+      ? await supabase
+          .from("academic_years")
+          .select("id,year")
+          .in("id", academicYearIds)
+      : { data: [] };
+    const academicYearById = new Map(
+      (academicYears ?? []).map((year) => [year.id, year.year]),
+    );
+    const snapshotAcademicYearId = new Map(
+      (snapshotsResult.data ?? []).map((snapshot) => [
+        snapshot.id,
+        snapshot.academic_year_id,
+      ]),
+    );
     const courseCode = new Map(
       (courseIdentities ?? []).map((course) => [course.id, course.code]),
     );
@@ -155,6 +212,7 @@ export async function loadCoursemapState(
       return [
         {
           id: item.id,
+          academicYear: academicYearById.get(item.academic_year_id),
           courseCode: code,
           termId:
             item.planned_calendar_year && item.planned_period_code
@@ -176,10 +234,16 @@ export async function loadCoursemapState(
       return [
         {
           id: attempt.id,
+          academicYear: academicYearById.get(
+            snapshotAcademicYearId.get(attempt.course_snapshot_id) ?? -1,
+          ),
           courseCode: code,
+          snapshotId: attempt.course_snapshot_id,
           termId: `${period.calendar_year}-${period.code.toLowerCase()}`,
           status: attempt.status as "completed" | "failed" | "enrolled",
           mark: attempt.mark ?? undefined,
+          unitsAttempted: Number(attempt.units_attempted),
+          unitsEarned: Number(attempt.units_earned),
         },
       ];
     });

@@ -151,7 +151,7 @@ export function ProgrammeList({
           )}
           caption="Imported programme versions"
           columns={columns}
-          emptyDescription="Clear the search, choose a different filter, or run an import to bring programmes in from ANU."
+          emptyDescription="Clear the search or choose a different filter. Programme imports will be added in a later phase."
           emptyTitle="No programmes match this view"
           itemName="programmes"
           page={data.page}

@@ -16,7 +16,11 @@ import {
 } from "@/components/ui/empty";
 import { StatTile } from "@/components/ui/stat-tile";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
-import { planningCourseByCode } from "@/lib/planner";
+import {
+  planTimelineTerms,
+  planTimelineYears,
+} from "@/lib/coursemap/plan-timeline";
+import { planningCourseForAttempt, unitsForAttempt } from "@/lib/planner";
 
 function weightedAverage(entries: Array<{ mark?: number; units: number }>) {
   const marked = entries.filter((entry) => entry.mark !== undefined);
@@ -33,23 +37,43 @@ function weightedAverage(entries: Array<{ mark?: number; units: number }>) {
 export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
   const { state } = useCoursemap();
   const [selectedAttempt, setSelectedAttempt] = useState<string | null>(null);
+  const degree = catalogue.degrees.find(
+    (item) => item.code === state.profile.degreeCode,
+  );
+  const timelineYears = useMemo(
+    () =>
+      planTimelineYears({
+        degree,
+        commencementYear: state.profile.commencementYear,
+        extensionYears: state.profile.extensionYears,
+      }),
+    [degree, state.profile.commencementYear, state.profile.extensionYears],
+  );
+  const timelineTerms = useMemo(
+    () => planTimelineTerms({ terms: catalogue.terms, years: timelineYears }),
+    [catalogue.terms, timelineYears],
+  );
+  const planningCatalogue = useMemo(
+    () => ({ ...catalogue, terms: timelineTerms }),
+    [catalogue, timelineTerms],
+  );
   const entries = useMemo(() => {
     const termOrder = new Map(
-      catalogue.terms.map((term, index) => [term.id, index]),
+      timelineTerms.map((term, index) => [term.id, index]),
     );
     return state.attempts
       .map((attempt) => ({
         attempt,
-        course: planningCourseByCode(attempt.courseCode, catalogue),
-        term: catalogue.terms.find((term) => term.id === attempt.termId),
+        course: planningCourseForAttempt(attempt, planningCatalogue),
+        term: timelineTerms.find((term) => term.id === attempt.termId),
       }))
       .filter(
         (
           entry,
         ): entry is {
           attempt: (typeof state.attempts)[number];
-          course: NonNullable<ReturnType<typeof planningCourseByCode>>;
-          term: (typeof catalogue.terms)[number] | undefined;
+          course: NonNullable<ReturnType<typeof planningCourseForAttempt>>;
+          term: (typeof timelineTerms)[number] | undefined;
         } => Boolean(entry.course),
       )
       .sort(
@@ -57,18 +81,18 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
           (termOrder.get(left.attempt.termId) ?? Number.MAX_SAFE_INTEGER) -
           (termOrder.get(right.attempt.termId) ?? Number.MAX_SAFE_INTEGER),
       );
-  }, [catalogue, state]);
+  }, [planningCatalogue, state, timelineTerms]);
   const completed = entries.filter(
     (entry) => entry.attempt.status === "completed",
   );
   const average = weightedAverage(
     entries.map((entry) => ({
       mark: entry.attempt.mark,
-      units: entry.course.units,
+      units: unitsForAttempt(entry.attempt, entry.course),
     })),
   );
   const earned = completed.reduce(
-    (total, entry) => total + entry.course.units,
+    (total, entry) => total + unitsForAttempt(entry.attempt, entry.course),
     0,
   );
   const failed = entries.filter(
@@ -166,7 +190,7 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
       {selectedAttempt && (
         <CourseDrawer
           attemptId={selectedAttempt}
-          catalogue={catalogue}
+          catalogue={planningCatalogue}
           onClose={() => setSelectedAttempt(null)}
         />
       )}

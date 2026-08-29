@@ -44,6 +44,9 @@ async function loadModule() {
 const {
   addChild,
   automaticExpressionFromSource,
+  applyCourseMatch,
+  conditionSourceText,
+  courseMatch,
   createConditionNode,
   createEmptyTree,
   createGroupNode,
@@ -55,6 +58,22 @@ const {
   reviewedTreeFromStored,
   validateReviewedTree,
 } = await loadModule();
+
+test("preserves completed-or-concurrent course requirements in the editor", () => {
+  const concurrent = applyCourseMatch(
+    {
+      type: "condition",
+      id: "course-condition",
+      kind: "course",
+      courseCode: "COMP1100",
+    },
+    "concurrent",
+  );
+
+  assert.equal(courseMatch(concurrent), "concurrent");
+  assert.equal(concurrent.courseRequirementMode, "completed_or_concurrent");
+  assert.match(conditionSourceText(concurrent), /concurrently/u);
+});
 
 const importerStructured = {
   confidence: 1,

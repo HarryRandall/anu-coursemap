@@ -1,5 +1,5 @@
 import { parseUniversityCalendarManifest } from "../../../lib/catalogue-import/anu-university-calendar.ts";
-import { assertVerifiedCatalogueImportClient } from "./local-database.mjs";
+import { assertVerifiedImportDatabaseClient } from "./local-database.mjs";
 
 const IMPORT_LOCK_NAMESPACE = "coursemap:catalogue-import";
 
@@ -272,7 +272,7 @@ async function importManifestInTransaction(tx, manifest) {
  */
 export async function importUniversityCalendarManifest(sql, value) {
   const manifest = parseUniversityCalendarManifest(value);
-  assertVerifiedCatalogueImportClient(sql);
+  assertVerifiedImportDatabaseClient(sql);
   return sql.begin("read write", async (tx) => {
     await tx`set local statement_timeout = '30s'`;
     await tx`set local lock_timeout = '5s'`;
@@ -282,7 +282,7 @@ export async function importUniversityCalendarManifest(sql, value) {
 
 /** Test helper mirroring withLocalCatalogueImportTransaction. */
 export async function withUniversityCalendarImportTransaction(sql, callback) {
-  assertVerifiedCatalogueImportClient(sql);
+  assertVerifiedImportDatabaseClient(sql);
   if (typeof callback !== "function") {
     throw new TypeError(
       "A university calendar import transaction callback is required.",

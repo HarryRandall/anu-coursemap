@@ -1,31 +1,73 @@
 import { notFound, redirect } from "next/navigation";
 import { CourseReview } from "./course-review";
-import { loadAdminCourseReview } from "@/lib/coursemap/admin-catalogue";
-import { toStudentPreviewCourse } from "@/lib/coursemap/admin-course-preview";
-import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-catalogue";
+import { canManageCourseImports, canWriteCourses } from "@/lib/auth/viewer";
+import { loadAdminCourseYear } from "@/lib/coursemap/admin-course-year";
+import { toStudentPreviewCourseYear } from "@/lib/coursemap/admin-course-preview";
+import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-courses";
 import { isDemoMode } from "@/lib/supabase/config";
 
-const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}\b/gu;
+function first(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export default async function AdminCourseDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{
+    snapshot?: string | string[];
+    year?: string | string[];
+  }>;
 }) {
-  const { id } = await params;
-  const record = await loadAdminCourseReview(id);
+  const [{ id }, query, canWrite, canViewImports] = await Promise.all([
+    params,
+    searchParams,
+    canWriteCourses(),
+    canManageCourseImports(),
+  ]);
+  const requestedYearValue = Number(first(query.year));
+  const requestedYear = Number.isSafeInteger(requestedYearValue)
+    ? requestedYearValue
+    : undefined;
+  const requestedSnapshotValue = Number(first(query.snapshot));
+  const requestedSnapshotId = Number.isSafeInteger(requestedSnapshotValue)
+    ? requestedSnapshotValue
+    : undefined;
+  const record = await loadAdminCourseYear(
+    id,
+    requestedYear,
+    canViewImports,
+    requestedSnapshotId,
+  );
   if (!record) notFound();
-  // Codes stay valid so existing links keep working, but settle on the
-  // public identifier so a URL never depends on a code ANU could reuse.
-  if (id !== record.publicId) redirect(`/admin/courses/${record.publicId}`);
+
+  // Codes remain valid entry points, but permanent links use the stable course
+  // identity and selected academic year.
+  if (
+    !isDemoMode() &&
+    (id !== record.publicId ||
+      requestedYear !== record.year ||
+      (requestedSnapshotId !== undefined &&
+        requestedSnapshotId !== record.currentSnapshotId))
+  ) {
+    const snapshotQuery =
+      record.currentSnapshotId !== record.activeSnapshotId &&
+      record.currentSnapshotId !== null
+        ? `&snapshot=${record.currentSnapshotId}`
+        : "";
+    redirect(
+      `/admin/courses/${record.publicId}?year=${record.year}${snapshotQuery}`,
+    );
+  }
 
   const referenced = [
     ...new Set(
-      record.rules
-        .flatMap((rule) => rule.sourceText.match(COURSE_CODE_PATTERN) ?? [])
-        .filter((referencedCode) => referencedCode !== record.code),
+      record.projection?.ruleCourseReferences.map(
+        (reference) => reference.referencedCourseCode,
+      ) ?? [],
     ),
-  ];
+  ].filter((code) => code !== record.code);
   let publishedCourseCodes: string[] = [];
   try {
     const published = await loadPublishedCoursesByCodes(
@@ -39,8 +81,9 @@ export default async function AdminCourseDetailPage({
 
   return (
     <CourseReview
-      canEdit={!isDemoMode() && record.publicationStatus === "draft"}
-      previewCourse={toStudentPreviewCourse(record, publishedCourseCodes)}
+      key={`${record.courseYearId}:${record.currentSnapshotId ?? "none"}`}
+      canWrite={!isDemoMode() && canWrite}
+      previewCourse={toStudentPreviewCourseYear(record, publishedCourseCodes)}
       record={record}
     />
   );

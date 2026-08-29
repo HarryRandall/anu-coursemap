@@ -8,7 +8,7 @@ import {
   fetchUniversityCalendarManifest,
   universityCalendarErrorDiagnostics,
 } from "../../lib/catalogue-import/anu-university-calendar.ts";
-import { resolveManifestOutputPath } from "./fetch-anu-manifest.mjs";
+import { resolveManifestOutputPath } from "./lib/manifest-output.mjs";
 
 const usage = `Usage:
   npm run calendar:fetch -- --year 2026 --output .catalogue-cache/anu-calendar-2026.json

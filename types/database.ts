@@ -730,73 +730,6 @@ export type Database = {
           },
         ]
       }
-      catalogue_directory_courses: {
-        Row: {
-          career: string | null
-          catalogue_year_id: number
-          code: string
-          created_at: string
-          id: number
-          import_run_id: string
-          mode_of_delivery: string | null
-          session: string | null
-          source_document_id: number
-          title: string
-          units: number | null
-          updated_at: string
-        }
-        Insert: {
-          career?: string | null
-          catalogue_year_id: number
-          code: string
-          created_at?: string
-          id?: never
-          import_run_id: string
-          mode_of_delivery?: string | null
-          session?: string | null
-          source_document_id: number
-          title: string
-          units?: number | null
-          updated_at?: string
-        }
-        Update: {
-          career?: string | null
-          catalogue_year_id?: number
-          code?: string
-          created_at?: string
-          id?: never
-          import_run_id?: string
-          mode_of_delivery?: string | null
-          session?: string | null
-          source_document_id?: number
-          title?: string
-          units?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "catalogue_directory_courses_catalogue_year_id_fkey"
-            columns: ["catalogue_year_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_years"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "catalogue_directory_courses_import_run_id_fkey"
-            columns: ["import_run_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_import_runs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "catalogue_directory_courses_source_document_year_fkey"
-            columns: ["source_document_id", "catalogue_year_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_source_documents"
-            referencedColumns: ["id", "catalogue_year_id"]
-          },
-        ]
-      }
       catalogue_directory_programmes: {
         Row: {
           career: string | null
@@ -916,7 +849,7 @@ export type Database = {
           source_document_id: number
           source_id: number
           target_key: string | null
-          target_kind: string | null
+          target_kind: string
         }
         Insert: {
           catalogue_year_id: number
@@ -928,7 +861,7 @@ export type Database = {
           source_document_id: number
           source_id: number
           target_key?: string | null
-          target_kind?: string | null
+          target_kind: string
         }
         Update: {
           catalogue_year_id?: number
@@ -940,7 +873,7 @@ export type Database = {
           source_document_id?: number
           source_id?: number
           target_key?: string | null
-          target_kind?: string | null
+          target_kind?: string
         }
         Relationships: [
           {
@@ -1247,9 +1180,10 @@ export type Database = {
       }
       course_assessment_items: {
         Row: {
-          course_snapshot_id: number | null
-          course_version_id: number
+          course_snapshot_id: number
           created_at: string
+          due_text: string | null
+          hurdle: boolean | null
           id: number
           learning_outcomes: number[] | null
           position: number
@@ -1259,9 +1193,10 @@ export type Database = {
           weight: number | null
         }
         Insert: {
-          course_snapshot_id?: number | null
-          course_version_id: number
+          course_snapshot_id: number
           created_at?: string
+          due_text?: string | null
+          hurdle?: boolean | null
           id?: never
           learning_outcomes?: number[] | null
           position: number
@@ -1271,9 +1206,10 @@ export type Database = {
           weight?: number | null
         }
         Update: {
-          course_snapshot_id?: number | null
-          course_version_id?: number
+          course_snapshot_id?: number
           created_at?: string
+          due_text?: string | null
+          hurdle?: boolean | null
           id?: never
           learning_outcomes?: number[] | null
           position?: number
@@ -1288,13 +1224,6 @@ export type Database = {
             columns: ["course_snapshot_id"]
             isOneToOne: false
             referencedRelation: "course_snapshots"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_assessment_items_course_version_id_fkey"
-            columns: ["course_version_id"]
-            isOneToOne: false
-            referencedRelation: "course_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -1339,6 +1268,7 @@ export type Database = {
         Row: {
           academic_period_id: number
           course_id: number
+          course_snapshot_id: number
           created_at: string
           grade: string | null
           id: string
@@ -1353,6 +1283,7 @@ export type Database = {
         Insert: {
           academic_period_id: number
           course_id: number
+          course_snapshot_id: number
           created_at?: string
           grade?: string | null
           id?: string
@@ -1367,6 +1298,7 @@ export type Database = {
         Update: {
           academic_period_id?: number
           course_id?: number
+          course_snapshot_id?: number
           created_at?: string
           grade?: string | null
           id?: string
@@ -1393,6 +1325,51 @@ export type Database = {
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "course_attempts_course_snapshot_id_fkey"
+            columns: ["course_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_attributes: {
+        Row: {
+          attribute_kind: string
+          course_snapshot_id: number
+          created_at: string
+          id: number
+          position: number
+          source_text: string
+          value: string
+        }
+        Insert: {
+          attribute_kind: string
+          course_snapshot_id: number
+          created_at?: string
+          id?: never
+          position: number
+          source_text: string
+          value: string
+        }
+        Update: {
+          attribute_kind?: string
+          course_snapshot_id?: number
+          created_at?: string
+          id?: never
+          position?: number
+          source_text?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_attributes_course_snapshot_id_fkey"
+            columns: ["course_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id"]
+          },
         ]
       }
       course_directory_entries: {
@@ -1408,7 +1385,7 @@ export type Database = {
           last_seen_at: string
           mode_of_delivery: string | null
           session: string | null
-          source_document_id: number
+          source_page_id: number
           title: string
           units: number | null
           updated_at: string
@@ -1425,7 +1402,7 @@ export type Database = {
           last_seen_at?: string
           mode_of_delivery?: string | null
           session?: string | null
-          source_document_id: number
+          source_page_id: number
           title: string
           units?: number | null
           updated_at?: string
@@ -1442,7 +1419,7 @@ export type Database = {
           last_seen_at?: string
           mode_of_delivery?: string | null
           session?: string | null
-          source_document_id?: number
+          source_page_id?: number
           title?: string
           units?: number | null
           updated_at?: string
@@ -1463,11 +1440,163 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_directory_entries_source_document_year_fkey"
-            columns: ["source_document_id", "academic_year_id"]
+            foreignKeyName: "course_directory_entries_source_page_year_fkey"
+            columns: ["source_page_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "course_source_documents"
+            referencedRelation: "course_source_pages"
             referencedColumns: ["id", "academic_year_id"]
+          },
+        ]
+      }
+      course_extractions: {
+        Row: {
+          cached_input_tokens: number
+          completed_at: string | null
+          cost_source: string
+          cost_usd: number
+          created_at: string
+          domain_valid: boolean | null
+          error_count: number
+          error_summary: string | null
+          extraction_fingerprint: string
+          extraction_number: number
+          finish_reason: string | null
+          id: string
+          input_tokens: number
+          latency_ms: number | null
+          output_tokens: number
+          prompt_version: string
+          provider: string
+          provider_request_id: string | null
+          reasoning_tokens: number
+          request_artifact_id: string
+          requested_model: string
+          resolved_model: string | null
+          response_artifact_id: string | null
+          reused_from_extraction_id: string | null
+          schema_valid: boolean | null
+          schema_version: string
+          started_at: string
+          target_id: string
+          validated_artifact_id: string | null
+          validation_status: string
+          warning_count: number
+        }
+        Insert: {
+          cached_input_tokens?: number
+          completed_at?: string | null
+          cost_source?: string
+          cost_usd?: number
+          created_at?: string
+          domain_valid?: boolean | null
+          error_count?: number
+          error_summary?: string | null
+          extraction_fingerprint: string
+          extraction_number: number
+          finish_reason?: string | null
+          id?: string
+          input_tokens?: number
+          latency_ms?: number | null
+          output_tokens?: number
+          prompt_version: string
+          provider?: string
+          provider_request_id?: string | null
+          reasoning_tokens?: number
+          request_artifact_id: string
+          requested_model: string
+          resolved_model?: string | null
+          response_artifact_id?: string | null
+          reused_from_extraction_id?: string | null
+          schema_valid?: boolean | null
+          schema_version: string
+          started_at: string
+          target_id: string
+          validated_artifact_id?: string | null
+          validation_status?: string
+          warning_count?: number
+        }
+        Update: {
+          cached_input_tokens?: number
+          completed_at?: string | null
+          cost_source?: string
+          cost_usd?: number
+          created_at?: string
+          domain_valid?: boolean | null
+          error_count?: number
+          error_summary?: string | null
+          extraction_fingerprint?: string
+          extraction_number?: number
+          finish_reason?: string | null
+          id?: string
+          input_tokens?: number
+          latency_ms?: number | null
+          output_tokens?: number
+          prompt_version?: string
+          provider?: string
+          provider_request_id?: string | null
+          reasoning_tokens?: number
+          request_artifact_id?: string
+          requested_model?: string
+          resolved_model?: string | null
+          response_artifact_id?: string | null
+          reused_from_extraction_id?: string | null
+          schema_valid?: boolean | null
+          schema_version?: string
+          started_at?: string
+          target_id?: string
+          validated_artifact_id?: string | null
+          validation_status?: string
+          warning_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_extractions_request_artifact_fkey"
+            columns: ["request_artifact_id", "target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_artifacts"
+            referencedColumns: ["id", "target_id"]
+          },
+          {
+            foreignKeyName: "course_extractions_response_artifact_fkey"
+            columns: ["response_artifact_id", "target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_artifacts"
+            referencedColumns: ["id", "target_id"]
+          },
+          {
+            foreignKeyName: "course_extractions_reused_from_extraction_id_fkey"
+            columns: ["reused_from_extraction_id"]
+            isOneToOne: false
+            referencedRelation: "course_extractions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_extractions_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_admin_entries"
+            referencedColumns: ["latest_target_id"]
+          },
+          {
+            foreignKeyName: "course_extractions_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_extractions_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_extractions_validated_artifact_fkey"
+            columns: ["validated_artifact_id", "target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_artifacts"
+            referencedColumns: ["id", "target_id"]
           },
         ]
       }
@@ -1527,11 +1656,427 @@ export type Database = {
           },
         ]
       }
+      course_import_artifacts: {
+        Row: {
+          artifact_kind: string
+          attempt_number: number
+          byte_size: number
+          content_sha256: string
+          created_at: string
+          id: string
+          media_type: string
+          stage_id: string | null
+          storage_bucket: string
+          storage_path: string
+          target_id: string
+        }
+        Insert: {
+          artifact_kind: string
+          attempt_number?: number
+          byte_size: number
+          content_sha256: string
+          created_at?: string
+          id?: string
+          media_type: string
+          stage_id?: string | null
+          storage_bucket: string
+          storage_path: string
+          target_id: string
+        }
+        Update: {
+          artifact_kind?: string
+          attempt_number?: number
+          byte_size?: number
+          content_sha256?: string
+          created_at?: string
+          id?: string
+          media_type?: string
+          stage_id?: string | null
+          storage_bucket?: string
+          storage_path?: string
+          target_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_import_artifacts_stage_target_fkey"
+            columns: ["stage_id", "target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_stages"
+            referencedColumns: ["id", "target_id"]
+          },
+          {
+            foreignKeyName: "course_import_artifacts_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_admin_entries"
+            referencedColumns: ["latest_target_id"]
+          },
+          {
+            foreignKeyName: "course_import_artifacts_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_import_artifacts_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_import_runs: {
+        Row: {
+          academic_year_id: number
+          actual_cost_usd: number
+          completed_at: string | null
+          created_at: string
+          error_summary: string | null
+          extraction_count: number
+          failed_count: number
+          heartbeat_at: string | null
+          id: string
+          initiated_by: string | null
+          input_tokens: number
+          output_tokens: number
+          parser_version: string
+          processed_count: number
+          prompt_version: string
+          ready_for_review_count: number
+          requested_model: string
+          schema_version: string
+          source_id: number
+          started_at: string | null
+          status: string
+          target_count: number
+          unchanged_count: number
+          updated_at: string
+        }
+        Insert: {
+          academic_year_id: number
+          actual_cost_usd?: number
+          completed_at?: string | null
+          created_at?: string
+          error_summary?: string | null
+          extraction_count?: number
+          failed_count?: number
+          heartbeat_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          input_tokens?: number
+          output_tokens?: number
+          parser_version: string
+          processed_count?: number
+          prompt_version: string
+          ready_for_review_count?: number
+          requested_model: string
+          schema_version: string
+          source_id: number
+          started_at?: string | null
+          status?: string
+          target_count: number
+          unchanged_count?: number
+          updated_at?: string
+        }
+        Update: {
+          academic_year_id?: number
+          actual_cost_usd?: number
+          completed_at?: string | null
+          created_at?: string
+          error_summary?: string | null
+          extraction_count?: number
+          failed_count?: number
+          heartbeat_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          input_tokens?: number
+          output_tokens?: number
+          parser_version?: string
+          processed_count?: number
+          prompt_version?: string
+          ready_for_review_count?: number
+          requested_model?: string
+          schema_version?: string
+          source_id?: number
+          started_at?: string | null
+          status?: string
+          target_count?: number
+          unchanged_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_import_runs_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_import_runs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "course_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_import_stages: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          error_code: string | null
+          error_summary: string | null
+          id: string
+          position: number
+          stage_name: string
+          started_at: string | null
+          status: string
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_summary?: string | null
+          id?: string
+          position: number
+          stage_name: string
+          started_at?: string | null
+          status?: string
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_summary?: string | null
+          id?: string
+          position?: number
+          stage_name?: string
+          started_at?: string | null
+          status?: string
+          target_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_import_stages_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_admin_entries"
+            referencedColumns: ["latest_target_id"]
+          },
+          {
+            foreignKeyName: "course_import_stages_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_import_stages_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_import_targets: {
+        Row: {
+          academic_year_id: number
+          attempt_count: number
+          baseline_draft_snapshot_id: number | null
+          baseline_published_snapshot_id: number | null
+          candidate_snapshot_id: number | null
+          change_kind: string | null
+          claimed_at: string | null
+          course_code: string
+          course_id: number | null
+          course_year_id: number | null
+          created_at: string
+          directory_entry_id: number
+          dispatch_error: string | null
+          dispatched_at: string | null
+          error_code: string | null
+          error_summary: string | null
+          finished_at: string | null
+          heartbeat_at: string | null
+          id: string
+          lease_expires_at: string | null
+          lock_version: number
+          position: number
+          processing_status: string
+          queue_message_id: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          run_id: string
+          source_id: number
+          source_page_id: number | null
+          updated_at: string
+          worker_id: string | null
+        }
+        Insert: {
+          academic_year_id: number
+          attempt_count?: number
+          baseline_draft_snapshot_id?: number | null
+          baseline_published_snapshot_id?: number | null
+          candidate_snapshot_id?: number | null
+          change_kind?: string | null
+          claimed_at?: string | null
+          course_code: string
+          course_id?: number | null
+          course_year_id?: number | null
+          created_at?: string
+          directory_entry_id: number
+          dispatch_error?: string | null
+          dispatched_at?: string | null
+          error_code?: string | null
+          error_summary?: string | null
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          lock_version?: number
+          position: number
+          processing_status?: string
+          queue_message_id?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_id: string
+          source_id: number
+          source_page_id?: number | null
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Update: {
+          academic_year_id?: number
+          attempt_count?: number
+          baseline_draft_snapshot_id?: number | null
+          baseline_published_snapshot_id?: number | null
+          candidate_snapshot_id?: number | null
+          change_kind?: string | null
+          claimed_at?: string | null
+          course_code?: string
+          course_id?: number | null
+          course_year_id?: number | null
+          created_at?: string
+          directory_entry_id?: number
+          dispatch_error?: string | null
+          dispatched_at?: string | null
+          error_code?: string | null
+          error_summary?: string | null
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          lock_version?: number
+          position?: number
+          processing_status?: string
+          queue_message_id?: string | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_id?: string
+          source_id?: number
+          source_page_id?: number | null
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_import_targets_baseline_draft_fkey"
+            columns: ["baseline_draft_snapshot_id", "course_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "course_year_id"]
+          },
+          {
+            foreignKeyName: "course_import_targets_baseline_published_fkey"
+            columns: ["baseline_published_snapshot_id", "course_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "course_year_id"]
+          },
+          {
+            foreignKeyName: "course_import_targets_candidate_snapshot_fkey"
+            columns: ["candidate_snapshot_id", "course_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "course_year_id"]
+          },
+          {
+            foreignKeyName: "course_import_targets_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_import_targets_course_year_provenance_fkey"
+            columns: ["course_year_id", "course_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_years"
+            referencedColumns: ["id", "course_id", "academic_year_id"]
+          },
+          {
+            foreignKeyName: "course_import_targets_directory_provenance_fkey"
+            columns: ["directory_entry_id", "academic_year_id", "course_code"]
+            isOneToOne: false
+            referencedRelation: "course_directory_admin_entries"
+            referencedColumns: ["id", "academic_year_id", "code"]
+          },
+          {
+            foreignKeyName: "course_import_targets_directory_provenance_fkey"
+            columns: ["directory_entry_id", "academic_year_id", "course_code"]
+            isOneToOne: false
+            referencedRelation: "course_directory_entries"
+            referencedColumns: ["id", "academic_year_id", "code"]
+          },
+          {
+            foreignKeyName: "course_import_targets_directory_year_code_fkey"
+            columns: ["academic_year_id", "course_code"]
+            isOneToOne: false
+            referencedRelation: "course_directory_admin_entries"
+            referencedColumns: ["academic_year_id", "code"]
+          },
+          {
+            foreignKeyName: "course_import_targets_directory_year_code_fkey"
+            columns: ["academic_year_id", "course_code"]
+            isOneToOne: false
+            referencedRelation: "course_directory_entries"
+            referencedColumns: ["academic_year_id", "code"]
+          },
+          {
+            foreignKeyName: "course_import_targets_run_provenance_fkey"
+            columns: ["run_id", "source_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_runs"
+            referencedColumns: ["id", "source_id", "academic_year_id"]
+          },
+          {
+            foreignKeyName: "course_import_targets_source_page_year_fkey"
+            columns: ["source_page_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_source_pages"
+            referencedColumns: ["id", "academic_year_id"]
+          },
+        ]
+      }
       course_learning_outcomes: {
         Row: {
           body: string
-          course_snapshot_id: number | null
-          course_version_id: number
+          course_snapshot_id: number
           created_at: string
           id: number
           position: number
@@ -1539,8 +2084,7 @@ export type Database = {
         }
         Insert: {
           body: string
-          course_snapshot_id?: number | null
-          course_version_id: number
+          course_snapshot_id: number
           created_at?: string
           id?: never
           position: number
@@ -1548,8 +2092,7 @@ export type Database = {
         }
         Update: {
           body?: string
-          course_snapshot_id?: number | null
-          course_version_id?: number
+          course_snapshot_id?: number
           created_at?: string
           id?: never
           position?: number
@@ -1563,73 +2106,60 @@ export type Database = {
             referencedRelation: "course_snapshots"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "course_learning_outcomes_course_version_id_fkey"
-            columns: ["course_version_id"]
-            isOneToOne: false
-            referencedRelation: "course_versions"
-            referencedColumns: ["id"]
-          },
         ]
       }
       course_offerings: {
         Row: {
-          catalogue_year_id: number
-          course_snapshot_id: number | null
-          course_version_id: number
+          academic_year_id: number
+          course_snapshot_id: number
+          course_source_page_id: number
           created_at: string
           delivery_mode: string | null
           id: number
           location: string | null
-          source_document_id: number
-          status: string
           updated_at: string
         }
         Insert: {
-          catalogue_year_id: number
-          course_snapshot_id?: number | null
-          course_version_id: number
+          academic_year_id: number
+          course_snapshot_id: number
+          course_source_page_id: number
           created_at?: string
           delivery_mode?: string | null
           id?: never
           location?: string | null
-          source_document_id: number
-          status?: string
           updated_at?: string
         }
         Update: {
-          catalogue_year_id?: number
-          course_snapshot_id?: number | null
-          course_version_id?: number
+          academic_year_id?: number
+          course_snapshot_id?: number
+          course_source_page_id?: number
           created_at?: string
           delivery_mode?: string | null
           id?: never
           location?: string | null
-          source_document_id?: number
-          status?: string
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "course_offerings_course_snapshot_id_fkey"
             columns: ["course_snapshot_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "course_snapshots"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_offerings_source_document_year_fkey"
-            columns: ["source_document_id", "catalogue_year_id"]
+            foreignKeyName: "course_offerings_snapshot_year_fkey"
+            columns: ["course_snapshot_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_source_documents"
-            referencedColumns: ["id", "catalogue_year_id"]
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "academic_year_id"]
           },
           {
-            foreignKeyName: "course_offerings_version_year_fkey"
-            columns: ["course_version_id", "catalogue_year_id"]
+            foreignKeyName: "course_offerings_source_page_year_fkey"
+            columns: ["course_source_page_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "course_versions"
-            referencedColumns: ["id", "catalogue_year_id"]
+            referencedRelation: "course_source_pages"
+            referencedColumns: ["id", "academic_year_id"]
           },
         ]
       }
@@ -1639,7 +2169,7 @@ export type Database = {
           created_at: string
           id: number
           position: number
-          related_course_id: number | null
+          related_course_id: number
           relation_kind: string
           source_course_code: string
           source_course_title: string | null
@@ -1650,7 +2180,7 @@ export type Database = {
           created_at?: string
           id?: never
           position: number
-          related_course_id?: number | null
+          related_course_id: number
           relation_kind: string
           source_course_code: string
           source_course_title?: string | null
@@ -1661,7 +2191,7 @@ export type Database = {
           created_at?: string
           id?: never
           position?: number
-          related_course_id?: number | null
+          related_course_id?: number
           relation_kind?: string
           source_course_code?: string
           source_course_title?: string | null
@@ -1684,21 +2214,179 @@ export type Database = {
           },
         ]
       }
+      course_review_items: {
+        Row: {
+          assigned_to: string | null
+          confidence: number | null
+          course_snapshot_id: number
+          created_at: string
+          entity_key: string
+          entity_kind: string
+          field_path: string
+          id: string
+          importance: string
+          is_blocking: boolean
+          issue_code: string
+          new_value: Json | null
+          old_value: Json | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          source_excerpt: string | null
+          source_locator: string | null
+          status: string
+          summary: string
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          confidence?: number | null
+          course_snapshot_id: number
+          created_at?: string
+          entity_key?: string
+          entity_kind: string
+          field_path: string
+          id?: string
+          importance?: string
+          is_blocking?: boolean
+          issue_code: string
+          new_value?: Json | null
+          old_value?: Json | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_excerpt?: string | null
+          source_locator?: string | null
+          status?: string
+          summary: string
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          confidence?: number | null
+          course_snapshot_id?: number
+          created_at?: string
+          entity_key?: string
+          entity_kind?: string
+          field_path?: string
+          id?: string
+          importance?: string
+          is_blocking?: boolean
+          issue_code?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_excerpt?: string | null
+          source_locator?: string | null
+          status?: string
+          summary?: string
+          target_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_review_items_snapshot_id_fkey"
+            columns: ["course_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_review_items_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_admin_entries"
+            referencedColumns: ["latest_target_id"]
+          },
+          {
+            foreignKeyName: "course_review_items_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_review_items_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "course_import_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_rule_condition_courses: {
+        Row: {
+          condition_id: number
+          course_snapshot_id: number
+          created_at: string
+          id: number
+          position: number
+          referenced_course_id: number
+          source_course_code: string
+          source_text: string
+        }
+        Insert: {
+          condition_id: number
+          course_snapshot_id: number
+          created_at?: string
+          id?: never
+          position: number
+          referenced_course_id: number
+          source_course_code: string
+          source_text: string
+        }
+        Update: {
+          condition_id?: number
+          course_snapshot_id?: number
+          created_at?: string
+          id?: never
+          position?: number
+          referenced_course_id?: number
+          source_course_code?: string
+          source_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_rule_condition_courses_condition_snapshot_fkey"
+            columns: ["condition_id", "course_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_rule_conditions"
+            referencedColumns: ["id", "course_snapshot_id"]
+          },
+          {
+            foreignKeyName: "course_rule_condition_courses_referenced_course_id_fkey"
+            columns: ["referenced_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_rule_conditions: {
         Row: {
           condition_kind: string
           confidence: number
+          course_requirement_mode: string | null
           course_rule_id: number
+          course_snapshot_id: number
           created_at: string
           free_text: string | null
           group_id: number
+          hardness: string
           id: number
           maximum_course_level: number | null
           minimum_course_level: number | null
           minimum_gpa: number | null
           minimum_mark: number | null
           minimum_units: number | null
+          minimum_wam: number | null
+          minimum_year: number | null
           position: number
+          projection_key: string
           required_course_id: number | null
           required_structure_id: number | null
           review_state: string
@@ -1709,17 +2397,23 @@ export type Database = {
         Insert: {
           condition_kind: string
           confidence?: number
+          course_requirement_mode?: string | null
           course_rule_id: number
+          course_snapshot_id: number
           created_at?: string
           free_text?: string | null
           group_id: number
+          hardness: string
           id?: never
           maximum_course_level?: number | null
           minimum_course_level?: number | null
           minimum_gpa?: number | null
           minimum_mark?: number | null
           minimum_units?: number | null
+          minimum_wam?: number | null
+          minimum_year?: number | null
           position?: number
+          projection_key: string
           required_course_id?: number | null
           required_structure_id?: number | null
           review_state?: string
@@ -1730,17 +2424,23 @@ export type Database = {
         Update: {
           condition_kind?: string
           confidence?: number
+          course_requirement_mode?: string | null
           course_rule_id?: number
+          course_snapshot_id?: number
           created_at?: string
           free_text?: string | null
           group_id?: number
+          hardness?: string
           id?: never
           maximum_course_level?: number | null
           minimum_course_level?: number | null
           minimum_gpa?: number | null
           minimum_mark?: number | null
           minimum_units?: number | null
+          minimum_wam?: number | null
+          minimum_year?: number | null
           position?: number
+          projection_key?: string
           required_course_id?: number | null
           required_structure_id?: number | null
           review_state?: string
@@ -1770,12 +2470,20 @@ export type Database = {
             referencedRelation: "academic_structures"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "course_rule_conditions_rule_snapshot_fkey"
+            columns: ["course_rule_id", "course_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_rules"
+            referencedColumns: ["id", "course_snapshot_id"]
+          },
         ]
       }
       course_rule_course_references: {
         Row: {
           confidence: number
           course_rule_id: number
+          course_snapshot_id: number
           created_at: string
           id: number
           referenced_course_id: number
@@ -1786,6 +2494,7 @@ export type Database = {
         Insert: {
           confidence?: number
           course_rule_id: number
+          course_snapshot_id: number
           created_at?: string
           id?: never
           referenced_course_id: number
@@ -1796,6 +2505,7 @@ export type Database = {
         Update: {
           confidence?: number
           course_rule_id?: number
+          course_snapshot_id?: number
           created_at?: string
           id?: never
           referenced_course_id?: number
@@ -1818,37 +2528,50 @@ export type Database = {
             referencedRelation: "course_rules"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "course_rule_course_references_rule_snapshot_fkey"
+            columns: ["course_rule_id", "course_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_rules"
+            referencedColumns: ["id", "course_snapshot_id"]
+          },
         ]
       }
       course_rule_groups: {
         Row: {
           course_rule_id: number
+          course_snapshot_id: number
           created_at: string
           id: number
           minimum_count: number | null
           operator: string
           parent_group_id: number | null
           position: number
+          projection_key: string
           updated_at: string
         }
         Insert: {
           course_rule_id: number
+          course_snapshot_id: number
           created_at?: string
           id?: never
           minimum_count?: number | null
           operator: string
           parent_group_id?: number | null
           position?: number
+          projection_key: string
           updated_at?: string
         }
         Update: {
           course_rule_id?: number
+          course_snapshot_id?: number
           created_at?: string
           id?: never
           minimum_count?: number | null
           operator?: string
           parent_group_id?: number | null
           position?: number
+          projection_key?: string
           updated_at?: string
         }
         Relationships: [
@@ -1866,48 +2589,52 @@ export type Database = {
             referencedRelation: "course_rule_groups"
             referencedColumns: ["id", "course_rule_id"]
           },
+          {
+            foreignKeyName: "course_rule_groups_rule_snapshot_fkey"
+            columns: ["course_rule_id", "course_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_rules"
+            referencedColumns: ["id", "course_snapshot_id"]
+          },
         ]
       }
       course_rules: {
         Row: {
-          catalogue_year_id: number
+          academic_year_id: number
           confidence: number
-          course_snapshot_id: number | null
-          course_version_id: number
+          course_snapshot_id: number
+          course_source_page_id: number
           created_at: string
           hardness: string
           id: number
           review_state: string
           rule_kind: string
-          source_document_id: number
           source_text: string
           updated_at: string
         }
         Insert: {
-          catalogue_year_id: number
+          academic_year_id: number
           confidence?: number
-          course_snapshot_id?: number | null
-          course_version_id: number
+          course_snapshot_id: number
+          course_source_page_id: number
           created_at?: string
           hardness?: string
           id?: never
           review_state?: string
           rule_kind: string
-          source_document_id: number
           source_text: string
           updated_at?: string
         }
         Update: {
-          catalogue_year_id?: number
+          academic_year_id?: number
           confidence?: number
-          course_snapshot_id?: number | null
-          course_version_id?: number
+          course_snapshot_id?: number
+          course_source_page_id?: number
           created_at?: string
           hardness?: string
           id?: never
           review_state?: string
           rule_kind?: string
-          source_document_id?: number
           source_text?: string
           updated_at?: string
         }
@@ -1920,18 +2647,107 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_rules_course_version_year_fkey"
-            columns: ["course_version_id", "catalogue_year_id"]
+            foreignKeyName: "course_rules_snapshot_year_fkey"
+            columns: ["course_snapshot_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "course_versions"
-            referencedColumns: ["id", "catalogue_year_id"]
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "academic_year_id"]
           },
           {
-            foreignKeyName: "course_rules_source_document_year_fkey"
-            columns: ["source_document_id", "catalogue_year_id"]
+            foreignKeyName: "course_rules_source_page_year_fkey"
+            columns: ["course_source_page_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_source_documents"
-            referencedColumns: ["id", "catalogue_year_id"]
+            referencedRelation: "course_source_pages"
+            referencedColumns: ["id", "academic_year_id"]
+          },
+        ]
+      }
+      course_snapshot_confirmation_items: {
+        Row: {
+          confirmation_id: string
+          review_item_id: string
+        }
+        Insert: {
+          confirmation_id: string
+          review_item_id: string
+        }
+        Update: {
+          confirmation_id?: string
+          review_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_snapshot_confirmation_items_confirmation_id_fkey"
+            columns: ["confirmation_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshot_confirmations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_snapshot_confirmation_items_review_item_id_fkey"
+            columns: ["review_item_id"]
+            isOneToOne: true
+            referencedRelation: "course_review_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_snapshot_confirmations: {
+        Row: {
+          based_on_snapshot_id: number
+          confirmation_note: string
+          confirmed_at: string
+          confirmed_by: string
+          course_snapshot_id: number
+          course_year_id: number
+          id: string
+        }
+        Insert: {
+          based_on_snapshot_id: number
+          confirmation_note: string
+          confirmed_at?: string
+          confirmed_by: string
+          course_snapshot_id: number
+          course_year_id: number
+          id?: string
+        }
+        Update: {
+          based_on_snapshot_id?: number
+          confirmation_note?: string
+          confirmed_at?: string
+          confirmed_by?: string
+          course_snapshot_id?: number
+          course_year_id?: number
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_snapshot_confirmations_base_snapshot_id_fkey"
+            columns: ["based_on_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_snapshot_confirmations_course_year_id_fkey"
+            columns: ["course_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_directory_admin_entries"
+            referencedColumns: ["course_year_id"]
+          },
+          {
+            foreignKeyName: "course_snapshot_confirmations_course_year_id_fkey"
+            columns: ["course_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_snapshot_confirmations_snapshot_id_fkey"
+            columns: ["course_snapshot_id"]
+            isOneToOne: true
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1950,8 +2766,8 @@ export type Database = {
           id: number
           importance: string
           note: string | null
-          source_document_id: number | null
           source_locator: string | null
+          source_page_id: number
           verification_status: string
         }
         Insert: {
@@ -1968,8 +2784,8 @@ export type Database = {
           id?: never
           importance: string
           note?: string | null
-          source_document_id?: number | null
           source_locator?: string | null
+          source_page_id: number
           verification_status: string
         }
         Update: {
@@ -1986,8 +2802,8 @@ export type Database = {
           id?: never
           importance?: string
           note?: string | null
-          source_document_id?: number | null
           source_locator?: string | null
+          source_page_id?: number
           verification_status?: string
         }
         Relationships: [
@@ -1999,10 +2815,10 @@ export type Database = {
             referencedColumns: ["id", "academic_year_id"]
           },
           {
-            foreignKeyName: "course_snapshot_field_evidence_source_document_year_fkey"
-            columns: ["source_document_id", "academic_year_id"]
+            foreignKeyName: "course_snapshot_field_evidence_source_page_year_fkey"
+            columns: ["source_page_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "course_source_documents"
+            referencedRelation: "course_source_pages"
             referencedColumns: ["id", "academic_year_id"]
           },
         ]
@@ -2024,21 +2840,21 @@ export type Database = {
           id: number
           inherent_requirements: string | null
           introduction: string | null
-          level: number | null
+          level: number
           maximum_units: number | null
           minimum_units: number | null
           offering_status: string
           origin: string
           overall_confidence: number | null
           prescribed_texts: string | null
-          projection_sha256: string | null
+          projection_sha256: string
           schema_version: string
           school: string | null
           sealed_at: string | null
           snapshot_number: number
-          source_document_id: number | null
+          source_page_id: number
           source_updated_at: string | null
-          subject_code: string | null
+          subject_code: string
           subject_name: string | null
           title: string
           unit_value_kind: string
@@ -2063,21 +2879,21 @@ export type Database = {
           id?: never
           inherent_requirements?: string | null
           introduction?: string | null
-          level?: number | null
+          level: number
           maximum_units?: number | null
           minimum_units?: number | null
           offering_status?: string
           origin: string
           overall_confidence?: number | null
           prescribed_texts?: string | null
-          projection_sha256?: string | null
+          projection_sha256: string
           schema_version?: string
           school?: string | null
           sealed_at?: string | null
           snapshot_number: number
-          source_document_id?: number | null
+          source_page_id: number
           source_updated_at?: string | null
-          subject_code?: string | null
+          subject_code: string
           subject_name?: string | null
           title: string
           unit_value_kind?: string
@@ -2102,21 +2918,21 @@ export type Database = {
           id?: never
           inherent_requirements?: string | null
           introduction?: string | null
-          level?: number | null
+          level?: number
           maximum_units?: number | null
           minimum_units?: number | null
           offering_status?: string
           origin?: string
           overall_confidence?: number | null
           prescribed_texts?: string | null
-          projection_sha256?: string | null
+          projection_sha256?: string
           schema_version?: string
           school?: string | null
           sealed_at?: string | null
           snapshot_number?: number
-          source_document_id?: number | null
+          source_page_id?: number
           source_updated_at?: string | null
-          subject_code?: string | null
+          subject_code?: string
           subject_name?: string | null
           title?: string
           unit_value_kind?: string
@@ -2141,28 +2957,28 @@ export type Database = {
             referencedColumns: ["id", "academic_year_id"]
           },
           {
-            foreignKeyName: "course_snapshots_source_document_year_fkey"
-            columns: ["source_document_id", "academic_year_id"]
+            foreignKeyName: "course_snapshots_source_page_year_fkey"
+            columns: ["source_page_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "course_source_documents"
+            referencedRelation: "course_source_pages"
             referencedColumns: ["id", "academic_year_id"]
           },
         ]
       }
-      course_source_documents: {
+      course_source_pages: {
         Row: {
           academic_year_id: number
           byte_size: number | null
           canonical_url: string
           content_sha256: string
           created_at: string
-          document_kind: string
           external_key: string
           fetched_at: string
           http_etag: string | null
           http_status: number | null
           id: number
           media_type: string
+          page_kind: string
           source_id: number
           source_last_modified: string | null
           storage_bucket: string | null
@@ -2174,13 +2990,13 @@ export type Database = {
           canonical_url: string
           content_sha256: string
           created_at?: string
-          document_kind: string
           external_key: string
           fetched_at?: string
           http_etag?: string | null
           http_status?: number | null
           id?: never
           media_type: string
+          page_kind: string
           source_id: number
           source_last_modified?: string | null
           storage_bucket?: string | null
@@ -2192,13 +3008,13 @@ export type Database = {
           canonical_url?: string
           content_sha256?: string
           created_at?: string
-          document_kind?: string
           external_key?: string
           fetched_at?: string
           http_etag?: string | null
           http_status?: number | null
           id?: never
           media_type?: string
+          page_kind?: string
           source_id?: number
           source_last_modified?: string | null
           storage_bucket?: string | null
@@ -2206,14 +3022,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "course_source_documents_academic_year_id_fkey"
+            foreignKeyName: "course_source_pages_academic_year_id_fkey"
             columns: ["academic_year_id"]
             isOneToOne: false
             referencedRelation: "academic_years"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "course_source_documents_source_id_fkey"
+            foreignKeyName: "course_source_pages_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "course_sources"
@@ -2251,112 +3067,41 @@ export type Database = {
         }
         Relationships: []
       }
-      course_versions: {
+      course_unit_options: {
         Row: {
-          catalogue_year_id: number
-          convener: string | null
-          course_id: number
+          course_snapshot_id: number
           created_at: string
-          delivery_summary: string | null
-          description: string
-          eftsl: number | null
-          fee_domestic: number | null
-          fee_international: number | null
-          fee_year: number | null
           id: number
-          inherent_requirements: string | null
-          level: number
-          prescribed_texts: string | null
-          publication_status: string
-          review_state: string
-          school: string
-          source_document_id: number
-          source_updated_at: string | null
-          student_contribution_band: number | null
-          subject: string
-          title: string
+          label: string | null
+          position: number
+          source_text: string
           units: number
-          updated_at: string
-          workload: string | null
-          workload_hours: number | null
         }
         Insert: {
-          catalogue_year_id: number
-          convener?: string | null
-          course_id: number
+          course_snapshot_id: number
           created_at?: string
-          delivery_summary?: string | null
-          description: string
-          eftsl?: number | null
-          fee_domestic?: number | null
-          fee_international?: number | null
-          fee_year?: number | null
           id?: never
-          inherent_requirements?: string | null
-          level: number
-          prescribed_texts?: string | null
-          publication_status?: string
-          review_state?: string
-          school: string
-          source_document_id: number
-          source_updated_at?: string | null
-          student_contribution_band?: number | null
-          subject: string
-          title: string
+          label?: string | null
+          position: number
+          source_text: string
           units: number
-          updated_at?: string
-          workload?: string | null
-          workload_hours?: number | null
         }
         Update: {
-          catalogue_year_id?: number
-          convener?: string | null
-          course_id?: number
+          course_snapshot_id?: number
           created_at?: string
-          delivery_summary?: string | null
-          description?: string
-          eftsl?: number | null
-          fee_domestic?: number | null
-          fee_international?: number | null
-          fee_year?: number | null
           id?: never
-          inherent_requirements?: string | null
-          level?: number
-          prescribed_texts?: string | null
-          publication_status?: string
-          review_state?: string
-          school?: string
-          source_document_id?: number
-          source_updated_at?: string | null
-          student_contribution_band?: number | null
-          subject?: string
-          title?: string
+          label?: string | null
+          position?: number
+          source_text?: string
           units?: number
-          updated_at?: string
-          workload?: string | null
-          workload_hours?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "course_versions_catalogue_year_id_fkey"
-            columns: ["catalogue_year_id"]
+            foreignKeyName: "course_unit_options_course_snapshot_id_fkey"
+            columns: ["course_snapshot_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_years"
+            referencedRelation: "course_snapshots"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_versions_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_versions_source_document_year_fkey"
-            columns: ["source_document_id", "catalogue_year_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_source_documents"
-            referencedColumns: ["id", "catalogue_year_id"]
           },
         ]
       }
@@ -2448,53 +3193,68 @@ export type Database = {
       }
       offering_sessions: {
         Row: {
-          academic_period_id: number
-          catalogue_year_id: number
+          academic_period_code: string
+          academic_period_id: number | null
+          academic_period_name: string
+          academic_year_id: number
           census_on: string | null
           class_number: string | null
           class_summary_url: string | null
           course_offering_id: number
+          course_snapshot_id: number
+          course_source_page_id: number
           created_at: string
           delivery_mode: string | null
           ends_on: string | null
           enrol_closes_on: string | null
           id: number
           location: string | null
-          source_document_id: number
+          position: number
+          source_text: string
           starts_on: string | null
           updated_at: string
         }
         Insert: {
-          academic_period_id: number
-          catalogue_year_id: number
+          academic_period_code: string
+          academic_period_id?: number | null
+          academic_period_name: string
+          academic_year_id: number
           census_on?: string | null
           class_number?: string | null
           class_summary_url?: string | null
           course_offering_id: number
+          course_snapshot_id: number
+          course_source_page_id: number
           created_at?: string
           delivery_mode?: string | null
           ends_on?: string | null
           enrol_closes_on?: string | null
           id?: never
           location?: string | null
-          source_document_id: number
+          position: number
+          source_text: string
           starts_on?: string | null
           updated_at?: string
         }
         Update: {
-          academic_period_id?: number
-          catalogue_year_id?: number
+          academic_period_code?: string
+          academic_period_id?: number | null
+          academic_period_name?: string
+          academic_year_id?: number
           census_on?: string | null
           class_number?: string | null
           class_summary_url?: string | null
           course_offering_id?: number
+          course_snapshot_id?: number
+          course_source_page_id?: number
           created_at?: string
           delivery_mode?: string | null
           ends_on?: string | null
           enrol_closes_on?: string | null
           id?: never
           location?: string | null
-          source_document_id?: number
+          position?: number
+          source_text?: string
           starts_on?: string | null
           updated_at?: string
         }
@@ -2507,24 +3267,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "offering_sessions_offering_year_fkey"
-            columns: ["course_offering_id", "catalogue_year_id"]
+            foreignKeyName: "offering_sessions_offering_snapshot_fkey"
+            columns: ["course_offering_id", "course_snapshot_id"]
             isOneToOne: false
             referencedRelation: "course_offerings"
-            referencedColumns: ["id", "catalogue_year_id"]
+            referencedColumns: ["id", "course_snapshot_id"]
           },
           {
-            foreignKeyName: "offering_sessions_source_document_year_fkey"
-            columns: ["source_document_id", "catalogue_year_id"]
+            foreignKeyName: "offering_sessions_snapshot_year_fkey"
+            columns: ["course_snapshot_id", "academic_year_id"]
             isOneToOne: false
-            referencedRelation: "catalogue_source_documents"
-            referencedColumns: ["id", "catalogue_year_id"]
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "academic_year_id"]
+          },
+          {
+            foreignKeyName: "offering_sessions_source_page_year_fkey"
+            columns: ["course_source_page_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_source_pages"
+            referencedColumns: ["id", "academic_year_id"]
           },
         ]
       }
       plan_items: {
         Row: {
           academic_period_id: number | null
+          academic_year_id: number
           course_id: number
           created_at: string
           id: string
@@ -2538,6 +3306,7 @@ export type Database = {
         }
         Insert: {
           academic_period_id?: number | null
+          academic_year_id: number
           course_id: number
           created_at?: string
           id?: string
@@ -2551,6 +3320,7 @@ export type Database = {
         }
         Update: {
           academic_period_id?: number | null
+          academic_year_id?: number
           course_id?: number
           created_at?: string
           id?: string
@@ -2569,6 +3339,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "academic_periods"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_items_academic_year_calendar_year_fkey"
+            columns: ["academic_year_id", "planned_calendar_year"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id", "year"]
+          },
+          {
+            foreignKeyName: "plan_items_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_items_course_academic_year_fkey"
+            columns: ["course_id", "academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_years"
+            referencedColumns: ["course_id", "academic_year_id"]
           },
           {
             foreignKeyName: "plan_items_course_id_fkey"
@@ -3009,20 +3800,182 @@ export type Database = {
         }
         Relationships: []
       }
+      course_directory_admin_entries: {
+        Row: {
+          academic_career: string | null
+          academic_year_id: number | null
+          code: string | null
+          course_id: number | null
+          course_year_id: number | null
+          draft_snapshot_id: number | null
+          first_seen_at: string | null
+          id: number | null
+          is_current: boolean | null
+          last_seen_at: string | null
+          latest_change_kind: string | null
+          latest_created_at: string | null
+          latest_error_summary: string | null
+          latest_processing_status: string | null
+          latest_review_status: string | null
+          latest_run_id: string | null
+          latest_target_id: string | null
+          mode_of_delivery: string | null
+          published_snapshot_id: number | null
+          session: string | null
+          title: string | null
+          units: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_directory_entries_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_directory_entries_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_years_draft_snapshot_same_year_fkey"
+            columns: ["draft_snapshot_id", "course_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "course_year_id"]
+          },
+          {
+            foreignKeyName: "course_years_published_snapshot_same_year_fkey"
+            columns: ["published_snapshot_id", "course_year_id"]
+            isOneToOne: false
+            referencedRelation: "course_snapshots"
+            referencedColumns: ["id", "course_year_id"]
+          },
+        ]
+      }
+      course_directory_latest_import_targets: {
+        Row: {
+          academic_year_id: number | null
+          change_kind: string | null
+          created_at: string | null
+          directory_entry_id: number | null
+          error_summary: string | null
+          id: string | null
+          processing_status: string | null
+          review_status: string | null
+          run_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      accept_course_import_target: {
+        Args: {
+          p_expected_baseline_snapshot_id: number
+          p_expected_current_draft_snapshot_id: number
+          p_resolution_note?: string
+          p_target_id: string
+        }
+        Returns: {
+          academic_year_id: number
+          attempt_count: number
+          baseline_draft_snapshot_id: number | null
+          baseline_published_snapshot_id: number | null
+          candidate_snapshot_id: number | null
+          change_kind: string | null
+          claimed_at: string | null
+          course_code: string
+          course_id: number | null
+          course_year_id: number | null
+          created_at: string
+          directory_entry_id: number
+          dispatch_error: string | null
+          dispatched_at: string | null
+          error_code: string | null
+          error_summary: string | null
+          finished_at: string | null
+          heartbeat_at: string | null
+          id: string
+          lease_expires_at: string | null
+          lock_version: number
+          position: number
+          processing_status: string
+          queue_message_id: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          run_id: string
+          source_id: number
+          source_page_id: number | null
+          updated_at: string
+          worker_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "course_import_targets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       add_current_user_plan_item: {
         Args: {
+          p_academic_year: number
           p_course_code: string
           p_planned_calendar_year?: number
           p_planned_period_code?: string
         }
         Returns: string
       }
+      archive_course_year: {
+        Args: {
+          p_course_year_id: number
+          p_expected_draft_snapshot_id: number
+          p_expected_published_snapshot_id: number
+        }
+        Returns: number
+      }
       catalogue_change_issue_codes: { Args: never; Returns: string[] }
+      confirm_course_manual_snapshot: {
+        Args: {
+          p_blocking_review_item_ids: string[]
+          p_confirmation_note: string
+          p_course_year_id: number
+          p_expected_base_snapshot_id: number
+          p_projection: Json
+        }
+        Returns: Json
+      }
+      create_course_manual_snapshot: {
+        Args: {
+          p_course_year_id: number
+          p_expected_base_snapshot_id: number
+          p_projection: Json
+        }
+        Returns: number
+      }
+      current_user_course_attempt_snapshot_projections: {
+        Args: { p_snapshot_ids: number[] }
+        Returns: {
+          projection: Json
+          snapshot_id: number
+        }[]
+      }
       current_user_has_permission: {
         Args: { required_permission: string }
         Returns: boolean
+      }
+      fail_expired_course_import_targets: {
+        Args: { p_run_id: string }
+        Returns: {
+          failed_count: number
+          newly_failed_target_count: number
+          processed_count: number
+          run_id: string
+          run_status: string
+        }[]
       }
       move_current_user_plan_item: {
         Args: {
@@ -3033,20 +3986,36 @@ export type Database = {
         }
         Returns: undefined
       }
-      publish_catalogue_course_version: {
-        Args: { p_catalogue_year: number; p_course_code: string }
-        Returns: number
-      }
       publish_catalogue_structure_version: {
         Args: { p_catalogue_year: number; p_structure_code: string }
         Returns: number
       }
+      publish_course_snapshot: {
+        Args: {
+          p_course_year_id: number
+          p_expected_published_snapshot_id: number
+          p_snapshot_id: number
+        }
+        Returns: number
+      }
+      published_course_availability: {
+        Args: { p_academic_year: number; p_course_code: string }
+        Returns: {
+          academic_year: number
+          course_code: string
+          course_id: number
+          course_year_id: number
+          is_available: boolean
+          offering_status: string
+          published_snapshot_id: number
+        }[]
+      }
       published_course_detail: {
-        Args: { p_course_code: string }
+        Args: { p_academic_year: number; p_course_code: string }
         Returns: Json
       }
       published_course_requisite_graph: {
-        Args: { p_course_code: string }
+        Args: { p_academic_year: number; p_course_code: string }
         Returns: {
           from_code: string
           from_is_available: boolean
@@ -3059,8 +4028,52 @@ export type Database = {
           p_attempt_mark?: number
           p_attempt_status: string
           p_plan_item_id: string
+          p_units_attempted?: number
         }
         Returns: string
+      }
+      reject_course_import_target: {
+        Args: { p_resolution_note?: string; p_target_id: string }
+        Returns: {
+          academic_year_id: number
+          attempt_count: number
+          baseline_draft_snapshot_id: number | null
+          baseline_published_snapshot_id: number | null
+          candidate_snapshot_id: number | null
+          change_kind: string | null
+          claimed_at: string | null
+          course_code: string
+          course_id: number | null
+          course_year_id: number | null
+          created_at: string
+          directory_entry_id: number
+          dispatch_error: string | null
+          dispatched_at: string | null
+          error_code: string | null
+          error_summary: string | null
+          finished_at: string | null
+          heartbeat_at: string | null
+          id: string
+          lease_expires_at: string | null
+          lock_version: number
+          position: number
+          processing_status: string
+          queue_message_id: string | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          run_id: string
+          source_id: number
+          source_page_id: number | null
+          updated_at: string
+          worker_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "course_import_targets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       remove_current_user_plan_item: {
         Args: { p_plan_item_id: string }
@@ -3089,6 +4102,22 @@ export type Database = {
       set_user_role: {
         Args: { p_role_key: string; p_user_id: string }
         Returns: string
+      }
+      start_course_import: {
+        Args: {
+          p_academic_year: number
+          p_course_codes: string[]
+          p_parser_version: string
+          p_prompt_version: string
+          p_requested_model: string
+          p_schema_version: string
+        }
+        Returns: {
+          course_code: string
+          run_id: string
+          target_id: string
+          target_position: number
+        }[]
       }
     }
     Enums: {

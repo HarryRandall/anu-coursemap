@@ -15,13 +15,37 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
-import { planningCourseByCode } from "@/lib/planner";
+import {
+  planTimelineTerms,
+  planTimelineYears,
+} from "@/lib/coursemap/plan-timeline";
+import { planningCourseForAttempt } from "@/lib/planner";
 
 export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
   const { state } = useCoursemap();
+  const degree = catalogue.degrees.find(
+    (item) => item.code === state.profile.degreeCode,
+  );
+  const timelineYears = useMemo(
+    () =>
+      planTimelineYears({
+        degree,
+        commencementYear: state.profile.commencementYear,
+        extensionYears: state.profile.extensionYears,
+      }),
+    [degree, state.profile.commencementYear, state.profile.extensionYears],
+  );
+  const timelineTerms = useMemo(
+    () => planTimelineTerms({ terms: catalogue.terms, years: timelineYears }),
+    [catalogue.terms, timelineYears],
+  );
+  const planningCatalogue = useMemo(
+    () => ({ ...catalogue, terms: timelineTerms }),
+    [catalogue, timelineTerms],
+  );
   const groups = useMemo(
     () =>
-      catalogue.terms
+      timelineTerms
         .filter((term) => term.id !== "unscheduled")
         .map((term) => ({
           term,
@@ -29,19 +53,21 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
             .filter((attempt) => attempt.termId === term.id)
             .map((attempt) => ({
               attempt,
-              course: planningCourseByCode(attempt.courseCode, catalogue),
+              course: planningCourseForAttempt(attempt, planningCatalogue),
             }))
             .filter(
               (
                 entry,
               ): entry is {
                 attempt: (typeof state.attempts)[number];
-                course: NonNullable<ReturnType<typeof planningCourseByCode>>;
+                course: NonNullable<
+                  ReturnType<typeof planningCourseForAttempt>
+                >;
               } => Boolean(entry.course),
             ),
         }))
         .filter((group) => group.courses.length > 0),
-    [catalogue, state],
+    [planningCatalogue, state, timelineTerms],
   );
 
   return (
@@ -100,7 +126,7 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
                         </p>
                       </div>
                       <ButtonLink
-                        href={`/courses/${course.code}`}
+                        href={`/courses/${course.code}?year=${course.year}`}
                         size="sm"
                         variant="ghost"
                       >

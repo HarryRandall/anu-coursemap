@@ -21,12 +21,17 @@ Next.js owns routing, server rendering and mutations. Supabase Auth owns identit
 
 ## Data model
 
-Catalogue identity and year-specific facts are separate:
+Course identity, year-specific records and immutable saved states are separate:
 
-- `catalogue_years`, `courses` and `course_versions`
-- `academic_periods`, `course_offerings` and `offering_sessions`
+- `academic_years`, `course_directory_entries`, `courses` and `course_years`
+- `course_sources` and immutable `course_source_pages`
+- `course_snapshots` and their relational fees, attributes, outcomes, assessments,
+  offerings, sessions and requisite rules
 - `course_rules`, nested `course_rule_groups` and `course_rule_conditions`
-- versioned `academic_structures` and `requirement_groups`
+- `course_import_runs`, `course_import_targets`, `course_import_stages`,
+  `course_import_artifacts`, `course_extractions` and `course_review_items`
+- `catalogue_years`, versioned `academic_structures` and `requirement_groups`
+  remain the programme data model until the later programme migration
 - `university_calendar_events` keyed by calendar year, date and title
 
 User-owned planning data is also separate:
@@ -36,7 +41,37 @@ User-owned planning data is also separate:
 - `course_attempts`
 - approval requests and immutable approval events
 
-Catalogue imports record sources, hashes, run outcomes and review items. Ambiguous source material remains reviewable instead of being flattened into plausible but incorrect rules.
+The development cutover clears every previous course identity, version,
+snapshot, plan, attempt and programme row, then removes the old
+`course_versions` and course-directory compatibility schema. No legacy course
+lineage is retained.
+
+Course imports run asynchronously through a private Vercel Queue consumer. A
+durable run contains no more than ten course targets. Each target records HTML,
+normalised Markdown, model input, deterministic extraction, strict OpenRouter
+output, validation, relational projection and its change set. Large artefacts
+are content-addressed in a private Storage bucket while Postgres stores their
+hashes and provenance. Imports never publish. Every changed candidate remains
+immutable and requires an administrator to accept or reject it before a
+separate publication action.
+
+New queue publishing is feature-gated, but the private consumer always drains
+messages already accepted by Vercel. A target receives no more than five
+processing attempts. Infrastructure failures while claiming or recording a
+terminal result may receive up to twelve bounded queue deliveries, after which
+the database's stale-run recovery can fail only expired processing leases or
+dispatched targets that have remained queued for more than 30 minutes.
+
+The private `course-import-artifacts` bucket is declared in
+`supabase/config.toml`. A production rollout managed outside Supabase's GitHub
+integration must run `npm run db:storage:buckets:linked` against the linked
+project after applying migrations and before enabling directory refreshes or
+queue publishing. Database migrations alone do not create that hosted bucket.
+
+Ambiguous source material remains reviewable instead of being flattened into
+plausible but incorrect rules. Deterministic values win model conflicts, model
+claims require evidence from the selected academic year's source, and related
+course codes create identities only rather than recursive imports.
 
 ## Access model
 

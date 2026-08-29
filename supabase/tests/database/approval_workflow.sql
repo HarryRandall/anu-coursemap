@@ -40,10 +40,19 @@ values
   );
 
 insert into public.catalogue_years (year, status, published_at)
-values (2196, 'published', now());
+values (2029, 'published', now())
+on conflict (year) do update
+set status = excluded.status,
+    published_at = excluded.published_at;
 
 insert into public.courses (code)
 values ('TEST1000');
+
+insert into public.course_years (course_id, academic_year_id)
+select courses.id, years.id
+from public.courses
+join public.academic_years as years on years.year = 2029
+where courses.code = 'TEST1000';
 
 insert into public.plans (
   id,
@@ -56,18 +65,25 @@ insert into public.plans (
 values (
   '31000000-0000-4000-8000-000000000001',
   '30000000-0000-4000-8000-000000000001',
-  (select id from public.catalogue_years where year = 2196),
+  (select id from public.catalogue_years where year = 2029),
   'Approval test plan',
-  2196,
+  2029,
   'full_time'
 );
 
-insert into public.plan_items (id, plan_id, owner_id, course_id)
+insert into public.plan_items (
+  id,
+  plan_id,
+  owner_id,
+  course_id,
+  academic_year_id
+)
 values (
   '32000000-0000-4000-8000-000000000001',
   '31000000-0000-4000-8000-000000000001',
   '30000000-0000-4000-8000-000000000001',
-  (select id from public.courses where code = 'TEST1000')
+  (select id from public.courses where code = 'TEST1000'),
+  (select id from public.academic_years where year = 2029)
 );
 
 select set_config(
@@ -299,10 +315,11 @@ set local role authenticated;
 
 select extensions.lives_ok(
   $$
-    delete from public.plan_items
-    where id = '32000000-0000-4000-8000-000000000001'
+    select public.remove_current_user_plan_item(
+      '32000000-0000-4000-8000-000000000001'
+    )
   $$,
-  'an owner can remove a plan item linked to an approval audit trail'
+  'the owner RPC can remove a plan item linked to an approval audit trail'
 );
 
 select extensions.results_eq(

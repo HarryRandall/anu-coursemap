@@ -5,15 +5,17 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FilterBar } from "@/components/ui/filter-bar";
 import {
+  loadAcademicYearOptions,
   loadPublishedCoursePage,
   type PublishedCoursePage,
-} from "@/lib/coursemap/published-catalogue";
+} from "@/lib/coursemap/published-courses";
 import { CourseDirectory } from "./course-directory";
 
 type CoursesSearchParams = {
   q?: string | string[];
   level?: string | string[];
   session?: string | string[];
+  year?: string | string[];
   page?: string | string[];
 };
 
@@ -36,6 +38,8 @@ export default async function CoursesPage({
     ? sessionParam
     : "";
   const filters = { query, level, session };
+  let yearOptions: Awaited<ReturnType<typeof loadAcademicYearOptions>> = [];
+  let selectedAcademicYear = new Date().getFullYear();
   let result: PublishedCoursePage = {
     courses: [],
     page,
@@ -44,7 +48,20 @@ export default async function CoursesPage({
   };
   let catalogueUnavailable = false;
   try {
-    result = await loadPublishedCoursePage({ page, filters });
+    yearOptions = await loadAcademicYearOptions();
+    const requestedYear = Number(firstParam(params.year));
+    const availableYears = new Set(yearOptions.map((option) => option.year));
+    const currentYear = new Date().getFullYear();
+    selectedAcademicYear = availableYears.has(requestedYear)
+      ? requestedYear
+      : availableYears.has(currentYear)
+        ? currentYear
+        : (yearOptions[0]?.year ?? currentYear);
+    result = await loadPublishedCoursePage({
+      academicYear: selectedAcademicYear,
+      page,
+      filters,
+    });
   } catch {
     // Show an explicit outage state rather than an empty catalogue.
     catalogueUnavailable = true;
@@ -53,6 +70,7 @@ export default async function CoursesPage({
     q: query || undefined,
     level: level || undefined,
     session: session || undefined,
+    year: String(selectedAcademicYear),
   };
 
   if (catalogueUnavailable) {
@@ -94,6 +112,17 @@ export default async function CoursesPage({
           searchPlaceholder="Search by course code, name or school"
           filters={[
             {
+              key: "year",
+              label: "Academic year",
+              allLabel: "Current academic year",
+              options: yearOptions.map((option) => ({
+                value: String(option.year),
+                label: option.hasPublishedCourses
+                  ? String(option.year)
+                  : `${option.year} · No published courses`,
+              })),
+            },
+            {
               key: "level",
               label: "Level",
               options: [
@@ -119,6 +148,7 @@ export default async function CoursesPage({
           pageSize={result.pageSize}
           total={result.total}
           filtered={Boolean(query || level || session)}
+          academicYear={selectedAcademicYear}
           searchParams={paginationSearchParams}
         />
       </div>

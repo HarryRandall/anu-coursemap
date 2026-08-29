@@ -11,6 +11,7 @@ import {
   Compass,
   GitCompareArrows,
   GraduationCap,
+  History,
   House,
   Import,
   KeyRound,
@@ -53,6 +54,8 @@ const labels: Record<string, string> = {
   users: "Users",
   roles: "Roles",
   imports: "Imports",
+  runs: "Runs",
+  targets: "Targets",
   sync: "Sync",
   changes: "Changes",
 };
@@ -70,6 +73,7 @@ const icons: Record<string, LucideIcon> = {
   dashboard: House,
   help: CircleHelp,
   imports: Import,
+  runs: History,
   "key-dates": CalendarDays,
   plan: Table,
   profile: UserRound,
@@ -83,7 +87,7 @@ const icons: Record<string, LucideIcon> = {
   users: Users,
 };
 
-const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}$/iu;
+const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}[A-Z]?$/iu;
 
 /**
  * Only course codes are shouted. Upper-casing every unmapped segment turned

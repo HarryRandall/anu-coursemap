@@ -40,9 +40,11 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 
 type CourseSearchResponse = {
+  academicYear: number;
   courses: Course[];
   page: number;
   pageSize: number;
@@ -50,17 +52,19 @@ type CourseSearchResponse = {
   total: number;
 };
 
-function requestKey(query: string, page: number) {
-  return `${query}:${page}`;
+function requestKey(query: string, page: number, academicYear: number) {
+  return `${academicYear}:${query}:${page}`;
 }
 
 export function CoursePicker({
   term,
   intent = "all",
+  academicYears = [],
   onClose,
 }: {
   term?: Term;
   intent?: "all" | "recommended";
+  academicYears?: number[];
   onClose: () => void;
 }) {
   const { state, addCourse, notify } = useCoursemap();
@@ -73,6 +77,22 @@ export function CoursePicker({
   const [failedKey, setFailedKey] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [addingCode, setAddingCode] = useState<string | null>(null);
+  const selectableAcademicYears = useMemo(
+    () =>
+      [
+        ...new Set(
+          academicYears.length > 0
+            ? academicYears
+            : [state.profile.catalogueYear],
+        ),
+      ].sort((left, right) => left - right),
+    [academicYears, state.profile.catalogueYear],
+  );
+  const [unscheduledAcademicYear, setUnscheduledAcademicYear] = useState(() =>
+    selectableAcademicYears.includes(state.profile.catalogueYear)
+      ? state.profile.catalogueYear
+      : (selectableAcademicYears[0] ?? state.profile.catalogueYear),
+  );
   const openerRef = useRef<HTMLElement | null>(
     typeof document !== "undefined" &&
       document.activeElement instanceof HTMLElement
@@ -82,12 +102,16 @@ export function CoursePicker({
   const searchRef = useRef<HTMLInputElement>(null);
   const backButtonRef = useRef<HTMLButtonElement>(null);
   const trimmedQuery = query.trim();
-  const currentRequestKey = requestKey(trimmedQuery, page);
+  const academicYear =
+    term?.id === "unscheduled"
+      ? unscheduledAcademicYear
+      : (term?.year ?? state.profile.catalogueYear);
+  const currentRequestKey = requestKey(trimmedQuery, page, academicYear);
   const loading = loadingKey === currentRequestKey;
   const failed = failedKey === currentRequestKey;
 
   useEffect(() => {
-    if (trimmedQuery.length < 2) return;
+    if (!term || trimmedQuery.length < 2) return;
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
@@ -98,6 +122,7 @@ export function CoursePicker({
           q: trimmedQuery,
           page: String(page),
           pageSize: "10",
+          year: String(academicYear),
         });
         const result = await fetch(`/api/courses/search?${params}`, {
           signal: controller.signal,
@@ -106,19 +131,28 @@ export function CoursePicker({
 
         const next = (await result.json()) as Omit<
           CourseSearchResponse,
-          "query"
+          "academicYear" | "query"
         >;
         if (controller.signal.aborted) return;
 
         setResponse((current) => {
           const previous =
-            page > 1 && current?.query === trimmedQuery ? current.courses : [];
+            page > 1 &&
+            current?.query === trimmedQuery &&
+            current.academicYear === academicYear
+              ? current.courses
+              : [];
           const courses = [...previous, ...next.courses].filter(
             (course, index, all) =>
               all.findIndex((candidate) => candidate.code === course.code) ===
               index,
           );
-          return { ...next, courses, query: trimmedQuery };
+          return {
+            ...next,
+            academicYear,
+            courses,
+            query: trimmedQuery,
+          };
         });
       } catch {
         if (!controller.signal.aborted) setFailedKey(currentRequestKey);
@@ -135,10 +169,12 @@ export function CoursePicker({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [currentRequestKey, page, retryCount, trimmedQuery]);
+  }, [academicYear, currentRequestKey, page, retryCount, term, trimmedQuery]);
 
   const activeResponse =
-    response?.query === trimmedQuery && trimmedQuery.length >= 2
+    response?.query === trimmedQuery &&
+    response.academicYear === academicYear &&
+    trimmedQuery.length >= 2
       ? response
       : null;
   const courses = activeResponse?.courses ?? [];
@@ -165,7 +201,7 @@ export function CoursePicker({
   const choose = async (course: Course) => {
     if (addingCode || (courseCounts.get(course.code) ?? 0) > 0) return;
     setAddingCode(course.code);
-    const result = await addCourse(course.code, term.id);
+    const result = await addCourse(course.code, term.id, course.year);
     notify(
       result.ok
         ? `${course.code} added to ${term.name}${term.year < 2029 ? ` ${term.year}` : ""}`
@@ -206,7 +242,7 @@ export function CoursePicker({
   const loadNextPage = () => {
     if (loading || failed || !hasNextPage) return;
     const nextPage = page + 1;
-    setLoadingKey(requestKey(trimmedQuery, nextPage));
+    setLoadingKey(requestKey(trimmedQuery, nextPage, academicYear));
     setPage(nextPage);
   };
 
@@ -237,6 +273,29 @@ export function CoursePicker({
             Search the catalogue, select a result, then review it before adding
             it to your plan.
           </DialogDescription>
+          {term.id === "unscheduled" ? (
+            <div className="flex max-w-xs items-center gap-3 pt-1">
+              <span className="shrink-0 text-xs font-medium text-zinc-600">
+                Course year
+              </span>
+              <Select
+                aria-label="Course year for unscheduled course"
+                value={academicYear}
+                options={selectableAcademicYears.map((year) => ({
+                  value: year,
+                  label: String(year),
+                }))}
+                onChange={(year) => {
+                  setUnscheduledAcademicYear(year);
+                  setPage(1);
+                  setResponse(null);
+                  setSelectedCode(null);
+                  setMobilePreviewOpen(false);
+                  setFailedKey(null);
+                }}
+              />
+            </div>
+          ) : null}
         </DialogHeader>
 
         <div
@@ -530,7 +589,7 @@ function CoursePreview({
 
           <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-end">
             <ButtonLink
-              href={`/courses/${course.code}`}
+              href={`/courses/${course.code}?year=${course.year}`}
               variant="secondary"
               size="sm"
               className="min-h-11 sm:min-h-8"

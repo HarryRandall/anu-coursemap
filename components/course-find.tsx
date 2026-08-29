@@ -27,6 +27,7 @@ type SearchCourse = {
   code: string;
   name: string;
   units: number;
+  year: number;
 };
 
 type DefaultOption = {
@@ -198,7 +199,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
     const timeout = window.setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/courses/search?q=${encodeURIComponent(text)}&pageSize=5`,
+          `/api/courses/search?q=${encodeURIComponent(text)}&pageSize=5&year=${new Date().getFullYear()}`,
           { signal: controller.signal },
         );
         const payload = (await response.json()) as {
@@ -390,7 +391,11 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                       <Command.Item
                         key={course.code}
                         value={course.code}
-                        onSelect={() => navigate(`/courses/${course.code}`)}
+                        onSelect={() =>
+                          navigate(
+                            `/courses/${course.code}?year=${course.year}`,
+                          )
+                        }
                         className="group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-zinc-700 outline-none data-[selected=true]:bg-zinc-100 data-[selected=true]:text-zinc-950"
                       >
                         <CourseToken
