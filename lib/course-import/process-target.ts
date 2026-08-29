@@ -66,6 +66,17 @@ class CourseImportPaidOutcomeUncertainError extends Error {
   }
 }
 
+function normaliseOpenRouterAttemptError(error: unknown) {
+  if (
+    error instanceof OpenRouterConfigurationError ||
+    error instanceof OpenRouterRequestError
+  ) {
+    return error;
+  }
+
+  return new CourseImportPaidOutcomeUncertainError(error);
+}
+
 type ProcessCourseImportTargetInput = {
   runId: string;
   targetId: string;
@@ -107,7 +118,10 @@ function errorCode(error: unknown) {
 
 function isRetryableCourseImportError(error: unknown) {
   if (error instanceof CourseSourceError) return error.retryable;
-  if (error instanceof OpenRouterRequestError) return error.retryable;
+  // A definitive HTTP failure is safe to report, but the pending extraction
+  // reservation cannot yet represent a second provider attempt. Retrying the
+  // same target would therefore be misclassified as an uncertain paid outcome.
+  if (error instanceof OpenRouterRequestError) return false;
   if (
     error instanceof OpenRouterConfigurationError ||
     error instanceof CourseImportPaidOutcomeUncertainError ||
@@ -426,8 +440,7 @@ export async function processCourseImportTarget({
             });
             responseArtifactId = responseArtifact.id;
           } catch (error) {
-            if (error instanceof OpenRouterConfigurationError) throw error;
-            throw new CourseImportPaidOutcomeUncertainError(error);
+            throw normaliseOpenRouterAttemptError(error);
           }
         }
 
@@ -614,5 +627,6 @@ export const courseImportTargetInternals = {
   errorCode,
   isRecoveryOnlyDelivery,
   isRetryableCourseImportError,
+  normaliseOpenRouterAttemptError,
   safeErrorSummary,
 };

@@ -188,7 +188,7 @@ test("preserves a successful non-JSON provider response for audit", async () => 
   assert.equal(restored.responseError, result.responseError);
 });
 
-test("classifies temporary provider failures for queue retry", async () => {
+test("classifies temporary provider failures at the request boundary", async () => {
   await assert.rejects(
     extractCourseWithOpenRouter({
       model: DEFAULT_OPENROUTER_MODEL,
