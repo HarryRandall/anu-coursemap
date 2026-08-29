@@ -22,7 +22,8 @@ select extensions.ok(
   ) = array[
     'course_rule_course_references_admin_all',
     'course_rule_course_references_read_drafts',
-    'course_rule_course_references_read_published'
+    'course_rule_course_references_read_published',
+    'course_rule_course_references_read_snapshot_published'
   ],
   'course references carry the published, draft and admin catalogue policies'
 );

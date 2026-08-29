@@ -776,4 +776,6 @@ begin
 end;
 $seed$;
 
+select private.backfill_course_snapshot_foundation();
+
 commit;
