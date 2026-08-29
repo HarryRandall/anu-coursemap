@@ -1,9 +1,4 @@
-import {
-  handleCallback,
-  send as sendVercelQueueMessage,
-  type MessageMetadata,
-  type RetryDirective,
-} from "@vercel/queue";
+import type { MessageMetadata, RetryDirective } from "@vercel/queue";
 import {
   assertAllowedOpenRouterModel,
   configuredOpenRouterModels,
@@ -258,7 +253,8 @@ async function sendWithVercelQueue(
     retentionSeconds: number;
   },
 ) {
-  return sendVercelQueueMessage(topic, message, options);
+  const { send } = await import("@vercel/queue");
+  return send(topic, message, options);
 }
 
 export async function enqueueCourseImportTargets(
@@ -340,28 +336,36 @@ export function createCourseImportQueueConsumer(
     signal: AbortSignal;
   }) => void | Promise<void>,
 ) {
-  return handleCallback<unknown>(
-    async (value, metadata) => {
-      // The feature flag stops new runs at the publishing route. A private
-      // queue consumer must still drain work that was accepted before the flag
-      // changed, otherwise a queued run can hold the single-active-run lock
-      // indefinitely.
-      const message = parseCourseImportQueueMessage(value);
-      const signal = AbortSignal.timeout(
-        COURSE_IMPORT_QUEUE_DELIVERY_BUDGET_MS,
-      );
-      await processTarget({
-        runId: message.runId,
-        targetId: message.targetId,
-        messageId: metadata.messageId,
-        deliveryCount: metadata.deliveryCount,
-        maxDeliveries: COURSE_IMPORT_QUEUE_MAX_DELIVERIES,
-        signal,
-      });
-    },
-    {
-      visibilityTimeoutSeconds: COURSE_IMPORT_QUEUE_VISIBILITY_TIMEOUT_SECONDS,
-      retry: retryCourseImportQueueMessage,
-    },
-  );
+  return async (request: Request) => {
+    // Loading the queue SDK only inside a real publish or callback avoids
+    // constructing its region-aware client during Next.js page collection.
+    // Vercel supplies VERCEL_REGION when the worker actually runs.
+    const { handleCallback } = await import("@vercel/queue");
+    const consume = handleCallback<unknown>(
+      async (value, metadata) => {
+        // The feature flag stops new runs at the publishing route. A private
+        // queue consumer must still drain work that was accepted before the
+        // flag changed, otherwise a queued run can hold the single-active-run
+        // lock indefinitely.
+        const message = parseCourseImportQueueMessage(value);
+        const signal = AbortSignal.timeout(
+          COURSE_IMPORT_QUEUE_DELIVERY_BUDGET_MS,
+        );
+        await processTarget({
+          runId: message.runId,
+          targetId: message.targetId,
+          messageId: metadata.messageId,
+          deliveryCount: metadata.deliveryCount,
+          maxDeliveries: COURSE_IMPORT_QUEUE_MAX_DELIVERIES,
+          signal,
+        });
+      },
+      {
+        visibilityTimeoutSeconds:
+          COURSE_IMPORT_QUEUE_VISIBILITY_TIMEOUT_SECONDS,
+        retry: retryCourseImportQueueMessage,
+      },
+    );
+    return consume(request);
+  };
 }
