@@ -1,4 +1,4 @@
-export const COURSE_EXTRACTION_SCHEMA_VERSION = "course-extraction.v1" as const;
+export const COURSE_EXTRACTION_SCHEMA_VERSION = "course-extraction.v2" as const;
 
 export const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/;
 
@@ -512,6 +512,55 @@ function validateRule(
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const INSTANT_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+const ANU_PROGRAMS_AND_COURSES_ORIGIN = "https://programsandcourses.anu.edu.au";
+const CLASS_SUMMARY_PATH =
+  /^\/(?:\d{4}\/)?course\/([A-Z]{4}\d{4}[A-Z]?)\/[^/]+\/\d+\/?$/iu;
+
+function isRealIsoDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/u.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+export function normaliseAnuClassSummaryUrl(
+  value: string | null | undefined,
+  {
+    baseUrl,
+    expectedCourseCode,
+  }: { baseUrl?: string; expectedCourseCode?: string } = {},
+) {
+  if (!value) return null;
+  try {
+    const url = baseUrl ? new URL(value, baseUrl) : new URL(value);
+    if (
+      url.protocol !== "https:" ||
+      url.origin !== ANU_PROGRAMS_AND_COURSES_ORIGIN ||
+      url.username ||
+      url.password
+    ) {
+      return null;
+    }
+    const match = CLASS_SUMMARY_PATH.exec(url.pathname);
+    const courseCode = match?.[1]?.toUpperCase();
+    if (
+      !courseCode ||
+      (expectedCourseCode && courseCode !== expectedCourseCode.toUpperCase())
+    ) {
+      return null;
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
 
 function nullableDate(
   value: unknown,
@@ -519,6 +568,13 @@ function nullableDate(
   issues: CourseExtractionValidationIssue[],
 ) {
   requireString(value, path, issues, { nullable: true, pattern: DATE_PATTERN });
+  if (
+    typeof value === "string" &&
+    DATE_PATTERN.test(value) &&
+    !isRealIsoDate(value)
+  ) {
+    issues.push({ path, message: "must be a real calendar date" });
+  }
 }
 
 function validateExtractionShape(
@@ -813,6 +869,24 @@ function validateExtractionShape(
       issues,
     );
     nullableDate(offering.censusDate, `${path}.censusDate`, issues);
+    for (const [field, date] of [
+      ["startsOn", offering.startsOn],
+      ["endsOn", offering.endsOn],
+      ["lastEnrolmentDate", offering.lastEnrolmentDate],
+      ["censusDate", offering.censusDate],
+    ] as const) {
+      if (
+        typeof date === "string" &&
+        DATE_PATTERN.test(date) &&
+        typeof offering.calendarYear === "number" &&
+        Number(date.slice(0, 4)) !== offering.calendarYear
+      ) {
+        issues.push({
+          path: `${path}.${field}`,
+          message: "must belong to the offering calendar year",
+        });
+      }
+    }
     requireString(offering.deliveryMode, `${path}.deliveryMode`, issues, {
       nullable: true,
     });
@@ -821,8 +895,21 @@ function validateExtractionShape(
     });
     requireString(offering.classSummaryUrl, `${path}.classSummaryUrl`, issues, {
       nullable: true,
-      pattern: /^https:\/\//,
     });
+    if (typeof offering.classSummaryUrl === "string") {
+      if (
+        normaliseAnuClassSummaryUrl(offering.classSummaryUrl, {
+          expectedCourseCode:
+            typeof record.code === "string" ? record.code : undefined,
+        }) === null
+      ) {
+        issues.push({
+          path: `${path}.classSummaryUrl`,
+          message:
+            "must be a complete same-course ANU Programs and Courses class summary URL",
+        });
+      }
+    }
     requireString(offering.sourceText, `${path}.sourceText`, issues);
     if (
       typeof offering.calendarYear === "number" &&
@@ -1173,7 +1260,7 @@ export const COURSE_EXTRACTION_JSON_SCHEMA = {
     inherentRequirements: { type: ["string", "null"] },
     prescribedTexts: { type: ["string", "null"] },
     offeringStatus: { enum: ["offered", "not_offered", "unknown"] },
-    sourceUpdatedAt: { type: ["string", "null"] },
+    sourceUpdatedAt: { $ref: "#/$defs/nullableInstant" },
     areasOfInterest: { type: "array", items: { type: "string", minLength: 1 } },
     fees: { type: "array", items: { $ref: "#/$defs/fee" } },
     learningOutcomes: { type: "array", items: { $ref: "#/$defs/outcome" } },
@@ -1188,6 +1275,19 @@ export const COURSE_EXTRACTION_JSON_SCHEMA = {
   },
   $defs: {
     nullableString: { type: ["string", "null"] },
+    nullableDate: {
+      type: ["string", "null"],
+      pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+    },
+    nullableInstant: {
+      type: ["string", "null"],
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{3})?Z$",
+    },
+    nullableAnuClassSummaryUrl: {
+      type: ["string", "null"],
+      pattern:
+        "^https://programsandcourses\\.anu\\.edu\\.au/(?:[0-9]{4}/)?course/[A-Z]{4}[0-9]{4}[A-Z]?/[^/]+/[0-9]+/?(?:[?#].*)?$",
+    },
     fee: {
       type: "object",
       additionalProperties: false,
@@ -1283,13 +1383,13 @@ export const COURSE_EXTRACTION_JSON_SCHEMA = {
         periodCode: { type: "string", minLength: 1 },
         periodName: { type: "string", minLength: 1 },
         classNumber: { $ref: "#/$defs/nullableString" },
-        startsOn: { $ref: "#/$defs/nullableString" },
-        endsOn: { $ref: "#/$defs/nullableString" },
-        lastEnrolmentDate: { $ref: "#/$defs/nullableString" },
-        censusDate: { $ref: "#/$defs/nullableString" },
+        startsOn: { $ref: "#/$defs/nullableDate" },
+        endsOn: { $ref: "#/$defs/nullableDate" },
+        lastEnrolmentDate: { $ref: "#/$defs/nullableDate" },
+        censusDate: { $ref: "#/$defs/nullableDate" },
         deliveryMode: { $ref: "#/$defs/nullableString" },
         location: { $ref: "#/$defs/nullableString" },
-        classSummaryUrl: { $ref: "#/$defs/nullableString" },
+        classSummaryUrl: { $ref: "#/$defs/nullableAnuClassSummaryUrl" },
         sourceText: { type: "string", minLength: 1 },
       },
     },

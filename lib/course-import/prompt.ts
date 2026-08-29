@@ -3,8 +3,8 @@ import {
   type CourseExtraction,
 } from "./contract.ts";
 
-export const COURSE_IMPORT_PARSER_VERSION = "coursemap-course-parser.v1";
-export const COURSE_IMPORT_PROMPT_VERSION = "coursemap-course-prompt.v2";
+export const COURSE_IMPORT_PARSER_VERSION = "coursemap-course-parser.v2";
+export const COURSE_IMPORT_PROMPT_VERSION = "coursemap-course-prompt.v3";
 export const COURSE_SNAPSHOT_SCHEMA_VERSION = "course-snapshot.v1";
 
 /**
@@ -26,6 +26,8 @@ Source rules:
 6. Preserve fees with their printed fee year, audience, basis and source wording. Do not assume the fee year equals the selected course year.
 7. Preserve learning outcomes, assessment items, outcome links, workload, inherent requirements, prescribed texts, areas of interest, STEM status and graduate attributes when present.
 8. Separate hard incompatibilities from discretionary or soft incompatibilities.
+9. Every non-null offering date must be an exact ISO calendar date in YYYY-MM-DD form. Convert display dates such as 23 Feb 2026; never return the display form.
+10. classSummaryUrl must be either null or a complete literal HTTPS URL on programsandcourses.anu.edu.au from the supplied input. A bare course code, relative target or invented URL must be null.
 
 Requisite interpretation:
 - completed X -> completed

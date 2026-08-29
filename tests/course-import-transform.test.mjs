@@ -19,6 +19,20 @@ import {
   checkCourseExtractionEvidence,
   mergeCourseExtractions,
 } from "../lib/course-import/merge.ts";
+import {
+  canonicaliseCourseModelExtraction,
+  courseModelCanonicalisationReviewItem,
+} from "../lib/course-import/model-canonical.ts";
+import {
+  buildCourseExtractionSystemPrompt,
+  COURSE_IMPORT_PARSER_VERSION,
+  COURSE_IMPORT_PROMPT_VERSION,
+} from "../lib/course-import/prompt.ts";
+import { projectCourseSnapshot } from "../lib/course-import/project-snapshot.ts";
+import {
+  countOpenBlockingReviewItems,
+  courseImportConfidenceTone,
+} from "../lib/coursemap/course-import-review-state.ts";
 
 const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2400";
 const html = await readFile(
@@ -73,6 +87,41 @@ test("builds a shorter model input containing only selected-year offerings", () 
       ?.length,
     1,
   );
+  assert.match(
+    selected.modelInput,
+    /\[View\]\(https:\/\/programsandcourses\.anu\.edu\.au\/course\/COMP2400\/First%20Semester\/1234\)/,
+  );
+  assert.doesNotMatch(selected.modelInput, /\[View\]\(COMP2400\)/);
+});
+
+test("keeps ordinary ANU entity links compact without trusting external class links", () => {
+  const linkedHtml = html.replace(
+    "successfully completed COMP1100",
+    'successfully completed <a href="/2026/course/COMP1100#overview">Introduction to Computing</a>',
+  );
+  const linked = convertCourseHtmlToMarkdown({
+    html: linkedHtml,
+    courseCode: "COMP2400",
+    year: 2026,
+    sourceUrl,
+  });
+  assert.match(linked.markdown, /\[Introduction to Computing\]\(COMP1100\)/);
+  assert.match(
+    linked.markdown,
+    /https:\/\/programsandcourses\.anu\.edu\.au\/course\/COMP2400\/First%20Semester\/1234/,
+  );
+
+  const external = convertCourseHtmlToMarkdown({
+    html: html.replace(
+      "/course/COMP2400/First%20Semester/1234",
+      "https://evil.example/course/COMP2400/First%20Semester/1234",
+    ),
+    courseCode: "COMP2400",
+    year: 2026,
+    sourceUrl,
+  });
+  assert.doesNotMatch(external.markdown, /evil\.example/);
+  assert.doesNotMatch(external.markdown, /\[View\]\(COMP2400\)/);
 });
 
 test("does not duplicate nested secondary headings as top-level sections", () => {
@@ -171,6 +220,28 @@ test("deterministically extracts every rich course section and excludes future c
   );
 });
 
+test("omits an unexpected ANU class link for review without aborting extraction", () => {
+  const extraction = extractDeterministicCourse({
+    html: html.replace(
+      "/course/COMP2400/First%20Semester/1234",
+      "/2026/course/COMP2400",
+    ),
+    courseCode: "COMP2400",
+    year: 2026,
+    sourceUrl,
+  });
+  assert.equal(extraction.offerings[0].classSummaryUrl, null);
+  assert.ok(
+    extraction.reviewItems.some(
+      ({ fieldKey, kind, message }) =>
+        fieldKey === "offerings" &&
+        kind === "invalid" &&
+        message.includes("class summary link was"),
+    ),
+  );
+  assert.equal(validateCourseExtraction(extraction).success, true);
+});
+
 test("accepts ANU's single-letter course variants throughout the extraction contract", () => {
   for (const code of [
     "COMP8900F",
@@ -189,6 +260,8 @@ test("accepts ANU's single-letter course variants throughout the extraction cont
 
   const extraction = structuredClone(deterministic);
   extraction.code = "COMP8900F";
+  extraction.offerings[0].classSummaryUrl =
+    "https://programsandcourses.anu.edu.au/course/COMP8900F/First%20Semester/1234";
   extraction.requisites.prerequisiteRule = {
     op: "all_of",
     rules: [
@@ -320,6 +393,189 @@ test("runtime contract rejects unknown keys and future-year offering rows", () =
         path === "$.offerings[0].calendarYear" && message.includes("match"),
     ),
   );
+});
+
+test("advertises exact model formats in the prompt and JSON Schema", () => {
+  const prompt = buildCourseExtractionSystemPrompt();
+  assert.match(prompt, /YYYY-MM-DD/);
+  assert.match(prompt, /complete literal HTTPS URL/);
+  assert.equal(COURSE_IMPORT_PARSER_VERSION, "coursemap-course-parser.v2");
+  assert.equal(COURSE_IMPORT_PROMPT_VERSION, "coursemap-course-prompt.v3");
+  assert.equal(
+    COURSE_EXTRACTION_JSON_SCHEMA.properties.schemaVersion.const,
+    "course-extraction.v2",
+  );
+  assert.deepEqual(COURSE_EXTRACTION_JSON_SCHEMA.$defs.nullableDate, {
+    type: ["string", "null"],
+    pattern: "^\\d{4}-\\d{2}-\\d{2}$",
+  });
+  assert.equal(
+    COURSE_EXTRACTION_JSON_SCHEMA.$defs.offering.properties.startsOn.$ref,
+    "#/$defs/nullableDate",
+  );
+  assert.equal(
+    COURSE_EXTRACTION_JSON_SCHEMA.$defs.offering.properties.classSummaryUrl
+      .$ref,
+    "#/$defs/nullableAnuClassSummaryUrl",
+  );
+});
+
+test("canonicalises bounded provider formats without changing the raw response", () => {
+  const raw = structuredClone(deterministic);
+  raw.evidence = [];
+  raw.reviewItems = [];
+  Object.assign(raw.offerings[0], {
+    startsOn: "23 Feb 2026",
+    lastEnrolmentDate: "2 March 2026",
+    censusDate: "31 Mar 2026",
+    endsOn: "29 May 2026",
+    classSummaryUrl: "COMP2400",
+  });
+  const before = structuredClone(raw);
+  const providerValidation = validateCourseExtraction(raw, {
+    expectedCode: "COMP2400",
+    expectedYear: 2026,
+    evidenceMethod: "model",
+  });
+  assert.equal(providerValidation.success, false);
+  assert.equal(providerValidation.issues.length, 5);
+
+  const canonical = canonicaliseCourseModelExtraction(raw, {
+    expectedCode: "COMP2400",
+    expectedYear: 2026,
+  });
+  assert.deepEqual(raw, before);
+  assert.equal(canonical.changes.length, 5);
+  assert.deepEqual(canonical.value.offerings[0], {
+    ...before.offerings[0],
+    startsOn: "2026-02-23",
+    lastEnrolmentDate: "2026-03-02",
+    censusDate: "2026-03-31",
+    endsOn: "2026-05-29",
+    classSummaryUrl: null,
+  });
+  assert.equal(
+    validateCourseExtraction(canonical.value, {
+      expectedCode: "COMP2400",
+      expectedYear: 2026,
+      evidenceMethod: "model",
+    }).success,
+    true,
+  );
+
+  const reviewItem = courseModelCanonicalisationReviewItem(canonical.changes);
+  assert.equal(reviewItem?.severity, "warning");
+  assert.match(reviewItem?.message ?? "", /5 provider formatting values/);
+
+  const merged = mergeCourseExtractions({
+    deterministic,
+    model: canonical.value,
+    modelInput: selected.modelInput,
+  });
+  assert.equal(
+    merged.extraction.offerings[0].classSummaryUrl,
+    deterministic.offerings[0].classSummaryUrl,
+  );
+  assert.equal(merged.extraction.offerings[0].startsOn, "2026-02-23");
+  const projection = projectCourseSnapshot(merged.extraction);
+  assert.equal(projection.offeringSessions[0].startsOn, "2026-02-23");
+  assert.equal(
+    projection.offeringSessions[0].classSummaryUrl,
+    deterministic.offerings[0].classSummaryUrl,
+  );
+});
+
+test("leaves ambiguous or impossible model dates invalid", () => {
+  for (const value of [
+    "03/04/2026",
+    "3 Apr 26",
+    "31 Feb 2026",
+    "29 Feb 2026",
+    "3 Apr 2027",
+    "2026-02-31",
+    "2027-04-03",
+    "Tomorrow",
+  ]) {
+    const model = structuredClone(deterministic);
+    model.evidence = [];
+    model.offerings[0].startsOn = value;
+    const canonical = canonicaliseCourseModelExtraction(model, {
+      expectedCode: "COMP2400",
+      expectedYear: 2026,
+    });
+    assert.equal(canonical.changes.length, 0, value);
+    const result = validateCourseExtraction(canonical.value, {
+      expectedCode: "COMP2400",
+      expectedYear: 2026,
+      evidenceMethod: "model",
+    });
+    assert.equal(result.success, false, value);
+    assert.ok(
+      result.issues.some(({ path }) => path === "$.offerings[0].startsOn"),
+      value,
+    );
+  }
+});
+
+test("leaves untrusted class summary references invalid", () => {
+  for (const value of [
+    "COMP2500",
+    "http://programsandcourses.anu.edu.au/course/COMP2400/First%20Semester/1234",
+    "//programsandcourses.anu.edu.au/course/COMP2400/First%20Semester/1234",
+    "/course/COMP2400/First%20Semester/1234",
+    "javascript:alert(1)",
+    "data:text/plain,COMP2400",
+    "https://evil.example/course/COMP2400/First%20Semester/1234",
+    "https://programsandcourses.anu.edu.au/course/COMP2500/First%20Semester/1234",
+    "https://programsandcourses.anu.edu.au.evil.example/course/COMP2400/First%20Semester/1234",
+    "https://user@programsandcourses.anu.edu.au/course/COMP2400/First%20Semester/1234",
+    "https://programsandcourses.anu.edu.au/course/COMP2400/First%20Semester/not-a-class",
+  ]) {
+    const model = structuredClone(deterministic);
+    model.evidence = [];
+    model.offerings[0].classSummaryUrl = value;
+    const canonical = canonicaliseCourseModelExtraction(model, {
+      expectedCode: "COMP2400",
+      expectedYear: 2026,
+    });
+    assert.equal(canonical.changes.length, 0, value);
+    const result = validateCourseExtraction(canonical.value, {
+      expectedCode: "COMP2400",
+      expectedYear: 2026,
+      evidenceMethod: "model",
+    });
+    assert.equal(result.success, false, value);
+    assert.ok(
+      result.issues.some(
+        ({ path }) => path === "$.offerings[0].classSummaryUrl",
+      ),
+      value,
+    );
+  }
+
+  const valid = canonicaliseCourseModelExtraction(deterministic, {
+    expectedCode: "COMP2400",
+    expectedYear: 2026,
+  });
+  assert.deepEqual(valid.changes, []);
+  assert.equal(validateCourseExtraction(valid.value).success, true);
+});
+
+test("does not present high confidence as success while review blockers remain", () => {
+  assert.equal(
+    countOpenBlockingReviewItems([
+      { isBlocking: true, status: "open" },
+      { isBlocking: false, status: "open" },
+    ]),
+    1,
+  );
+  assert.equal(courseImportConfidenceTone(0.98, 1), "warning");
+  assert.equal(
+    countOpenBlockingReviewItems([{ isBlocking: true, status: "accepted" }]),
+    0,
+  );
+  assert.equal(courseImportConfidenceTone(0.98, 0), "success");
+  assert.equal(courseImportConfidenceTone(0.7, 0), "warning");
 });
 
 test("evidence checking requires source text and support for scalar claims", () => {

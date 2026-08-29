@@ -38,6 +38,10 @@ import {
   rejectCourseImportTarget,
 } from "@/lib/coursemap/course-import-review-actions";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
+import {
+  countOpenBlockingReviewItems,
+  courseImportConfidenceTone,
+} from "@/lib/coursemap/course-import-review-state";
 import { compareCourseSnapshotProjections } from "@/lib/coursemap/course-snapshot-diff";
 import type { Tone } from "@/lib/ui";
 
@@ -230,7 +234,7 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
                   <TableHead className="w-64">Field</TableHead>
                   <TableHead className="w-24">Change</TableHead>
                   <TableHead>{previousLabel}</TableHead>
-                  <TableHead>AI candidate</TableHead>
+                  <TableHead>Candidate snapshot</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -427,6 +431,9 @@ export function CourseImportTargetReview({
     detail.target.processingStatus === "ready_for_review" &&
     detail.target.reviewStatus === "pending";
   const accepted = detail.target.reviewStatus === "accepted";
+  const openBlockingReviewCount = countOpenBlockingReviewItems(
+    detail.reviewItems,
+  );
   const courseWorkspaceHref = detail.target.coursePublicId
     ? `/admin/courses/${detail.target.coursePublicId}?year=${detail.run.academicYear}`
     : null;
@@ -450,33 +457,24 @@ export function CourseImportTargetReview({
     if (result.ok) router.refresh();
   }
 
-  const snapshotForDisplay = detail.candidateSnapshot
-    ? {
-        ...detail.candidateSnapshot,
-        projection_sha256: detail.candidateSnapshot.projection_sha256,
-      }
-    : null;
-
   return (
     <AppShell
       actions={
-        <div className="flex items-center gap-2">
-          {accepted ? (
-            courseWorkspaceHref ? (
-              <ButtonLink href={courseWorkspaceHref} variant="primary">
-                <Pencil aria-hidden="true" size={15} />
-                Open course workspace
-              </ButtonLink>
-            ) : (
-              <Button
-                disabled
-                title="The permanent course identity is unavailable"
-              >
-                <Pencil aria-hidden="true" size={15} /> Course workspace
-              </Button>
-            )
-          ) : null}
-        </div>
+        accepted ? (
+          courseWorkspaceHref ? (
+            <ButtonLink href={courseWorkspaceHref} variant="primary">
+              <Pencil aria-hidden="true" size={15} />
+              Open course workspace
+            </ButtonLink>
+          ) : (
+            <Button
+              disabled
+              title="The permanent course identity is unavailable"
+            >
+              <Pencil aria-hidden="true" size={15} /> Course workspace
+            </Button>
+          )
+        ) : undefined
       }
       admin
       currentBreadcrumbLabel={detail.target.courseCode}
@@ -499,11 +497,10 @@ export function CourseImportTargetReview({
           {detail.candidateSnapshot?.overall_confidence !== null &&
           detail.candidateSnapshot?.overall_confidence !== undefined ? (
             <Badge
-              tone={
-                detail.candidateSnapshot.overall_confidence >= 0.85
-                  ? "success"
-                  : "warning"
-              }
+              tone={courseImportConfidenceTone(
+                detail.candidateSnapshot.overall_confidence,
+                openBlockingReviewCount,
+              )}
             >
               {Math.round(detail.candidateSnapshot.overall_confidence * 100)}%
               confidence
@@ -531,6 +528,18 @@ export function CourseImportTargetReview({
             <AlertDescription>
               This target is still running. Saved stages and artefacts update
               automatically.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+        {openBlockingReviewCount > 0 ? (
+          <Alert tone="warning">
+            <CircleAlert aria-hidden="true" />
+            <AlertDescription>
+              {openBlockingReviewCount} open blocking review{" "}
+              {openBlockingReviewCount === 1 ? "item needs" : "items need"}{" "}
+              administrator confirmation. Review the source and candidate before
+              accepting this as the draft. Publication remains a separate
+              action.
             </AlertDescription>
           </Alert>
         ) : null}
@@ -619,7 +628,7 @@ export function CourseImportTargetReview({
                 </div>
                 <JsonCode
                   label="Candidate snapshot fields"
-                  value={snapshotForDisplay}
+                  value={detail.candidateSnapshot}
                 />
               </section>
               <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">

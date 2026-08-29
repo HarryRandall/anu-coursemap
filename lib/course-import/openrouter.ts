@@ -1,8 +1,6 @@
 import { getCanonicalSiteOrigin } from "../supabase/config.ts";
 
 export const DEFAULT_OPENROUTER_MODEL = "google/gemini-3.1-flash-lite";
-export const OPENROUTER_SCHEMA_VERSION = "course-extraction.v1";
-export const OPENROUTER_PROMPT_VERSION = "course-parser.v1";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const OPENROUTER_REQUEST_TIMEOUT_MS = 35_000;
