@@ -27,7 +27,7 @@ export default async function SignupPage({
   return (
     <AuthShell>
       <h1 className="text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
-        Create your account
+        Create your account NOW!
       </h1>
       <p className="mt-2 text-sm leading-relaxed text-zinc-500">
         Map your degree, follow prerequisites and keep one plan across every
