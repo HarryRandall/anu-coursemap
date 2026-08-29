@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(83);
+select extensions.plan(84);
 
 select extensions.is(
   (
@@ -69,6 +69,35 @@ select extensions.ok(
     'execute'
   ),
   'only the trusted worker role can execute private claim and recovery functions'
+);
+
+select extensions.ok(
+  has_table_privilege(
+    'service_role',
+    'public.course_source_pages',
+    'select'
+  )
+  and has_table_privilege(
+    'service_role',
+    'public.course_source_pages',
+    'insert'
+  )
+  and has_sequence_privilege(
+    'service_role',
+    'public.course_source_pages_id_seq',
+    'usage'
+  )
+  and has_table_privilege(
+    'service_role',
+    'public.course_directory_entries',
+    'select'
+  )
+  and has_table_privilege(
+    'service_role',
+    'public.course_directory_entries',
+    'update'
+  ),
+  'the trusted worker can record source pages and link directory entries'
 );
 
 select extensions.ok(

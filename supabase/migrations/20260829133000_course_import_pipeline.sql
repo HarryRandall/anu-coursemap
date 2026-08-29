@@ -4119,6 +4119,16 @@ to authenticated;
 
 grant usage on schema private to service_role;
 
+-- The trusted import worker records each immutable fetched page before it
+-- projects a snapshot, then links the selected directory entry to the stable
+-- course identity. These tables and the renamed source-page sequence predate
+-- the workflow tables, so grant their worker privileges explicitly rather
+-- than relying on environment-specific default privileges.
+grant select, insert on table public.course_source_pages to service_role;
+grant select, update on table public.course_directory_entries to service_role;
+grant usage, select on sequence public.course_source_pages_id_seq
+to service_role;
+
 grant all on table
   public.course_import_runs,
   public.course_import_targets,
