@@ -11,11 +11,18 @@ export function countOpenBlockingReviewItems(
   ).length;
 }
 
+export function reviewConfidenceTone(
+  confidence: number,
+  needsAdministratorAttention: boolean,
+) {
+  return needsAdministratorAttention || confidence < 0.85
+    ? ("warning" as const)
+    : ("success" as const);
+}
+
 export function courseImportConfidenceTone(
   confidence: number,
   openBlockingReviewCount: number,
 ) {
-  return openBlockingReviewCount > 0 || confidence < 0.85
-    ? ("warning" as const)
-    : ("success" as const);
+  return reviewConfidenceTone(confidence, openBlockingReviewCount > 0);
 }

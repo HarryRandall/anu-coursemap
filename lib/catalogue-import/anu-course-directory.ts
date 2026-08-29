@@ -143,6 +143,8 @@ export function parseAnuCourseDirectory(
       ? payloadRecord.TotalCount
       : null;
   const receivedItemCount = items.length;
+  const hasCappedShowAllCount =
+    totalCount === 500 && receivedItemCount > totalCount;
   if (totalCount === null) {
     diagnostics.push({
       code: "INVALID_DIRECTORY_TOTAL_COUNT",
@@ -158,7 +160,7 @@ export function parseAnuCourseDirectory(
       message: `ANU reported ${totalCount} courses for ${academicYear}, but returned only ${receivedItemCount}.`,
       field: "directory.courseCodes",
     });
-  } else if (receivedItemCount > totalCount) {
+  } else if (receivedItemCount > totalCount && !hasCappedShowAllCount) {
     diagnostics.push({
       code: "INCONSISTENT_DIRECTORY_TOTAL_COUNT",
       severity: "error",
@@ -166,7 +168,12 @@ export function parseAnuCourseDirectory(
       field: "directory.courseCodes",
     });
   }
-  const isComplete = totalCount !== null && totalCount === receivedItemCount;
+  // The Show All endpoint caps TotalCount at 500 even when PageSize=Infinity
+  // returns the complete, larger result set. More rows than the reported count
+  // are accepted only for that known cap. Other count mismatches fail closed.
+  const isComplete =
+    totalCount !== null &&
+    (receivedItemCount === totalCount || hasCappedShowAllCount);
 
   for (const item of items) {
     const record = typeof item === "object" && item !== null ? item : {};
