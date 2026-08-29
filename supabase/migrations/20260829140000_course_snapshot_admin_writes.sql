@@ -2214,6 +2214,30 @@ grant all on table
   public.course_snapshot_field_evidence
 to service_role;
 
+-- Snapshot persistence resolves imported offering codes against the retained
+-- academic calendar and allocates every relational child identity itself.
+-- Keep these worker capabilities explicit because BYPASSRLS does not grant
+-- table or sequence privileges, and hosted role defaults are not portable.
+grant select on table public.academic_periods to service_role;
+
+grant usage, select on sequence
+  public.courses_id_seq,
+  public.course_years_id_seq,
+  public.course_snapshots_id_seq,
+  public.course_fees_id_seq,
+  public.course_areas_of_interest_id_seq,
+  public.course_related_courses_id_seq,
+  public.course_offerings_id_seq,
+  public.offering_sessions_id_seq,
+  public.course_learning_outcomes_id_seq,
+  public.course_assessment_items_id_seq,
+  public.course_rules_id_seq,
+  public.course_rule_groups_id_seq,
+  public.course_rule_conditions_id_seq,
+  public.course_rule_course_references_id_seq,
+  public.course_snapshot_field_evidence_id_seq
+to service_role;
+
 revoke all on function public.create_course_manual_snapshot(bigint, bigint, jsonb)
 from public, anon, authenticated, service_role;
 revoke all on function public.publish_course_snapshot(bigint, bigint, bigint)

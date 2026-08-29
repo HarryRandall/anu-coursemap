@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(84);
+select extensions.plan(85);
 
 select extensions.is(
   (
@@ -98,6 +98,41 @@ select extensions.ok(
     'update'
   ),
   'the trusted worker can record source pages and link directory entries'
+);
+
+select extensions.ok(
+  has_table_privilege(
+    'service_role',
+    'public.academic_periods',
+    'select'
+  )
+  and not exists (
+    select 1
+    from (
+      values
+        ('public.courses_id_seq'),
+        ('public.course_years_id_seq'),
+        ('public.course_snapshots_id_seq'),
+        ('public.course_fees_id_seq'),
+        ('public.course_areas_of_interest_id_seq'),
+        ('public.course_related_courses_id_seq'),
+        ('public.course_offerings_id_seq'),
+        ('public.offering_sessions_id_seq'),
+        ('public.course_learning_outcomes_id_seq'),
+        ('public.course_assessment_items_id_seq'),
+        ('public.course_rules_id_seq'),
+        ('public.course_rule_groups_id_seq'),
+        ('public.course_rule_conditions_id_seq'),
+        ('public.course_rule_course_references_id_seq'),
+        ('public.course_snapshot_field_evidence_id_seq')
+    ) as worker_sequences (sequence_name)
+    where not has_sequence_privilege(
+      'service_role',
+      worker_sequences.sequence_name,
+      'usage'
+    )
+  ),
+  'the trusted worker can resolve periods and allocate snapshot identities'
 );
 
 select extensions.ok(
