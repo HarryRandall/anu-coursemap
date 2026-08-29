@@ -1,8 +1,12 @@
 import { load, type CheerioAPI } from "cheerio";
 import type { AnyNode } from "domhandler";
-import { validateAnuCoursePage } from "./source.ts";
+import { normaliseAnuClassSummaryUrl } from "./contract.ts";
+import {
+  ANU_PROGRAMS_AND_COURSES_ORIGIN,
+  validateAnuCoursePage,
+} from "./source.ts";
 
-export const COURSE_MARKDOWN_VERSION = "anu-course-markdown.v1" as const;
+export const COURSE_MARKDOWN_VERSION = "anu-course-markdown.v2" as const;
 
 export type CourseMarkdownSection = {
   heading: string;
@@ -52,8 +56,49 @@ const CHROME_SELECTORS = [
   ".modal",
 ];
 
-const ENTITY_LINK =
-  /\/(?:\d{4}\/)?(?:course|program|major|minor|specialisation)\/([A-Za-z0-9-]+)/i;
+const ENTITY_PATH =
+  /^\/(?:\d{4}\/)?(?:course|program|major|minor|specialisation)\/([A-Za-z0-9-]+)\/?$/iu;
+type MarkdownLinkContext = {
+  sourceUrl: string;
+  expectedCourseCode: string;
+};
+
+function officialLink(value: string | undefined, context: MarkdownLinkContext) {
+  if (!value || value.startsWith("#")) return null;
+  try {
+    const url = new URL(value, context.sourceUrl);
+    if (
+      url.protocol !== "https:" ||
+      url.origin !== ANU_PROGRAMS_AND_COURSES_ORIGIN ||
+      url.username ||
+      url.password
+    ) {
+      return null;
+    }
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function officialClassSummaryUrl(
+  value: string | undefined,
+  context: MarkdownLinkContext,
+) {
+  return normaliseAnuClassSummaryUrl(value, {
+    baseUrl: context.sourceUrl,
+    expectedCourseCode: context.expectedCourseCode,
+  });
+}
+
+function officialEntityCode(
+  value: string | undefined,
+  context: MarkdownLinkContext,
+) {
+  const url = officialLink(value, context);
+  const match = url ? ENTITY_PATH.exec(url.pathname) : null;
+  return match?.[1].toUpperCase() ?? null;
+}
 
 function cleanInline(value: string) {
   return value
@@ -81,7 +126,11 @@ function escapeTableCell(value: string) {
   return cleanText(value).replace(/\|/g, "\\|").replace(/\n/g, " ");
 }
 
-function renderTable($: CheerioAPI, node: AnyNode) {
+function renderTable(
+  $: CheerioAPI,
+  node: AnyNode,
+  context: MarkdownLinkContext,
+) {
   const rows: string[][] = [];
   $(node)
     .find("tr")
@@ -94,7 +143,7 @@ function renderTable($: CheerioAPI, node: AnyNode) {
             $(cell)
               .contents()
               .toArray()
-              .map((child) => nodeToMarkdown($, child))
+              .map((child) => nodeToMarkdown($, child, context))
               .join(""),
           ),
         );
@@ -114,7 +163,11 @@ function renderTable($: CheerioAPI, node: AnyNode) {
   ].join("\n");
 }
 
-function nodeToMarkdown($: CheerioAPI, node: AnyNode): string {
+function nodeToMarkdown(
+  $: CheerioAPI,
+  node: AnyNode,
+  context: MarkdownLinkContext,
+): string {
   if (node.type === "text") return cleanInline(node.data ?? "");
   if (node.type !== "tag") return "";
 
@@ -124,7 +177,7 @@ function nodeToMarkdown($: CheerioAPI, node: AnyNode): string {
     element
       .contents()
       .toArray()
-      .map((child) => nodeToMarkdown($, child))
+      .map((child) => nodeToMarkdown($, child, context))
       .join("");
 
   if (name === "br") return "\n";
@@ -138,9 +191,15 @@ function nodeToMarkdown($: CheerioAPI, node: AnyNode): string {
   }
   if (name === "a") {
     const text = cleanText(children());
-    const match = ENTITY_LINK.exec(element.attr("href") ?? "");
-    if (!match) return text;
-    const code = match[1].toUpperCase();
+    const classSummaryUrl = officialClassSummaryUrl(
+      element.attr("href"),
+      context,
+    );
+    if (classSummaryUrl) {
+      return `[${text || "Class summary"}](${classSummaryUrl})`;
+    }
+    const code = officialEntityCode(element.attr("href"), context);
+    if (!code) return text;
     return text && text.toUpperCase() !== code ? `[${text}](${code})` : code;
   }
   if (/^h[1-6]$/.test(name)) {
@@ -153,7 +212,7 @@ function nodeToMarkdown($: CheerioAPI, node: AnyNode): string {
     return body ? `\n- ${body}` : "";
   }
   if (name === "ul" || name === "ol") return `${children()}\n`;
-  if (name === "table") return `\n\n${renderTable($, node)}\n\n`;
+  if (name === "table") return `\n\n${renderTable($, node, context)}\n\n`;
   if (name === "dt") {
     const body = cleanText(children());
     return body ? `\n- **${body.replace(/:$/, "")}:** ` : "";
@@ -217,7 +276,11 @@ function keyFacts($: CheerioAPI) {
   return facts;
 }
 
-function sectionBody($: CheerioAPI, heading: AnyNode) {
+function sectionBody(
+  $: CheerioAPI,
+  heading: AnyNode,
+  context: MarkdownLinkContext,
+) {
   const parts: string[] = [];
   let sibling = $(heading).next();
   while (sibling.length && sibling.get(0)?.type === "tag") {
@@ -230,7 +293,7 @@ function sectionBody($: CheerioAPI, heading: AnyNode) {
     ) {
       break;
     }
-    parts.push(nodeToMarkdown($, sibling.get(0) as AnyNode));
+    parts.push(nodeToMarkdown($, sibling.get(0) as AnyNode, context));
     sibling = sibling.next();
   }
   return cleanMarkdown(parts.join(""));
@@ -257,7 +320,7 @@ function isPrimarySectionHeading($: CheerioAPI, heading: AnyNode) {
   return depthWithin($, heading, rootNode) === Math.min(...depths);
 }
 
-function extractSections($: CheerioAPI) {
+function extractSections($: CheerioAPI, context: MarkdownLinkContext) {
   const sections: CourseMarkdownSection[] = [];
   const seen = new Set<string>();
   const add = (section: CourseMarkdownSection) => {
@@ -279,7 +342,7 @@ function extractSections($: CheerioAPI) {
       return;
     add({
       heading: title,
-      body: sectionBody($, heading),
+      body: sectionBody($, heading, context),
       sourceLocator: $(heading).attr("id")
         ? `#${$(heading).attr("id")}`
         : `h2[${index + 1}]`,
@@ -291,7 +354,7 @@ function extractSections($: CheerioAPI) {
     if (introduction.length) {
       add({
         heading: "Introduction",
-        body: nodeToMarkdown($, introduction.get(0) as AnyNode),
+        body: nodeToMarkdown($, introduction.get(0) as AnyNode, context),
         sourceLocator: "#introduction",
       });
     }
@@ -308,7 +371,7 @@ function extractSections($: CheerioAPI) {
       if (!panel.length) return;
       offeringParts.push(`### ${tabYear}`);
       panel.children().each((__, child) => {
-        offeringParts.push(nodeToMarkdown($, child as AnyNode));
+        offeringParts.push(nodeToMarkdown($, child as AnyNode, context));
       });
     });
     const offeringBody = cleanMarkdown(offeringParts.join("\n\n"));
@@ -365,8 +428,12 @@ export function convertCourseHtmlToMarkdown({
 
   const $ = load(html);
   CHROME_SELECTORS.forEach((selector) => $(selector).remove());
+  const context = {
+    sourceUrl: validation.page.canonicalUrl,
+    expectedCourseCode: validation.page.code,
+  };
   const facts = keyFacts($);
-  const sections = extractSections($);
+  const sections = extractSections($, context);
   const description = metadata($, "course-description");
   if (
     description &&

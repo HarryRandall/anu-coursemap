@@ -35,6 +35,10 @@ import {
 } from "./markdown.ts";
 import { mergeCourseExtractions } from "./merge.ts";
 import {
+  canonicaliseCourseModelExtraction,
+  courseModelCanonicalisationReviewItem,
+} from "./model-canonical.ts";
+import {
   OpenRouterConfigurationError,
   OpenRouterRequestError,
   buildOpenRouterCourseRequestBody,
@@ -533,8 +537,23 @@ export async function processCourseImportTarget({
         return { result, extraction };
       });
 
+      const providerValidation = validateCourseExtraction(
+        modelResult.result.parsed,
+        {
+          expectedCode: claim.courseCode,
+          expectedYear: claim.academicYear,
+          evidenceMethod: "model",
+        },
+      );
+      const canonicalModel = canonicaliseCourseModelExtraction(
+        modelResult.result.parsed,
+        {
+          expectedCode: claim.courseCode,
+          expectedYear: claim.academicYear,
+        },
+      );
       const modelValidation = await runStage("schema_validate", async () =>
-        validateCourseExtraction(modelResult.result.parsed, {
+        validateCourseExtraction(canonicalModel.value, {
           expectedCode: claim.courseCode,
           expectedYear: claim.academicYear,
           evidenceMethod: "model",
@@ -544,14 +563,24 @@ export async function processCourseImportTarget({
       const merged = await runStage("domain_validate", async (stageId) => {
         const result = mergeCourseExtractions({
           deterministic,
-          model: modelResult.result.parsed,
+          model: canonicalModel.value,
           modelInput: preparedInput.userPrompt,
         });
+        const canonicalisationReviewItem =
+          courseModelCanonicalisationReviewItem(canonicalModel.changes);
+        if (canonicalisationReviewItem) {
+          result.extraction.reviewItems.push(canonicalisationReviewItem);
+        }
         const validationReport = {
+          providerSchemaValid: providerValidation.success,
+          providerValidationIssues: providerValidation.success
+            ? []
+            : providerValidation.issues,
           schemaValid: modelValidation.success,
           modelValidationIssues: modelValidation.success
             ? []
             : modelValidation.issues,
+          canonicalisationChanges: canonicalModel.changes,
           conflicts: result.conflicts,
           evidenceIssues: result.evidenceIssues,
           modelAcceptedFields: result.modelAcceptedFields,

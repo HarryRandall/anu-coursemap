@@ -10,6 +10,7 @@ import {
   type CourseOfferingClass,
   type CourseRelatedCourse,
   type CourseUnitValue,
+  normaliseAnuClassSummaryUrl,
   parseCourseExtraction,
 } from "./contract.ts";
 import { validateAnuCoursePage } from "./source.ts";
@@ -321,19 +322,12 @@ function periodCode(periodName: string) {
     .replace(/^_|_$/g, "")}`;
 }
 
-function officialClassSummaryUrl(value: string | undefined, sourceUrl: string) {
-  if (!value) return null;
-  try {
-    const url = new URL(value, sourceUrl);
-    if (url.protocol !== "https:" || url.origin !== new URL(sourceUrl).origin)
-      return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
-function offeringClasses($: CheerioAPI, year: number, sourceUrl: string) {
+function offeringClasses(
+  $: CheerioAPI,
+  year: number,
+  sourceUrl: string,
+  courseCode: string,
+) {
   const yearAnchor = $(".course-tabs-menu a").filter(
     (_, item) => cleanText($(item).text()) === String(year),
   );
@@ -341,9 +335,14 @@ function offeringClasses($: CheerioAPI, year: number, sourceUrl: string) {
   const panel =
     target && /^#[A-Za-z][\w-]*$/.test(target) ? $(target).first() : null;
   if (!panel?.length)
-    return { observed: false, offerings: [] as CourseOfferingClass[] };
+    return {
+      observed: false,
+      offerings: [] as CourseOfferingClass[],
+      rejectedClassSummaryLinkCount: 0,
+    };
 
   const offerings: CourseOfferingClass[] = [];
+  let rejectedClassSummaryLinkCount = 0;
   panel.children("h3,h4").each((_, heading) => {
     const periodName = cleanText($(heading).text());
     if (!periodName) return;
@@ -379,6 +378,11 @@ function offeringClasses($: CheerioAPI, year: number, sourceUrl: string) {
         summaryIndex >= 0
           ? $(cells[summaryIndex]).find("a[href]").first().attr("href")
           : undefined;
+      const classSummaryUrl = normaliseAnuClassSummaryUrl(summaryHref, {
+        baseUrl: sourceUrl,
+        expectedCourseCode: courseCode,
+      });
+      if (summaryHref && !classSummaryUrl) rejectedClassSummaryLinkCount += 1;
       const sourceText = cleanText($(row).text());
       if (!sourceText) return;
       offerings.push({
@@ -395,12 +399,12 @@ function offeringClasses($: CheerioAPI, year: number, sourceUrl: string) {
         censusDate: parseDate(value("Census date")),
         deliveryMode: value("Mode Of Delivery", "Mode of delivery"),
         location: value("Location"),
-        classSummaryUrl: officialClassSummaryUrl(summaryHref, sourceUrl),
+        classSummaryUrl,
         sourceText,
       });
     });
   });
-  return { observed: true, offerings };
+  return { observed: true, offerings, rejectedClassSummaryLinkCount };
 }
 
 function requisiteDetails($: CheerioAPI) {
@@ -634,6 +638,7 @@ export function extractDeterministicCourse({
     $,
     year,
     pageValidation.page.canonicalUrl,
+    code,
   );
   const requisites = requisiteDetails($);
   const extractedRelatedCourses = relatedCourses(facts);
@@ -736,6 +741,15 @@ export function extractDeterministicCourse({
       kind: "missing",
       severity: "warning",
       message: `The ${year} offering panel contained no usable class rows.`,
+    });
+  }
+  if (extractedOfferings.rejectedClassSummaryLinkCount > 0) {
+    const count = extractedOfferings.rejectedClassSummaryLinkCount;
+    reviewItems.push({
+      fieldKey: "offerings",
+      kind: "invalid",
+      severity: "warning",
+      message: `${count} class summary ${count === 1 ? "link was" : "links were"} not a valid same-course ANU URL and was omitted.`,
     });
   }
 
