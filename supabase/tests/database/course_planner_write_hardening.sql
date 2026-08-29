@@ -40,7 +40,7 @@ values (
   'full_time'
 );
 
--- Publish a 2028 course snapshot without inventing academic period dates. The
+-- Publish a 2030 course snapshot without inventing academic period dates. The
 -- planner can place it in a synthetic S1/S2 lane while academic_period_id stays
 -- null until the university calendar is imported.
 insert into public.course_source_pages (
@@ -52,19 +52,19 @@ select
   years.id,
   'course_page',
   'COMP1110',
-  'https://coursemap.local.test/2028/comp1110',
+  'https://coursemap.local.test/2030/comp1110',
   'text/html',
   repeat('8', 64),
   200,
   512
 from public.course_sources as sources
-join public.academic_years as years on years.year = 2028
+join public.academic_years as years on years.year = 2030
 where sources.kind = 'local_mock';
 
 insert into public.course_years (course_id, academic_year_id)
 select courses.id, years.id
 from public.courses
-join public.academic_years as years on years.year = 2028
+join public.academic_years as years on years.year = 2030
 where courses.code = 'COMP1110';
 
 insert into public.course_snapshots (
@@ -83,7 +83,7 @@ select
   repeat('8', 64),
   'valid',
   false,
-  'Structured Programming 2028',
+  'Structured Programming 2030',
   'fixed',
   6,
   1000,
@@ -99,7 +99,7 @@ join public.course_source_pages as documents
   on documents.academic_year_id = years.id
  and documents.external_key = courses.code
 where courses.code = 'COMP1110'
-  and years.year = 2028;
+  and years.year = 2030;
 
 update public.course_years
 set published_snapshot_id = snapshots.id
@@ -109,7 +109,7 @@ join public.academic_years as years on years.id = snapshots.academic_year_id
 where snapshots.course_year_id = course_years.id
   and courses.id = course_years.course_id
   and courses.code = 'COMP1110'
-  and years.year = 2028;
+  and years.year = 2030;
 
 select extensions.ok(
   not has_table_privilege('authenticated', 'public.plan_items', 'insert')
@@ -158,7 +158,7 @@ select extensions.throws_ok(
 select extensions.lives_ok(
   $$
     select public.add_current_user_plan_item(
-      'COMP1110', 2028::smallint, 2028::smallint, 'S1'
+      'COMP1110', 2030::smallint, 2030::smallint, 'S1'
     )
   $$,
   'a future course can be added to a synthetic period lane'
@@ -172,8 +172,8 @@ select extensions.ok(
     join public.academic_years on academic_years.id = plan_items.academic_year_id
     where plan_items.owner_id = (select auth.uid())
       and courses.code = 'COMP1110'
-      and academic_years.year = 2028
-      and plan_items.planned_calendar_year = 2028
+      and academic_years.year = 2030
+      and plan_items.planned_calendar_year = 2030
       and plan_items.planned_period_code = 'S1'
       and plan_items.academic_period_id is null
   ),
@@ -190,7 +190,7 @@ select extensions.lives_ok(
         where plan_items.owner_id = (select auth.uid())
           and courses.code = 'COMP1110'
       ),
-      2028::smallint,
+      2030::smallint,
       'S2',
       null
     )
@@ -206,8 +206,8 @@ select extensions.ok(
     join public.academic_years on academic_years.id = plan_items.academic_year_id
     where plan_items.owner_id = (select auth.uid())
       and courses.code = 'COMP1110'
-      and academic_years.year = 2028
-      and plan_items.planned_calendar_year = 2028
+      and academic_years.year = 2030
+      and plan_items.planned_calendar_year = 2030
       and plan_items.planned_period_code = 'S2'
       and plan_items.academic_period_id is null
   ),

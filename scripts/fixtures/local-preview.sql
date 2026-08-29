@@ -112,6 +112,99 @@ set status = excluded.status,
     published_at = excluded.published_at,
     updated_at = now();
 
+insert into public.catalogue_sources (name, kind, base_url, is_active)
+values (
+  'Coursemap local preview calendar',
+  'local_mock',
+  'https://coursemap.local.test',
+  true
+)
+on conflict (kind, base_url) do update
+set name = excluded.name,
+    is_active = true,
+    updated_at = now();
+
+insert into public.catalogue_source_documents (
+  source_id,
+  catalogue_year_id,
+  entity_kind,
+  external_key,
+  canonical_url,
+  content_sha256,
+  source_last_modified,
+  fetched_at
+)
+select
+  sources.id,
+  years.id,
+  'calendar',
+  '2026-KEY-DATES',
+  'https://coursemap.local.test/2026/key-dates',
+  md5('coursemap-local-2026-key-dates') || md5('published-calendar'),
+  '2026-08-01 00:00:00+10',
+  '2026-08-01 00:00:00+10'
+from public.catalogue_sources as sources
+join public.catalogue_years as years on years.year = 2026
+where sources.kind = 'local_mock'
+  and sources.base_url = 'https://coursemap.local.test'
+on conflict (
+  source_id,
+  catalogue_year_id,
+  entity_kind,
+  external_key,
+  content_sha256
+) do update
+set canonical_url = excluded.canonical_url,
+    source_last_modified = excluded.source_last_modified,
+    fetched_at = excluded.fetched_at;
+
+insert into public.university_calendar_events (
+  calendar_year,
+  event_date,
+  title,
+  status,
+  source_document_id
+)
+select
+  2026,
+  events.event_date,
+  events.title,
+  'published',
+  documents.id
+from (
+  values
+    ('2026-01-01'::date, 'New Year''s Day public holiday'),
+    ('2026-01-02'::date, 'University offices re-open'),
+    ('2026-02-16'::date, 'Orientation Week begins'),
+    ('2026-02-23'::date, 'First Semester begins'),
+    ('2026-03-31'::date, 'First Semester census date'),
+    ('2026-04-03'::date, 'Good Friday public holiday'),
+    ('2026-05-25'::date, 'First Semester examination period begins'),
+    ('2026-06-26'::date, 'First Semester results released'),
+    ('2026-07-20'::date, 'Second Semester orientation begins'),
+    ('2026-07-27'::date, 'Second Semester begins'),
+    ('2026-08-31'::date, 'Second Semester census date'),
+    ('2026-09-07'::date, 'Teaching break commences'),
+    ('2026-09-21'::date, 'Teaching resumes after the break'),
+    ('2026-10-26'::date, 'Second Semester examination period begins'),
+    ('2026-11-20'::date, 'Second Semester results released'),
+    ('2026-12-14'::date, 'Graduation ceremonies commence')
+) as events(event_date, title)
+join public.catalogue_source_documents as documents
+  on documents.entity_kind = 'calendar'
+ and documents.external_key = '2026-KEY-DATES'
+ and documents.catalogue_year_id = (
+   select id from public.catalogue_years where year = 2026
+ )
+join public.catalogue_sources as sources
+  on sources.id = documents.source_id
+ and sources.kind = 'local_mock'
+ and sources.base_url = 'https://coursemap.local.test'
+on conflict (calendar_year, event_date, title) do update
+set status = excluded.status,
+    source_document_id = excluded.source_document_id,
+    updated_at = now();
+
 insert into public.academic_periods (
   calendar_year,
   code,
@@ -121,16 +214,13 @@ insert into public.academic_periods (
   ends_on,
   sort_order,
   status
-) values (
-  2026,
-  'S1',
-  'Semester 1',
-  'S1',
-  '2026-02-23',
-  '2026-05-30',
-  1,
-  'published'
-)
+) values
+  (2026, 'S1', 'Semester 1', 'S1', '2026-02-23', '2026-06-28', 1, 'published'),
+  (2026, 'S2', 'Semester 2', 'S2', '2026-07-27', '2026-11-22', 2, 'published'),
+  (2027, 'S1', 'Semester 1', 'S1', '2027-02-22', '2027-06-27', 1, 'published'),
+  (2027, 'S2', 'Semester 2', 'S2', '2027-07-26', '2027-11-21', 2, 'published'),
+  (2028, 'S1', 'Semester 1', 'S1', '2028-02-21', '2028-06-25', 1, 'published'),
+  (2028, 'S2', 'Semester 2', 'S2', '2028-07-24', '2028-11-19', 2, 'published')
 on conflict (calendar_year, code) do update
 set name = excluded.name,
     short_name = excluded.short_name,

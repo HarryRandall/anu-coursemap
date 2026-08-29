@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(10);
+select extensions.plan(12);
 
 select extensions.is(
   (
@@ -38,6 +38,29 @@ select extensions.ok(
       and roles.key = 'admin'
   ),
   'the local preview account exists with the admin role'
+);
+
+select extensions.is(
+  (
+    select count(*)
+    from public.university_calendar_events
+    where calendar_year = 2026
+      and status = 'published'
+  ),
+  16::bigint,
+  'the local preview retains the published university calendar fixture'
+);
+
+select extensions.is(
+  (
+    select count(*)
+    from public.academic_periods
+    where calendar_year between 2026 and 2028
+      and code in ('S1', 'S2')
+      and status = 'published'
+  ),
+  6::bigint,
+  'the local preview retains three years of semester planning periods'
 );
 
 select extensions.is(
