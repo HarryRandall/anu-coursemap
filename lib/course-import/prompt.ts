@@ -4,12 +4,13 @@ import {
 } from "./contract.ts";
 
 export const COURSE_IMPORT_PARSER_VERSION = "coursemap-course-parser.v1";
-export const COURSE_IMPORT_PROMPT_VERSION = "coursemap-course-prompt.v1";
+export const COURSE_IMPORT_PROMPT_VERSION = "coursemap-course-prompt.v2";
 export const COURSE_SNAPSHOT_SCHEMA_VERSION = "course-snapshot.v1";
 
 /**
  * This prompt asks for inspectable structured judgements, not hidden reasoning.
- * The strict JSON Schema supplied with the request is the shape authority.
+ * The exact JSON Schema appended to the trusted system message describes the
+ * output shape. Runtime validation remains authoritative.
  */
 export function buildCourseExtractionSystemPrompt() {
   return `You parse one year-specific ANU Programs and Courses page for Coursemap.

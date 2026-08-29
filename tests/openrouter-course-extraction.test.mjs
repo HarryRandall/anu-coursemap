@@ -54,7 +54,7 @@ test("falls back to Gemini only when the model setting is unset or empty", () =>
   );
 });
 
-test("sends one strict, low-cost extraction and strips model reasoning from audit data", async () => {
+test("sends one schema-guided, low-cost extraction and strips model reasoning from audit data", async () => {
   let capturedRequest;
   const result = await extractCourseWithOpenRouter({
     model: DEFAULT_OPENROUTER_MODEL,
@@ -91,6 +91,7 @@ test("sends one strict, low-cost extraction and strips model reasoning from audi
   });
 
   const requestBody = JSON.parse(capturedRequest.body);
+  assert.equal(capturedRequest.headers["X-OpenRouter-Metadata"], "enabled");
   assert.equal(requestBody.stream, false);
   assert.equal(requestBody.temperature, 0);
   assert.deepEqual(requestBody.reasoning, {
@@ -98,8 +99,15 @@ test("sends one strict, low-cost extraction and strips model reasoning from audi
     exclude: true,
   });
   assert.equal(requestBody.provider.require_parameters, true);
-  assert.equal(requestBody.response_format.type, "json_schema");
-  assert.equal(requestBody.response_format.json_schema.strict, true);
+  assert.deepEqual(requestBody.response_format, { type: "json_object" });
+  assert.equal(
+    requestBody.messages[0].content,
+    `Return the course.\n\nTrusted output contract (course_extraction). Return one JSON object matching this exact JSON Schema:\n${JSON.stringify(TEST_SCHEMA)}`,
+  );
+  assert.deepEqual(requestBody.messages[1], {
+    role: "user",
+    content: "COMP1100",
+  });
   assert.deepEqual(result.parsed, { code: "COMP1100" });
   assert.deepEqual(result.usage, {
     inputTokens: 120,
@@ -207,6 +215,39 @@ test("classifies temporary provider failures at the request boundary", async () 
       assert.equal(error.status, 503);
       assert.equal(error.retryable, true);
       assert.doesNotMatch(error.message, /test-key/);
+      return true;
+    },
+  );
+});
+
+test("preserves bounded single-line provider detail for definitive failures", async () => {
+  const rawDetail = `Schema rejected:\n${"x".repeat(600)}`;
+  await assert.rejects(
+    extractCourseWithOpenRouter({
+      model: DEFAULT_OPENROUTER_MODEL,
+      systemPrompt: "Return the course.",
+      modelInput: "COMP1100",
+      schema: TEST_SCHEMA,
+      env: { OPENROUTER_API_KEY: "test-key" },
+      fetchImpl: async () =>
+        Response.json(
+          {
+            error: {
+              message: "Invalid request.",
+              metadata: { raw: rawDetail },
+            },
+          },
+          { status: 400 },
+        ),
+    }),
+    (error) => {
+      assert.ok(error instanceof OpenRouterRequestError);
+      assert.equal(error.status, 400);
+      assert.doesNotMatch(error.message, /[\r\n]/);
+      const providerDetail = error.message.split(" Provider detail: ")[1];
+      assert.equal(providerDetail.length, 400);
+      assert.match(providerDetail, /^Schema rejected: x+/);
+      assert.ok(providerDetail.endsWith("..."));
       return true;
     },
   );

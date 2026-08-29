@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(85);
+select extensions.plan(92);
 
 select extensions.is(
   (
@@ -722,17 +722,51 @@ select extensions.ok(
   'lease recovery fails only expired targets and leaves a live lease running'
 );
 
-update public.course_import_targets as targets
-set lease_expires_at = statement_timestamp() - interval '1 second'
-where targets.run_id = current_setting(
-    'coursemap.test.expired_run_id'
-  )::uuid
-  and targets.processing_status = 'processing';
+update public.course_import_stages as stages
+set
+  status = 'running',
+  started_at = statement_timestamp()
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.expired_run_id'
+      )::uuid
+      and targets.course_code = 'PIPE1001'
+  )
+  and stages.position = 1;
 
-set local role authenticated;
+update public.course_import_stages as stages
+set
+  status = 'failed',
+  completed_at = statement_timestamp(),
+  error_code = 'OPENROUTER_HTTP_400',
+  error_summary = 'OpenRouter rejected unsupported parameters.'
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.expired_run_id'
+      )::uuid
+      and targets.course_code = 'PIPE1001'
+  )
+  and stages.position = 1;
 
-select public.fail_expired_course_import_targets(
-  current_setting('coursemap.test.expired_run_id')::uuid
+set local role service_role;
+
+select extensions.ok(
+  private.recover_stale_course_import_target(
+    current_setting('coursemap.test.expired_run_id')::uuid,
+    (
+      select targets.id
+      from public.course_import_targets as targets
+      where targets.run_id = current_setting(
+          'coursemap.test.expired_run_id'
+        )::uuid
+        and targets.course_code = 'PIPE1001'
+    )
+  ),
+  'the trusted worker immediately recovers a failed stage with a live lease'
 );
 
 reset role;
@@ -748,12 +782,358 @@ select extensions.ok(
       and runs.processed_count = 2
       and runs.failed_count = 2
       and runs.completed_at is not null
+      and exists (
+        select 1
+        from public.course_import_targets as failed
+        where failed.run_id = runs.id
+          and failed.course_code = 'PIPE1001'
+          and failed.processing_status = 'failed'
+          and failed.error_code = 'OPENROUTER_HTTP_400'
+          and failed.error_summary = 'OpenRouter rejected unsupported parameters.'
+          and failed.lease_expires_at is null
+          and failed.finished_at is not null
+      )
   ),
-  'recovering the final expired lease releases the active import run'
+  'failed-stage recovery preserves the definitive error and releases the run'
 );
 
 delete from public.course_import_runs
 where id = current_setting('coursemap.test.expired_run_id')::uuid;
+
+set local role authenticated;
+
+select public.start_course_import(
+  2030::smallint,
+  array['PIPE1000'],
+  'google/gemini-test',
+  'parser.v1',
+  'prompt.v1',
+  'course-snapshot.v1'
+);
+
+reset role;
+
+select set_config(
+  'coursemap.test.failed_stage_retry_run_id',
+  (
+    select runs.id::text
+    from public.course_import_runs as runs
+    where runs.status = 'queued'
+  ),
+  true
+);
+
+set local role service_role;
+
+select private.claim_course_import_target(
+  current_setting('coursemap.test.failed_stage_retry_run_id')::uuid,
+  (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  ),
+  'failed-stage-retry-attempt-1',
+  '64000000-0000-4000-8000-000000000003'::uuid,
+  600
+);
+
+reset role;
+
+update public.course_import_stages as stages
+set
+  status = 'running',
+  started_at = statement_timestamp()
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 1;
+
+update public.course_import_stages as stages
+set
+  status = 'failed',
+  completed_at = statement_timestamp(),
+  error_code = 'ANU_SOURCE_BUSY',
+  error_summary = 'ANU temporarily refused the request.'
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 1;
+
+update public.course_import_targets as targets
+set
+  lease_expires_at = statement_timestamp() - interval '1 second',
+  heartbeat_at = statement_timestamp(),
+  error_code = 'ANU_SOURCE_BUSY',
+  error_summary = 'ANU temporarily refused the request.'
+where targets.run_id = current_setting(
+    'coursemap.test.failed_stage_retry_run_id'
+  )::uuid;
+
+set local role service_role;
+
+select private.claim_course_import_target(
+  current_setting('coursemap.test.failed_stage_retry_run_id')::uuid,
+  (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  ),
+  'failed-stage-retry-attempt-2',
+  '64000000-0000-4000-8000-000000000004'::uuid,
+  600
+);
+
+reset role;
+
+update public.course_import_stages as stages
+set
+  status = 'running',
+  started_at = statement_timestamp(),
+  completed_at = null,
+  error_code = null,
+  error_summary = null
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 1;
+
+update public.course_import_stages as stages
+set
+  status = 'succeeded',
+  completed_at = statement_timestamp()
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 1;
+
+do $complete_second_attempt_prefix$
+declare
+  selected_stage record;
+begin
+  for selected_stage in
+    select stages.id
+    from public.course_import_stages as stages
+    join public.course_import_targets as targets
+      on targets.id = stages.target_id
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+      and stages.position between 2 and 5
+    order by stages.position
+  loop
+    update public.course_import_stages
+    set status = 'running', started_at = statement_timestamp()
+    where id = selected_stage.id;
+
+    update public.course_import_stages
+    set status = 'succeeded', completed_at = statement_timestamp()
+    where id = selected_stage.id;
+  end loop;
+end;
+$complete_second_attempt_prefix$;
+
+update public.course_import_stages as stages
+set
+  status = 'running',
+  started_at = statement_timestamp()
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 6;
+
+update public.course_import_stages as stages
+set
+  status = 'failed',
+  completed_at = statement_timestamp(),
+  error_code = 'OPENROUTER_HTTP_400',
+  error_summary = 'OpenRouter rejected unsupported parameters.'
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 6;
+
+set local role service_role;
+
+select extensions.ok(
+  private.recover_stale_course_import_target(
+    current_setting('coursemap.test.failed_stage_retry_run_id')::uuid,
+    (
+      select targets.id
+      from public.course_import_targets as targets
+      where targets.run_id = current_setting(
+          'coursemap.test.failed_stage_retry_run_id'
+        )::uuid
+    )
+  ),
+  'recovery selects a later-stage failure from the current target attempt'
+);
+
+reset role;
+
+select extensions.ok(
+  exists (
+    select 1
+    from public.course_import_runs as runs
+    join public.course_import_targets as targets on targets.run_id = runs.id
+    where runs.id = current_setting(
+        'coursemap.test.failed_stage_retry_run_id'
+      )::uuid
+      and runs.status = 'failed'
+      and targets.attempt_count = 2
+      and targets.processing_status = 'failed'
+      and targets.error_code = 'OPENROUTER_HTTP_400'
+      and targets.error_summary = 'OpenRouter rejected unsupported parameters.'
+  ),
+  'current-attempt recovery ignores the earlier source failure and preserves the later model error'
+);
+
+delete from public.course_import_runs
+where id = current_setting(
+    'coursemap.test.failed_stage_retry_run_id'
+  )::uuid;
+
+set local role authenticated;
+
+select public.start_course_import(
+  2030::smallint,
+  array['PIPE1000'],
+  'google/gemini-test',
+  'parser.v1',
+  'prompt.v1',
+  'course-snapshot.v1'
+);
+
+reset role;
+
+select set_config(
+  'coursemap.test.abandoned_retry_run_id',
+  (
+    select runs.id::text
+    from public.course_import_runs as runs
+    where runs.status = 'queued'
+  ),
+  true
+);
+
+set local role service_role;
+
+select private.claim_course_import_target(
+  current_setting('coursemap.test.abandoned_retry_run_id')::uuid,
+  (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.abandoned_retry_run_id'
+      )::uuid
+  ),
+  'abandoned-retry-pipe1000',
+  '64000000-0000-4000-8000-000000000002'::uuid,
+  600
+);
+
+reset role;
+
+update public.course_import_stages as stages
+set
+  status = 'running',
+  started_at = statement_timestamp()
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.abandoned_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 1;
+
+update public.course_import_stages as stages
+set
+  status = 'failed',
+  completed_at = statement_timestamp(),
+  error_code = 'ANU_SOURCE_BUSY',
+  error_summary = 'ANU temporarily refused the request.'
+where stages.target_id = (
+    select targets.id
+    from public.course_import_targets as targets
+    where targets.run_id = current_setting(
+        'coursemap.test.abandoned_retry_run_id'
+      )::uuid
+  )
+  and stages.position = 1;
+
+update public.course_import_targets as targets
+set
+  lease_expires_at = statement_timestamp() - interval '31 minutes',
+  heartbeat_at = statement_timestamp() - interval '31 minutes',
+  error_code = 'ANU_SOURCE_BUSY',
+  error_summary = 'ANU temporarily refused the request.'
+where targets.run_id = current_setting(
+    'coursemap.test.abandoned_retry_run_id'
+  )::uuid;
+
+set local role authenticated;
+
+select extensions.lives_ok(
+  $$
+    select public.fail_expired_course_import_targets(
+      current_setting('coursemap.test.abandoned_retry_run_id')::uuid
+    )
+  $$,
+  'an administrator can finalise a released retry abandoned for 30 minutes'
+);
+
+reset role;
+
+select extensions.ok(
+  exists (
+    select 1
+    from public.course_import_runs as runs
+    join public.course_import_targets as targets on targets.run_id = runs.id
+    where runs.id = current_setting(
+        'coursemap.test.abandoned_retry_run_id'
+      )::uuid
+      and runs.status = 'failed'
+      and runs.completed_at is not null
+      and targets.processing_status = 'failed'
+      and targets.error_code = 'ANU_SOURCE_BUSY'
+      and targets.error_summary = 'ANU temporarily refused the request.'
+      and targets.lease_expires_at is null
+  ),
+  'bounded stale cleanup preserves the released retry error and unlocks the run'
+);
+
+delete from public.course_import_runs
+where id = current_setting(
+    'coursemap.test.abandoned_retry_run_id'
+  )::uuid;
 
 set local role authenticated;
 
@@ -2416,15 +2796,30 @@ where target_id = (
   and position = 1;
 
 update public.course_import_stages
-set status = 'succeeded', completed_at = statement_timestamp()
+set
+  status = 'failed',
+  completed_at = statement_timestamp(),
+  error_code = 'ANU_SOURCE_BUSY',
+  error_summary = 'ANU temporarily refused the request.'
 where target_id = (
   select id from pipeline_test_targets where course_code = 'PIPE1001'
 )
   and position = 1;
 
 update public.course_import_targets
-set lease_expires_at = statement_timestamp() - interval '1 second'
+set
+  lease_expires_at = statement_timestamp() - interval '1 second',
+  error_code = 'ANU_SOURCE_BUSY',
+  error_summary = 'ANU temporarily refused the request.'
 where course_code = 'PIPE1001';
+
+select extensions.ok(
+  not private.recover_stale_course_import_target(
+    (select id from pipeline_test_run),
+    (select id from pipeline_test_targets where course_code = 'PIPE1001')
+  ),
+  'a deliberately released retry is left claimable despite its failed stage'
+);
 
 select extensions.lives_ok(
   format(
@@ -2443,11 +2838,21 @@ select extensions.lives_ok(
   'an expired lease can be reclaimed as a later target attempt'
 );
 
+select extensions.ok(
+  not private.recover_stale_course_import_target(
+    (select id from pipeline_test_run),
+    (select id from pipeline_test_targets where course_code = 'PIPE1001')
+  ),
+  'a failed stage from an earlier attempt cannot finalise a newly claimed retry'
+);
+
 update public.course_import_stages
 set
   status = 'running',
   started_at = statement_timestamp(),
-  completed_at = null
+  completed_at = null,
+  error_code = null,
+  error_summary = null
 where target_id = (
   select id from pipeline_test_targets where course_code = 'PIPE1001'
 )
@@ -2465,7 +2870,7 @@ select extensions.ok(
       and stages.status = 'running'
       and stages.attempt_count = 2
   ),
-  'completed deterministic stages can restart only on a later target attempt'
+  'failed deterministic stages can restart only on a later target attempt'
 );
 
 update public.course_import_stages

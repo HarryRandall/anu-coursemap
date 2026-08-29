@@ -43,6 +43,9 @@ import {
 } from "./openrouter.ts";
 import { persistCourseSnapshotCandidate } from "./persist-snapshot.ts";
 import {
+  COURSE_IMPORT_PARSER_VERSION,
+  COURSE_IMPORT_PROMPT_VERSION,
+  COURSE_SNAPSHOT_SCHEMA_VERSION,
   buildCourseExtractionSystemPrompt,
   buildCourseExtractionUserPrompt,
 } from "./prompt.ts";
@@ -63,6 +66,35 @@ class CourseImportPaidOutcomeUncertainError extends Error {
       { cause },
     );
     this.name = "CourseImportPaidOutcomeUncertainError";
+  }
+}
+
+class CourseImportVersionMismatchError extends TypeError {
+  readonly code = "IMPORT_VERSION_UNSUPPORTED";
+
+  constructor() {
+    super(
+      "The queued course import was created for a different pipeline version. Start a new import with the deployed worker.",
+    );
+    this.name = "CourseImportVersionMismatchError";
+  }
+}
+
+function assertCurrentCourseImportVersions({
+  parserVersion,
+  promptVersion,
+  schemaVersion,
+}: {
+  parserVersion: string;
+  promptVersion: string;
+  schemaVersion: string;
+}) {
+  if (
+    parserVersion !== COURSE_IMPORT_PARSER_VERSION ||
+    promptVersion !== COURSE_IMPORT_PROMPT_VERSION ||
+    schemaVersion !== COURSE_SNAPSHOT_SCHEMA_VERSION
+  ) {
+    throw new CourseImportVersionMismatchError();
   }
 }
 
@@ -137,6 +169,44 @@ function isRecoveryOnlyDelivery(deliveryCount: number, maxDeliveries: number) {
   return deliveryCount > maxDeliveries;
 }
 
+const courseImportClaimDependencies = {
+  recover: recoverStaleCourseImportTarget,
+  claim: claimCourseImportTarget,
+};
+
+async function recoverOrClaimCourseImportTarget({
+  sql,
+  runId,
+  targetId,
+  messageId,
+  workerId,
+  recoveryOnlyDelivery,
+  dependencies = courseImportClaimDependencies,
+}: {
+  sql: Parameters<typeof claimCourseImportTarget>[0];
+  runId: string;
+  targetId: string;
+  messageId: string;
+  workerId: string;
+  recoveryOnlyDelivery: boolean;
+  dependencies?: typeof courseImportClaimDependencies;
+}) {
+  if (!recoveryOnlyDelivery) {
+    return dependencies.claim(sql, {
+      runId,
+      targetId,
+      messageId,
+      workerId,
+    });
+  }
+
+  const recovered = await dependencies.recover(sql, { runId, targetId });
+  if (recovered) return null;
+  throw new Error(
+    "Course import target is awaiting bounded stale-delivery recovery.",
+  );
+}
+
 export async function processCourseImportTarget({
   runId,
   targetId,
@@ -147,26 +217,21 @@ export async function processCourseImportTarget({
 }: ProcessCourseImportTargetInput): Promise<void> {
   await withCourseImportDatabaseClient(async (sql) => {
     signal?.throwIfAborted();
-    if (isRecoveryOnlyDelivery(deliveryCount, maxDeliveries)) {
-      const recovered = await recoverStaleCourseImportTarget(sql, {
-        runId,
-        targetId,
-      });
-      if (recovered) return;
-      throw new Error(
-        "Course import target is awaiting bounded stale-delivery recovery.",
-      );
-    }
-
     const workerId = randomUUID();
     let claim;
     try {
-      claim = await claimCourseImportTarget(sql, {
+      claim = await recoverOrClaimCourseImportTarget({
+        sql,
         runId,
         targetId,
         messageId,
         workerId,
+        recoveryOnlyDelivery: isRecoveryOnlyDelivery(
+          deliveryCount,
+          maxDeliveries,
+        ),
       });
+      if (claim === null) return;
     } catch (error) {
       const status = await getCourseImportTargetStatus(sql, {
         runId,
@@ -242,6 +307,7 @@ export async function processCourseImportTarget({
     };
 
     try {
+      assertCurrentCourseImportVersions(claim);
       const fetched = await runStage("source_fetch", () =>
         fetchAnuCoursePage(claim.academicYear, claim.courseCode, { signal }),
       );
@@ -624,9 +690,12 @@ export async function processCourseImportTarget({
 
 export const courseImportTargetInternals = {
   CourseImportPaidOutcomeUncertainError,
+  CourseImportVersionMismatchError,
+  assertCurrentCourseImportVersions,
   errorCode,
   isRecoveryOnlyDelivery,
   isRetryableCourseImportError,
   normaliseOpenRouterAttemptError,
+  recoverOrClaimCourseImportTarget,
   safeErrorSummary,
 };
