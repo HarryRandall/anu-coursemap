@@ -11,6 +11,7 @@ function jsonResponse(payload) {
 }
 
 const coursePayload = {
+  TotalCount: 2,
   Items: [
     {
       CourseCode: "COMP1100",

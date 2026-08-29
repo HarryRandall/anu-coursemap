@@ -9,7 +9,7 @@ import {
   createLocalDatabaseClient,
 } from "@/scripts/catalogue/lib/local-database.mjs";
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/;
 export const MAX_WEB_COURSE_IMPORTS = 100;
 
 /**

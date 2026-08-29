@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadPublishedCourse } from "@/lib/coursemap/published-catalogue";
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/;
 
 export async function GET(
   _: Request,

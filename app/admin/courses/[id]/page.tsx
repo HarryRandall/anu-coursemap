@@ -5,7 +5,7 @@ import { toStudentPreviewCourse } from "@/lib/coursemap/admin-course-preview";
 import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-catalogue";
 import { isDemoMode } from "@/lib/supabase/config";
 
-const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}\b/gu;
+const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}[A-Z]?\b/gu;
 
 export default async function AdminCourseDetailPage({
   params,

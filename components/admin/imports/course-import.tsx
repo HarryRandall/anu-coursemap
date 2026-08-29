@@ -49,7 +49,7 @@ import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
 import type { Tone } from "@/lib/ui";
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/u;
 const PAGE_SIZE = 10;
 
 type QueueRow = {

@@ -511,7 +511,7 @@ select extensions.throws_ok(
   'new imported or manually edited snapshots require a projection hash'
 );
 
-select extensions.throws_ok(
+select extensions.lives_ok(
   $$
     insert into public.course_snapshots (
       course_year_id,
@@ -535,9 +535,7 @@ select extensions.throws_ok(
     from public.course_snapshots
     where title = 'Foundation draft fixture'
   $$,
-  '23505',
-  null,
-  'one relational projection is saved only once per course year'
+  'matching projections may be retained as distinct immutable snapshot events'
 );
 
 update public.course_years

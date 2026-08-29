@@ -386,7 +386,10 @@ function readPrerequisiteEdges(
     if (!isRecord(item)) return [];
     const from = readString(item.from).toUpperCase();
     const to = readString(item.to).toUpperCase();
-    if (!/^[A-Z]{4}\d{4}$/u.test(from) || !/^[A-Z]{4}\d{4}$/u.test(to)) {
+    if (
+      !/^[A-Z]{4}\d{4}[A-Z]?$/u.test(from) ||
+      !/^[A-Z]{4}\d{4}[A-Z]?$/u.test(to)
+    ) {
       return [];
     }
     return [
@@ -403,7 +406,7 @@ function readPrerequisiteEdges(
 function readCourseDetail(value: Json): CourseDetailPayload | null {
   if (!isRecord(value)) return null;
   const code = readString(value.code).toUpperCase();
-  if (!/^[A-Z]{4}\d{4}$/u.test(code)) return null;
+  if (!/^[A-Z]{4}\d{4}[A-Z]?$/u.test(code)) return null;
   const reviewState = readString(value.review_state);
   return {
     code,
@@ -551,7 +554,13 @@ async function courseVersionIdsForSession(
     .select("course_version_id")
     .in("id", offeringIds);
   if (offeringsError) throw offeringsError;
-  return [...new Set((offerings ?? []).map((item) => item.course_version_id))];
+  return [
+    ...new Set(
+      (offerings ?? [])
+        .map((item) => item.course_version_id)
+        .filter((id): id is number => id !== null),
+    ),
+  ];
 }
 
 async function courseIdsForCodeSearch(
@@ -754,7 +763,7 @@ export async function loadPublishedCourse(
   code: string,
 ): Promise<CatalogueCourse | null> {
   const normalisedCode = code.trim().toUpperCase();
-  if (!/^[A-Z]{4}\d{4}$/u.test(normalisedCode)) return null;
+  if (!/^[A-Z]{4}\d{4}[A-Z]?$/u.test(normalisedCode)) return null;
   if (isDemoMode()) {
     const courses = await demoCatalogue();
     return courses.find((course) => course.code === normalisedCode) ?? null;

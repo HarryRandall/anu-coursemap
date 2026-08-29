@@ -91,7 +91,7 @@ type RequisiteToken =
     }
   | { kind: "condition"; condition: RequisiteCondition };
 
-const COURSE_LEVEL_PATTERN = /^[A-Z]{4}(\d)\d{3}$/u;
+const COURSE_LEVEL_PATTERN = /^[A-Z]{4}(\d)\d{3}[A-Z]?$/u;
 
 function normaliseSourceText(value: string) {
   return value.replace(/\s+/gu, " ").trim();
@@ -108,7 +108,7 @@ function stripPreamble(value: string) {
       "",
     )
     .replace(
-      /^to enrol in [A-Z]{4}\d{4},? (?:you|students) must\s+(?:have (?:successfully )?completed:?\s*)?/iu,
+      /^to enrol in [A-Z]{4}\d{4}[A-Z]?,? (?:you|students) must\s+(?:have (?:successfully )?completed:?\s*)?/iu,
       "",
     );
 }
@@ -274,7 +274,7 @@ function tokenise(sourceText: string): RequisiteToken[] | null {
       continue;
     }
 
-    const course = /^([A-Z]{4}\d{4})\b/iu.exec(remainder)?.[1];
+    const course = /^([A-Z]{4}\d{4}[A-Z]?)\b/iu.exec(remainder)?.[1];
     if (course) {
       tokens.push({
         kind: "condition",

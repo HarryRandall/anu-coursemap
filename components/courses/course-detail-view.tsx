@@ -93,8 +93,10 @@ function CourseReferenceText({
   text: string;
   availableCourseCodes: ReadonlySet<string>;
 }) {
-  return text.split(/([A-Z]{4}\d{4})/gu).map((part, index) => {
-    if (!/^[A-Z]{4}\d{4}$/u.test(part)) return <span key={index}>{part}</span>;
+  return text.split(/([A-Z]{4}\d{4}[A-Z]?)/gu).map((part, index) => {
+    if (!/^[A-Z]{4}\d{4}[A-Z]?$/u.test(part)) {
+      return <span key={index}>{part}</span>;
+    }
     if (availableCourseCodes.has(part)) {
       return (
         <Link

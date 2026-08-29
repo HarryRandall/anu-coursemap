@@ -4,7 +4,7 @@ import { ANU_PROGRAMS_AND_COURSES_SOURCE } from "./anu-programs-courses";
 import { assertSupportedCatalogueYear } from "./catalogue-years";
 
 const PROGRAMME_CODE_PATTERN = /^[A-Z0-9-]+$/;
-const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}\b/g;
+const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}[A-Z]?\b/g;
 
 export type AnuProgrammeDocument = {
   canonicalUrl: string;

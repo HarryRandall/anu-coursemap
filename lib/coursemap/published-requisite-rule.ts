@@ -97,7 +97,7 @@ export function readPublishedRequisiteRule(
       if (kind === "course") {
         const code = readString(condition.course_code).toUpperCase();
         const minimumMark = condition.minimum_mark;
-        return /^[A-Z]{4}\d{4}$/u.test(code) && minimumMark == null
+        return /^[A-Z]{4}\d{4}[A-Z]?$/u.test(code) && minimumMark == null
           ? [{ groupId, position, kind: "course" as const, code }]
           : [];
       }

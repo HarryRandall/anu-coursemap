@@ -412,48 +412,51 @@ test("server-renders admin and course-detail routes", async () => {
   assert.match(summaryHtml, /COMP6466/i);
 });
 
-test("splits imports into sync, course, programme and change routes", async () => {
+test("routes course imports through the directory and durable run workspace", async () => {
   const [
     importsResponse,
     syncResponse,
     coursesResponse,
+    directoryResponse,
     programmesResponse,
     changesResponse,
   ] = await Promise.all([
     fetch(`${origin}/admin/imports`, { redirect: "manual" }),
     render("/admin/imports/sync"),
     render("/admin/imports/courses"),
+    render("/admin/courses"),
     render("/admin/imports/programmes"),
     render("/admin/imports/changes"),
   ]);
 
-  // The bare section path is not a page; it sends you to the run history.
+  // The bare section path opens the durable course run history. Legacy course
+  // import entry points now resolve to the searchable course directory.
   assert.ok([307, 308].includes(importsResponse.status));
-  assert.equal(importsResponse.headers.get("location"), "/admin/imports/sync");
+  assert.equal(importsResponse.headers.get("location"), "/admin/imports/runs");
   assert.equal(syncResponse.status, 200);
   assert.equal(coursesResponse.status, 200);
+  assert.equal(directoryResponse.status, 200);
   assert.equal(programmesResponse.status, 200);
   assert.equal(changesResponse.status, 200);
 
-  const syncHtml = await syncResponse.text();
-  assert.match(syncHtml, /Refresh directory/i);
-  assert.match(syncHtml, /Catalogue year/i);
-  assert.match(syncHtml, /Refresh courses/i);
-  assert.match(syncHtml, /Refresh programmes/i);
-  assert.doesNotMatch(syncHtml, /Auto sync|Not set up/i);
-  assert.match(syncHtml, /Catalogue import runs, most recent first/i);
-  // Runs are identified by what they touched and grouped under a day, not by
-  // repeating "1 checked, 1 changed" down every row.
-  assert.match(syncHtml, /MATH1013/);
-  assert.doesNotMatch(syncHtml, /1 checked, 1 changed/i);
-  // Reported by exception: a success pill on every row is decoration.
-  assert.doesNotMatch(syncHtml, />\s*Succeeded\s*</i);
-
-  const coursesHtml = await coursesResponse.text();
-  assert.match(coursesHtml, /Find a course/i);
-  // The search is a combobox, not a filter over a table that is not there.
-  assert.doesNotMatch(coursesHtml, /Nothing to show yet/i);
-  assert.doesNotMatch(coursesHtml, /Courses available to import/i);
+  const [syncRedirectHtml, coursesRedirectHtml, directoryHtml] =
+    await Promise.all([
+      syncResponse.text(),
+      coursesResponse.text(),
+      directoryResponse.text(),
+    ]);
+  const directoryDestination =
+    /Search all courses by code or title|url=\/admin\/courses/i;
+  assert.match(syncRedirectHtml, directoryDestination);
+  assert.match(coursesRedirectHtml, directoryDestination);
+  assert.match(directoryHtml, /Refresh directory/i);
+  assert.match(directoryHtml, /Search all courses by code or title/i);
+  assert.match(directoryHtml, /Import selected/i);
+  assert.match(directoryHtml, /No directory courses/i);
+  assert.match(directoryHtml, /Directory refresh is disabled/i);
+  assert.match(directoryHtml, /Detailed imports are disabled/i);
+  assert.match(directoryHtml, /Import runs/i);
+  assert.doesNotMatch(directoryHtml, /Find a course/i);
 
   const programmesHtml = await programmesResponse.text();
   assert.match(programmesHtml, /Find a programme/i);
@@ -464,7 +467,7 @@ test("splits imports into sync, course, programme and change routes", async () =
 
   // Titles and the explainer subtitle are gone from every import surface, and
   // so are the tab names of the wizard that preceded them.
-  for (const html of [syncHtml, coursesHtml, programmesHtml, changesHtml]) {
+  for (const html of [directoryHtml, programmesHtml, changesHtml]) {
     assert.doesNotMatch(html, /Everything arrives as a draft/i);
     assert.doesNotMatch(html, />\s*(?:Overview|Activity|Flags)\s*</i);
     assert.doesNotMatch(html, /<h1(?![^>]*sr-only)[^>]*>/i);
@@ -486,20 +489,12 @@ test("removes the routes the imports split replaced", async () => {
   }
 });
 
-test("renders a run without a back button or a repeated heading", async () => {
+test("redirects legacy run URLs to durable course runs", async () => {
   const response = await render("/admin/imports/sync/demo-run-1");
-  assert.equal(response.status, 200);
   const html = await response.text();
 
-  assert.match(html, /Parser notes/i);
-  // The breadcrumb carries the trail and the run's time; a back button and a
-  // visible heading would both restate it.
-  assert.doesNotMatch(html, /All imports|All changes/i);
-  assert.doesNotMatch(html, /<h1(?![^>]*sr-only)[^>]*>/i);
-  // The breadcrumb no longer shouts an unmapped path segment.
-  assert.doesNotMatch(html, />RUNS</);
-  // The operator explainer under Parser notes is gone.
-  assert.doesNotMatch(html, /These describe the parse rather than the/i);
+  assert.match(html, /url=\/admin\/imports\/runs/i);
+  assert.doesNotMatch(html, /Parser notes/i);
 });
 
 test("removes the disposable starter and keeps product metadata", async () => {

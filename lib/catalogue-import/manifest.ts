@@ -143,7 +143,7 @@ export class CatalogueManifestValidationError extends Error {
   }
 }
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/;
 const SUBJECT_CODE_PATTERN = /^[A-Z]{4}$/;
 const CONTENT_SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const DIAGNOSTIC_CODE_PATTERN = /^[A-Z][A-Z0-9_]*$/;

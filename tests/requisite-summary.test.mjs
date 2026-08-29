@@ -79,6 +79,12 @@ test("strips enrolment preambles before parsing the rule content", () => {
     ),
     { kind: "units_total", units: 24 },
   );
+  assert.deepEqual(
+    parseRequisiteSummary(
+      "To enrol in COMP8900F, students must have completed COMP8900P.",
+    ),
+    { kind: "course", code: "COMP8900P" },
+  );
 });
 
 test("parses level-gated unit rules with and without a subject", () => {
@@ -166,8 +172,8 @@ test("evaluates level and total unit progress from completed courses", () => {
   assert.ok(levelExpression);
   assert.deepEqual(
     evaluateRequisiteExpression(levelExpression, [
-      { code: "COMP2100", units: 6 },
-      { code: "COMP2300", units: 6 },
+      { code: "COMP2100F", units: 6 },
+      { code: "COMP2300P", units: 6 },
       { code: "COMP1100", units: 6 },
       { code: "MATH2222", units: 6 },
     ]),

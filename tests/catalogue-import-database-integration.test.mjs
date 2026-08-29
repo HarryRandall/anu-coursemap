@@ -13,8 +13,11 @@ import { withLocalCatalogueImportTransaction } from "../scripts/catalogue/lib/im
 import { createLocalDatabaseClient } from "../scripts/catalogue/lib/local-database.mjs";
 
 const catalogueYear = 2026;
-const courseCode = "COMP2100";
-const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2100";
+const fixtureCourseCode = "COMP2100";
+const fixtureSourceUrl =
+  "https://programsandcourses.anu.edu.au/2026/course/COMP2100";
+const courseCode = "ZZZZ9875";
+const sourceUrl = `https://programsandcourses.anu.edu.au/2026/course/${courseCode}`;
 const fetchedAt = "2026-08-14T01:02:03.000Z";
 const expectedPrerequisite =
   "Successfully completed COMP1110 or COMP1140 AND 6 units of 1000 level MATH.";
@@ -38,15 +41,20 @@ const fixtureHtml = await readFile(
   "utf8",
 );
 
-const document = parseAnuCourseDocument({
-  html: fixtureHtml,
-  sourceUrl,
-  expectedCourseCode: courseCode,
-  catalogueYear,
-  fetchedAt,
-  httpEtag: '"catalogue-db-fixture"',
-  sourceLastModified: "Thu, 13 Aug 2026 02:15:00 GMT",
-});
+const document = structuredClone(
+  parseAnuCourseDocument({
+    html: fixtureHtml,
+    sourceUrl: fixtureSourceUrl,
+    expectedCourseCode: fixtureCourseCode,
+    catalogueYear,
+    fetchedAt,
+    httpEtag: '"catalogue-db-fixture"',
+    sourceLastModified: "Thu, 13 Aug 2026 02:15:00 GMT",
+  }),
+);
+document.externalKey = courseCode;
+document.canonicalUrl = sourceUrl;
+document.course.code = courseCode;
 
 const manifest = parseCatalogueManifest({
   schemaVersion: 1,
@@ -59,7 +67,7 @@ const manifest = parseCatalogueManifest({
 });
 
 const changedPrerequisite = `${expectedPrerequisite} Permission from the course convener is also required.`;
-const structuredRuleCourseCode = "COMP3600";
+const structuredRuleCourseCode = "ZZZZ9874";
 const structuredRuleText =
   "To enrol in this course you must have completed the following: 24 units of COMP coded courses AND (6 units of MATH OR COMP1600)";
 const structuredIncompatibilityText =
@@ -596,7 +604,7 @@ async function conflictDatabaseState(sql) {
 }
 
 test(
-  "imports the reduced COMP2100 manifest idempotently and rolls every row back",
+  "rejects sealed backfill rewrites and imports a new legacy fixture idempotently",
   { timeout: 60_000 },
   async () => {
     const sql = await createLocalDatabaseClient();
@@ -604,6 +612,22 @@ test(
     const runIds = [];
 
     try {
+      await assert.rejects(
+        sql.begin(async (tx) => {
+          await tx`
+            delete from public.course_versions as versions
+            using public.courses as courses, public.catalogue_years as years
+            where versions.course_id = courses.id
+              and versions.catalogue_year_id = years.id
+              and courses.code = ${fixtureCourseCode}
+              and years.year = ${catalogueYear}
+          `;
+        }),
+        (error) =>
+          error?.code === "55000" &&
+          /course snapshot .* is sealed/u.test(error.message),
+      );
+
       await assert.rejects(
         withLocalCatalogueImportTransaction(
           sql,

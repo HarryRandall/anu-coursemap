@@ -270,7 +270,7 @@ function uniqueNumbers(values: number[]) {
 function courseCode(item: ImportItemRow, document?: SourceDocumentRow) {
   const value = item.target_key ?? document?.external_key ?? "";
   const normalised = value.toUpperCase();
-  return /^[A-Z]{4}[0-9]{4}$/.test(normalised) ? normalised : null;
+  return /^[A-Z]{4}[0-9]{4}[A-Z]?$/.test(normalised) ? normalised : null;
 }
 
 function flagValue(value: unknown): string | null {

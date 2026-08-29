@@ -37,7 +37,7 @@ function optionalText(value: string) {
 
 function normaliseCourseReviewDraft(input: CourseReviewDraftInput) {
   const code = input.code.trim().toUpperCase();
-  if (!/^[A-Z]{4}\d{4}$/.test(code)) {
+  if (!/^[A-Z]{4}\d{4}[A-Z]?$/.test(code)) {
     throw new TypeError("Choose a valid course code.");
   }
   if (

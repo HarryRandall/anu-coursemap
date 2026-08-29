@@ -58,7 +58,7 @@ export function RequisiteConditionEditor({
     [sourceText],
   );
   const codes = useMemo(
-    () => [...new Set(sourceText.match(/\b[A-Z]{4}\d{4}\b/gu) ?? [])],
+    () => [...new Set(sourceText.match(/\b[A-Z]{4}\d{4}[A-Z]?\b/gu) ?? [])],
     [sourceText],
   );
   // An unreviewed rule opens on the importer's reading rather than a blank

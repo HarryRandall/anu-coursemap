@@ -178,6 +178,30 @@ test("parses official course metadata, provenance and raw requisite facts", () =
   );
 });
 
+test("parses and validates ANU's single-letter course variants", () => {
+  const sourceUrl =
+    "https://programsandcourses.anu.edu.au/2026/course/COMP8900F";
+  const variantHtml = comp2100Html
+    .replaceAll("COMP2100", "COMP8900F")
+    .replaceAll("comp2100", "comp8900f")
+    .replaceAll("COMP1110", "COMP8900P")
+    .replaceAll("COMP1140", "EXTN1001A")
+    .replaceAll("COMP6442", "ACST4600T");
+  const document = parseFixture(variantHtml, sourceUrl, "COMP8900F");
+
+  assert.equal(document.externalKey, "COMP8900F");
+  assert.equal(document.course.code, "COMP8900F");
+  assert.deepEqual(document.course.requisites.linkedCourseCodes, [
+    "ACST4600T",
+    "COMP8900P",
+    "EXTN1001A",
+  ]);
+  assert.deepEqual(validateCatalogueManifest(manifestFor(document)), {
+    valid: true,
+    issues: [],
+  });
+});
+
 test("extracts official course detail sections without inventing missing fields", () => {
   const document = parseFixture(
     `<!doctype html>

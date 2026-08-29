@@ -21,6 +21,7 @@ select extensions.ok(
       and policies.tablename = 'course_rule_course_references'
   ) = array[
     'course_rule_course_references_admin_all',
+    'course_rule_course_references_import_admin_read',
     'course_rule_course_references_read_drafts',
     'course_rule_course_references_read_published',
     'course_rule_course_references_read_snapshot_published'

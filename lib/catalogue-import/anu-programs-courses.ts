@@ -69,7 +69,7 @@ export const ANU_2026_COURSE_CODES = [
   "STAT1008",
 ] as const;
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/;
 const MAX_SOURCE_BYTES = 2_000_000;
 const MONTHS = new Map(
   [
@@ -415,15 +415,17 @@ function extractRequisites($: CheerioAPI, diagnostics: CatalogueDiagnostic[]) {
 
   root.find("a[href]").each((_, element) => {
     const href = $(element).attr("href") ?? "";
-    const hrefCode = href.match(/\/course\/([A-Z]{4}\d{4})(?:\/|$)/i)?.[1];
+    const hrefCode = href.match(
+      /\/course\/([A-Z]{4}\d{4}[A-Z]?)(?:\/|$)/i,
+    )?.[1];
     const textCode = normaliseText($(element).text()).match(
-      /\b[A-Z]{4}\d{4}\b/i,
+      /\b[A-Z]{4}\d{4}[A-Z]?\b/i,
     )?.[0];
     const code = (hrefCode ?? textCode)?.toUpperCase();
     if (code && COURSE_CODE_PATTERN.test(code)) linkedCourseCodes.add(code);
   });
 
-  for (const code of rawText?.match(/\b[A-Z]{4}\d{4}\b/g) ?? []) {
+  for (const code of rawText?.match(/\b[A-Z]{4}\d{4}[A-Z]?\b/g) ?? []) {
     linkedCourseCodes.add(code.toUpperCase());
   }
 

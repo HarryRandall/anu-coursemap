@@ -1,13 +1,23 @@
 import { createHash } from "node:crypto";
 import {
   fetchAnuCourseDirectory,
+  type AnuCourseDirectory,
   type AnuCourseDirectoryEntry,
 } from "./anu-course-directory.ts";
+import {
+  courseDirectoryEntriesRefreshEnabled,
+  courseDirectoryFailurePolicy,
+  courseDirectoryResponsePolicy,
+  type CourseDirectoryAvailabilityUpdate,
+} from "./course-directory-policy.ts";
 import {
   fetchAnuProgrammeDirectory,
   type AnuProgrammeDirectoryEntry,
 } from "./anu-programme-directory.ts";
-import { assertSupportedCatalogueYear } from "./catalogue-years.ts";
+import {
+  assertSupportedCatalogueYear,
+  assertSupportedCourseImportYear,
+} from "./catalogue-years.ts";
 import { ANU_PROGRAMS_AND_COURSES_SOURCE } from "./anu-programs-courses.ts";
 import { isDemoMode } from "../supabase/config.ts";
 import {
@@ -100,6 +110,208 @@ async function upsertCatalogueYear(sql: SqlClient, year: number) {
     select id from public.catalogue_years where year = ${year}
   `;
   return existing!.id as number;
+}
+
+async function upsertCourseSource(sql: SqlClient) {
+  const { name, baseUrl } = ANU_PROGRAMS_AND_COURSES_SOURCE;
+  const kind = "anu_programs_courses";
+  const inserted = await sql`
+    insert into public.course_sources (name, kind, base_url, is_active)
+    values (${name}, ${kind}, ${baseUrl}, true)
+    on conflict (kind, base_url) do nothing
+    returning id
+  `;
+  if (inserted.length > 0) return inserted[0]!.id as number;
+
+  const [existing] = await sql`
+    update public.course_sources
+    set name = ${name}, is_active = true
+    where kind = ${kind} and base_url = ${baseUrl}
+    returning id
+  `;
+  if (!existing) throw new Error("The course source could not be resolved.");
+  return existing.id as number;
+}
+
+async function upsertAcademicYear(sql: SqlClient, year: number) {
+  const [academicYear] = await sql`
+    insert into public.academic_years (year, is_import_enabled)
+    values (${year}, ${year >= 2020 && year <= 2030})
+    on conflict (year) do update set
+      is_import_enabled = excluded.is_import_enabled
+    returning id
+  `;
+  if (!academicYear)
+    throw new Error("The academic year could not be resolved.");
+  return academicYear.id as number;
+}
+
+async function updateAcademicYearAvailability(
+  sql: SqlClient,
+  academicYearId: number,
+  update: CourseDirectoryAvailabilityUpdate,
+) {
+  await sql`
+    update public.academic_years
+    set
+      source_availability = ${update.sourceAvailability},
+      availability_checked_at = ${update.checkedAt},
+      directory_refreshed_at = case
+        when ${update.markDirectoryRefreshed}
+          then ${update.checkedAt}
+        else directory_refreshed_at
+      end,
+      availability_note = ${update.availabilityNote}
+    where id = ${academicYearId}
+  `;
+}
+
+async function upsertCourseSourceDocument(
+  sql: SqlClient,
+  {
+    sourceId,
+    academicYearId,
+    canonicalUrl,
+    contentSha256,
+    fetchedAt,
+  }: {
+    sourceId: number;
+    academicYearId: number;
+    canonicalUrl: string;
+    contentSha256: string;
+    fetchedAt: string;
+  },
+) {
+  const inserted = await sql`
+    insert into public.course_source_documents (
+      source_id,
+      academic_year_id,
+      document_kind,
+      external_key,
+      canonical_url,
+      media_type,
+      content_sha256,
+      http_status,
+      fetched_at
+    )
+    values (
+      ${sourceId},
+      ${academicYearId},
+      ${"course_directory"},
+      ${"directory"},
+      ${canonicalUrl},
+      ${"application/json"},
+      ${contentSha256},
+      ${200},
+      ${fetchedAt}
+    )
+    on conflict (
+      source_id,
+      academic_year_id,
+      document_kind,
+      external_key,
+      content_sha256
+    ) do nothing
+    returning id
+  `;
+  if (inserted.length > 0) return inserted[0]!.id as number;
+
+  const [existing] = await sql`
+    select id
+    from public.course_source_documents
+    where source_id = ${sourceId}
+      and academic_year_id = ${academicYearId}
+      and document_kind = ${"course_directory"}
+      and external_key = ${"directory"}
+      and content_sha256 = ${contentSha256}
+  `;
+  if (!existing) {
+    throw new Error(
+      "The course directory source document could not be resolved.",
+    );
+  }
+  return existing.id as number;
+}
+
+async function syncCourseFoundationDirectory(
+  sql: SqlClient,
+  {
+    catalogueYear,
+    entries,
+    canonicalUrl,
+    contentSha256,
+    fetchedAt,
+    availability,
+  }: {
+    catalogueYear: number;
+    entries: Array<AnuCourseDirectoryEntry & { name: string }>;
+    canonicalUrl: string;
+    contentSha256: string;
+    fetchedAt: string;
+    availability: CourseDirectoryAvailabilityUpdate;
+  },
+) {
+  const sourceId = await upsertCourseSource(sql);
+  const academicYearId = await upsertAcademicYear(sql, catalogueYear);
+  const sourceDocumentId = await upsertCourseSourceDocument(sql, {
+    sourceId,
+    academicYearId,
+    canonicalUrl,
+    contentSha256,
+    fetchedAt,
+  });
+
+  const batchSize = 200;
+  for (let index = 0; index < entries.length; index += batchSize) {
+    const batch = entries.slice(index, index + batchSize);
+    await sql`
+      insert into public.course_directory_entries ${sql(
+        batch.map((entry) => ({
+          academic_year_id: academicYearId,
+          code: entry.code,
+          title: entry.name,
+          units: entry.units,
+          academic_career: entry.career,
+          session: entry.session,
+          mode_of_delivery: entry.modeOfDelivery,
+          source_document_id: sourceDocumentId,
+          first_seen_at: fetchedAt,
+          last_seen_at: fetchedAt,
+          is_current: true,
+        })),
+      )}
+      on conflict (academic_year_id, code) do update set
+        title = excluded.title,
+        units = excluded.units,
+        academic_career = excluded.academic_career,
+        session = excluded.session,
+        mode_of_delivery = excluded.mode_of_delivery,
+        source_document_id = excluded.source_document_id,
+        last_seen_at = excluded.last_seen_at,
+        is_current = true,
+        updated_at = now()
+    `;
+  }
+
+  const currentCodes = entries.map((entry) => entry.code);
+  if (availability.retireMissingEntries && currentCodes.length > 0) {
+    await sql`
+      update public.course_directory_entries
+      set is_current = false, updated_at = now()
+      where academic_year_id = ${academicYearId}
+        and is_current
+        and not (code = any(${currentCodes}))
+    `;
+  }
+  await sql`
+    update public.course_directory_entries as entries
+    set course_id = courses.id, updated_at = now()
+    from public.courses as courses
+    where entries.academic_year_id = ${academicYearId}
+      and entries.code = courses.code
+      and entries.course_id is distinct from courses.id
+  `;
+  await updateAcademicYearAvailability(sql, academicYearId, availability);
 }
 
 async function upsertSourceDocument(
@@ -208,9 +420,28 @@ async function syncCourseDirectory(
     target: "courses",
   });
 
-  const directory = await fetchAnuCourseDirectory(catalogueYear, {
-    ...(fetchImpl ? { fetchImpl } : {}),
-  });
+  const nativeDirectoryEnabled = courseDirectoryEntriesRefreshEnabled();
+  let directory: AnuCourseDirectory;
+  try {
+    directory = await fetchAnuCourseDirectory(catalogueYear, {
+      ...(fetchImpl ? { fetchImpl } : {}),
+    });
+  } catch (error) {
+    if (nativeDirectoryEnabled) {
+      const academicYearId = await upsertAcademicYear(sql, catalogueYear);
+      await updateAcademicYearAvailability(
+        sql,
+        academicYearId,
+        courseDirectoryFailurePolicy({
+          catalogueYear,
+          error,
+          checkedAt: new Date().toISOString(),
+        }),
+      );
+    }
+    throw error;
+  }
+  const availability = courseDirectoryResponsePolicy(directory);
   const usable = directory.entries.filter(
     (entry): entry is AnuCourseDirectoryEntry & { name: string } =>
       typeof entry.name === "string" && entry.name.trim() !== "",
@@ -231,8 +462,11 @@ async function syncCourseDirectory(
   const sourceId = await upsertSource(sql);
   const catalogueYearId = await upsertCatalogueYear(sql, catalogueYear);
   const contentSha256 = sha256(
-    JSON.stringify(
-      usable.map((entry) => [
+    JSON.stringify({
+      totalCount: directory.totalCount,
+      receivedItemCount: directory.receivedItemCount,
+      isComplete: directory.isComplete,
+      entries: usable.map((entry) => [
         entry.code,
         entry.name,
         entry.units,
@@ -240,7 +474,8 @@ async function syncCourseDirectory(
         entry.session,
         entry.modeOfDelivery,
       ]),
-    ),
+      diagnostics: directory.diagnostics,
+    }),
   );
   const sourceDocumentId = await upsertSourceDocument(sql, {
     sourceId,
@@ -294,7 +529,7 @@ async function syncCourseDirectory(
     added: 0,
     changed: 0,
     checked: usable.length,
-    failed: errorCount > 0 && usable.length === 0 ? 1 : 0,
+    failed: errorCount > 0 ? 1 : 0,
     unchanged: 0,
   };
 
@@ -341,6 +576,20 @@ async function syncCourseDirectory(
     `;
   }
 
+  // Native directory writes have their own server-side deployment switch.
+  // Queue dispatch can therefore remain disabled while directory refreshes
+  // are tested independently.
+  if (nativeDirectoryEnabled) {
+    await syncCourseFoundationDirectory(sql, {
+      catalogueYear,
+      entries: usable,
+      canonicalUrl: directory.sourceUrl,
+      contentSha256,
+      fetchedAt: directory.fetchedAt,
+      availability,
+    });
+  }
+
   const outcome =
     counts.failed > 0
       ? "failed"
@@ -372,15 +621,17 @@ async function syncCourseDirectory(
       ${sql.json({
         warningCount,
         errorCount,
+        totalCount: directory.totalCount,
+        receivedItemCount: directory.receivedItemCount,
+        isComplete: directory.isComplete,
+        retiredMissingEntries:
+          nativeDirectoryEnabled && availability.retireMissingEntries,
         diagnostics: directory.diagnostics.slice(0, 50),
       })}
     )
   `;
 
-  const status =
-    counts.failed > 0 || (errorCount > 0 && usable.length === 0)
-      ? "failed"
-      : "succeeded";
+  const status = counts.failed > 0 ? "failed" : "succeeded";
 
   await sql`
     update public.catalogue_import_runs
@@ -393,7 +644,7 @@ async function syncCourseDirectory(
       failed_count = ${counts.failed},
       error_summary = ${
         status === "failed"
-          ? "Course directory sync returned no usable courses."
+          ? "Course directory sync returned an invalid or incomplete response."
           : null
       },
       completed_at = now()
@@ -655,7 +906,8 @@ export async function runDirectorySync({
   onProgress?: (progress: DirectorySyncProgress) => void | Promise<void>;
   fetchImpl?: typeof fetch;
 }): Promise<DirectorySyncResult> {
-  assertSupportedCatalogueYear(catalogueYear);
+  if (target === "courses") assertSupportedCourseImportYear(catalogueYear);
+  else assertSupportedCatalogueYear(catalogueYear);
 
   if (isDemoMode()) {
     await onProgress?.({
@@ -709,7 +961,8 @@ export async function runDirectorySyncLocal({
   onProgress?: (progress: DirectorySyncProgress) => void | Promise<void>;
   fetchImpl?: typeof fetch;
 }): Promise<DirectorySyncResult> {
-  assertSupportedCatalogueYear(catalogueYear);
+  if (target === "courses") assertSupportedCourseImportYear(catalogueYear);
+  else assertSupportedCatalogueYear(catalogueYear);
   const sql = await createLocalDatabaseClient();
   try {
     if (target === "courses") {

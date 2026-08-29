@@ -6,6 +6,19 @@ export async function readImportStream(
   response: Response,
   onEvent: (event: Record<string, unknown>) => void,
 ) {
+  if (!response.ok) {
+    let message = `Import request failed with HTTP ${response.status}.`;
+    try {
+      const body = (await response.clone().json()) as { error?: unknown };
+      if (typeof body.error === "string" && body.error.trim()) {
+        message = body.error.trim();
+      }
+    } catch {
+      // Keep the status-based message for non-JSON failure responses.
+    }
+    throw new Error(message);
+  }
+
   const reader = response.body?.getReader();
   if (!reader) {
     throw new Error("Import stream was empty.");
@@ -13,6 +26,21 @@ export async function readImportStream(
 
   const decoder = new TextDecoder();
   let buffer = "";
+  let completed = false;
+
+  const consumeLine = (line: string) => {
+    if (!line.startsWith("data:")) return;
+    const payload = line.slice(5).trim();
+    if (!payload) return;
+    const event = JSON.parse(payload) as Record<string, unknown>;
+    if (event.type === "error") {
+      throw new Error(
+        typeof event.message === "string" ? event.message : "Import failed.",
+      );
+    }
+    if (event.type === "complete") completed = true;
+    onEvent(event);
+  };
 
   for (;;) {
     const { done, value } = await reader.read();
@@ -21,18 +49,15 @@ export async function readImportStream(
     buffer = lines.pop() ?? "";
 
     for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload) continue;
-      const event = JSON.parse(payload) as Record<string, unknown>;
-      if (event.type === "error") {
-        throw new Error(
-          typeof event.message === "string" ? event.message : "Import failed.",
-        );
-      }
-      onEvent(event);
+      consumeLine(line);
     }
 
-    if (done) return;
+    if (done) {
+      if (buffer.trim()) consumeLine(buffer);
+      if (!completed) {
+        throw new Error("Import stream ended before completion.");
+      }
+      return;
+    }
   }
 }

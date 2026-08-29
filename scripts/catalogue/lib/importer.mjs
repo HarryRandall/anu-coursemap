@@ -2,7 +2,7 @@ import { parseCatalogueManifest } from "../../../lib/catalogue-import/manifest.t
 import { parseRequisiteSummary } from "../../../lib/coursemap/requisite-summary.ts";
 import { assertVerifiedCatalogueImportClient } from "./local-database.mjs";
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}[0-9]{4}$/u;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}[0-9]{4}[A-Z]?$/u;
 const SUBJECT_PATTERN = /^[A-Z]{4}$/u;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 const IMPORT_LOCK_NAMESPACE = "coursemap:catalogue-import";
@@ -715,7 +715,7 @@ async function upsertOffering(
       ${sourceDocumentId},
       'draft'
     )
-    on conflict (course_version_id) do nothing
+    on conflict (course_version_id) where course_version_id is not null do nothing
     returning id
   `;
 
@@ -801,7 +801,8 @@ async function upsertOfferingSession(
       ${classSummaryUrl},
       ${sourceDocumentId}
     )
-    on conflict on constraint offering_sessions_offering_period_class_unique
+    on conflict (course_offering_id, academic_period_id, class_number)
+      where catalogue_year_id is not null
       do nothing
     returning id
   `;
@@ -940,7 +941,9 @@ async function upsertCourseRule(
       0,
       ${sourceDocumentId}
     )
-    on conflict (course_version_id, rule_kind) do nothing
+    on conflict (course_version_id, rule_kind)
+      where course_version_id is not null
+      do nothing
     returning id
   `;
 
@@ -1165,7 +1168,9 @@ async function upsertStructuredCourseRule(
       1,
       ${sourceDocumentId}
     )
-    on conflict (course_version_id, rule_kind) do nothing
+    on conflict (course_version_id, rule_kind)
+      where course_version_id is not null
+      do nothing
     returning id
   `;
 
@@ -1241,7 +1246,7 @@ async function syncCourseRuleCourseReferences(
     ...new Set(
       (referencedCourseCodes ?? [])
         .map((code) => cleanText(code)?.toUpperCase())
-        .filter((code) => /^[A-Z]{4}\d{4}$/u.test(code)),
+        .filter((code) => /^[A-Z]{4}\d{4}[A-Z]?$/u.test(code)),
     ),
   ].sort();
   const actions = [];

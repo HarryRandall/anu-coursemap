@@ -839,7 +839,7 @@ export async function loadAdminCourseReview(
   const value = identifier.trim();
   const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
   const code = publicId ? null : value.toUpperCase();
-  if (!publicId && !/^[A-Z]{4}\d{4}$/.test(code ?? "")) return null;
+  if (!publicId && !/^[A-Z]{4}\d{4}[A-Z]?$/.test(code ?? "")) return null;
 
   if (isDemoMode()) {
     if (!code) return null;

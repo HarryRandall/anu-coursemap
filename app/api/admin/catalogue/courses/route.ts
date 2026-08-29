@@ -30,7 +30,7 @@ function parseCourse(value: unknown, year: number): CourseSearchResult | null {
       ? course.CourseCode.trim().toUpperCase()
       : "";
   const name = typeof course.Name === "string" ? course.Name.trim() : "";
-  if (!/^[A-Z]{4}\d{4}$/.test(code) || !name) return null;
+  if (!/^[A-Z]{4}\d{4}[A-Z]?$/.test(code) || !name) return null;
 
   const sourceYear = Number(course.Year);
   const units = Number(course.Units);

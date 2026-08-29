@@ -7,8 +7,8 @@ import {
   BookOpen,
   CalendarDays,
   CalendarRange,
-  GitCompareArrows,
   GraduationCap,
+  History,
   House,
   Import,
   KeyRound,
@@ -18,7 +18,6 @@ import {
   Map,
   MapPin,
   MapPinned,
-  RefreshCw,
   Route,
   Shield,
   Table2,
@@ -84,14 +83,8 @@ type NavSection = {
 };
 
 /**
- * Grouped rather than one flat list. The admin destinations do three unrelated
- * jobs -- editing the catalogue, pulling it in from ANU, and controlling who
- * gets in -- and running them together made the whole console read as
- * undifferentiated.
- *
- * Importing is deliberately three destinations rather than one page with tabs:
- * pulling courses, pulling programmes and reviewing what changed are separate
- * tasks that no operator does in one sitting.
+ * Grouped around the operator's jobs: course data, campus data, durable
+ * imports and access control.
  */
 const adminNav: NavSection[] = [
   {
@@ -101,7 +94,7 @@ const adminNav: NavSection[] = [
     ],
   },
   {
-    label: "Catalogue",
+    label: "Academic data",
     items: [
       { href: "/admin/courses", label: "Courses", icon: Table2 },
       { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
@@ -115,23 +108,7 @@ const adminNav: NavSection[] = [
     icon: Import,
     label: "Imports",
     items: [
-      { href: "/admin/imports/sync", label: "Sync", icon: RefreshCw },
-      {
-        href: "/admin/imports/courses",
-        label: "Import courses",
-        icon: BookOpen,
-      },
-      {
-        href: "/admin/imports/programmes",
-        label: "Import programmes",
-        icon: GraduationCap,
-      },
-      {
-        count: "openChanges",
-        href: "/admin/imports/changes",
-        label: "Changes",
-        icon: GitCompareArrows,
-      },
+      { href: "/admin/imports/runs", label: "Course runs", icon: History },
     ],
   },
   {

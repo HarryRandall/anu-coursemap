@@ -6,7 +6,7 @@ import {
 } from "@/lib/catalogue-import/run-directory-sync";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 type DirectoryRequest = {
   catalogueYear?: unknown;

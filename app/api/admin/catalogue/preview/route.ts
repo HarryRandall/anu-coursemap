@@ -5,7 +5,7 @@ import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 const sourceBaseUrl = "https://programsandcourses.anu.edu.au";
-const courseCodePattern = /\b[A-Z]{4}\d{4}\b/g;
+const courseCodePattern = /\b[A-Z]{4}\d{4}[A-Z]?\b/g;
 
 type CourseSearchResponse = {
   Items?: Array<{ CourseCode?: unknown }>;
@@ -26,7 +26,7 @@ function parseProgrammeCodes(value: string | null) {
 function parseCourseCodes(value: string | null) {
   if (!value) return [];
   return [...new Set(value.split(",").map((code) => code.trim().toUpperCase()))]
-    .filter((code) => /^[A-Z]{4}\d{4}$/.test(code))
+    .filter((code) => /^[A-Z]{4}\d{4}[A-Z]?$/.test(code))
     .slice(0, 100);
 }
 

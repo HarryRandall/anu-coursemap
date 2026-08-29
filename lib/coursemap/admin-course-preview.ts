@@ -3,7 +3,7 @@ import { accentFor } from "@/lib/coursemap/catalogue-accent";
 import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
 import { parseRequisiteSummary } from "@/lib/coursemap/requisite-summary";
 
-const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}\b/gu;
+const COURSE_CODE_PATTERN = /\b[A-Z]{4}\d{4}[A-Z]?\b/gu;
 
 function reviewState(value: string): CatalogueCourse["reviewState"] {
   return value === "verified"

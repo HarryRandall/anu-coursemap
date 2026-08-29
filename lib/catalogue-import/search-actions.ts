@@ -12,7 +12,7 @@ export type ImportSearchResult = {
   years: number[];
 };
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/u;
 
 const DEMO_RESULTS: ImportSearchResult[] = [
   {

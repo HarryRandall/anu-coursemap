@@ -401,7 +401,7 @@ begin
   join public.courses as identities on identities.id = versions.course_id
   join coursemap_demo_courses as courses on courses.code = identities.code
   where versions.catalogue_year_id = demo_year_id
-  on conflict (course_version_id) do update
+  on conflict (course_version_id) where course_version_id is not null do update
   set catalogue_year_id = excluded.catalogue_year_id,
       delivery_mode = excluded.delivery_mode,
       location = excluded.location,
@@ -434,7 +434,9 @@ begin
   join public.academic_periods as periods
     on periods.calendar_year = 2026
    and periods.code = session_codes.code
-  on conflict on constraint offering_sessions_offering_period_class_unique do update
+  on conflict (course_offering_id, academic_period_id, class_number)
+    where catalogue_year_id is not null
+  do update
   set delivery_mode = excluded.delivery_mode,
       location = excluded.location,
       source_document_id = excluded.source_document_id,
@@ -605,7 +607,9 @@ begin
     join public.courses as identities on identities.id = versions.course_id
     where identities.code = rule_row.course_code
       and versions.catalogue_year_id = demo_year_id
-    on conflict (course_version_id, rule_kind) do update
+    on conflict (course_version_id, rule_kind)
+      where course_version_id is not null
+    do update
     set hardness = excluded.hardness,
         source_text = excluded.source_text,
         review_state = excluded.review_state,

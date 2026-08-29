@@ -21,7 +21,7 @@ export type ImportRunDetail = {
 
 function courseCode(value: string | null) {
   const normalised = (value ?? "").toUpperCase();
-  return /^[A-Z]{4}[0-9]{4}$/.test(normalised) ? normalised : null;
+  return /^[A-Z]{4}[0-9]{4}[A-Z]?$/.test(normalised) ? normalised : null;
 }
 
 export async function loadImportRunDetail(

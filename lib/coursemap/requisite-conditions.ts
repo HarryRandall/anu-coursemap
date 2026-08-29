@@ -97,7 +97,7 @@ export type StoredRuleCondition = {
   position: number;
 };
 
-const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}$/u;
+const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/u;
 const SUBJECT_CODE_PATTERN = /^[A-Z]{4}$/u;
 const STRUCTURE_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]*$/u;
 

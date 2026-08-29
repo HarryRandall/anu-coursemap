@@ -7,6 +7,7 @@ export type FetchSourceOptions = {
   retryAttempts?: number;
   retryDelayMs?: number;
   accept?: string;
+  headers?: HeadersInit;
 };
 
 function delay(milliseconds: number, signal?: AbortSignal) {
@@ -42,6 +43,7 @@ export async function fetchSourceWithRetry(
     retryAttempts = 3,
     retryDelayMs = 500,
     accept = "text/html,application/xhtml+xml",
+    headers,
   }: FetchSourceOptions = {},
 ): Promise<Response> {
   if (!Number.isInteger(retryAttempts) || retryAttempts < 1) {
@@ -51,15 +53,21 @@ export async function fetchSourceWithRetry(
     throw new TypeError("requestTimeoutMs must be a positive integer");
   }
 
+  const requestHeaders = new Headers(headers);
+  if (!requestHeaders.has("Accept")) requestHeaders.set("Accept", accept);
+  if (!requestHeaders.has("User-Agent")) {
+    requestHeaders.set(
+      "User-Agent",
+      "Coursemap catalogue importer (local development)",
+    );
+  }
+
   let lastFailure: unknown;
   for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
     signal?.throwIfAborted();
     try {
       const response = await fetchImpl(url, {
-        headers: {
-          Accept: accept,
-          "User-Agent": "Coursemap catalogue importer (local development)",
-        },
+        headers: requestHeaders,
         redirect: "error",
         signal: requestSignal(requestTimeoutMs, signal),
       });

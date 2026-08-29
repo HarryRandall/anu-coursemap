@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
 /**
- * Importing is four destinations now, so the bare section path is not a page.
- * It stays routable because the breadcrumb links to it.
+ * The course directory starts imports and this section holds their durable
+ * run history.
  */
 export default function ImportsPage() {
-  redirect("/admin/imports/sync");
+  redirect("/admin/imports/runs");
 }
