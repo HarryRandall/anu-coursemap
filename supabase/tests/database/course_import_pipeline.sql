@@ -48,6 +48,11 @@ select extensions.ok(
     'private.recover_stale_course_import_target(uuid,uuid)',
     'execute'
   )
+  and has_function_privilege(
+    'service_role',
+    'private.refresh_course_import_run(uuid)',
+    'execute'
+  )
   and not has_function_privilege(
     'authenticated',
     'private.claim_course_import_target(uuid,uuid,text,uuid,integer)',
@@ -66,38 +71,60 @@ select extensions.ok(
   and not has_function_privilege(
     'anon',
     'private.recover_stale_course_import_target(uuid,uuid)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'authenticated',
+    'private.refresh_course_import_run(uuid)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'private.refresh_course_import_run(uuid)',
     'execute'
   ),
-  'only the trusted worker role can execute private claim and recovery functions'
+  'only the trusted worker role can execute private import functions'
 );
 
 select extensions.ok(
-  has_table_privilege(
-    'service_role',
-    'public.course_source_pages',
-    'select'
+  not exists (
+    select 1
+    from (
+      values
+        ('public.academic_years', 'select'),
+        ('public.academic_years', 'insert'),
+        ('public.academic_years', 'update'),
+        ('public.course_sources', 'select'),
+        ('public.course_sources', 'insert'),
+        ('public.course_sources', 'update'),
+        ('public.course_source_pages', 'select'),
+        ('public.course_source_pages', 'insert'),
+        ('public.course_directory_entries', 'select'),
+        ('public.course_directory_entries', 'insert'),
+        ('public.course_directory_entries', 'update')
+    ) as worker_table_privileges (table_name, privilege_name)
+    where not has_table_privilege(
+      'service_role',
+      worker_table_privileges.table_name,
+      worker_table_privileges.privilege_name
+    )
   )
-  and has_table_privilege(
-    'service_role',
-    'public.course_source_pages',
-    'insert'
-  )
-  and has_sequence_privilege(
-    'service_role',
-    'public.course_source_pages_id_seq',
-    'usage'
-  )
-  and has_table_privilege(
-    'service_role',
-    'public.course_directory_entries',
-    'select'
-  )
-  and has_table_privilege(
-    'service_role',
-    'public.course_directory_entries',
-    'update'
+  and not exists (
+    select 1
+    from (
+      values
+        ('public.academic_years_id_seq'),
+        ('public.course_sources_id_seq'),
+        ('public.course_source_pages_id_seq'),
+        ('public.course_directory_entries_id_seq')
+    ) as worker_directory_sequences (sequence_name)
+    where not has_sequence_privilege(
+      'service_role',
+      worker_directory_sequences.sequence_name,
+      'usage'
+    )
   ),
-  'the trusted worker can record source pages and link directory entries'
+  'the trusted worker can refresh the directory and record source pages'
 );
 
 select extensions.ok(

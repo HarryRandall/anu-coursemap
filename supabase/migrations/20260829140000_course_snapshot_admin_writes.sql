@@ -2218,7 +2218,10 @@ to service_role;
 -- academic calendar and allocates every relational child identity itself.
 -- Keep these worker capabilities explicit because BYPASSRLS does not grant
 -- table or sequence privileges, and hosted role defaults are not portable.
-grant select on table public.academic_periods to service_role;
+grant select on table
+  public.academic_periods,
+  public.academic_years
+to service_role;
 
 grant usage, select on sequence
   public.courses_id_seq,

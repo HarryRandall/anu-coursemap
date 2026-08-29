@@ -4119,14 +4119,25 @@ to authenticated;
 
 grant usage on schema private to service_role;
 
--- The trusted import worker records each immutable fetched page before it
--- projects a snapshot, then links the selected directory entry to the stable
--- course identity. These tables and the renamed source-page sequence predate
--- the workflow tables, so grant their worker privileges explicitly rather
--- than relying on environment-specific default privileges.
+-- The trusted import worker refreshes the lightweight directory, records each
+-- immutable fetched page before it projects a snapshot, then links the
+-- selected directory entry to the stable course identity. These tables and
+-- sequences predate the workflow tables, so grant the complete worker path
+-- explicitly rather than relying on environment-specific default privileges.
+grant select, insert, update on table public.academic_years to service_role;
+grant select, insert, update on table public.course_sources to service_role;
 grant select, insert on table public.course_source_pages to service_role;
-grant select, update on table public.course_directory_entries to service_role;
-grant usage, select on sequence public.course_source_pages_id_seq
+grant select, insert, update on table public.course_directory_entries
+to service_role;
+
+grant usage, select on sequence
+  public.academic_years_id_seq,
+  public.course_sources_id_seq,
+  public.course_source_pages_id_seq,
+  public.course_directory_entries_id_seq
+to service_role;
+
+grant execute on function private.refresh_course_import_run(uuid)
 to service_role;
 
 grant all on table
