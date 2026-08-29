@@ -871,7 +871,8 @@ export async function finishCourseImportTarget(
   },
 ) {
   const [row] = await sql`
-    select (private.finish_course_import_target(
+    select completed.*
+    from private.finish_course_import_target(
       ${runId}::uuid,
       ${targetId}::uuid,
       ${messageId}::text,
@@ -885,7 +886,7 @@ export async function finishCourseImportTarget(
       ${candidateSnapshotId}::bigint,
       ${errorCode}::text,
       ${errorSummary}::text
-    )).*
+    ) as completed
   `;
   if (!row) throw new Error("The course import target was not completed.");
   return row;
