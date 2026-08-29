@@ -1,0 +1,254 @@
+{
+  "schema_version": "selt-course-time-series.v1",
+  "report": {
+    "type": "course_survey_quantitative_results",
+    "course_code": "COMP1730",
+    "course_name": "Programming for Scientists",
+    "subject_owner": "College of Systems and Society",
+    "report_run_at": "2026-07-09T09:44:18",
+    "report_run_at_raw": "9:44:18 AM 09/07/2026",
+    "source_name": "ANU Insight Data Warehouse",
+    "source_contact": "evaluations@anu.edu.au"
+  },
+  "question_themes": [
+    {
+      "key": "teaching_and_learning_activities",
+      "label": "Teaching and learning activities",
+      "introduced_year": 2019
+    },
+    {
+      "key": "workload",
+      "label": "Workload",
+      "introduced_year": 2019
+    },
+    {
+      "key": "feedback",
+      "label": "Feedback",
+      "introduced_year": 2019
+    },
+    {
+      "key": "analytical_development",
+      "label": "Analytical development",
+      "introduced_year": 2019
+    },
+    {
+      "key": "overall_learning_experience",
+      "label": "Overall learning experience",
+      "introduced_year": 2019
+    }
+  ],
+  "surveys": [
+    {
+      "label": "Sem 1 2019",
+      "year": 2019,
+      "session": "sem_1",
+      "enrolments": 197,
+      "respondents": 62,
+      "response_rate_percent": 31,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 68,
+        "workload": 65,
+        "feedback": 56,
+        "analytical_development": 71,
+        "overall_learning_experience": 71
+      }
+    },
+    {
+      "label": "Sem 2 2019",
+      "year": 2019,
+      "session": "sem_2",
+      "enrolments": 290,
+      "respondents": 79,
+      "response_rate_percent": 27,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 65,
+        "workload": 62,
+        "feedback": 53,
+        "analytical_development": 68,
+        "overall_learning_experience": 62
+      }
+    },
+    {
+      "label": "Sem 2 2020",
+      "year": 2020,
+      "session": "sem_2",
+      "enrolments": 252,
+      "respondents": 55,
+      "response_rate_percent": 22,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 67,
+        "workload": 71,
+        "feedback": 67,
+        "analytical_development": 76,
+        "overall_learning_experience": 72
+      }
+    },
+    {
+      "label": "Sem 1 2021",
+      "year": 2021,
+      "session": "sem_1",
+      "enrolments": 294,
+      "respondents": 77,
+      "response_rate_percent": 26,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 73,
+        "workload": 71,
+        "feedback": 67,
+        "analytical_development": 72,
+        "overall_learning_experience": 73
+      }
+    },
+    {
+      "label": "Sem 2 2021",
+      "year": 2021,
+      "session": "sem_2",
+      "enrolments": 287,
+      "respondents": 57,
+      "response_rate_percent": 20,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 66,
+        "workload": 68,
+        "feedback": 56,
+        "analytical_development": 79,
+        "overall_learning_experience": 70
+      }
+    },
+    {
+      "label": "Sem 1 2022",
+      "year": 2022,
+      "session": "sem_1",
+      "enrolments": 338,
+      "respondents": 86,
+      "response_rate_percent": 25,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 64,
+        "workload": 67,
+        "feedback": 61,
+        "analytical_development": 69,
+        "overall_learning_experience": 67
+      }
+    },
+    {
+      "label": "Sem 2 2022",
+      "year": 2022,
+      "session": "sem_2",
+      "enrolments": 227,
+      "respondents": 46,
+      "response_rate_percent": 20,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 50,
+        "workload": 52,
+        "feedback": 35,
+        "analytical_development": 50,
+        "overall_learning_experience": 57
+      }
+    },
+    {
+      "label": "Sem 1 2023",
+      "year": 2023,
+      "session": "sem_1",
+      "enrolments": 270,
+      "respondents": 84,
+      "response_rate_percent": 31,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 48,
+        "workload": 43,
+        "feedback": 23,
+        "analytical_development": 56,
+        "overall_learning_experience": 44
+      }
+    },
+    {
+      "label": "Sem 2 2023",
+      "year": 2023,
+      "session": "sem_2",
+      "enrolments": 206,
+      "respondents": 36,
+      "response_rate_percent": 17,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 66,
+        "workload": 67,
+        "feedback": 64,
+        "analytical_development": 78,
+        "overall_learning_experience": 71
+      }
+    },
+    {
+      "label": "Sem 1 2024",
+      "year": 2024,
+      "session": "sem_1",
+      "enrolments": 261,
+      "respondents": 57,
+      "response_rate_percent": 22,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 70,
+        "workload": 79,
+        "feedback": 51,
+        "analytical_development": 75,
+        "overall_learning_experience": 68
+      }
+    },
+    {
+      "label": "Sem 2 2024",
+      "year": 2024,
+      "session": "sem_2",
+      "enrolments": 190,
+      "respondents": 35,
+      "response_rate_percent": 18,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 69,
+        "workload": 66,
+        "feedback": 59,
+        "analytical_development": 77,
+        "overall_learning_experience": 74
+      }
+    },
+    {
+      "label": "Sem 1 2025",
+      "year": 2025,
+      "session": "sem_1",
+      "enrolments": 192,
+      "respondents": 45,
+      "response_rate_percent": 23,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 53,
+        "workload": 49,
+        "feedback": 27,
+        "analytical_development": 55,
+        "overall_learning_experience": 49
+      }
+    },
+    {
+      "label": "Sem 2 2025",
+      "year": 2025,
+      "session": "sem_2",
+      "enrolments": 142,
+      "respondents": 38,
+      "response_rate_percent": 27,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 95,
+        "workload": 76,
+        "feedback": 66,
+        "analytical_development": 92,
+        "overall_learning_experience": 76
+      }
+    }
+  ],
+  "notes": [
+    "Note: Results are not displayed where the number of responses is less than 5.",
+    "Note: There may be slight differences in the content of aggregate time series results, compared to previously published aggregate results. These differences are caused by late evaluations, changes over time in subject/catalogue codes, or changes in the primary organisational location of a course."
+  ],
+  "source": {
+    "filename": "COMP1730_Time_Series_LRN.pdf",
+    "sha256": "31ec686b6974d3ab013871d3cda2281291f773b5fb8e6fda01b9bb0f585c1ef2",
+    "file_size_bytes": 113647,
+    "page_count": 1
+  },
+  "extraction": {
+    "parser": "scripts/selt/extract_report.py",
+    "parser_version": "0.1.0",
+    "text_extractor": "pdftotext -layout",
+    "chart_extractor": "pdfplumber vector line geometry",
+    "warnings": []
+  }
+}

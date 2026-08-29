@@ -1,0 +1,164 @@
+{
+  "schema_version": "selt-course-time-series.v1",
+  "report": {
+    "type": "course_survey_quantitative_results",
+    "course_code": "COMP2310",
+    "course_name": "Systems, Networks, and Concurrency",
+    "subject_owner": "College of Systems and Society",
+    "report_run_at": "2026-07-09T09:44:18",
+    "report_run_at_raw": "9:44:18 AM 09/07/2026",
+    "source_name": "ANU Insight Data Warehouse",
+    "source_contact": "evaluations@anu.edu.au"
+  },
+  "question_themes": [
+    {
+      "key": "teaching_and_learning_activities",
+      "label": "Teaching and learning activities",
+      "introduced_year": 2019
+    },
+    {
+      "key": "workload",
+      "label": "Workload",
+      "introduced_year": 2019
+    },
+    {
+      "key": "feedback",
+      "label": "Feedback",
+      "introduced_year": 2019
+    },
+    {
+      "key": "analytical_development",
+      "label": "Analytical development",
+      "introduced_year": 2019
+    },
+    {
+      "key": "overall_learning_experience",
+      "label": "Overall learning experience",
+      "introduced_year": 2019
+    }
+  ],
+  "surveys": [
+    {
+      "label": "Sem 2 2019",
+      "year": 2019,
+      "session": "sem_2",
+      "enrolments": 242,
+      "respondents": 61,
+      "response_rate_percent": 25,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 72,
+        "workload": 54,
+        "feedback": 66,
+        "analytical_development": 83,
+        "overall_learning_experience": 76
+      }
+    },
+    {
+      "label": "Sem 2 2020",
+      "year": 2020,
+      "session": "sem_2",
+      "enrolments": 232,
+      "respondents": 60,
+      "response_rate_percent": 26,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 80,
+        "workload": 63,
+        "feedback": 78,
+        "analytical_development": 81,
+        "overall_learning_experience": 76
+      }
+    },
+    {
+      "label": "Sem 2 2021",
+      "year": 2021,
+      "session": "sem_2",
+      "enrolments": 212,
+      "respondents": 39,
+      "response_rate_percent": 18,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 71,
+        "workload": 38,
+        "feedback": 45,
+        "analytical_development": 79,
+        "overall_learning_experience": 70
+      }
+    },
+    {
+      "label": "Sem 2 2022",
+      "year": 2022,
+      "session": "sem_2",
+      "enrolments": 254,
+      "respondents": 71,
+      "response_rate_percent": 28,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 58,
+        "workload": 45,
+        "feedback": 28,
+        "analytical_development": 62,
+        "overall_learning_experience": 46
+      }
+    },
+    {
+      "label": "Sem 2 2023",
+      "year": 2023,
+      "session": "sem_2",
+      "enrolments": 180,
+      "respondents": 58,
+      "response_rate_percent": 32,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 45,
+        "workload": 22,
+        "feedback": 36,
+        "analytical_development": 53,
+        "overall_learning_experience": 49
+      }
+    },
+    {
+      "label": "Sem 2 2024",
+      "year": 2024,
+      "session": "sem_2",
+      "enrolments": 189,
+      "respondents": 50,
+      "response_rate_percent": 26,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 85,
+        "workload": 58,
+        "feedback": 65,
+        "analytical_development": 85,
+        "overall_learning_experience": 81
+      }
+    },
+    {
+      "label": "Sem 2 2025",
+      "year": 2025,
+      "session": "sem_2",
+      "enrolments": 140,
+      "respondents": 36,
+      "response_rate_percent": 26,
+      "agreement_percent": {
+        "teaching_and_learning_activities": 61,
+        "workload": 50,
+        "feedback": 47,
+        "analytical_development": 72,
+        "overall_learning_experience": 67
+      }
+    }
+  ],
+  "notes": [
+    "Note: Results are not displayed where the number of responses is less than 5.",
+    "Note: There may be slight differences in the content of aggregate time series results, compared to previously published aggregate results. These differences are caused by late evaluations, changes over time in subject/catalogue codes, or changes in the primary organisational location of a course."
+  ],
+  "source": {
+    "filename": "COMP2310_Time_Series_LRN.pdf",
+    "sha256": "956622772a883cf0e211e9db6ba6ec4f65c3897d5b14664b40d4c63f7e4e70d6",
+    "file_size_bytes": 108244,
+    "page_count": 1
+  },
+  "extraction": {
+    "parser": "scripts/selt/extract_report.py",
+    "parser_version": "0.1.0",
+    "text_extractor": "pdftotext -layout",
+    "chart_extractor": "pdfplumber vector line geometry",
+    "warnings": []
+  }
+}
