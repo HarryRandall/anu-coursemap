@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { refreshCourseDirectoryForYearLocal } from "../lib/catalogue-import/run-course-directory-refresh.ts";
+import { finishCourseImportTarget } from "../lib/course-import/import-store.ts";
 import { createLocalDatabaseClient } from "../scripts/catalogue/lib/local-database.mjs";
 
 const workerOne = "63000000-0000-4000-8000-000000000001";
@@ -200,41 +201,37 @@ test(
 
       finishPromises = [
         (async () =>
-          finisherOne`
-            select private.finish_course_import_target(
-              ${runId}::uuid,
-              ${targetOneId}::uuid,
-              ${"concurrency-message-one"}::text,
-              ${workerOne}::uuid,
-              ${claimOne.lock_version}::integer,
-              ${"failed"}::text,
-              null::text,
-              null::bigint,
-              null::bigint,
-              null::bigint,
-              null::bigint,
-              ${"TEST_CONCURRENCY"}::text,
-              ${"Intentional concurrency test failure."}::text
-            )
-          `)(),
+          finishCourseImportTarget(finisherOne, {
+            runId,
+            targetId: targetOneId,
+            messageId: "concurrency-message-one",
+            workerId: workerOne,
+            expectedLockVersion: Number(claimOne.lock_version),
+            processingStatus: "failed",
+            changeKind: null,
+            courseId: null,
+            courseYearId: null,
+            sourcePageId: null,
+            candidateSnapshotId: null,
+            errorCode: "TEST_CONCURRENCY",
+            errorSummary: "Intentional concurrency test failure.",
+          }))(),
         (async () =>
-          finisherTwo`
-            select private.finish_course_import_target(
-              ${runId}::uuid,
-              ${targetTwoId}::uuid,
-              ${"concurrency-message-two"}::text,
-              ${workerTwo}::uuid,
-              ${claimTwo.lock_version}::integer,
-              ${"failed"}::text,
-              null::text,
-              null::bigint,
-              null::bigint,
-              null::bigint,
-              null::bigint,
-              ${"TEST_CONCURRENCY"}::text,
-              ${"Intentional concurrency test failure."}::text
-            )
-          `)(),
+          finishCourseImportTarget(finisherTwo, {
+            runId,
+            targetId: targetTwoId,
+            messageId: "concurrency-message-two",
+            workerId: workerTwo,
+            expectedLockVersion: Number(claimTwo.lock_version),
+            processingStatus: "failed",
+            changeKind: null,
+            courseId: null,
+            courseYearId: null,
+            sourcePageId: null,
+            candidateSnapshotId: null,
+            errorCode: "TEST_CONCURRENCY",
+            errorSummary: "Intentional concurrency test failure.",
+          }))(),
       ];
 
       await waitForBothFinishersToBlock(coordinator);
