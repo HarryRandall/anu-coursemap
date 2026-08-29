@@ -6,6 +6,7 @@ export const OPENROUTER_PROMPT_VERSION = "course-parser.v1";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const OPENROUTER_REQUEST_TIMEOUT_MS = 35_000;
+const OPENROUTER_PROVIDER_DETAIL_MAX_LENGTH = 400;
 const MODEL_SLUG_PATTERN = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._:-]*$/;
 
 type JsonSchema = Record<string, unknown>;
@@ -18,14 +19,7 @@ export type OpenRouterCourseRequestBody = {
   stream: false;
   reasoning: { effort: "minimal"; exclude: true };
   provider: { require_parameters: true };
-  response_format: {
-    type: "json_schema";
-    json_schema: {
-      name: string;
-      strict: true;
-      schema: JsonSchema;
-    };
-  };
+  response_format: { type: "json_object" };
 };
 
 type OpenRouterUsage = {
@@ -177,10 +171,14 @@ export function buildOpenRouterCourseRequestBody({
   if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 256) {
     throw new TypeError("maxOutputTokens must be an integer of at least 256.");
   }
+  const schemaJson = JSON.stringify(schema);
   return {
     model: requestedModel,
     messages: [
-      { role: "system", content: systemPrompt },
+      {
+        role: "system",
+        content: `${systemPrompt}\n\nTrusted output contract (${schemaName}). Return one JSON object matching this exact JSON Schema:\n${schemaJson}`,
+      },
       { role: "user", content: modelInput },
     ],
     temperature: 0,
@@ -188,14 +186,7 @@ export function buildOpenRouterCourseRequestBody({
     stream: false,
     reasoning: { effort: "minimal", exclude: true },
     provider: { require_parameters: true },
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: schemaName,
-        strict: true,
-        schema,
-      },
-    },
+    response_format: { type: "json_object" },
   };
 }
 
@@ -299,22 +290,45 @@ export function restoreOpenRouterCourseExtraction(
   };
 }
 
+function boundedProviderDetail(value: unknown) {
+  if (typeof value !== "string") return null;
+  const singleLine = value.replace(/\s+/g, " ").trim();
+  if (!singleLine) return null;
+  if (singleLine.length <= OPENROUTER_PROVIDER_DETAIL_MAX_LENGTH) {
+    return singleLine;
+  }
+  return `${singleLine.slice(0, OPENROUTER_PROVIDER_DETAIL_MAX_LENGTH - 3)}...`;
+}
+
 function safeErrorMessage(body: unknown, status: number) {
+  let providerMessage: string | null = null;
+  let providerDetail: string | null = null;
   if (typeof body === "object" && body !== null) {
     const error = (body as { error?: unknown }).error;
     if (typeof error === "object" && error !== null) {
       const message = (error as { message?: unknown }).message;
       if (typeof message === "string" && message.trim()) {
-        return `OpenRouter request failed (${status}): ${message.trim()}`;
+        providerMessage = message.trim();
+      }
+      const metadata = (error as { metadata?: unknown }).metadata;
+      if (typeof metadata === "object" && metadata !== null) {
+        providerDetail = boundedProviderDetail(
+          (metadata as { raw?: unknown }).raw,
+        );
       }
     }
   }
-  return `OpenRouter request failed with HTTP ${status}.`;
+  const summary = providerMessage
+    ? `OpenRouter request failed (${status}): ${providerMessage}`
+    : `OpenRouter request failed with HTTP ${status}.`;
+  return providerDetail
+    ? `${summary} Provider detail: ${providerDetail}`
+    : summary;
 }
 
 /**
- * Request one strict course extraction. The API key and response reasoning are
- * deliberately excluded from the returned audit object.
+ * Request one schema-guided course extraction. The API key and response
+ * reasoning are deliberately excluded from the returned audit object.
  */
 export async function extractCourseWithOpenRouter({
   model,
@@ -355,6 +369,7 @@ export async function extractCourseWithOpenRouter({
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      "X-OpenRouter-Metadata": "enabled",
       "X-Title": "Coursemap course importer",
       ...(getCanonicalSiteOrigin()
         ? { "HTTP-Referer": getCanonicalSiteOrigin()! }

@@ -1068,9 +1068,10 @@ export function parseCourseExtraction(
   return result.data;
 }
 
-// OpenRouter receives this with response_format.type = "json_schema". The
-// runtime validator above remains authoritative and adds semantic checks that
-// JSON Schema cannot express cleanly, including selected-year offerings.
+// OpenRouter receives this in the system message while JSON object mode keeps
+// Gemini from rejecting the complete, deeply nested schema at the provider
+// boundary. The runtime validator above remains authoritative and adds the
+// semantic checks JSON Schema cannot express, including selected-year offerings.
 export const COURSE_EXTRACTION_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
