@@ -21,7 +21,7 @@ test("redacts credentials and connection URLs from durable failure summaries", (
   assert.match(summary, /OpenRouter key redacted/);
 });
 
-test("retries only transient source and model failures", () => {
+test("retries only transient source failures", () => {
   assert.equal(
     courseImportTargetInternals.isRetryableCourseImportError(
       new CourseSourceError("ANU_BUSY", "Try again.", { retryable: true }),
@@ -38,7 +38,13 @@ test("retries only transient source and model failures", () => {
     courseImportTargetInternals.isRetryableCourseImportError(
       new OpenRouterRequestError("Rate limited.", 429),
     ),
-    true,
+    false,
+  );
+  assert.equal(
+    courseImportTargetInternals.isRetryableCourseImportError(
+      new OpenRouterRequestError("Provider unavailable.", 503),
+    ),
+    false,
   );
   assert.equal(
     courseImportTargetInternals.isRetryableCourseImportError(
@@ -56,6 +62,33 @@ test("retries only transient source and model failures", () => {
     courseImportTargetInternals.isRetryableCourseImportError(
       new TypeError("Invalid extraction."),
     ),
+    false,
+  );
+});
+
+test("preserves definitive OpenRouter HTTP and configuration failures", () => {
+  const httpError = new OpenRouterRequestError(
+    "OpenRouter request failed (400): unsupported parameters",
+    400,
+  );
+  const configurationError = new OpenRouterConfigurationError();
+
+  assert.equal(
+    courseImportTargetInternals.normaliseOpenRouterAttemptError(httpError),
+    httpError,
+  );
+  assert.equal(
+    courseImportTargetInternals.normaliseOpenRouterAttemptError(
+      configurationError,
+    ),
+    configurationError,
+  );
+  assert.equal(
+    courseImportTargetInternals.errorCode(httpError),
+    "OPENROUTER_HTTP_400",
+  );
+  assert.equal(
+    courseImportTargetInternals.isRetryableCourseImportError(httpError),
     false,
   );
 });
@@ -85,12 +118,18 @@ test("reserves deliveries after the paid-attempt limit for recovery only", () =>
   assert.equal(courseImportTargetInternals.isRecoveryOnlyDelivery(12, 5), true);
 });
 
-test("never retries when a paid OpenRouter outcome is uncertain", () => {
+test("marks transport failures as uncertain and never retries them", () => {
+  const transportError = new TypeError(
+    "connection ended after request dispatch",
+  );
   const error =
-    new courseImportTargetInternals.CourseImportPaidOutcomeUncertainError(
-      new Error("connection ended after request dispatch"),
-    );
+    courseImportTargetInternals.normaliseOpenRouterAttemptError(transportError);
 
+  assert.ok(
+    error instanceof
+      courseImportTargetInternals.CourseImportPaidOutcomeUncertainError,
+  );
+  assert.equal(error.cause, transportError);
   assert.equal(
     courseImportTargetInternals.isRetryableCourseImportError(error),
     false,
