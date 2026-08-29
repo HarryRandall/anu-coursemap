@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
 import { load } from "cheerio";
-import type { CatalogueDiagnostic, CatalogueManifestSource } from "./manifest";
+import type { ImportDiagnostic, ImportManifestSource } from "./import-source";
 
 export const ANU_UNIVERSITY_CALENDAR_PARSER_VERSION =
   "anu-university-calendar-parser-v1";
 
-export const ANU_UNIVERSITY_CALENDAR_SOURCE: CatalogueManifestSource = {
+export const ANU_UNIVERSITY_CALENDAR_SOURCE: ImportManifestSource = {
   name: "ANU university calendar",
   kind: "anu_university_calendar",
   baseUrl: "https://www.anu.edu.au/directories/university-calendar",
@@ -22,7 +22,7 @@ export type UniversityCalendarManifest = {
   kind: "university_calendar";
   parserVersion: string;
   calendarYear: number;
-  source: CatalogueManifestSource;
+  source: ImportManifestSource;
   document: {
     externalKey: string;
     canonicalUrl: string;
@@ -30,7 +30,7 @@ export type UniversityCalendarManifest = {
     contentSha256: string;
   };
   events: UniversityCalendarEventInput[];
-  diagnostics: CatalogueDiagnostic[];
+  diagnostics: ImportDiagnostic[];
 };
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
@@ -93,12 +93,12 @@ export function parseUniversityCalendarHtml(
   calendarYear: number,
 ): {
   events: UniversityCalendarEventInput[];
-  diagnostics: CatalogueDiagnostic[];
+  diagnostics: ImportDiagnostic[];
 } {
   assertCalendarYear(calendarYear);
   const $ = load(html);
   const events: UniversityCalendarEventInput[] = [];
-  const diagnostics: CatalogueDiagnostic[] = [];
+  const diagnostics: ImportDiagnostic[] = [];
   const seen = new Set<string>();
 
   const rows = $("tr").filter((_, row) => {
@@ -377,7 +377,7 @@ export function parseUniversityCalendarManifest(
     });
   }
 
-  const diagnostics: CatalogueDiagnostic[] = [];
+  const diagnostics: ImportDiagnostic[] = [];
   if (!Array.isArray(value.diagnostics)) {
     issues.push("diagnostics must be an array");
   } else {

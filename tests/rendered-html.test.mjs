@@ -349,7 +349,7 @@ test("server-renders admin and course-detail routes", async () => {
   ]);
   assert.equal(adminResponse.status, 200);
   assert.equal(adminCoursesResponse.status, 200);
-  assert.equal(adminCourseReviewResponse.status, 200);
+  assert.equal(adminCourseReviewResponse.status, 404);
   assert.equal(adminUsersResponse.status, 200);
   assert.equal(adminRolesResponse.status, 200);
   assert.equal(relationsResponse.status, 404);
@@ -358,7 +358,6 @@ test("server-renders admin and course-detail routes", async () => {
   assert.equal(summaryResponse.status, 200);
   const adminHtml = await adminResponse.text();
   const adminCoursesHtml = await adminCoursesResponse.text();
-  const adminCourseReviewHtml = await adminCourseReviewResponse.text();
   const adminUsersHtml = await adminUsersResponse.text();
   const adminRolesHtml = await adminRolesResponse.text();
   assert.match(adminHtml, /Live catalogue status/i);
@@ -378,17 +377,6 @@ test("server-renders admin and course-detail routes", async () => {
   assert.doesNotMatch(
     adminCoursesHtml,
     /Catalogue review|Open a course version|Search imported courses/i,
-  );
-  assert.match(adminCourseReviewHtml, /Changes/i);
-  assert.match(adminCourseReviewHtml, /All fields/i);
-  assert.match(adminCourseReviewHtml, />Source<\/button>/i);
-  assert.match(adminCourseReviewHtml, /Parsed output/i);
-  assert.match(adminCourseReviewHtml, /Prerequisites/i);
-  assert.match(adminCourseReviewHtml, /Incompatibilities/i);
-  assert.match(adminCourseReviewHtml, /Student preview/i);
-  assert.doesNotMatch(
-    adminCourseReviewHtml,
-    /What to review before publishing/i,
   );
   assert.match(adminUsersHtml, /User management is unavailable in demo mode/i);
   assert.match(adminRolesHtml, /Role management is unavailable in demo mode/i);
@@ -415,63 +403,71 @@ test("server-renders admin and course-detail routes", async () => {
 test("routes course imports through the directory and durable run workspace", async () => {
   const [
     importsResponse,
-    syncResponse,
-    coursesResponse,
     directoryResponse,
     programmesResponse,
+    programmeDirectoryApiResponse,
+    programmeImportApiResponse,
+    programmeSearchApiResponse,
+    syncResponse,
+    syncDetailResponse,
+    coursesResponse,
     changesResponse,
+    changeDetailResponse,
   ] = await Promise.all([
     fetch(`${origin}/admin/imports`, { redirect: "manual" }),
-    render("/admin/imports/sync"),
-    render("/admin/imports/courses"),
     render("/admin/courses"),
-    render("/admin/imports/programmes"),
-    render("/admin/imports/changes"),
+    fetch(`${origin}/admin/imports/programmes`, { redirect: "manual" }),
+    fetch(`${origin}/api/admin/catalogue/imports/directory`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ catalogueYear: 2026, target: "programmes" }),
+    }),
+    fetch(`${origin}/api/admin/catalogue/imports/programmes`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ catalogueYear: 2026, programmeCodes: ["BCOMP"] }),
+    }),
+    fetch(`${origin}/api/admin/catalogue/programmes?year=2026&q=BCOMP`),
+    fetch(`${origin}/admin/imports/sync`, { redirect: "manual" }),
+    fetch(`${origin}/admin/imports/sync/demo-run-1`, { redirect: "manual" }),
+    fetch(`${origin}/admin/imports/courses`, { redirect: "manual" }),
+    fetch(`${origin}/admin/imports/changes`, { redirect: "manual" }),
+    fetch(`${origin}/admin/imports/changes/1`, { redirect: "manual" }),
   ]);
 
-  // The bare section path opens the durable course run history. Legacy course
-  // import entry points now resolve to the searchable course directory.
+  // The bare section path opens the durable course run history. Retired course
+  // import entry points and programme importing remain absent in Phase 1.
   assert.ok([307, 308].includes(importsResponse.status));
   assert.equal(importsResponse.headers.get("location"), "/admin/imports/runs");
-  assert.equal(syncResponse.status, 200);
-  assert.equal(coursesResponse.status, 200);
   assert.equal(directoryResponse.status, 200);
-  assert.equal(programmesResponse.status, 200);
-  assert.equal(changesResponse.status, 200);
+  assert.equal(programmesResponse.status, 404);
+  assert.equal(programmeDirectoryApiResponse.status, 404);
+  assert.equal(programmeImportApiResponse.status, 404);
+  assert.equal(programmeSearchApiResponse.status, 404);
+  for (const response of [
+    syncResponse,
+    syncDetailResponse,
+    coursesResponse,
+    changesResponse,
+    changeDetailResponse,
+  ]) {
+    assert.equal(response.status, 404);
+  }
 
-  const [syncRedirectHtml, coursesRedirectHtml, directoryHtml] =
-    await Promise.all([
-      syncResponse.text(),
-      coursesResponse.text(),
-      directoryResponse.text(),
-    ]);
-  const directoryDestination =
-    /Search all courses by code or title|url=\/admin\/courses/i;
-  assert.match(syncRedirectHtml, directoryDestination);
-  assert.match(coursesRedirectHtml, directoryDestination);
+  const directoryHtml = await directoryResponse.text();
   assert.match(directoryHtml, /Refresh directory/i);
   assert.match(directoryHtml, /Search all courses by code or title/i);
   assert.match(directoryHtml, /Import selected/i);
   assert.match(directoryHtml, /No directory courses/i);
-  assert.match(directoryHtml, /Directory refresh is disabled/i);
   assert.match(directoryHtml, /Detailed imports are disabled/i);
   assert.match(directoryHtml, /Import runs/i);
   assert.doesNotMatch(directoryHtml, /Find a course/i);
 
-  const programmesHtml = await programmesResponse.text();
-  assert.match(programmesHtml, /Find a programme/i);
-  assert.doesNotMatch(programmesHtml, /Programme code/i);
-
-  const changesHtml = await changesResponse.text();
-  assert.match(changesHtml, /Catalogue changes awaiting review/i);
-
-  // Titles and the explainer subtitle are gone from every import surface, and
-  // so are the tab names of the wizard that preceded them.
-  for (const html of [directoryHtml, programmesHtml, changesHtml]) {
-    assert.doesNotMatch(html, /Everything arrives as a draft/i);
-    assert.doesNotMatch(html, />\s*(?:Overview|Activity|Flags)\s*</i);
-    assert.doesNotMatch(html, /<h1(?![^>]*sr-only)[^>]*>/i);
-  }
+  // The directory does not restore the wizard chrome from the retired import
+  // surfaces.
+  assert.doesNotMatch(directoryHtml, /Everything arrives as a draft/i);
+  assert.doesNotMatch(directoryHtml, />\s*(?:Overview|Activity|Flags)\s*</i);
+  assert.doesNotMatch(directoryHtml, /<h1(?![^>]*sr-only)[^>]*>/i);
 });
 
 test("removes the routes the imports split replaced", async () => {
@@ -489,14 +485,6 @@ test("removes the routes the imports split replaced", async () => {
   }
 });
 
-test("redirects legacy run URLs to durable course runs", async () => {
-  const response = await render("/admin/imports/sync/demo-run-1");
-  const html = await response.text();
-
-  assert.match(html, /url=\/admin\/imports\/runs/i);
-  assert.doesNotMatch(html, /Parser notes/i);
-});
-
 test("removes the disposable starter and keeps product metadata", async () => {
   const [
     planPage,
@@ -509,7 +497,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     courseDrawer,
     coursePicker,
     providers,
-    publishedCatalogue,
+    publishedCourses,
     planCatalogue,
     catalogue,
     globals,
@@ -555,7 +543,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
     ),
     readFile(new URL("../app/providers.tsx", import.meta.url), "utf8"),
     readFile(
-      new URL("../lib/coursemap/published-catalogue.ts", import.meta.url),
+      new URL("../lib/coursemap/published-courses.ts", import.meta.url),
       "utf8",
     ),
     readFile(
@@ -605,11 +593,20 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(adminPage, /loadAdminUserSummary/);
   assert.doesNotMatch(adminPage, /Publish reviewed records/);
   assert.match(coursePage, /loadPublishedCourse/);
+  assert.match(coursePage, /requestedYearParam/);
+  assert.match(coursePage, /loadPublishedCourse\(code, academicYear\)/);
   assert.match(courseDetailClient, /completedCodes/);
   assert.match(courseDetailClient, /plannedCodes/);
   assert.match(courseDetailView, /prerequisiteEdges/);
   assert.match(courseDetailView, /CourseReferenceText/);
   assert.match(courseDetailView, /Student experience and self-review/);
+  assert.match(courseDetailView, /Learning outcomes/);
+  assert.match(courseDetailView, /Assessment/);
+  assert.match(courseDetailView, /Fees/);
+  assert.match(courseDetailView, /Prescribed texts/);
+  assert.match(courseDetailView, /Areas of interest/);
+  assert.match(courseDetailView, /Course attributes/);
+  assert.match(courseDetailView, /\?year=\$\{academicYear\}/);
   assert.doesNotMatch(courseDetailView, /> Parsed</);
   assert.match(prereqGraph, /completedCodes\.has\(item\)/);
   assert.match(prereqGraph, /bg-emerald-50 text-emerald-700/);
@@ -627,7 +624,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.doesNotMatch(courseDrawer, /Move course to|\bmoveAttempt\b/);
   assert.doesNotMatch(courseDrawer, />Undo</);
   assert.match(courseDrawer, />\s*Completed\s*</);
-  assert.match(courseDrawer, /updateAttempt\(attempt\.id, "completed"\)/);
+  assert.match(courseDrawer, /updateAttempt\(\s*attempt\.id,\s*"completed"/);
   assert.doesNotMatch(courseDrawer, /\? "planned" : "completed"/);
   assert.match(courseDrawer, /grid grid-cols-3 gap-2/);
   assert.match(courseDrawer, /must be completed or planned\s+earlier/);
@@ -662,7 +659,10 @@ test("removes the disposable starter and keeps product metadata", async () => {
     coursePicker,
     /onKeyDown=\{\(event\) => event\.stopPropagation\(\)\}/,
   );
-  assert.doesNotMatch(coursePicker, /setResponse\(null\)/);
+  assert.match(
+    coursePicker,
+    /setUnscheduledAcademicYear\(year\)[\s\S]*?setResponse\(null\)/,
+  );
   assert.doesNotMatch(coursePicker, /onDoubleClick/);
   assert.match(planClient, /term=\{pickerTerm\}/);
   assert.doesNotMatch(coursePicker, /catalogue\.terms\[0\]/);
@@ -671,9 +671,16 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(providers, /const limit = 1/);
   assert.doesNotMatch(providers, /from "@\/lib\/catalogue"/);
   assert.match(layout, /await import\("@\/lib\/catalogue"\)/);
-  assert.match(publishedCatalogue, /await import\("@\/lib\/catalogue"\)/);
-  assert.doesNotMatch(publishedCatalogue, /from "@\/lib\/catalogue"/);
+  assert.match(publishedCourses, /await import\("@\/lib\/catalogue"\)/);
+  assert.doesNotMatch(publishedCourses, /from "@\/lib\/catalogue"/);
+  assert.match(publishedCourses, /published_course_detail/);
+  assert.match(publishedCourses, /p_academic_year: academicYear/);
+  assert.match(publishedCourses, /published-course:\$\{academicYear\}/);
+  assert.doesNotMatch(publishedCourses, /course_versions/);
   assert.match(planCatalogue, /await import\("@\/lib\/catalogue"\)/);
+  assert.match(planCatalogue, /course_snapshot_id/);
+  assert.match(planCatalogue, /academic_year_id/);
+  assert.doesNotMatch(planCatalogue, /course_versions/);
   assert.match(catalogue, /units === 12 \? 2 : 1/);
   assert.match(catalogue, /function prerequisiteChainCodes/);
   assert.match(globals, /scrollbar-gutter: stable/);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { loadPublishedCoursePage } from "@/lib/coursemap/published-catalogue";
+import { loadPublishedCoursePage } from "@/lib/coursemap/published-courses";
 
 export const dynamic = "force-dynamic";
 
@@ -7,11 +7,23 @@ export async function GET(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   const query = searchParams.get("q")?.trim() ?? "";
   if (!query) return NextResponse.json({ courses: [] });
+  const academicYear = Number(searchParams.get("year"));
+  if (
+    !Number.isInteger(academicYear) ||
+    academicYear < 2020 ||
+    academicYear > 2030
+  ) {
+    return NextResponse.json(
+      { error: "A valid academic year from 2020 to 2030 is required." },
+      { status: 400 },
+    );
+  }
 
   try {
     const requestedPage = Number(searchParams.get("page") ?? "1");
     const requestedPageSize = Number(searchParams.get("pageSize") ?? "8");
     const result = await loadPublishedCoursePage({
+      academicYear,
       filters: { query },
       page: Number.isFinite(requestedPage) ? requestedPage : 1,
       pageSize: Number.isFinite(requestedPageSize) ? requestedPageSize : 8,

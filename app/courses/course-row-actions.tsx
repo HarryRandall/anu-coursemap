@@ -13,12 +13,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
+import type { CourseDetails } from "@/lib/coursemap/course-types";
 
 export function CourseRowActions({
   course,
 }: {
-  course: Pick<CatalogueCourse, "code" | "name" | "sessions" | "sourceUrl">;
+  course: Pick<
+    CourseDetails,
+    "code" | "name" | "sessions" | "sourceUrl" | "year"
+  >;
 }) {
   const router = useRouter();
   const [planOpen, setPlanOpen] = useState(false);
@@ -39,7 +42,9 @@ export function CourseRowActions({
           <DropdownMenuLabel>{course.code}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onSelect={() => router.push(`/courses/${course.code}`)}
+            onSelect={() =>
+              router.push(`/courses/${course.code}?year=${course.year}`)
+            }
           >
             <Eye aria-hidden="true" />
             View course

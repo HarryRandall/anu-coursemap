@@ -9,6 +9,9 @@ export type CoursemapActionResult = {
   ok: boolean;
   message: string;
   id?: string;
+  snapshotId?: number;
+  unitsAttempted?: number;
+  unitsEarned?: number;
 };
 
 function termParts(termId: string) {
@@ -58,12 +61,14 @@ export async function saveProfileAndPlan(
 export async function addPlanCourse(
   courseCode: string,
   termId: string,
+  academicYear: number,
 ): Promise<CoursemapActionResult> {
   try {
     const supabase = await createClient();
     const { year, period } = termParts(termId);
     const { data, error } = await supabase.rpc("add_current_user_plan_item", {
       p_course_code: courseCode,
+      p_academic_year: academicYear,
       p_planned_calendar_year: year,
       p_planned_period_code: period,
     });
@@ -139,6 +144,7 @@ export async function recordCourseAttempt(
   planItemId: string,
   status: Exclude<AttemptStatus, "planned">,
   mark?: number,
+  attemptedUnits?: number,
 ): Promise<CoursemapActionResult> {
   try {
     const supabase = await createClient();
@@ -148,11 +154,25 @@ export async function recordCourseAttempt(
         p_plan_item_id: planItemId,
         p_attempt_status: status,
         p_attempt_mark: mark,
+        p_units_attempted: attemptedUnits,
       },
     );
     if (error) throw error;
+    const { data: storedAttempt, error: storedAttemptError } = await supabase
+      .from("course_attempts")
+      .select("course_snapshot_id,units_attempted,units_earned")
+      .eq("id", data)
+      .single();
+    if (storedAttemptError) throw storedAttemptError;
     revalidatePath("/plan");
-    return { ok: true, id: data, message: "Academic history updated" };
+    return {
+      ok: true,
+      id: data,
+      message: "Academic history updated",
+      snapshotId: storedAttempt.course_snapshot_id,
+      unitsAttempted: Number(storedAttempt.units_attempted),
+      unitsEarned: Number(storedAttempt.units_earned),
+    };
   } catch (error) {
     return failure(error);
   }

@@ -3,9 +3,6 @@ import {
   type AnuCourseDirectory,
 } from "./anu-course-directory.ts";
 
-export const COURSE_DIRECTORY_ENTRIES_REFRESH_ENV =
-  "COURSEMAP_COURSE_DIRECTORY_ENTRIES_ENABLED";
-
 export type CourseDirectoryAvailabilityUpdate = {
   sourceAvailability: "unknown" | "available" | "unavailable";
   checkedAt: string;
@@ -13,12 +10,6 @@ export type CourseDirectoryAvailabilityUpdate = {
   markDirectoryRefreshed: boolean;
   retireMissingEntries: boolean;
 };
-
-export function courseDirectoryEntriesRefreshEnabled(
-  value = process.env.COURSEMAP_COURSE_DIRECTORY_ENTRIES_ENABLED,
-) {
-  return value === "true";
-}
 
 export function courseDirectoryResponsePolicy(
   directory: AnuCourseDirectory,
@@ -36,7 +27,7 @@ export function courseDirectoryResponsePolicy(
     return {
       sourceAvailability: "unavailable",
       checkedAt: directory.fetchedAt,
-      availabilityNote: `ANU returned a complete course directory with no courses for ${directory.catalogueYear}.`,
+      availabilityNote: `ANU returned a complete course directory with no courses for ${directory.academicYear}.`,
       markDirectoryRefreshed: false,
       retireMissingEntries: false,
     };
@@ -83,11 +74,11 @@ export function isPermanentCourseDirectoryNoDataError(
 }
 
 export function courseDirectoryFailurePolicy({
-  catalogueYear,
+  academicYear,
   error,
   checkedAt,
 }: {
-  catalogueYear: number;
+  academicYear: number;
   error: unknown;
   checkedAt: string;
 }): CourseDirectoryAvailabilityUpdate {
@@ -95,7 +86,7 @@ export function courseDirectoryFailurePolicy({
     return {
       sourceAvailability: "unavailable",
       checkedAt,
-      availabilityNote: `ANU returned HTTP ${error.status}, so no course directory is available for ${catalogueYear}.`,
+      availabilityNote: `ANU returned HTTP ${error.status}, so no course directory is available for ${academicYear}.`,
       markDirectoryRefreshed: false,
       retireMissingEntries: false,
     };

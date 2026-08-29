@@ -100,14 +100,15 @@ test("accepts one uppercase ANU course-code variant suffix", () => {
   );
 });
 
-test("accepts the legacy year field during the queue rollout", () => {
-  assert.equal(
-    parseCourseImportRequest({
-      catalogueYear: 2025,
-      courseCodes: ["COMP1100"],
-      requestedModel: "google/gemini-3.1-flash-lite",
-    }).academicYear,
-    2025,
+test("requires the snapshot-native academic year field", () => {
+  assert.throws(
+    () =>
+      parseCourseImportRequest({
+        catalogueYear: 2025,
+        courseCodes: ["COMP1100"],
+        requestedModel: "google/gemini-3.1-flash-lite",
+      }),
+    /Choose an academic year/,
   );
 });
 

@@ -55,6 +55,7 @@ type AppContextValue = {
   addCourse: (
     courseCode: string,
     termId: string,
+    academicYear: number,
   ) => Promise<CoursemapActionResult>;
   reorderAttempt: (
     attemptId: string,
@@ -65,6 +66,7 @@ type AppContextValue = {
     attemptId: string,
     status: AttemptStatus,
     mark?: number,
+    attemptedUnits?: number,
   ) => Promise<CoursemapActionResult>;
   removeAttempt: (attemptId: string) => Promise<CoursemapActionResult>;
   togglePermission: (attemptId: string) => void;
@@ -275,7 +277,7 @@ export function AppProvider({
   );
 
   const addCourse = useCallback(
-    async (courseCode: string, termId: string) => {
+    async (courseCode: string, termId: string, academicYear: number) => {
       const occurrenceCount = state.attempts.filter(
         (attempt) => attempt.courseCode === courseCode,
       ).length;
@@ -288,13 +290,19 @@ export function AppProvider({
             id: `a-${courseCode.toLowerCase()}-${termId}-${state.attempts.length + 1}`,
             message: `${courseCode} added to the plan`,
           }
-        : await addPlanCourse(courseCode, termId);
+        : await addPlanCourse(courseCode, termId, academicYear);
       if (!result.ok || !result.id) return result;
       setState((current) => ({
         ...current,
         attempts: [
           ...current.attempts,
-          { id: result.id!, courseCode, termId, status: "planned" },
+          {
+            id: result.id!,
+            academicYear,
+            courseCode,
+            termId,
+            status: "planned",
+          },
         ],
       }));
       if (!demoMode) router.refresh();
@@ -372,7 +380,12 @@ export function AppProvider({
   );
 
   const updateAttempt = useCallback(
-    async (attemptId: string, status: AttemptStatus, mark?: number) => {
+    async (
+      attemptId: string,
+      status: AttemptStatus,
+      mark?: number,
+      attemptedUnits?: number,
+    ) => {
       const attempt = state.attempts.find((item) => item.id === attemptId);
       if (!attempt) return { ok: false, message: "Course was not found" };
       if (!demoMode && attempt.status !== "planned") {
@@ -399,9 +412,25 @@ export function AppProvider({
             : undefined;
       const result =
         !demoMode && status !== "planned"
-          ? await recordCourseAttempt(attemptId, status, savedMark)
+          ? await recordCourseAttempt(
+              attemptId,
+              status,
+              savedMark,
+              attemptedUnits ?? attempt.unitsAttempted,
+            )
           : { ok: true, id: attemptId, message: "Academic history updated" };
       if (!result.ok) return result;
+      const storedUnitsAttempted =
+        result.unitsAttempted ?? attemptedUnits ?? attempt.unitsAttempted;
+      const storedUnitsEarned =
+        result.unitsEarned ??
+        (status === "completed"
+          ? storedUnitsAttempted
+          : status === "planned"
+            ? attempt.unitsEarned
+            : storedUnitsAttempted === undefined
+              ? attempt.unitsEarned
+              : 0);
       setState((current) => ({
         ...current,
         attempts: current.attempts.map((attempt) =>
@@ -409,8 +438,11 @@ export function AppProvider({
             ? {
                 ...attempt,
                 id: result.id ?? attempt.id,
+                snapshotId: result.snapshotId ?? attempt.snapshotId,
                 status,
                 mark: savedMark,
+                unitsAttempted: storedUnitsAttempted,
+                unitsEarned: storedUnitsEarned,
               }
             : attempt,
         ),

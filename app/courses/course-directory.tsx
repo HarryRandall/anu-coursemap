@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/data-table";
-import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
+import type { CourseDetails } from "@/lib/coursemap/course-types";
 import { cn } from "@/lib/cn";
 import { Pagination } from "@/components/ui/pagination";
 import { CourseRowActions } from "./course-row-actions";
@@ -29,6 +29,7 @@ const chipClasses =
   "rounded-md bg-zinc-50 px-1.5 py-0.5 text-[11px] font-medium text-zinc-600 ring-1 ring-zinc-200 ring-inset";
 
 export function CourseDirectory({
+  academicYear,
   courses,
   page,
   pageSize,
@@ -36,7 +37,8 @@ export function CourseDirectory({
   filtered = false,
   searchParams,
 }: {
-  courses: CatalogueCourse[];
+  academicYear: number;
+  courses: CourseDetails[];
   page: number;
   pageSize: number;
   total: number;
@@ -94,7 +96,7 @@ export function CourseDirectory({
             </TableRow>
           ) : null}
           {courses.map((course) => {
-            const href = `/courses/${course.code}`;
+            const href = `/courses/${course.code}?year=${academicYear}`;
             return (
               <TableRow key={course.code} className="group">
                 <TableCell className="p-0">
@@ -139,19 +141,29 @@ export function CourseDirectory({
                     {course.prerequisiteCodes.length === 0 ? (
                       <span className="text-[13px] text-zinc-400">None</span>
                     ) : (
-                      course.prerequisiteCodes.map((prerequisite) => (
-                        <Link
-                          key={prerequisite}
-                          href={`/courses/${prerequisite}`}
-                          aria-label={`View prerequisite ${prerequisite}`}
-                          className={cn(
-                            chipClasses,
-                            "font-mono transition-colors hover:bg-white hover:text-brand-700 hover:ring-brand-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-400 motion-reduce:transition-none",
-                          )}
-                        >
-                          {prerequisite}
-                        </Link>
-                      ))
+                      course.prerequisiteCodes.map((prerequisite) =>
+                        course.availableCourseCodes.includes(prerequisite) ? (
+                          <Link
+                            key={prerequisite}
+                            href={`/courses/${prerequisite}?year=${academicYear}`}
+                            aria-label={`View prerequisite ${prerequisite}`}
+                            className={cn(
+                              chipClasses,
+                              "font-mono transition-colors hover:bg-white hover:text-brand-700 hover:ring-brand-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-400 motion-reduce:transition-none",
+                            )}
+                          >
+                            {prerequisite}
+                          </Link>
+                        ) : (
+                          <span
+                            key={prerequisite}
+                            className={cn(chipClasses, "font-mono")}
+                            title={`${prerequisite} is not published for ${academicYear}`}
+                          >
+                            {prerequisite}
+                          </span>
+                        ),
+                      )
                     )}
                   </div>
                 </TableCell>
@@ -178,6 +190,7 @@ export function CourseDirectory({
                         name: course.name,
                         sessions: course.sessions,
                         sourceUrl: course.sourceUrl,
+                        year: academicYear,
                       }}
                     />
                   </div>

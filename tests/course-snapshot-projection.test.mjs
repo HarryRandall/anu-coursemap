@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { extractDeterministicCourse } from "../lib/course-import/deterministic.ts";
 import { projectCourseSnapshot } from "../lib/course-import/project-snapshot.ts";
+import { parseCourseSnapshotProjection } from "../lib/course-import/snapshot-projection-contract.ts";
+import { compareCourseSnapshotProjections } from "../lib/coursemap/course-snapshot-diff.ts";
 import { COURSE_SNAPSHOT_RELATIONAL_QUERY_SHAPE } from "../lib/coursemap/course-import-query-shape.ts";
 
 const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2400";
@@ -124,6 +126,34 @@ test("projection hash changes for a semantic relational change", () => {
   assert.notEqual(
     projectCourseSnapshot(extraction).projectionSha256,
     projectCourseSnapshot(changed).projectionSha256,
+  );
+});
+
+test("runtime projection validation rejects malformed nested admin payloads", () => {
+  const projection = structuredClone(projectCourseSnapshot(extraction));
+  delete projection.projectionSha256;
+  assert.deepEqual(parseCourseSnapshotProjection(projection), projection);
+
+  const nullFeeSource = structuredClone(projection);
+  nullFeeSource.fees[0].sourceText = null;
+  assert.throws(
+    () => parseCourseSnapshotProjection(nullFeeSource),
+    /fees\.0\.sourceText/,
+  );
+
+  const duplicateOutcomePosition = structuredClone(projection);
+  duplicateOutcomePosition.learningOutcomes[1].position =
+    duplicateOutcomePosition.learningOutcomes[0].position;
+  assert.throws(
+    () => parseCourseSnapshotProjection(duplicateOutcomePosition),
+    /learningOutcomes.*contiguous positions/,
+  );
+
+  const missingRule = structuredClone(projection);
+  missingRule.ruleCourseReferences[0].ruleKey = "permission";
+  assert.throws(
+    () => parseCourseSnapshotProjection(missingRule),
+    /ruleCourseReferences.*saved rule/,
   );
 });
 
@@ -297,4 +327,49 @@ test("uses the deployed snapshot relation columns in admin review queries", () =
     fieldEvidenceOrder: "field_key",
     conditionCoursesForeignKey: "condition_id",
   });
+});
+
+test("compares saved and candidate snapshot projections field by field", () => {
+  const previous = projectCourseSnapshot(extraction);
+  delete previous.projectionSha256;
+  const candidate = structuredClone(previous);
+  candidate.snapshot.title = "Relational Databases and Review";
+  candidate.fees[0].amount = 4_250;
+  candidate.areasOfInterest.push({ position: 3, name: "Data Engineering" });
+  candidate.attributes = [];
+
+  const changes = compareCourseSnapshotProjections(previous, candidate);
+  const byPath = new Map(changes.map((change) => [change.fieldPath, change]));
+
+  assert.deepEqual(byPath.get("snapshot.title"), {
+    fieldPath: "snapshot.title",
+    kind: "changed",
+    before: previous.snapshot.title,
+    after: "Relational Databases and Review",
+  });
+  assert.equal(byPath.get("fees[0].amount").kind, "changed");
+  assert.equal(byPath.get("areasOfInterest[2].position").kind, "added");
+  assert.equal(byPath.get("areasOfInterest[2].name").kind, "added");
+  assert.equal(byPath.get("attributes[0].position").kind, "removed");
+  assert.equal(
+    changes.some(({ fieldPath }) => fieldPath.includes("projectionSha256")),
+    false,
+  );
+});
+
+test("shows every populated candidate field as added for a first import", () => {
+  const candidate = projectCourseSnapshot(extraction);
+  delete candidate.projectionSha256;
+  const changes = compareCourseSnapshotProjections(null, candidate);
+
+  assert.equal(changes.length > 0, true);
+  assert.equal(
+    changes.every(({ kind }) => kind === "added"),
+    true,
+  );
+  assert.equal(
+    compareCourseSnapshotProjections(candidate, structuredClone(candidate))
+      .length,
+    0,
+  );
 });

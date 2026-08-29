@@ -1,5 +1,4 @@
-import { canManageCatalogueImports } from "@/lib/auth/viewer";
-import { courseDirectoryEntriesRefreshEnabled } from "@/lib/catalogue-import/course-directory-policy";
+import { canManageCourseImports } from "@/lib/auth/viewer";
 import { configuredOpenRouterModels } from "@/lib/course-import/openrouter";
 import { courseImportQueuesEnabled } from "@/lib/course-import/queue";
 import {
@@ -56,7 +55,7 @@ export default async function AdminCoursesPage({
   const [data, years, canImport] = await Promise.all([
     loadCourseDirectoryPage({ year, page, query, status }),
     loadAcademicYearOptions(),
-    canManageCatalogueImports(),
+    canManageCourseImports(),
   ]);
 
   return (
@@ -64,7 +63,6 @@ export default async function AdminCoursesPage({
       key={year}
       canImport={canImport}
       data={data}
-      directoryRefreshEnabled={courseDirectoryEntriesRefreshEnabled()}
       modelOptions={configuredOpenRouterModels()}
       queueEnabled={courseImportQueuesEnabled()}
       searchParams={{

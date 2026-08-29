@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
-import { useAdminNav } from "@/components/admin/admin-nav-context";
 import { BrandMark } from "@/components/brand-mark";
 import { CourseFind } from "@/components/course-find";
 import { IconButton } from "@/components/ui/button";
@@ -44,8 +43,6 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   badge?: string;
-  /** Renders a live numeric badge, resolved from the admin nav context. */
-  count?: "openChanges";
   dividerAfter?: boolean;
 };
 
@@ -143,13 +140,11 @@ function NavLink({
   onNavigate: () => void;
 }) {
   const pathname = usePathname();
-  const { openChangeCount } = useAdminNav();
   const isActive =
     item.href === "/admin/dashboard"
       ? pathname === item.href || pathname === "/admin"
       : pathname === item.href || pathname.startsWith(`${item.href}/`);
   const Icon = item.icon;
-  const count = item.count === "openChanges" ? openChangeCount : 0;
   return (
     <Link
       href={item.href}
@@ -166,13 +161,6 @@ function NavLink({
     >
       <Icon size={17} strokeWidth={1.9} />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
-      {count > 0 && (
-        // Tabular so a two-digit count does not shift the pill's centre.
-        <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] leading-4 font-medium text-amber-800 tabular-nums">
-          {count}
-          <span className="sr-only"> awaiting review</span>
-        </span>
-      )}
       {item.badge && (
         <span
           className={cn(

@@ -1,10 +1,16 @@
+import type { CourseRequisiteRule, CourseUnitValue } from "./course-types";
+
 export type Accent = "blue" | "violet" | "mint" | "amber" | "rose" | "cyan";
 
 export type Course = {
   code: string;
   name: string;
   year: number;
+  /** Exact immutable snapshot when this course represents recorded history. */
+  snapshotId?: number;
   units: number;
+  /** Published unit rules used when recording a student's actual units. */
+  unitValue?: CourseUnitValue;
   level: number;
   subject: string;
   school: string;
@@ -14,6 +20,7 @@ export type Course = {
   description: string;
   prerequisiteText: string;
   prerequisiteCodes: string[];
+  prerequisiteRule?: CourseRequisiteRule | null;
   corequisiteText?: string;
   incompatibilities: string[];
   permissionText?: string;
@@ -45,8 +52,14 @@ export type Major = {
 export type AttemptStatus = "completed" | "failed" | "planned" | "enrolled";
 
 export type Attempt = {
+  academicYear?: number;
   id: string;
   courseCode: string;
+  /** Exact immutable course snapshot used when this attempt was recorded. */
+  snapshotId?: number;
+  /** Units saved on the attempt, independent of later course publications. */
+  unitsAttempted?: number;
+  unitsEarned?: number;
   termId: string;
   status: AttemptStatus;
   mark?: number;

@@ -310,12 +310,12 @@ export async function persistCourseSnapshotCandidate(
   sql: CourseImportSql | postgres.TransactionSql,
   {
     claim,
-    sourceDocumentId,
+    sourcePageId,
     projection,
     extraction,
   }: {
     claim: ClaimedCourseImportTarget;
-    sourceDocumentId: number;
+    sourcePageId: number;
     projection: CourseSnapshotProjection;
     extraction: CourseExtraction;
   },
@@ -394,7 +394,7 @@ export async function persistCourseSnapshotCandidate(
       select
         reviews.course_snapshot_id,
         snapshots.projection_sha256,
-        snapshots.source_document_id
+        snapshots.source_page_id
       from public.course_review_items as reviews
       join public.course_snapshots as snapshots
         on snapshots.id = reviews.course_snapshot_id
@@ -413,7 +413,7 @@ export async function persistCourseSnapshotCandidate(
           "A retry produced different canonical data after its candidate snapshot was saved.",
         );
       }
-      if (Number(existingCandidate.source_document_id) !== sourceDocumentId) {
+      if (Number(existingCandidate.source_page_id) !== sourcePageId) {
         throw new TypeError(
           "The ANU source page changed after this target saved its candidate snapshot; start a new import run.",
         );
@@ -456,7 +456,7 @@ export async function persistCourseSnapshotCandidate(
        and targets.review_status = ${"pending"}
       where snapshots.course_year_id = ${courseYearId}
         and snapshots.origin = ${"import"}
-        and snapshots.source_document_id = ${sourceDocumentId}
+        and snapshots.source_page_id = ${sourcePageId}
         and snapshots.projection_sha256 = ${projection.projectionSha256}
       order by snapshots.snapshot_number desc
       limit 1
@@ -531,7 +531,7 @@ export async function persistCourseSnapshotCandidate(
         snapshot_number,
         origin,
         based_on_snapshot_id,
-        source_document_id,
+        source_page_id,
         projection_sha256,
         schema_version,
         validation_status,
@@ -566,7 +566,7 @@ export async function persistCourseSnapshotCandidate(
         ${Number(numberRow.snapshot_number)},
         ${"import"},
         ${comparedSnapshotId},
-        ${sourceDocumentId},
+        ${sourcePageId},
         ${projection.projectionSha256},
         ${claim.schemaVersion},
         ${validationStatus},
@@ -678,17 +678,15 @@ export async function persistCourseSnapshotCandidate(
         insert into public.course_offerings (
           course_snapshot_id,
           academic_year_id,
-          course_source_document_id,
+          course_source_page_id,
           delivery_mode,
-          location,
-          status
+          location
         ) values (
           ${candidateSnapshotId},
           ${claim.academicYearId},
-          ${sourceDocumentId},
+          ${sourcePageId},
           ${projection.courseOffering.deliveryMode},
-          ${projection.courseOffering.location},
-          ${"draft"}
+          ${projection.courseOffering.location}
         )
         returning id
       `;
@@ -703,14 +701,17 @@ export async function persistCourseSnapshotCandidate(
       const periods =
         periodCodes.length > 0
           ? await tx`
-              select id, code
+              select id, code, name
               from public.academic_periods
               where calendar_year = ${claim.academicYear}
                 and code = any(${tx.array(periodCodes)}::text[])
             `
           : [];
       const periodIds = new Map(
-        periods.map((period) => [String(period.code), Number(period.id)]),
+        periods.map((period) => [
+          JSON.stringify([String(period.code), String(period.name)]),
+          Number(period.id),
+        ]),
       );
       await tx`
         insert into public.offering_sessions ${tx(
@@ -718,9 +719,14 @@ export async function persistCourseSnapshotCandidate(
             course_offering_id: offeringId,
             course_snapshot_id: candidateSnapshotId,
             academic_year_id: claim.academicYearId,
-            course_source_document_id: sourceDocumentId,
+            course_source_page_id: sourcePageId,
             academic_period_id:
-              periodIds.get(session.academicPeriodCode) ?? null,
+              periodIds.get(
+                JSON.stringify([
+                  session.academicPeriodCode,
+                  session.academicPeriodName,
+                ]),
+              ) ?? null,
             academic_period_code: session.academicPeriodCode,
             academic_period_name: session.academicPeriodName,
             position: session.position,
@@ -806,7 +812,7 @@ export async function persistCourseSnapshotCandidate(
         insert into public.course_rules (
           course_snapshot_id,
           academic_year_id,
-          course_source_document_id,
+          course_source_page_id,
           rule_kind,
           hardness,
           source_text,
@@ -815,7 +821,7 @@ export async function persistCourseSnapshotCandidate(
         ) values (
           ${candidateSnapshotId},
           ${claim.academicYearId},
-          ${sourceDocumentId},
+          ${sourcePageId},
           ${rule.ruleKind},
           ${rule.hardness},
           ${rule.sourceText},
@@ -842,6 +848,7 @@ export async function persistCourseSnapshotCandidate(
           insert into public.course_rule_groups (
             course_rule_id,
             course_snapshot_id,
+            projection_key,
             parent_group_id,
             operator,
             minimum_count,
@@ -849,6 +856,7 @@ export async function persistCourseSnapshotCandidate(
           ) values (
             ${requiredMapValue(ruleIds, group.ruleKey, "Course rule")},
             ${candidateSnapshotId},
+            ${group.key},
             ${
               group.parentGroupKey === null
                 ? null
@@ -875,6 +883,7 @@ export async function persistCourseSnapshotCandidate(
         insert into public.course_rule_conditions (
           course_rule_id,
           course_snapshot_id,
+          projection_key,
           group_id,
           condition_kind,
           required_course_id,
@@ -896,6 +905,7 @@ export async function persistCourseSnapshotCandidate(
         ) values (
           ${requiredMapValue(ruleIds, condition.ruleKey, "Course rule")},
           ${candidateSnapshotId},
+          ${condition.key},
           ${requiredMapValue(
             groupIds,
             condition.groupKey,
@@ -942,8 +952,11 @@ export async function persistCourseSnapshotCandidate(
             ),
             course_snapshot_id: candidateSnapshotId,
             position: course.position,
-            referenced_course_id:
-              courseIds.get(course.sourceCourseCode) ?? null,
+            referenced_course_id: requiredMapValue(
+              courseIds,
+              course.sourceCourseCode,
+              "Course-set member",
+            ),
             source_course_code: course.sourceCourseCode,
             source_text: course.sourceText,
           })),
@@ -993,7 +1006,7 @@ export async function persistCourseSnapshotCandidate(
             return {
               course_snapshot_id: candidateSnapshotId,
               academic_year_id: claim.academicYearId,
-              source_document_id: sourceDocumentId,
+              source_page_id: sourcePageId,
               entity_kind: "course",
               entity_key: "root",
               field_key: fieldKey,

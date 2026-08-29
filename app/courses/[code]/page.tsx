@@ -11,7 +11,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { loadPublishedCourse } from "@/lib/coursemap/published-catalogue";
+import {
+  loadAcademicYearOptions,
+  loadPublishedCourse,
+} from "@/lib/coursemap/published-courses";
 import {
   loadCurrentUserRequisiteCompletion,
   type RequisiteCompletionSnapshot,
@@ -20,10 +23,19 @@ import { CourseDetailClient } from "./course-detail-client";
 
 export default async function CoursePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ year?: string | string[] }>;
 }) {
   const { code } = await params;
+  const requestedYearParam = (await searchParams).year;
+  const requestedYear = Number(
+    Array.isArray(requestedYearParam)
+      ? requestedYearParam[0]
+      : requestedYearParam,
+  );
+  let academicYear = new Date().getFullYear();
   let course = null;
   let requisiteCompletion: RequisiteCompletionSnapshot = {
     completedCourses: [],
@@ -32,8 +44,15 @@ export default async function CoursePage({
   };
   let unavailable = false;
   try {
+    const years = await loadAcademicYearOptions();
+    const availableYears = new Set(years.map((year) => year.year));
+    academicYear = availableYears.has(requestedYear)
+      ? requestedYear
+      : availableYears.has(academicYear)
+        ? academicYear
+        : (years[0]?.year ?? academicYear);
     [course, requisiteCompletion] = await Promise.all([
-      loadPublishedCourse(code),
+      loadPublishedCourse(code, academicYear),
       loadCurrentUserRequisiteCompletion(),
     ]);
   } catch {
@@ -58,7 +77,7 @@ export default async function CoursePage({
               </EmptyHeader>
               <EmptyContent>
                 <ButtonLink
-                  href={`/courses/${encodeURIComponent(code)}`}
+                  href={`/courses/${encodeURIComponent(code)}?year=${academicYear}`}
                   size="sm"
                   variant="primary"
                 >

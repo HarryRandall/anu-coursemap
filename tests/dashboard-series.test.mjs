@@ -11,17 +11,27 @@ async function loadDashboardSeries() {
     "../lib/coursemap/dashboard-series.ts",
     import.meta.url,
   );
-  const source = await readFile(sourcePath, "utf8");
+  const plannerPath = new URL("../lib/planner.ts", import.meta.url);
+  const source = (await readFile(sourcePath, "utf8")).replaceAll(
+    "@/lib/planner",
+    "./planner.js",
+  );
+  const compilerOptions = {
+    module: ts.ModuleKind.ES2022,
+    target: ts.ScriptTarget.ES2022,
+  };
   const compiled = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ES2022,
-      target: ts.ScriptTarget.ES2022,
-    },
+    compilerOptions,
   }).outputText;
+  const compiledPlanner = ts.transpileModule(
+    await readFile(plannerPath, "utf8"),
+    { compilerOptions },
+  ).outputText;
   const directory = await mkdtemp(
     join(tmpdir(), "coursemap-dashboard-series-"),
   );
   const target = join(directory, "dashboard-series.js");
+  await writeFile(join(directory, "planner.js"), compiledPlanner);
   await writeFile(target, compiled);
   return import(pathToFileURL(target).href);
 }
@@ -62,8 +72,8 @@ const terms = [
 ];
 
 const courses = [
-  { code: "COMP1100", units: 6, accent: "violet" },
-  { code: "MATH1005", units: 6, accent: "blue" },
+  { code: "COMP1100", year: 2026, units: 6, accent: "violet" },
+  { code: "MATH1005", year: 2026, units: 6, accent: "blue" },
 ];
 
 test("dashboard charts use the saved active plan, not duplicate planned records", () => {
@@ -135,4 +145,41 @@ test("dashboard calendar events retain imported study-period dates", () => {
     currentDashboardTermId(terms, new Date("2026-08-17T12:00:00")),
     "2026-s2",
   );
+});
+
+test("dashboard summaries use the attempt snapshot and its recorded units", () => {
+  const published = {
+    code: "COMP1100",
+    year: 2026,
+    snapshotId: 303,
+    units: 12,
+    accent: "violet",
+  };
+  const historical = {
+    ...published,
+    snapshotId: 101,
+    units: 6,
+    accent: "rose",
+  };
+  const attempts = [
+    {
+      id: "historical-comp",
+      academicYear: 2026,
+      courseCode: "COMP1100",
+      snapshotId: 101,
+      termId: "2026-s1",
+      status: "completed",
+      unitsAttempted: 3,
+      unitsEarned: 3,
+    },
+  ];
+  const catalogue = {
+    attempts,
+    courses: [published],
+    snapshotCourses: [historical],
+    terms,
+  };
+
+  assert.equal(dashboardTermLoads(catalogue)[0].completed, 3);
+  assert.equal(dashboardCalendarEvents(catalogue)[0].accent, "rose");
 });

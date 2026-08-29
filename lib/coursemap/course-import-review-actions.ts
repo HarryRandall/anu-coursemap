@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canManageCatalogueImports } from "@/lib/auth/viewer";
+import { canManageCourseImports } from "@/lib/auth/viewer";
 import type { CoursemapActionResult } from "@/lib/coursemap/actions";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -45,7 +45,7 @@ async function decide(
   decision: "accept" | "reject",
   input: ReviewDecisionInput,
 ): Promise<CoursemapActionResult> {
-  if (!(await canManageCatalogueImports())) {
+  if (!(await canManageCourseImports())) {
     return { ok: false, message: "Course import permission is required." };
   }
 
@@ -96,7 +96,7 @@ export async function rejectCourseImportTarget(input: ReviewDecisionInput) {
 export async function recoverStalledCourseImportRun(
   runId: string,
 ): Promise<CoursemapActionResult> {
-  if (!(await canManageCatalogueImports())) {
+  if (!(await canManageCourseImports())) {
     return { ok: false, message: "Course import permission is required." };
   }
   if (!UUID_PATTERN.test(runId)) {

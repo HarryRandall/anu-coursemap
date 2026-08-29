@@ -51,8 +51,7 @@ export async function getAuthViewer(): Promise<AuthViewer | null> {
   return (await getAuthContext()).viewer;
 }
 
-/** Check the narrower permission required to execute catalogue writes. */
-export async function canManageCatalogueImports() {
+async function currentUserHasPermission(requiredPermission: string) {
   if (isDemoMode()) return true;
   if (!getSupabaseConfig()) return false;
 
@@ -63,12 +62,27 @@ export async function canManageCatalogueImports() {
 
     const { data: allowed, error: permissionError } = await supabase.rpc(
       "current_user_has_permission",
-      { required_permission: "imports.manage" },
+      { required_permission: requiredPermission },
     );
     return !permissionError && allowed === true;
   } catch {
     return false;
   }
+}
+
+/** Check the permission required to run programme and calendar imports. */
+export async function canManageCatalogueImports() {
+  return currentUserHasPermission("imports.manage");
+}
+
+/** Course-only name for the shared import-worker permission. */
+export async function canManageCourseImports() {
+  return currentUserHasPermission("imports.manage");
+}
+
+/** Check the permission required to edit, publish and archive courses. */
+export async function canWriteCourses() {
+  return currentUserHasPermission("courses.write");
 }
 
 /** Check the narrower permission required to manage Room Finder data. */

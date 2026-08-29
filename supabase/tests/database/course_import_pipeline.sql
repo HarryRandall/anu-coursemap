@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(91);
+select extensions.plan(83);
 
 select extensions.is(
   (
@@ -120,16 +120,17 @@ select extensions.ok(
 select extensions.ok(
   not exists (
     select 1
-    from public.course_offerings
-    where course_version_id is not null
-      and (
-        catalogue_year_id is null
-        or source_document_id is null
-        or academic_year_id is not null
-        or course_source_document_id is not null
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'course_offerings'
+      and column_name in (
+        'course_version_id',
+        'catalogue_year_id',
+        'source_document_id',
+        'status'
       )
   ),
-  'existing offerings retain a complete legacy lineage after the bridge'
+  'course offerings expose only snapshot-native lineage'
 );
 
 insert into auth.users (
@@ -187,10 +188,10 @@ values (
   'https://pipeline.example.test'
 );
 
-insert into public.course_source_documents (
+insert into public.course_source_pages (
   source_id,
   academic_year_id,
-  document_kind,
+  page_kind,
   external_key,
   canonical_url,
   media_type,
@@ -228,6 +229,7 @@ insert into public.course_snapshots (
   academic_year_id,
   snapshot_number,
   origin,
+  source_page_id,
   projection_sha256,
   validation_status,
   overall_confidence,
@@ -242,6 +244,7 @@ select
   course_years.academic_year_id,
   1,
   'manual_edit',
+  documents.id,
   case courses.code
     when 'PIPE1000' then repeat('b', 64)
     else repeat('c', 64)
@@ -257,6 +260,9 @@ from public.course_years
 join public.courses on courses.id = course_years.course_id
 join public.academic_years as years
   on years.id = course_years.academic_year_id
+join public.course_source_pages as documents
+  on documents.academic_year_id = years.id
+ and documents.page_kind = 'course_directory'
 where courses.code in ('PIPE1000', 'PIPE1001')
   and years.year = 2030;
 
@@ -282,7 +288,7 @@ insert into public.course_directory_entries (
   code,
   title,
   units,
-  source_document_id
+  source_page_id
 )
 select
   years.id,
@@ -293,9 +299,9 @@ select
   documents.id
 from public.courses
 cross join public.academic_years as years
-join public.course_source_documents as documents
+join public.course_source_pages as documents
   on documents.academic_year_id = years.id
- and documents.document_kind = 'course_directory'
+ and documents.page_kind = 'course_directory'
 where courses.code in ('PIPE1000', 'PIPE1001')
   and years.year = 2030;
 
@@ -1403,10 +1409,10 @@ begin
 end;
 $complete_stages$;
 
-insert into public.course_source_documents (
+insert into public.course_source_pages (
   source_id,
   academic_year_id,
-  document_kind,
+  page_kind,
   external_key,
   canonical_url,
   media_type,
@@ -1437,7 +1443,7 @@ insert into public.course_snapshots (
   snapshot_number,
   origin,
   based_on_snapshot_id,
-  source_document_id,
+  source_page_id,
   projection_sha256,
   validation_status,
   overall_confidence,
@@ -1469,14 +1475,14 @@ select
   'PIPE',
   'offered'
 from public.course_import_targets as targets
-join public.course_source_documents as documents
+join public.course_source_pages as documents
   on documents.academic_year_id = targets.academic_year_id
  and documents.external_key = targets.course_code
- and documents.document_kind = 'course_page'
+ and documents.page_kind = 'course_page'
 where targets.course_code = 'PIPE1000';
 
 create temporary table pipeline_test_candidate on commit drop as
-select snapshots.id, snapshots.course_year_id, snapshots.source_document_id
+select snapshots.id, snapshots.course_year_id, snapshots.source_page_id
 from public.course_snapshots as snapshots
 join public.course_years as course_years
   on course_years.id = snapshots.course_year_id
@@ -1510,7 +1516,7 @@ select extensions.throws_ok(
     (select lock_version from public.course_import_targets where course_code = 'PIPE1000'),
     (select course_id from pipeline_test_targets where course_code = 'PIPE1000'),
     (select course_year_id from pipeline_test_targets where course_code = 'PIPE1000'),
-    (select source_document_id from pipeline_test_candidate),
+    (select source_page_id from pipeline_test_candidate),
     (select id from pipeline_test_candidate)
   ),
   '55000',
@@ -1641,18 +1647,16 @@ select extensions.ok(
 insert into public.course_offerings (
   course_snapshot_id,
   academic_year_id,
-  course_source_document_id,
+  course_source_page_id,
   delivery_mode,
-  location,
-  status
+  location
 )
 select
   candidates.id,
   targets.academic_year_id,
-  candidates.source_document_id,
+  candidates.source_page_id,
   'In person',
-  'Acton',
-  'draft'
+  'Acton'
 from pipeline_test_candidate as candidates
 join public.course_import_targets as targets
   on targets.course_year_id = candidates.course_year_id;
@@ -1662,7 +1666,7 @@ insert into public.offering_sessions (
   academic_period_id,
   course_snapshot_id,
   academic_year_id,
-  course_source_document_id,
+  course_source_page_id,
   position,
   source_text,
   academic_period_code,
@@ -1676,7 +1680,7 @@ select
   periods.id,
   offerings.course_snapshot_id,
   offerings.academic_year_id,
-  offerings.course_source_document_id,
+  offerings.course_source_page_id,
   1,
   'Semester 1, class 1234, Acton',
   periods.code,
@@ -1695,7 +1699,7 @@ insert into public.offering_sessions (
   academic_period_id,
   course_snapshot_id,
   academic_year_id,
-  course_source_document_id,
+  course_source_page_id,
   position,
   source_text,
   academic_period_code,
@@ -1709,7 +1713,7 @@ select
   null,
   offerings.course_snapshot_id,
   offerings.academic_year_id,
-  offerings.course_source_document_id,
+  offerings.course_source_page_id,
   2,
   'Teaching period 2, dates not published',
   'PIPE-T2',
@@ -1800,7 +1804,7 @@ select extensions.ok(
 insert into public.course_rules (
   course_snapshot_id,
   academic_year_id,
-  course_source_document_id,
+  course_source_page_id,
   rule_kind,
   hardness,
   source_text,
@@ -1810,7 +1814,7 @@ insert into public.course_rules (
 select
   candidates.id,
   targets.academic_year_id,
-  candidates.source_document_id,
+  candidates.source_page_id,
   'prerequisite',
   'hard',
   'Prerequisite rule source',
@@ -1823,17 +1827,19 @@ join public.course_import_targets as targets
 insert into public.course_rule_groups (
   course_rule_id,
   course_snapshot_id,
+  projection_key,
   parent_group_id,
   operator,
   position
 )
-select id, course_snapshot_id, null, 'all_of', 0
+select id, course_snapshot_id, 'prerequisite:group:root', null, 'all_of', 0
 from public.course_rules
 where course_snapshot_id = (select id from pipeline_test_candidate);
 
 insert into public.course_rule_conditions (
   course_rule_id,
   course_snapshot_id,
+  projection_key,
   group_id,
   condition_kind,
   required_course_id,
@@ -1848,6 +1854,7 @@ insert into public.course_rule_conditions (
 select
   rules.id,
   rules.course_snapshot_id,
+  'prerequisite:condition:course',
   groups.id,
   'course',
   courses.id,
@@ -1866,6 +1873,7 @@ where rules.course_snapshot_id = (select id from pipeline_test_candidate);
 insert into public.course_rule_conditions (
   course_rule_id,
   course_snapshot_id,
+  projection_key,
   group_id,
   condition_kind,
   minimum_units,
@@ -1878,6 +1886,7 @@ insert into public.course_rule_conditions (
 select
   rules.id,
   rules.course_snapshot_id,
+  'prerequisite:condition:set',
   groups.id,
   'course_set_units',
   6,
@@ -1893,6 +1902,7 @@ where rules.course_snapshot_id = (select id from pipeline_test_candidate);
 insert into public.course_rule_conditions (
   course_rule_id,
   course_snapshot_id,
+  projection_key,
   group_id,
   condition_kind,
   minimum_year,
@@ -1905,6 +1915,7 @@ insert into public.course_rule_conditions (
 select
   rules.id,
   rules.course_snapshot_id,
+  'prerequisite:condition:year',
   groups.id,
   'year_standing',
   2,
@@ -1920,6 +1931,7 @@ where rules.course_snapshot_id = (select id from pipeline_test_candidate);
 insert into public.course_rule_conditions (
   course_rule_id,
   course_snapshot_id,
+  projection_key,
   group_id,
   condition_kind,
   minimum_wam,
@@ -1932,6 +1944,7 @@ insert into public.course_rule_conditions (
 select
   rules.id,
   rules.course_snapshot_id,
+  'prerequisite:condition:wam',
   groups.id,
   'wam',
   65,
@@ -2050,7 +2063,7 @@ select extensions.lives_ok(
     (select lock_version from public.course_import_targets where course_code = 'PIPE1000'),
     (select course_id from pipeline_test_targets where course_code = 'PIPE1000'),
     (select course_year_id from pipeline_test_targets where course_code = 'PIPE1000'),
-    (select source_document_id from pipeline_test_candidate),
+    (select source_page_id from pipeline_test_candidate),
     (select id from pipeline_test_candidate)
   ),
   'a complete changed target finishes as a sealed review candidate'
@@ -2068,98 +2081,6 @@ select extensions.ok(
       and snapshots.sealed_at is not null
   ),
   'finished candidates are permanently sealed and pending review'
-);
-
-reset role;
-set local role service_role;
-
-create temporary table pipeline_legacy_snapshot_guard on commit drop as
-select
-  versions.id as course_version_id,
-  snapshots.id as course_snapshot_id
-from public.course_versions as versions
-join public.catalogue_years as catalogue_years
-  on catalogue_years.id = versions.catalogue_year_id
-join public.academic_years as academic_years
-  on academic_years.year = catalogue_years.year
-join public.course_years as course_years
-  on course_years.course_id = versions.course_id
- and course_years.academic_year_id = academic_years.id
-join public.course_snapshots as snapshots
-  on snapshots.course_year_id = course_years.id
- and snapshots.origin = 'legacy_backfill'
- and snapshots.sealed_at is not null
-order by versions.id
-limit 1;
-
-insert into public.course_learning_outcomes (
-  course_version_id,
-  course_snapshot_id,
-  position,
-  body
-)
-select
-  course_version_id,
-  null,
-  999999,
-  'Legacy linkage guard fixture'
-from pipeline_legacy_snapshot_guard;
-
-select extensions.lives_ok(
-  $$
-    update public.course_learning_outcomes as outcomes
-    set course_snapshot_id = fixtures.course_snapshot_id
-    from pipeline_legacy_snapshot_guard as fixtures
-    where outcomes.course_version_id = fixtures.course_version_id
-      and outcomes.position = 999999
-      and outcomes.course_snapshot_id is null
-  $$,
-  'the controlled one-time legacy NULL-to-snapshot linkage remains available'
-);
-
-select extensions.throws_ok(
-  $$
-    insert into public.course_learning_outcomes (
-      course_version_id,
-      course_snapshot_id,
-      position,
-      body
-    )
-    select
-      course_version_id,
-      course_snapshot_id,
-      1000000,
-      'Late sealed legacy insert'
-    from pipeline_legacy_snapshot_guard
-  $$,
-  '55000',
-  null,
-  'sealed legacy-backfill children reject inserts'
-);
-
-select extensions.throws_ok(
-  $$
-    update public.course_learning_outcomes as outcomes
-    set body = 'Changed after legacy snapshot seal'
-    from pipeline_legacy_snapshot_guard as fixtures
-    where outcomes.course_version_id = fixtures.course_version_id
-      and outcomes.position = 999999
-  $$,
-  '55000',
-  null,
-  'sealed legacy-backfill children reject updates'
-);
-
-select extensions.throws_ok(
-  $$
-    delete from public.course_learning_outcomes as outcomes
-    using pipeline_legacy_snapshot_guard as fixtures
-    where outcomes.course_version_id = fixtures.course_version_id
-      and outcomes.position = 999999
-  $$,
-  '55000',
-  null,
-  'sealed legacy-backfill children reject deletes'
 );
 
 reset role;
@@ -2186,7 +2107,7 @@ select extensions.ok(
   and (select count(*) from public.course_rule_groups) > 0
   and (select count(*) from public.course_rule_conditions) > 0
   and (select count(*) from public.course_rule_course_references) > 0,
-  'an import administrator can inspect every legacy-shaped rich child of a sealed candidate'
+  'an import administrator can inspect every snapshot-native rich child of a sealed candidate'
 );
 
 reset role;
@@ -2215,39 +2136,6 @@ select extensions.throws_ok(
   '55000',
   null,
   'nested snapshot-owned rows cannot mutate after the permanent seal'
-);
-
-select extensions.throws_ok(
-  $$
-    update public.course_learning_outcomes
-    set
-      course_version_id = (select min(id) from public.course_versions),
-      body = 'changed through a legacy lineage'
-    where course_snapshot_id = (select id from pipeline_test_candidate)
-  $$,
-  '55000',
-  'course learning outcome lineage is immutable',
-  'a sealed snapshot child cannot switch to legacy lineage to bypass its seal'
-);
-
-select extensions.throws_ok(
-  $$
-    insert into public.course_learning_outcomes (
-      course_version_id,
-      course_snapshot_id,
-      position,
-      body
-    )
-    select
-      (select min(id) from public.course_versions),
-      candidates.id,
-      99,
-      'mixed legacy and import lineage'
-    from pipeline_test_candidate as candidates
-  $$,
-  '23503',
-  'legacy lineage does not match its backfilled snapshot',
-  'an arbitrary legacy version cannot exempt an imported snapshot child from sealing'
 );
 
 select extensions.throws_ok(
@@ -2311,74 +2199,6 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
-set local role authenticated;
-
-reset role;
-set local role service_role;
-
-update public.course_years as course_years
-set lifecycle_status = 'archived'
-from pipeline_test_targets as targets
-where targets.course_code = 'PIPE1000'
-  and course_years.id = targets.course_year_id;
-
-reset role;
-set local role authenticated;
-
-select extensions.throws_ok(
-  format(
-    $sql$
-      select public.accept_course_import_target(
-        %L::uuid,
-        %s,
-        %s,
-        null
-      )
-    $sql$,
-    (select id from pipeline_test_targets where course_code = 'PIPE1000'),
-    (select baseline_draft_snapshot_id from pipeline_test_targets where course_code = 'PIPE1000'),
-    (select baseline_draft_snapshot_id from pipeline_test_targets where course_code = 'PIPE1000')
-  ),
-  '55000',
-  'Imported candidates can only be accepted into active course years.',
-  'acceptance rejects a candidate for an archived course year'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from public.course_import_targets as targets
-    join public.course_years as course_years
-      on course_years.id = targets.course_year_id
-    where targets.course_code = 'PIPE1000'
-      and course_years.lifecycle_status = 'archived'
-      and course_years.draft_snapshot_id
-        is not distinct from targets.baseline_draft_snapshot_id
-      and course_years.published_snapshot_id
-        is not distinct from targets.baseline_published_snapshot_id
-      and targets.review_status = 'pending'
-      and targets.reviewed_by is null
-      and targets.reviewed_at is null
-      and exists (
-        select 1
-        from public.course_review_items as reviews
-        where reviews.target_id = targets.id
-          and reviews.status = 'open'
-      )
-  ),
-  'archived rejection leaves course-year pointers and review state unchanged atomically'
-);
-
-reset role;
-set local role service_role;
-
-update public.course_years as course_years
-set lifecycle_status = 'active'
-from pipeline_test_targets as targets
-where targets.course_code = 'PIPE1000'
-  and course_years.id = targets.course_year_id;
-
-reset role;
 set local role authenticated;
 
 select extensions.throws_ok(
@@ -2452,10 +2272,10 @@ select extensions.ok(
 reset role;
 set local role service_role;
 
-insert into public.course_source_documents (
+insert into public.course_source_pages (
   source_id,
   academic_year_id,
-  document_kind,
+  page_kind,
   external_key,
   canonical_url,
   media_type,
@@ -2614,9 +2434,9 @@ select extensions.lives_ok(
     (select course_year_id from pipeline_test_targets where course_code = 'PIPE1001'),
     (
       select id
-      from public.course_source_documents
+      from public.course_source_pages
       where external_key = 'PIPE1001'
-        and document_kind = 'course_page'
+        and page_kind = 'course_page'
     )
   ),
   'an unchanged target finishes without creating or reviewing a snapshot'
@@ -2787,7 +2607,7 @@ insert into public.course_snapshots (
   snapshot_number,
   origin,
   based_on_snapshot_id,
-  source_document_id,
+  source_page_id,
   projection_sha256,
   validation_status,
   overall_confidence,
@@ -2816,14 +2636,14 @@ select
   runs.initiated_by
 from public.course_import_targets as targets
 join public.course_import_runs as runs on runs.id = targets.run_id
-join public.course_source_documents as documents
+join public.course_source_pages as documents
   on documents.academic_year_id = targets.academic_year_id
  and documents.external_key = targets.course_code
- and documents.document_kind = 'course_page'
+ and documents.page_kind = 'course_page'
 where targets.id = (select id from pipeline_reject_target);
 
 create temporary table pipeline_reject_candidate on commit drop as
-select snapshots.id, snapshots.source_document_id
+select snapshots.id, snapshots.source_page_id
 from public.course_snapshots as snapshots
 where snapshots.course_year_id = (
   select course_year_id from pipeline_reject_target
@@ -2870,7 +2690,7 @@ begin
     'changed',
     (select course_id from pipeline_reject_target),
     (select course_year_id from pipeline_reject_target),
-    (select source_document_id from pipeline_reject_candidate),
+    (select source_page_id from pipeline_reject_candidate),
     (select id from pipeline_reject_candidate),
     null,
     null
@@ -2884,6 +2704,7 @@ insert into public.course_snapshots (
   snapshot_number,
   origin,
   based_on_snapshot_id,
+  source_page_id,
   projection_sha256,
   validation_status,
   title,
@@ -2899,6 +2720,7 @@ select
   3,
   'manual_edit',
   snapshots.id,
+  snapshots.source_page_id,
   repeat('e', 64),
   'valid',
   'Concurrent manual PIPE1001 draft',
@@ -2984,7 +2806,7 @@ insert into public.course_directory_entries (
   code,
   title,
   units,
-  source_document_id
+  source_page_id
 )
 select
   years.id,
@@ -2993,9 +2815,9 @@ select
   6,
   documents.id
 from public.academic_years as years
-join public.course_source_documents as documents
+join public.course_source_pages as documents
   on documents.academic_year_id = years.id
- and documents.document_kind = 'course_directory'
+ and documents.page_kind = 'course_directory'
 where years.year = 2030
   and documents.source_id = (
     select id
@@ -3142,7 +2964,7 @@ select extensions.lives_ok(
       code,
       title,
       units,
-      source_document_id
+      source_page_id
     )
     select
       years.id,
@@ -3153,9 +2975,9 @@ select extensions.lives_ok(
       documents.id
     from inserted_course as courses
     cross join public.academic_years as years
-    join public.course_source_documents as documents
+    join public.course_source_pages as documents
       on documents.academic_year_id = years.id
-     and documents.document_kind = 'course_directory'
+     and documents.page_kind = 'course_directory'
     where years.year = 2030
       and documents.source_id = (
         select id

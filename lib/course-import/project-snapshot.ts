@@ -5,7 +5,12 @@ import {
 } from "./contract.ts";
 import { stableFingerprint } from "./canonical.ts";
 
-type RuleKind = "prerequisite" | "corequisite" | "incompatibility";
+type RuleKind =
+  | "prerequisite"
+  | "corequisite"
+  | "incompatibility"
+  | "permission"
+  | "assumed_knowledge";
 type RuleHardness = "hard" | "advisory";
 type GroupOperator = "all_of" | "any_of" | "at_least";
 type CourseRequirementMode = "completed" | "completed_or_concurrent";
@@ -71,6 +76,7 @@ export type ProjectedCourseRuleConditionRow = {
   position: number;
   conditionKind: ConditionKind;
   requiredCourseCode: string | null;
+  requiredStructureCode: string | null;
   minimumUnits: number | null;
   minimumMark: number | null;
   subjectCode: string | null;
@@ -121,7 +127,10 @@ export type CourseSnapshotProjectionData = {
     sourceCourseTitle: string | null;
     sourceText: string;
   }>;
-  courseOffering: { deliveryMode: null; location: null } | null;
+  courseOffering: {
+    deliveryMode: string | null;
+    location: string | null;
+  } | null;
   offeringSessions: Array<{
     position: number;
     calendarYear: number;
@@ -276,6 +285,7 @@ function emptyCondition({
     position,
     conditionKind,
     requiredCourseCode: null,
+    requiredStructureCode: null,
     minimumUnits: null,
     minimumMark: null,
     subjectCode: null,

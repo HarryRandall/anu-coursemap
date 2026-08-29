@@ -1,7 +1,4 @@
-/**
- * Shared SSE reader for the course and programme import endpoints. Both
- * streams use the same `data: {...}\n\n` frame shape.
- */
+/** Reads the `data: {...}\n\n` frames emitted by course import endpoints. */
 export async function readImportStream(
   response: Response,
   onEvent: (event: Record<string, unknown>) => void,

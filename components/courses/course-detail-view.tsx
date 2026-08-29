@@ -3,13 +3,17 @@
 import Link from "next/link";
 import {
   BookOpen,
+  Banknote,
   CalendarClock,
   CheckCircle2,
   Circle,
   CircleHelp,
   ClipboardCheck,
   GitBranch,
+  GraduationCap,
+  Library,
   LockKeyhole,
+  MapPin,
   MessageSquareText,
   Plus,
 } from "lucide-react";
@@ -30,7 +34,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
+import type { CourseDetails } from "@/lib/coursemap/course-types";
 import {
   evaluateRequisiteExpression,
   type CompletedRequisiteCourse,
@@ -86,10 +90,57 @@ function formatUpdatedAt(value: string | null) {
   }).format(new Date(value));
 }
 
+function formatDate(value: string | null) {
+  if (!value) return null;
+  return new Intl.DateTimeFormat("en-AU", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+function unitValueLabel(course: CourseDetails) {
+  if (course.unitValue.kind === "fixed") {
+    return `${course.unitValue.units} units`;
+  }
+  if (course.unitValue.kind === "range") {
+    return `${course.unitValue.minimumUnits}-${course.unitValue.maximumUnits} units`;
+  }
+  if (course.unitValue.kind === "variable") {
+    return course.unitValue.options.length
+      ? `${course.unitValue.options.map((option) => option.units).join(" or ")} units`
+      : "Variable units";
+  }
+  return "Units not listed";
+}
+
+function feeValue(fee: CourseDetails["fees"][number]) {
+  if (fee.amount !== null) {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: fee.currency ?? "AUD",
+      maximumFractionDigits: fee.amount % 1 === 0 ? 0 : 2,
+    }).format(fee.amount);
+  }
+  if (fee.studentContributionBand !== null) {
+    return `Student contribution band ${fee.studentContributionBand}`;
+  }
+  return fee.sourceText ?? "See the ANU source";
+}
+
+function humanise(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .replace(/^./u, (letter) => letter.toUpperCase());
+}
+
 function CourseReferenceText({
+  academicYear,
   text,
   availableCourseCodes,
 }: {
+  academicYear: number;
   text: string;
   availableCourseCodes: ReadonlySet<string>;
 }) {
@@ -101,7 +152,7 @@ function CourseReferenceText({
       return (
         <Link
           key={index}
-          href={`/courses/${part}`}
+          href={`/courses/${part}?year=${academicYear}`}
           prefetch={false}
           className="rounded font-mono font-semibold text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-900"
         >
@@ -124,10 +175,12 @@ function CourseReferenceText({
 }
 
 function CourseReferenceChips({
+  academicYear,
   course,
   availableCourseCodes,
 }: {
-  course: CatalogueCourse;
+  academicYear: number;
+  course: CourseDetails;
   availableCourseCodes: ReadonlySet<string>;
 }) {
   if (course.prerequisiteCodes.length === 0) return null;
@@ -141,7 +194,7 @@ function CourseReferenceChips({
           availableCourseCodes.has(reference) ? (
             <Link
               key={reference}
-              href={`/courses/${reference}`}
+              href={`/courses/${reference}?year=${academicYear}`}
               prefetch={false}
               className="rounded-md bg-brand-50 px-2 py-1 font-mono text-xs font-semibold text-brand-700 ring-1 ring-brand-100 hover:bg-brand-100"
             >
@@ -165,9 +218,11 @@ function CourseReferenceChips({
 }
 
 function RequisiteConditionText({
+  academicYear,
   condition,
   availableCourseCodes,
 }: {
+  academicYear: number;
   condition: RequisiteCondition;
   availableCourseCodes: ReadonlySet<string>;
 }) {
@@ -176,6 +231,7 @@ function RequisiteConditionText({
       <>
         Complete{" "}
         <CourseReferenceText
+          academicYear={academicYear}
           text={condition.code}
           availableCourseCodes={availableCourseCodes}
         />
@@ -210,15 +266,18 @@ function RequisiteConditionText({
 }
 
 function RequisiteExpressionSummary({
+  academicYear,
   expression,
   availableCourseCodes,
 }: {
+  academicYear: number;
   expression: RequisiteExpression;
   availableCourseCodes: ReadonlySet<string>;
 }) {
   if (expression.kind !== "group") {
     return (
       <RequisiteConditionText
+        academicYear={academicYear}
         condition={expression}
         availableCourseCodes={availableCourseCodes}
       />
@@ -236,6 +295,7 @@ function RequisiteExpressionSummary({
         {expression.conditions.map((condition, index) => (
           <li key={index}>
             <RequisiteExpressionSummary
+              academicYear={academicYear}
               expression={condition}
               availableCourseCodes={availableCourseCodes}
             />
@@ -247,9 +307,11 @@ function RequisiteExpressionSummary({
 }
 
 function RequisiteProgressSummary({
+  academicYear,
   progress,
   availableCourseCodes,
 }: {
+  academicYear: number;
   progress: RequisiteProgress;
   availableCourseCodes: ReadonlySet<string>;
 }) {
@@ -272,6 +334,7 @@ function RequisiteProgressSummary({
         <span>
           Complete{" "}
           <CourseReferenceText
+            academicYear={academicYear}
             text={progress.code}
             availableCourseCodes={availableCourseCodes}
           />
@@ -353,6 +416,7 @@ function RequisiteProgressSummary({
         {progress.conditions.map((condition, index) => (
           <li key={index}>
             <RequisiteProgressSummary
+              academicYear={academicYear}
               progress={condition}
               availableCourseCodes={availableCourseCodes}
             />
@@ -379,7 +443,7 @@ export function CourseDetailView({
   requisiteCompletion,
 }: {
   completedCodes?: ReadonlySet<string>;
-  course: CatalogueCourse;
+  course: CourseDetails;
   /** Fills the available width instead of centring, for embedded previews. */
   fullWidth?: boolean;
   onAddToPlan?: () => void;
@@ -430,7 +494,8 @@ export function CourseDetailView({
             {course.name}
           </h1>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <Badge tone="neutral">{course.units} units</Badge>
+            <Badge tone="neutral">{course.year}</Badge>
+            <Badge tone="neutral">{unitValueLabel(course)}</Badge>
             <Badge tone="neutral">
               {course.sessions.length
                 ? course.sessions.join(" · ")
@@ -457,8 +522,14 @@ export function CourseDetailView({
       <TabsContent value="overview" className="flex flex-col gap-4">
         <Card>
           <CardHeader title="About this course" />
-          <CardContent className="border-t border-zinc-100 pt-5">
-            <p className="max-w-4xl text-[13px] leading-relaxed text-zinc-600">
+          <CardContent className="space-y-4 border-t border-zinc-100 pt-5">
+            {course.introduction &&
+            course.introduction !== course.description ? (
+              <p className="max-w-4xl text-sm leading-relaxed font-medium text-zinc-800">
+                {course.introduction}
+              </p>
+            ) : null}
+            <p className="max-w-4xl text-[13px] leading-relaxed whitespace-pre-line text-zinc-600">
               {course.description}
             </p>
           </CardContent>
@@ -468,10 +539,16 @@ export function CourseDetailView({
           <CardContent className="border-t border-zinc-100 pt-5">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
               {[
+                ["Academic year", String(course.year)],
                 ["Course subject", course.subject],
+                ["Subject name", course.subjectName ?? "Not listed"],
+                ["Academic career", course.academicCareer ?? "Not listed"],
                 ["School", course.school],
+                ["College", course.college ?? "Not listed"],
                 ["Convener", course.convener],
                 ["Delivery", course.delivery],
+                ["Unit value", unitValueLabel(course)],
+                ["EFTSL", course.eftsl?.toString() ?? "Not listed"],
                 ["Last source update", formatUpdatedAt(course.sourceUpdatedAt)],
               ].map(([label, value]) => (
                 <div key={label} className="min-w-0">
@@ -496,6 +573,214 @@ export function CourseDetailView({
             </a>
           </CardFooter>
         </Card>
+
+        {course.workloadText ||
+        course.inherentRequirements ||
+        course.prescribedTexts ? (
+          <Card>
+            <CardHeader title="Study expectations" />
+            <CardContent className="grid gap-5 border-t border-zinc-100 pt-5 md:grid-cols-3">
+              {course.workloadText ? (
+                <section>
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
+                    <GraduationCap size={15} aria-hidden="true" /> Workload
+                  </h3>
+                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-zinc-600">
+                    {course.workloadText}
+                    {course.workloadHours !== null
+                      ? ` (${course.workloadHours} hours)`
+                      : ""}
+                  </p>
+                </section>
+              ) : null}
+              {course.inherentRequirements ? (
+                <section>
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
+                    <ClipboardCheck size={15} aria-hidden="true" /> Inherent
+                    requirements
+                  </h3>
+                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-zinc-600">
+                    {course.inherentRequirements}
+                  </p>
+                </section>
+              ) : null}
+              {course.prescribedTexts ? (
+                <section>
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
+                    <Library size={15} aria-hidden="true" /> Prescribed texts
+                  </h3>
+                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-zinc-600">
+                    {course.prescribedTexts}
+                  </p>
+                </section>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {course.areasOfInterest.length || course.attributes.length ? (
+          <Card>
+            <CardHeader title="Areas and attributes" />
+            <CardContent className="space-y-4 border-t border-zinc-100 pt-5">
+              {course.areasOfInterest.length ? (
+                <div>
+                  <h3 className="text-xs font-semibold text-zinc-900">
+                    Areas of interest
+                  </h3>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {course.areasOfInterest.map((area) => (
+                      <Badge key={area} tone="neutral">
+                        {area}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {course.attributes.length ? (
+                <div>
+                  <h3 className="text-xs font-semibold text-zinc-900">
+                    Course attributes
+                  </h3>
+                  <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {course.attributes.map((attribute, index) => (
+                      <div
+                        key={`${attribute.kind}:${attribute.value}:${index}`}
+                        className="rounded-lg border border-zinc-200 p-3"
+                      >
+                        <dt className="text-[10px] font-semibold tracking-wide text-zinc-400 uppercase">
+                          {humanise(attribute.kind)}
+                        </dt>
+                        <dd className="mt-1 text-xs text-zinc-700">
+                          {attribute.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {course.learningOutcomes.length ? (
+          <Card>
+            <CardHeader title="Learning outcomes" />
+            <CardContent className="border-t border-zinc-100 pt-5">
+              <ol className="space-y-3">
+                {course.learningOutcomes.map((outcome) => (
+                  <li
+                    key={outcome.position}
+                    className="flex gap-3 text-[13px] leading-relaxed text-zinc-700"
+                  >
+                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-zinc-100 text-[11px] font-semibold text-zinc-600">
+                      {outcome.position}
+                    </span>
+                    <span>{outcome.body}</span>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {course.assessments.length ? (
+          <Card>
+            <CardHeader title="Assessment" />
+            <CardContent className="border-t border-zinc-100 p-0">
+              <div className="divide-y divide-zinc-100">
+                {course.assessments.map((assessment) => (
+                  <div
+                    key={assessment.position}
+                    className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
+                  >
+                    <div>
+                      <p className="text-[13px] font-semibold text-zinc-900">
+                        {assessment.title}
+                      </p>
+                      {assessment.dueText ? (
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {assessment.dueText}
+                        </p>
+                      ) : null}
+                      {assessment.learningOutcomePositions.length ? (
+                        <p className="mt-1 text-[11px] text-zinc-400">
+                          Learning outcomes{" "}
+                          {assessment.learningOutcomePositions.join(", ")}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-start gap-2">
+                      {assessment.weight !== null ? (
+                        <Badge tone="neutral">{assessment.weight}%</Badge>
+                      ) : null}
+                      {assessment.hurdle ? (
+                        <Badge tone="warning">Hurdle</Badge>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {course.fees.length ? (
+          <Card>
+            <CardHeader title="Fees" />
+            <CardContent className="border-t border-zinc-100 p-0">
+              <dl className="divide-y divide-zinc-100">
+                {course.fees.map((fee, index) => (
+                  <div
+                    key={`${fee.audience}:${fee.feeType}:${index}`}
+                    className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
+                  >
+                    <div>
+                      <dt className="flex items-center gap-2 text-[13px] font-semibold text-zinc-900">
+                        <Banknote size={15} aria-hidden="true" />
+                        {fee.sourceLabel ?? humanise(fee.feeType)}
+                      </dt>
+                      <dd className="mt-1 text-xs text-zinc-500">
+                        {humanise(fee.audience)}
+                        {fee.feeYear ? ` · ${fee.feeYear}` : ""}
+                        {fee.basis !== "unknown"
+                          ? ` · ${humanise(fee.basis)} basis`
+                          : ""}
+                      </dd>
+                    </div>
+                    <dd className="text-[13px] font-semibold text-zinc-800">
+                      {feeValue(fee)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {course.relatedCourses.length ? (
+          <Card>
+            <CardHeader title="Related courses" />
+            <CardContent className="grid gap-3 border-t border-zinc-100 pt-5 sm:grid-cols-2">
+              {course.relatedCourses.map((related) => (
+                <Link
+                  key={`${related.kind}:${related.code}`}
+                  href={`/courses/${related.code}?year=${course.year}`}
+                  className="rounded-lg border border-zinc-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/40"
+                >
+                  <p className="font-mono text-[11px] font-semibold text-brand-700">
+                    {related.code}
+                  </p>
+                  <p className="mt-1 text-[13px] font-medium text-zinc-900">
+                    {related.title ?? "Related ANU course"}
+                  </p>
+                  <p className="mt-1 text-[11px] text-zinc-500">
+                    {humanise(related.kind)}
+                  </p>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
       </TabsContent>
 
       <TabsContent value="requisites" className="flex flex-col gap-4">
@@ -506,6 +791,7 @@ export function CourseDetailView({
           />
           <CardContent className="border-t border-zinc-100 px-0 pt-5 pb-0">
             <PrereqGraph
+              academicYear={course.year}
               code={course.code}
               prerequisiteEdges={course.prerequisiteEdges}
               completedCodes={completedCodes}
@@ -560,6 +846,7 @@ export function CourseDetailView({
                 </h3>
                 <div className="mt-2">
                   <RequisiteProgressSummary
+                    academicYear={course.year}
                     progress={requisiteProgress}
                     availableCourseCodes={availableCourseCodes}
                   />
@@ -575,6 +862,7 @@ export function CourseDetailView({
                 </h3>
                 <div className="mt-2">
                   <RequisiteExpressionSummary
+                    academicYear={course.year}
                     expression={requisiteSummary}
                     availableCourseCodes={availableCourseCodes}
                   />
@@ -587,15 +875,51 @@ export function CourseDetailView({
               </h3>
               <p className="mt-2 whitespace-pre-line">
                 <CourseReferenceText
+                  academicYear={course.year}
                   text={course.prerequisiteText}
                   availableCourseCodes={availableCourseCodes}
                 />
               </p>
               <CourseReferenceChips
+                academicYear={course.year}
                 course={course}
                 availableCourseCodes={availableCourseCodes}
               />
             </div>
+            {course.corequisiteText ? (
+              <div className="border-t border-zinc-100 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                  Corequisites
+                </h3>
+                <p className="mt-2 whitespace-pre-line">
+                  <CourseReferenceText
+                    academicYear={course.year}
+                    text={course.corequisiteText}
+                    availableCourseCodes={availableCourseCodes}
+                  />
+                </p>
+              </div>
+            ) : null}
+            {course.assumedKnowledgeText ? (
+              <div className="border-t border-zinc-100 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                  Assumed knowledge
+                </h3>
+                <p className="mt-2 whitespace-pre-line">
+                  {course.assumedKnowledgeText}
+                </p>
+              </div>
+            ) : null}
+            {course.permissionText ? (
+              <div className="border-t border-zinc-100 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                  Permission
+                </h3>
+                <p className="mt-2 whitespace-pre-line">
+                  {course.permissionText}
+                </p>
+              </div>
+            ) : null}
             {course.incompatibilityText ? (
               <div className="border-t border-zinc-100 pt-5">
                 <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
@@ -603,6 +927,7 @@ export function CourseDetailView({
                 </h3>
                 <p className="mt-2 whitespace-pre-line">
                   <CourseReferenceText
+                    academicYear={course.year}
                     text={course.incompatibilityText}
                     availableCourseCodes={availableCourseCodes}
                   />
@@ -618,14 +943,96 @@ export function CourseDetailView({
           <CardHeader
             title="Available study periods"
             description="Imported from ANU class information. Confirm enrolment dates in the official source."
+            action={
+              <Badge
+                tone={
+                  course.offeringStatus === "offered" ? "success" : "neutral"
+                }
+              >
+                {course.offeringStatus === "offered"
+                  ? `Offered in ${course.year}`
+                  : course.offeringStatus === "not_offered"
+                    ? `Not offered in ${course.year}`
+                    : "Offering status unknown"}
+              </Badge>
+            }
           />
-          {course.sessions.length ? (
-            <CardContent className="flex flex-wrap gap-2 border-t border-zinc-100 pt-5">
-              {course.sessions.map((session) => (
-                <Badge key={session} tone="neutral">
-                  {session}
-                </Badge>
-              ))}
+          {course.offerings.length ? (
+            <CardContent className="border-t border-zinc-100 p-0">
+              <div className="divide-y divide-zinc-100">
+                {course.offerings.map((offering, index) => {
+                  const startsOn = formatDate(offering.startsOn);
+                  const endsOn = formatDate(offering.endsOn);
+                  const enrolClosesOn = formatDate(offering.enrolClosesOn);
+                  const censusOn = formatDate(offering.censusOn);
+                  return (
+                    <section
+                      key={`${offering.periodCode}:${offering.classNumber ?? index}`}
+                      className="grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1fr)_minmax(15rem,auto)]"
+                    >
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-[13px] font-semibold text-zinc-900">
+                            {offering.periodName}
+                          </h3>
+                          {offering.classNumber ? (
+                            <Badge tone="neutral">
+                              Class {offering.classNumber}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                          {offering.deliveryMode ? (
+                            <span>{offering.deliveryMode}</span>
+                          ) : null}
+                          {offering.location ? (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin size={12} aria-hidden="true" />
+                              {offering.location}
+                            </span>
+                          ) : null}
+                          {startsOn || endsOn ? (
+                            <span>
+                              {startsOn ?? "Start not listed"}
+                              {endsOn ? ` to ${endsOn}` : ""}
+                            </span>
+                          ) : null}
+                        </div>
+                        {offering.classSummaryUrl ? (
+                          <a
+                            href={offering.classSummaryUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex text-xs font-semibold text-brand-700 hover:text-brand-800"
+                          >
+                            Open ANU class summary
+                          </a>
+                        ) : null}
+                      </div>
+                      {enrolClosesOn || censusOn ? (
+                        <dl className="grid grid-cols-2 gap-3 text-xs">
+                          {enrolClosesOn ? (
+                            <div>
+                              <dt className="text-zinc-400">Last enrolment</dt>
+                              <dd className="mt-0.5 font-medium text-zinc-700">
+                                {enrolClosesOn}
+                              </dd>
+                            </div>
+                          ) : null}
+                          {censusOn ? (
+                            <div>
+                              <dt className="text-zinc-400">Census date</dt>
+                              <dd className="mt-0.5 font-medium text-zinc-700">
+                                {censusOn}
+                              </dd>
+                            </div>
+                          ) : null}
+                        </dl>
+                      ) : null}
+                    </section>
+                  );
+                })}
+              </div>
             </CardContent>
           ) : (
             <CardContent className="border-t border-zinc-100 p-0">

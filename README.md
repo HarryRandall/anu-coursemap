@@ -76,8 +76,6 @@ seed. Its Auth redirect configuration accepts the trusted local callback.
 | `npm run db:lint`          | Run strict local schema linting                |
 | `npm run db:types`         | Regenerate committed local database types      |
 | `npm run db:grant-preview` | Grant one local user draft catalogue access    |
-| `npm run catalogue:fetch`  | Fetch official ANU HTML into a local manifest  |
-| `npm run catalogue:import` | Import a manifest into local Supabase          |
 | `npm run calendar:fetch`   | Fetch the ANU university calendar for a year   |
 | `npm run calendar:import`  | Import a calendar manifest into local Supabase |
 | `npm run format:check`     | Check repository formatting                    |
@@ -88,46 +86,12 @@ seed. Its Auth redirect configuration accepts the trusted local callback.
 | `npm run verify`           | Run the complete local quality gate            |
 | `npm run build`            | Create the Vercel-compatible production build  |
 
-The catalogue fetcher can capture any catalogue year and any scope of courses.
-`--all-courses` discovers every published course for the selected year through
-the official course search endpoint before fetching each course page with
-per-request timeouts and retry backoff. Without `--course` or `--all-courses`
-it defaults to 44 pinned Coursemap courses, including every course referenced
-by the authoritative 2026 [Bachelor of Computing](https://programsandcourses.anu.edu.au/2026/program/BCOMP)
-and [Software Development major](https://programsandcourses.anu.edu.au/2026/major/SOFT-MAJ)
-structures. It never writes to the database. Give it a new path inside the
-ignored local cache, or use `--stdout` for a pipeline:
-
-```bash
-# Every course published for 2026 (about 2,800 pages)
-npm run catalogue:fetch -- --year 2026 --all-courses --output .catalogue-cache/anu-2026.json
-
-# A specific scope from an earlier catalogue year
-npm run catalogue:fetch -- --year 2024 --course COMP1100 --stdout
-
-# The pinned Coursemap seed scope
-npm run catalogue:fetch -- --output .catalogue-cache/anu-2026-seed.json
-```
-
-Each manifest retains its official canonical URL, retrieval time, content hash,
-raw requisite text and parser diagnostics. Existing manifest files are never
-overwritten, so prior source provenance remains reviewable.
-
-Import a captured manifest only after the local Supabase stack is running:
-
-```bash
-npm run catalogue:import -- .catalogue-cache/anu-2026.json
-```
-
-The importer discovers the local database port from `supabase/config.toml`, or
-accepts `COURSEMAP_DATABASE_URL` when it targets a literal loopback address or
-exact `localhost`. It refuses hosted and other non-loopback databases. Each
-manifest is validated before a connection transaction begins, then its source,
-year, run, documents, courses, versions, offerings and sessions are reconciled
-through natural keys in one transaction. Re-running the same manifest preserves
-domain rows and content-hash snapshots while recording a new import run.
-Ambiguous prerequisite text and conflicting source facts remain attached to
-open review items rather than being treated as verified catalogue rules.
+Course imports start from **Admin > Courses**. Refreshing a year stores the
+lightweight ANU code and title directory without creating detailed course
+records. An administrator can then select up to ten courses for a durable
+background run. Each target preserves its fetched source, transformations,
+model extraction, validation and relational snapshot for review. Publication
+is always a separate administrator action.
 
 ### University calendar key dates
 
@@ -135,7 +99,7 @@ The `/key-dates` page shows the official ANU university calendar for a year:
 teaching periods, examination windows, enrolment and fee deadlines, graduations
 and public holidays. Events are scraped from the
 [ANU university calendar](https://www.anu.edu.au/directories/university-calendar)
-with the same manifest-then-import pipeline as the course catalogue:
+with a reviewable manifest-then-import pipeline:
 
 ```bash
 npm run calendar:fetch -- --year 2026 --output .catalogue-cache/anu-calendar-2026.json
@@ -149,39 +113,27 @@ key (year, date, title), and archives previously published events that a clean
 manifest no longer contains. A manifest with error diagnostics records a failed
 run and leaves published events untouched.
 
-### Selected-course web sync
+The development cutover deliberately clears previous course identities,
+versions, plans, attempts and programme rows. The canonical course schema then
+starts empty: `courses` owns stable codes, `course_years` owns one academic
+year and `course_snapshots` owns each immutable imported or manually edited
+state. Rich fees, offerings, assessments, outcomes and requisite trees belong
+to an exact snapshot. `course_source_pages` and import artefacts retain the
+source and every transformation used to produce it.
 
-An administrator with `imports.manage` can run a selected set of up to 100
-course pages from **Admin > Imports > Course pages**. The runner fetches the
-official ANU pages, validates the manifest and uses the same idempotent
-transaction as the local CLI. The browser keeps four short, server-side import
-requests in flight so a selected batch does not rely on a long-running worker.
+Draft course snapshots remain hidden by RLS until an authorised reviewer has
+inspected the source, model output, relational projection and review items,
+then explicitly publishes the snapshot. Student plan and attempt RPCs accept
+only an explicit course year and preserve the exact published snapshot used at
+the time. Programme, major and specialisation imports will be rebuilt as a
+separate later phase.
 
-Local demo mode targets the local Supabase database. For a Vercel production
-deployment, set `COURSEMAP_IMPORT_DATABASE_URL` only in the Production
-environment to a hosted Supabase PostgreSQL connection URL. It is server-only
-and must never use an `NEXT_PUBLIC_` name. It is used only by the authenticated
-server-side import route and must never be exposed to the browser.
-
-The 2026 BCOMP and SOFT-MAJ structures are also stored as forward-migrated,
-normalised facts with official source hashes. Supported course, structure,
-subject, level and elective rules are typed. Maximum-unit caps, tag rules,
-COMP3500's 6+6 sequence and programme exclusions stay explicit in the review
-queue. Both structures remain `draft` and `review` until those exceptions and
-the six other major versions are resolved.
-
-Draft catalogue rows remain hidden by RLS until an authorised reviewer
-publishes them from the admin review workspace. Signed-in students can save
-their profile, primary programme and major, planned course periods and
-recorded results through owner-scoped database RPCs. Reloading the application
-hydrates that state from Supabase rather than browser storage.
-
-ANU Programs and Courses pages remain the authoritative source. Cached
-manifests are ignored local review artefacts; Coursemap stores normalised facts
-with their provenance, not a replacement catalogue. Imported rows remain
-`draft` or `review` until an authorised reviewer explicitly verifies and
-publishes them. Any public redistribution of captured ANU source content needs
-a separate rights decision before it is enabled.
+ANU Programs and Courses pages remain the authoritative source. Coursemap
+stores normalised facts with immutable provenance, not a replacement
+catalogue. Imported snapshots remain drafts until an authorised reviewer
+explicitly confirms uncertain fields and publishes them. Any public
+redistribution of captured ANU source content needs a separate rights decision
+before it is enabled.
 
 Shared academic periods are currently inferred from course class start and end
 dates, retained as draft provenance and flagged for review. They must be
@@ -204,6 +156,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURIT
 ## Status
 
 Private alpha. The native Next.js foundation, local Supabase authentication,
-owner-scoped student plan persistence and draft ANU catalogue are in place. The
-Sydney hosted development project carries the migration history and reviewed
-structure seed. Verified catalogue publication is the next data milestone.
+owner-scoped student plan persistence and review-first course import workflow
+are in place. The hosted development database is intentionally disposable and
+starts with no detailed course or programme records after the clean cutover.

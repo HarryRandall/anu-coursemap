@@ -3,7 +3,6 @@ import test from "node:test";
 
 import { AnuCourseDirectoryHttpError } from "../lib/catalogue-import/anu-course-directory.ts";
 import {
-  courseDirectoryEntriesRefreshEnabled,
   courseDirectoryFailurePolicy,
   courseDirectoryResponsePolicy,
 } from "../lib/catalogue-import/course-directory-policy.ts";
@@ -12,7 +11,7 @@ const fetchedAt = "2026-08-29T01:02:03.000Z";
 
 function directory(overrides = {}) {
   return {
-    catalogueYear: 2026,
+    academicYear: 2026,
     sourceUrl:
       "https://programsandcourses.anu.edu.au/data/CourseSearch/GetCourses",
     fetchedAt,
@@ -34,13 +33,6 @@ function directory(overrides = {}) {
     ...overrides,
   };
 }
-
-test("enables native directory refresh only with its exact server-side flag", () => {
-  assert.equal(courseDirectoryEntriesRefreshEnabled(undefined), false);
-  assert.equal(courseDirectoryEntriesRefreshEnabled("1"), false);
-  assert.equal(courseDirectoryEntriesRefreshEnabled("TRUE"), false);
-  assert.equal(courseDirectoryEntriesRefreshEnabled("true"), true);
-});
 
 test("retires missing rows only after a complete diagnostic-free response", () => {
   assert.deepEqual(courseDirectoryResponsePolicy(directory()), {
@@ -106,7 +98,7 @@ test("classifies complete empty and permanent HTTP responses as unavailable", ()
 
   for (const status of [404, 410]) {
     const unavailable = courseDirectoryFailurePolicy({
-      catalogueYear: 2026,
+      academicYear: 2026,
       error: new AnuCourseDirectoryHttpError(status, "No data"),
       checkedAt: fetchedAt,
     });
@@ -118,7 +110,7 @@ test("classifies complete empty and permanent HTTP responses as unavailable", ()
 
 test("keeps transient and unexpected directory failures unknown", () => {
   const transient = courseDirectoryFailurePolicy({
-    catalogueYear: 2026,
+    academicYear: 2026,
     error: new Error("HTTP 503 Service Unavailable"),
     checkedAt: fetchedAt,
   });

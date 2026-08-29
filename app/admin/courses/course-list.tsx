@@ -66,6 +66,64 @@ function availabilityTone(
   return "neutral";
 }
 
+type CourseDirectoryRefreshResult = {
+  status: "succeeded" | "failed";
+  counts: {
+    checked: number;
+    failed: number;
+  };
+  warningCount: number;
+  errorCount: number;
+};
+
+function courseDirectoryRefreshResult(
+  value: unknown,
+): CourseDirectoryRefreshResult | null {
+  if (typeof value !== "object" || value === null) return null;
+  const result = value as Record<string, unknown>;
+  const counts = result.counts;
+  if (
+    (result.status !== "succeeded" && result.status !== "failed") ||
+    typeof counts !== "object" ||
+    counts === null
+  ) {
+    return null;
+  }
+  const countValues = counts as Record<string, unknown>;
+  if (
+    typeof countValues.checked !== "number" ||
+    typeof countValues.failed !== "number" ||
+    typeof result.warningCount !== "number" ||
+    typeof result.errorCount !== "number"
+  ) {
+    return null;
+  }
+  return {
+    status: result.status,
+    counts: {
+      checked: countValues.checked,
+      failed: countValues.failed,
+    },
+    warningCount: result.warningCount,
+    errorCount: result.errorCount,
+  };
+}
+
+function shouldOpenLatestImport(record: CourseDirectoryRecord) {
+  const latestImport = record.latestImport;
+  if (!latestImport) return false;
+  return (
+    latestImport.reviewStatus === "pending" ||
+    [
+      "queued",
+      "processing",
+      "failed",
+      "cancelled",
+      "ready_for_review",
+    ].includes(latestImport.processingStatus)
+  );
+}
+
 function ReviewStatus({ record }: { record: CourseDirectoryRecord }) {
   const status = record.latestImport?.reviewStatus;
   if (!status || status === "not_ready" || status === "not_required") {
@@ -89,7 +147,6 @@ function ReviewStatus({ record }: { record: CourseDirectoryRecord }) {
 export function AdminCourseDirectory({
   canImport,
   data,
-  directoryRefreshEnabled,
   modelOptions,
   queueEnabled,
   searchParams,
@@ -97,7 +154,6 @@ export function AdminCourseDirectory({
 }: {
   canImport: boolean;
   data: CourseDirectoryPage;
-  directoryRefreshEnabled: boolean;
   modelOptions: string[];
   queueEnabled: boolean;
   searchParams: Record<string, string | undefined>;
@@ -167,27 +223,54 @@ export function AdminCourseDirectory({
     setRefreshing(true);
     setNotice(null);
     try {
-      const response = await fetch("/api/admin/catalogue/imports/directory", {
+      const response = await fetch("/api/admin/course-directory", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          catalogueYear: data.year.year,
-          target: "courses",
-        }),
+        body: JSON.stringify({ academicYear: data.year.year }),
       });
-      await readImportStream(response, () => undefined);
-      setNotice({
-        tone: "success",
-        text: `${data.year.year} course directory refreshed. No detailed courses were imported.`,
+      let result: CourseDirectoryRefreshResult | null = null;
+      await readImportStream(response, (event) => {
+        if (event.type === "complete") {
+          result = courseDirectoryRefreshResult(event.result);
+        }
       });
       router.refresh();
+      if (!result) {
+        throw new Error("The course directory returned no completion result.");
+      }
+      const completed: CourseDirectoryRefreshResult = result;
+      if (completed.status === "failed") {
+        setNotice({
+          tone: completed.counts.checked === 0 ? "warning" : "danger",
+          text:
+            completed.counts.checked === 0
+              ? `ANU returned no usable course directory data for ${data.year.year}. Existing entries were preserved.`
+              : `The ${data.year.year} directory check found ${completed.errorCount || completed.counts.failed} error${(completed.errorCount || completed.counts.failed) === 1 ? "" : "s"}. Usable rows were saved and missing existing entries were preserved.`,
+        });
+      } else if (completed.warningCount > 0) {
+        setNotice({
+          tone: "warning",
+          text: `${data.year.year} course directory refreshed with ${completed.warningCount} warning${completed.warningCount === 1 ? "" : "s"}. No detailed courses were imported.`,
+        });
+      } else {
+        setNotice({
+          tone: "success",
+          text: `${data.year.year} course directory refreshed. No detailed courses were imported.`,
+        });
+      }
     } catch (error) {
+      router.refresh();
+      const message =
+        error instanceof Error
+          ? error.message
+          : "The course directory could not be refreshed.";
+      const unavailable =
+        /(?:HTTP\s+(?:404|410)|no course directory|no .*data)/iu.test(message);
       setNotice({
-        tone: "danger",
-        text:
-          error instanceof Error
-            ? error.message
-            : "The course directory could not be refreshed.",
+        tone: unavailable ? "warning" : "danger",
+        text: unavailable
+          ? `ANU has no course directory data for ${data.year.year}. Existing entries were preserved.`
+          : message,
       });
     } finally {
       setRefreshing(false);
@@ -198,7 +281,7 @@ export function AdminCourseDirectory({
     setSubmitting(true);
     setNotice(null);
     try {
-      const response = await fetch("/api/admin/catalogue/imports/courses", {
+      const response = await fetch("/api/admin/course-imports", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -291,14 +374,10 @@ export function AdminCourseDirectory({
               Import runs
             </ButtonLink>
             <Button
-              disabled={!canImport || !directoryRefreshEnabled || refreshing}
+              disabled={!canImport || refreshing}
               onClick={() => void refreshDirectory()}
               size="md"
-              title={
-                directoryRefreshEnabled
-                  ? "Fetch code and title rows only"
-                  : "Directory refresh is not enabled in this deployment"
-              }
+              title="Fetch code and title rows only"
             >
               <RefreshCw
                 aria-hidden="true"
@@ -324,15 +403,11 @@ export function AdminCourseDirectory({
           </Alert>
         ) : null}
 
-        {!queueEnabled || !directoryRefreshEnabled ? (
+        {!queueEnabled ? (
           <Alert tone="warning">
             <AlertDescription>
-              {!directoryRefreshEnabled
-                ? "Directory refresh is disabled until COURSEMAP_COURSE_DIRECTORY_ENTRIES_ENABLED is configured. "
-                : ""}
-              {!queueEnabled
-                ? "Detailed imports are disabled until COURSEMAP_QUEUE_IMPORTS_ENABLED is configured."
-                : ""}
+              Detailed imports are disabled until
+              COURSEMAP_QUEUE_IMPORTS_ENABLED is configured.
             </AlertDescription>
           </Alert>
         ) : null}
@@ -535,7 +610,23 @@ export function AdminCourseDirectory({
                       {record.units ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {record.latestImport ? (
+                      {shouldOpenLatestImport(record) && record.latestImport ? (
+                        <Link
+                          aria-label={`Open ${record.code} import details`}
+                          className="inline-grid size-8 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                          href={`/admin/imports/runs/${record.latestImport.runId}/targets/${record.latestImport.targetId}`}
+                        >
+                          <ArrowUpRight aria-hidden="true" size={15} />
+                        </Link>
+                      ) : record.coursePublicId && record.courseYearId ? (
+                        <Link
+                          aria-label={`Open ${record.code} ${data.year.year} course workspace`}
+                          className="inline-grid size-8 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                          href={`/admin/courses/${record.coursePublicId}?year=${data.year.year}`}
+                        >
+                          <ArrowUpRight aria-hidden="true" size={15} />
+                        </Link>
+                      ) : record.latestImport ? (
                         <Link
                           aria-label={`Open ${record.code} import details`}
                           className="inline-grid size-8 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"

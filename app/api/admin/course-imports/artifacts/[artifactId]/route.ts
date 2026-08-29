@@ -1,4 +1,4 @@
-import { canManageCatalogueImports } from "@/lib/auth/viewer";
+import { canManageCourseImports } from "@/lib/auth/viewer";
 import { readCourseImportArtifact } from "@/lib/course-import/artifact-store";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,7 +8,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ artifactId: string }> },
 ) {
-  if (!(await canManageCatalogueImports())) {
+  if (!(await canManageCourseImports())) {
     return Response.json({ error: "Not authorised." }, { status: 403 });
   }
 

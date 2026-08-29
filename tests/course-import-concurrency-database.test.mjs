@@ -1,12 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { runDirectorySyncLocal } from "../lib/catalogue-import/run-directory-sync.ts";
+import { refreshCourseDirectoryForYearLocal } from "../lib/catalogue-import/run-course-directory-refresh.ts";
 import { createLocalDatabaseClient } from "../scripts/catalogue/lib/local-database.mjs";
 
 const workerOne = "63000000-0000-4000-8000-000000000001";
 const workerTwo = "63000000-0000-4000-8000-000000000002";
-const nativeDirectoryEnv = "COURSEMAP_COURSE_DIRECTORY_ENTRIES_ENABLED";
 
 const directoryPayload = {
   Items: [
@@ -26,22 +25,14 @@ const directoryPayload = {
 };
 
 async function ensureNativeDirectoryFixture() {
-  const previous = process.env[nativeDirectoryEnv];
-  process.env[nativeDirectoryEnv] = "true";
-  try {
-    await runDirectorySyncLocal({
-      catalogueYear: 2026,
-      target: "courses",
-      fetchImpl: async () =>
-        new Response(JSON.stringify(directoryPayload), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
-    });
-  } finally {
-    if (previous === undefined) delete process.env[nativeDirectoryEnv];
-    else process.env[nativeDirectoryEnv] = previous;
-  }
+  await refreshCourseDirectoryForYearLocal({
+    academicYear: 2026,
+    fetchImpl: async () =>
+      new Response(JSON.stringify(directoryPayload), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+  });
 }
 
 async function waitForBothFinishersToBlock(sql) {
@@ -90,8 +81,8 @@ test(
               partition by documents.source_id, entries.academic_year_id
             ) as group_size
           from public.course_directory_entries as entries
-          join public.course_source_documents as documents
-            on documents.id = entries.source_document_id
+          join public.course_source_pages as documents
+            on documents.id = entries.source_page_id
            and documents.academic_year_id = entries.academic_year_id
           join public.academic_years as years
             on years.id = entries.academic_year_id

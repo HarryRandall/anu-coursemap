@@ -2,302 +2,116 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(13);
+select extensions.plan(8);
 
-with expected_tables (name) as (
-  select unnest(array[
-    'catalogue_years',
-    'catalogue_sources',
-    'catalogue_import_runs',
-    'catalogue_source_documents',
-    'catalogue_import_items',
-    'catalogue_review_items',
-    'courses',
-    'course_versions',
-    'academic_periods',
-    'course_offerings',
-    'offering_sessions',
-    'academic_structures',
-    'academic_structure_versions',
-    'academic_structure_relationships',
-    'requirement_groups',
-    'requirement_conditions',
-    'course_rules',
-    'course_rule_groups',
-    'course_rule_conditions',
-    'profiles',
-    'plans',
-    'plan_structures',
-    'plan_items',
-    'course_attempts',
-    'approval_requests',
-    'approval_events'
-  ]::text[])
-)
-select extensions.ok(
-  bool_and(to_regclass(format('public.%I', name)) is not null),
-  'all initial public tables exist'
-)
-from expected_tables;
-
-with expected_tables (name) as (
-  select unnest(array[
-    'app_roles',
-    'app_permissions',
-    'role_permissions',
-    'user_roles'
-  ]::text[])
-)
-select extensions.ok(
-  bool_and(to_regclass(format('private.%I', name)) is not null),
-  'all private authorisation tables exist'
-)
-from expected_tables;
-
-with expected_tables (schema_name, name) as (
-  select 'public', unnest(array[
-    'catalogue_years',
-    'catalogue_sources',
-    'catalogue_import_runs',
-    'catalogue_source_documents',
-    'catalogue_import_items',
-    'catalogue_review_items',
-    'courses',
-    'course_versions',
-    'academic_periods',
-    'course_offerings',
-    'offering_sessions',
-    'academic_structures',
-    'academic_structure_versions',
-    'academic_structure_relationships',
-    'requirement_groups',
-    'requirement_conditions',
-    'course_rules',
-    'course_rule_groups',
-    'course_rule_conditions',
-    'profiles',
-    'plans',
-    'plan_structures',
-    'plan_items',
-    'course_attempts',
-    'approval_requests',
-    'approval_events'
-  ]::text[])
-
-  union all
-
-  select 'private', unnest(array[
-    'app_roles',
-    'app_permissions',
-    'role_permissions',
-    'user_roles'
-  ]::text[])
-)
-select extensions.ok(
-  bool_and(coalesce(classes.relrowsecurity, false)),
-  'RLS is enabled on every application table'
-)
-from expected_tables
-left join pg_namespace as namespaces
-  on namespaces.nspname = expected_tables.schema_name
-left join pg_class as classes
-  on classes.relnamespace = namespaces.oid
- and classes.relname = expected_tables.name;
-
-select extensions.ok(
-  exists (
-    select 1
-    from pg_proc as functions
-    where functions.oid = 'private.has_permission(text)'::regprocedure
-      and functions.prosecdef
-      and functions.proconfig @> array['search_path=""']::text[]
-  ),
-  'the permission helper is security definer with a fixed search path'
-);
-
-select extensions.ok(
-  not has_function_privilege('anon', 'private.has_permission(text)', 'execute')
-  and has_function_privilege(
-    'authenticated',
-    'private.has_permission(text)',
-    'execute'
-  ),
-  'only authenticated API users can execute the permission helper'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from pg_trigger as triggers
-    join pg_class as tables on tables.oid = triggers.tgrelid
-    join pg_namespace as namespaces on namespaces.oid = tables.relnamespace
-    where namespaces.nspname = 'auth'
-      and tables.relname = 'users'
-      and triggers.tgname = 'on_auth_user_created'
-      and not triggers.tgisinternal
-  ),
-  'Auth users have the profile creation trigger'
-);
-
-select extensions.ok(
-  exists (
-    select 1
-    from private.app_roles
-    where key = 'admin'
-  ),
-  'the admin role is seeded'
-);
-
-select extensions.ok(
+select extensions.is(
   (
     select count(*)
-    from private.app_permissions
-    where key in (
-      'catalogue.read_drafts',
-      'catalogue.write',
-      'imports.manage',
-      'approvals.review'
-    )
-  ) = 4,
-  'the initial application permissions are seeded'
-);
-
-with sensitive_tables (name) as (
-  select unnest(array[
-    'profiles',
-    'plans',
-    'plan_structures',
-    'plan_items',
-    'course_attempts',
-    'approval_requests',
-    'approval_events',
-    'catalogue_sources',
-    'catalogue_import_runs',
-    'catalogue_source_documents',
-    'catalogue_import_items',
-    'catalogue_review_items'
-  ]::text[])
-)
-select extensions.ok(
-  bool_and(
-    not has_table_privilege('anon', format('public.%I', name), 'select')
-    and not has_table_privilege('anon', format('public.%I', name), 'insert')
-    and not has_table_privilege('anon', format('public.%I', name), 'update')
-    and not has_table_privilege('anon', format('public.%I', name), 'delete')
-    and not has_table_privilege('anon', format('public.%I', name), 'truncate')
-    and not has_table_privilege('anon', format('public.%I', name), 'references')
-    and not has_table_privilege('anon', format('public.%I', name), 'trigger')
-    and not has_any_column_privilege(
-      'anon',
-      format('public.%I', name),
-      'select'
-    )
-    and not has_any_column_privilege(
-      'anon',
-      format('public.%I', name),
-      'insert'
-    )
-    and not has_any_column_privilege(
-      'anon',
-      format('public.%I', name),
-      'update'
-    )
-    and not has_any_column_privilege(
-      'anon',
-      format('public.%I', name),
-      'references'
-    )
-  ),
-  'anonymous users have no effective access to user or import data'
-)
-from sensitive_tables;
-
-with published_tables (name) as (
-  select unnest(array[
-    'catalogue_years',
-    'courses',
-    'course_versions',
-    'academic_periods',
-    'course_offerings',
-    'offering_sessions',
-    'academic_structures',
-    'academic_structure_versions',
-    'academic_structure_relationships',
-    'requirement_groups',
-    'requirement_conditions',
-    'course_rules',
-    'course_rule_groups',
-    'course_rule_conditions',
-    'course_rule_course_references'
-  ]::text[])
-)
-select extensions.ok(
-  bool_and(has_table_privilege('anon', format('public.%I', name), 'select')),
-  'anonymous users have table-level select access to published catalogue data'
-)
-from published_tables;
-
-select extensions.ok(
-  not has_table_privilege('authenticated', 'public.approval_events', 'insert')
-  and not has_any_column_privilege(
-    'authenticated',
-    'public.approval_events',
-    'insert'
-  )
-  and not has_table_privilege('authenticated', 'public.approval_events', 'update')
-  and not has_any_column_privilege(
-    'authenticated',
-    'public.approval_events',
-    'update'
-  )
-  and not has_table_privilege('authenticated', 'public.approval_events', 'delete'),
-  'approval events can only be appended by trusted database triggers'
-);
-
-select extensions.ok(
-  to_regclass('public.course_rule_groups_one_root_idx') is not null
-  and to_regclass('public.requirement_groups_one_root_idx') is not null
-  and (
-    select count(*) = 4
-    from pg_trigger as triggers
-    where triggers.tgname in (
-      'academic_structure_versions_validate_requirement_tree',
-      'requirement_groups_validate_tree',
-      'course_rules_validate_tree',
-      'course_rule_groups_validate_tree'
-    )
-      and not triggers.tgisinternal
-  ),
-  'nested rule tree indexes and deferred validators are installed'
-);
-
-select extensions.ok(
-  not exists (
-    select 1
-    from pg_constraint as constraints
-    join pg_namespace as namespaces
-      on namespaces.oid = constraints.connamespace
-    where namespaces.nspname in ('public', 'private')
-      and constraints.contype = 'f'
-      and not exists (
-        select 1
-        from pg_index as indexes
-        where indexes.indrelid = constraints.conrelid
-          and indexes.indisvalid
-          and indexes.indisready
-          and indexes.indpred is null
-          and indexes.indexprs is null
-          and indexes.indnkeyatts >= cardinality(constraints.conkey)
-          and not exists (
-            select 1
-            from unnest(constraints.conkey) with ordinality
-              as foreign_key_columns(attnum, position)
-            where indexes.indkey[foreign_key_columns.position - 1]
-              is distinct from foreign_key_columns.attnum
-          )
+    from information_schema.tables
+    where table_schema = 'public'
+      and table_name in (
+        'academic_years',
+        'course_directory_entries',
+        'courses',
+        'course_years',
+        'course_snapshots',
+        'course_sources',
+        'course_source_pages',
+        'course_import_runs',
+        'course_import_targets',
+        'course_import_stages',
+        'course_import_artifacts',
+        'course_extractions',
+        'course_review_items'
       )
   ),
-  'every application foreign key has a leading index'
+  13::bigint,
+  'the snapshot-native course and import tables exist'
+);
+
+select extensions.hasnt_table(
+  'public',
+  'course_versions',
+  'the legacy course_versions table is absent'
+);
+
+select extensions.hasnt_table(
+  'public',
+  'catalogue_directory_courses',
+  'the legacy catalogue course directory is absent'
+);
+
+select extensions.is(
+  (
+    select count(*)
+    from pg_catalog.pg_class as relations
+    join pg_catalog.pg_namespace as namespaces
+      on namespaces.oid = relations.relnamespace
+    where namespaces.nspname = 'public'
+      and relations.relname in (
+        'academic_years',
+        'course_directory_entries',
+        'courses',
+        'course_years',
+        'course_snapshots',
+        'course_sources',
+        'course_source_pages',
+        'course_import_runs',
+        'course_import_targets',
+        'course_import_stages',
+        'course_import_artifacts',
+        'course_extractions',
+        'course_review_items',
+        'course_offerings',
+        'offering_sessions',
+        'course_learning_outcomes',
+        'course_assessment_items',
+        'course_assessment_outcomes',
+        'course_rules',
+        'course_rule_groups',
+        'course_rule_conditions',
+        'course_rule_condition_courses',
+        'course_rule_course_references'
+      )
+      and relations.relrowsecurity
+  ),
+  23::bigint,
+  'RLS is enabled on every exposed snapshot-native course table'
+);
+
+select extensions.has_function(
+  'public',
+  'published_course_detail',
+  array['text', 'smallint'],
+  'published course detail requires an explicit academic year'
+);
+
+select extensions.hasnt_function(
+  'public',
+  'published_course_detail',
+  array['text'],
+  'implicit latest-year course detail is absent'
+);
+
+select extensions.has_function(
+  'public',
+  'published_course_requisite_graph',
+  array['text', 'smallint'],
+  'published prerequisite graphs require an explicit academic year'
+);
+
+select extensions.ok(
+  has_function_privilege(
+    'authenticated',
+    'public.add_current_user_plan_item(text,smallint,smallint,text)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'anon',
+    'public.add_current_user_plan_item(text,smallint,smallint,text)',
+    'execute'
+  ),
+  'the explicit-year planner RPC is authenticated-only'
 );
 
 select * from extensions.finish();

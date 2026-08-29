@@ -32,7 +32,8 @@ import {
   STANDARD_COURSE_SLOTS,
   effectiveStatus,
   missingPrereqs,
-  planningCourseByCode,
+  planningCourseForAttempt,
+  unitsForAttempt,
   type EffectiveStatus,
 } from "@/lib/planner";
 
@@ -102,6 +103,10 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     () => planTimelineTerms({ terms: catalogue.terms, years: degreeYears }),
     [catalogue.terms, degreeYears],
   );
+  const planningCatalogue = useMemo(
+    () => ({ ...catalogue, terms: timelineTerms }),
+    [catalogue, timelineTerms],
+  );
   const scheduledYears = useMemo(
     () =>
       [
@@ -133,12 +138,16 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     state.attempts
       .filter((attempt) => attempt.termId === termId)
       .map((attempt) => {
-        const course = planningCourseByCode(attempt.courseCode, catalogue);
+        const course = planningCourseForAttempt(attempt, planningCatalogue);
         return course
           ? {
               attempt,
               course,
-              status: effectiveStatus(attempt, state.attempts, catalogue),
+              status: effectiveStatus(
+                attempt,
+                state.attempts,
+                planningCatalogue,
+              ),
             }
           : null;
       })
@@ -147,13 +156,20 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   const unitsOf = (entries: Entry[]) =>
     entries.reduce(
       (total, entry) =>
-        total + (entry.status === "failed" ? 0 : entry.course.units),
+        total +
+        (entry.status === "failed"
+          ? 0
+          : unitsForAttempt(entry.attempt, entry.course)),
       0,
     );
 
   const issueNote = (entry: Entry) => {
     if (entry.status === "blocked") {
-      const missing = missingPrereqs(entry.attempt, state.attempts, catalogue);
+      const missing = missingPrereqs(
+        entry.attempt,
+        state.attempts,
+        planningCatalogue,
+      );
       return `Needs ${missing.join(" + ")} completed or scheduled earlier`;
     }
     if (entry.status === "approval") return "Convener permission is required";
@@ -184,7 +200,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   const requestDrop = (drop: PendingDrop) => {
     const attempt = state.attempts.find((item) => item.id === drop.attemptId);
     const course = attempt
-      ? planningCourseByCode(attempt.courseCode, catalogue)
+      ? planningCourseForAttempt(attempt, planningCatalogue)
       : undefined;
     if (!attempt || !course || drop.attemptId === drop.beforeAttemptId) return;
 
@@ -198,10 +214,25 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
       return;
     }
 
+    const destinationTerm = timelineTerms.find(
+      (term) => term.id === drop.termId,
+    );
+    if (
+      destinationTerm &&
+      destinationTerm.id !== "unscheduled" &&
+      course.year !== destinationTerm.year
+    ) {
+      notify(
+        `${attempt.courseCode} uses the ${course.year} course year and cannot move to ${destinationTerm.year}. Remove it and add that year's course instead.`,
+        "warning",
+      );
+      return;
+    }
+
     const destination = entriesFor(drop.termId).filter(
       (entry) => entry.attempt.id !== drop.attemptId,
     );
-    const nextUnits = unitsOf(destination) + course.units;
+    const nextUnits = unitsOf(destination) + unitsForAttempt(attempt, course);
     if (
       drop.termId !== "unscheduled" &&
       (destination.length + 1 > STANDARD_COURSE_SLOTS || nextUnits > 24)
@@ -335,14 +366,18 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
       ? state.attempts.find((attempt) => attempt.id === dragging)
       : undefined;
     const previewCourse = previewAttempt
-      ? planningCourseByCode(previewAttempt.courseCode, catalogue)
+      ? planningCourseForAttempt(previewAttempt, planningCatalogue)
       : undefined;
     const previewEntry =
       previewAttempt && previewCourse
         ? {
             attempt: previewAttempt,
             course: previewCourse,
-            status: effectiveStatus(previewAttempt, state.attempts, catalogue),
+            status: effectiveStatus(
+              previewAttempt,
+              state.attempts,
+              planningCatalogue,
+            ),
           }
         : undefined;
     const previewApplies = Boolean(
@@ -384,7 +419,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
           {previewEntry.course.name}
         </span>
         <span className="shrink-0 text-[11px] text-zinc-400">
-          {previewEntry.course.units}u
+          {unitsForAttempt(previewEntry.attempt, previewEntry.course)}u
         </span>
       </div>
     ) : null;
@@ -480,7 +515,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                       {entry.course.name}
                     </span>
                     <span className="shrink-0 text-[11px] text-zinc-400">
-                      {entry.course.units}u
+                      {unitsForAttempt(entry.attempt, entry.course)}u
                     </span>
                   </span>
                 </button>
@@ -488,7 +523,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   <div className="col-span-2 flex justify-end px-2 pb-2">
                     <FixIssueButton
                       attempt={entry.attempt}
-                      catalogue={catalogue}
+                      catalogue={planningCatalogue}
                     />
                   </div>
                 )}
@@ -535,10 +570,10 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     ? state.attempts.find((attempt) => attempt.id === dragging)
     : undefined;
   const draggedCourse = draggedAttempt
-    ? planningCourseByCode(draggedAttempt.courseCode, catalogue)
+    ? planningCourseForAttempt(draggedAttempt, planningCatalogue)
     : undefined;
   const draggedStatus = draggedAttempt
-    ? effectiveStatus(draggedAttempt, state.attempts, catalogue)
+    ? effectiveStatus(draggedAttempt, state.attempts, planningCatalogue)
     : undefined;
 
   return (
@@ -586,7 +621,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         </div>
       </section>
 
-      {dragPointer && draggedCourse && draggedStatus && (
+      {dragPointer && draggedAttempt && draggedCourse && draggedStatus && (
         <div className="pointer-events-none fixed inset-0 z-[120] cursor-grabbing select-none">
           <div
             ref={floatingCardRef}
@@ -606,7 +641,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               {draggedCourse.name}
             </span>
             <span className="shrink-0 text-[11px] text-zinc-400">
-              {draggedCourse.units}u
+              {unitsForAttempt(draggedAttempt, draggedCourse)}u
             </span>
           </div>
         </div>
@@ -616,6 +651,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         <CoursePicker
           term={pickerTerm}
           intent={picker.intent}
+          academicYears={degreeYears.map((item) => item.year)}
           onClose={() => setPicker(null)}
         />
       )}
@@ -671,7 +707,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
       {selectedAttempt && (
         <CourseDrawer
           attemptId={selectedAttempt}
-          catalogue={catalogue}
+          catalogue={planningCatalogue}
           onClose={() => setSelectedAttempt(null)}
         />
       )}

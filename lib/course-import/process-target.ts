@@ -163,7 +163,7 @@ export async function processCourseImportTarget({
       throw error;
     }
 
-    let sourceDocumentId: number | null = null;
+    let sourcePageId: number | null = null;
 
     const runStage = async <T>(
       stageName: CourseImportStageName,
@@ -240,7 +240,7 @@ export async function processCourseImportTarget({
           mediaType: "text/html",
           body: fetched.html,
         });
-        sourceDocumentId = await recordCourseSourcePage(sql, {
+        sourcePageId = await recordCourseSourcePage(sql, {
           sourceId: claim.sourceId,
           academicYearId: claim.academicYearId,
           courseCode: claim.courseCode,
@@ -535,12 +535,12 @@ export async function processCourseImportTarget({
       });
 
       const persisted = await runStage("snapshot_persist", async (stageId) => {
-        if (sourceDocumentId === null) {
-          throw new Error("The source document was not recorded.");
+        if (sourcePageId === null) {
+          throw new Error("The source page was not recorded.");
         }
         const result = await persistCourseSnapshotCandidate(sql, {
           claim,
-          sourceDocumentId,
+          sourcePageId,
           projection,
           extraction: merged.extraction,
         });
@@ -567,7 +567,7 @@ export async function processCourseImportTarget({
         changeKind: persisted.changeKind,
         courseId: persisted.courseId,
         courseYearId: persisted.courseYearId,
-        sourceDocumentId,
+        sourcePageId,
         candidateSnapshotId: persisted.candidateSnapshotId,
       });
     } catch (error) {
@@ -597,7 +597,7 @@ export async function processCourseImportTarget({
         changeKind: null,
         courseId: claim.courseId,
         courseYearId: claim.courseYearId,
-        sourceDocumentId,
+        sourcePageId,
         candidateSnapshotId: null,
         errorCode: code,
         errorSummary: summary,

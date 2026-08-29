@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Check,
   CircleAlert,
@@ -9,7 +9,6 @@ import {
   Eye,
   FileCode2,
   Pencil,
-  Send,
   X,
 } from "lucide-react";
 import { CourseImportArtifactViewer } from "@/components/admin/imports/course-import-artifact-viewer";
@@ -17,7 +16,7 @@ import { CourseImportAutoRefresh } from "@/components/admin/imports/course-impor
 import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -39,6 +38,7 @@ import {
   rejectCourseImportTarget,
 } from "@/lib/coursemap/course-import-review-actions";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
+import { compareCourseSnapshotProjections } from "@/lib/coursemap/course-snapshot-diff";
 import type { Tone } from "@/lib/ui";
 
 const dateFormatter = new Intl.DateTimeFormat("en-AU", {
@@ -87,12 +87,30 @@ function confidence(value: number | null) {
     : `${Math.round(value * 100)}% confidence`;
 }
 
-function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
+function comparisonValue(value: unknown) {
+  if (value === undefined || value === null) return "Not recorded";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value, null, 2) ?? String(value);
+}
+
+function fieldLabel(fieldPath: string) {
+  const label = fieldPath
+    .replaceAll(".", " · ")
+    .replace(
+      /\[(\d+)\]/gu,
+      (_, index: string) => ` · item ${Number(index) + 1}`,
+    )
+    .replace(/([a-z\d])([A-Z])/gu, "$1 $2")
+    .replace(/^snapshot · /u, "Course details · ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function ReviewItems({ detail }: { detail: CourseImportTargetDetail }) {
   if (detail.reviewItems.length === 0) {
     return (
       <DataTableShell>
         <DataTableEmpty
-          description="Change evidence appears after the candidate snapshot has been projected."
+          description="No ambiguity or validation issue was recorded for this candidate."
           title="No review items"
         />
       </DataTableShell>
@@ -151,6 +169,127 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
+  const changes = useMemo(
+    () =>
+      compareCourseSnapshotProjections(
+        detail.previousSnapshot?.projection ?? null,
+        detail.candidateProjection,
+      ),
+    [detail.candidateProjection, detail.previousSnapshot],
+  );
+  const previousLabel = detail.previousSnapshot?.label ?? "No saved snapshot";
+
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3" aria-labelledby="snapshot-changes-title">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2
+              className="text-sm font-semibold text-zinc-950"
+              id="snapshot-changes-title"
+            >
+              Saved snapshot comparison
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Candidate compared field by field with{" "}
+              {previousLabel.toLowerCase()}.
+            </p>
+          </div>
+          <Badge tone={changes.length === 0 ? "neutral" : "brand"}>
+            {changes.length} field {changes.length === 1 ? "change" : "changes"}
+          </Badge>
+        </div>
+
+        {!detail.candidateProjection ? (
+          <DataTableShell>
+            <DataTableEmpty
+              description="The comparison becomes available after relational candidate rows have been saved."
+              title="No candidate projection"
+            />
+          </DataTableShell>
+        ) : changes.length === 0 ? (
+          <DataTableShell>
+            <DataTableEmpty
+              description={`The relational candidate matches ${previousLabel.toLowerCase()}.`}
+              title="No saved field changes"
+            />
+          </DataTableShell>
+        ) : (
+          <DataTableShell>
+            <Table className="min-w-[980px]">
+              <TableCaption>
+                Relational course fields changed by this import
+              </TableCaption>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-64">Field</TableHead>
+                  <TableHead className="w-24">Change</TableHead>
+                  <TableHead>{previousLabel}</TableHead>
+                  <TableHead>AI candidate</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {changes.map((change) => (
+                  <TableRow key={change.fieldPath}>
+                    <TableCell className="align-top">
+                      <span className="block text-xs font-medium text-zinc-900">
+                        {fieldLabel(change.fieldPath)}
+                      </span>
+                      <span className="mt-1 block font-mono text-[10px] break-all text-zinc-500">
+                        {change.fieldPath}
+                      </span>
+                    </TableCell>
+                    <TableCell className="align-top">
+                      <Badge
+                        tone={
+                          change.kind === "added"
+                            ? "success"
+                            : change.kind === "removed"
+                              ? "danger"
+                              : "warning"
+                        }
+                      >
+                        {readable(change.kind)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-md align-top">
+                      <pre className="font-mono text-xs break-words whitespace-pre-wrap text-zinc-700">
+                        {comparisonValue(change.before)}
+                      </pre>
+                    </TableCell>
+                    <TableCell className="max-w-md bg-brand-50/30 align-top">
+                      <pre className="font-mono text-xs break-words whitespace-pre-wrap text-zinc-900">
+                        {comparisonValue(change.after)}
+                      </pre>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </DataTableShell>
+        )}
+      </section>
+
+      <section className="space-y-3" aria-labelledby="review-items-title">
+        <div>
+          <h2
+            className="text-sm font-semibold text-zinc-950"
+            id="review-items-title"
+          >
+            Review items
+          </h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            Confidence, source evidence and validation issues recorded during
+            extraction.
+          </p>
+        </div>
+        <ReviewItems detail={detail} />
+      </section>
     </div>
   );
 }
@@ -288,6 +427,9 @@ export function CourseImportTargetReview({
     detail.target.processingStatus === "ready_for_review" &&
     detail.target.reviewStatus === "pending";
   const accepted = detail.target.reviewStatus === "accepted";
+  const courseWorkspaceHref = detail.target.coursePublicId
+    ? `/admin/courses/${detail.target.coursePublicId}?year=${detail.run.academicYear}`
+    : null;
 
   async function decide(decision: "accept" | "reject") {
     const action =
@@ -320,23 +462,19 @@ export function CourseImportTargetReview({
       actions={
         <div className="flex items-center gap-2">
           {accepted ? (
-            <>
-              <Button
-                disabled
-                title="Snapshot-safe manual editing is not enabled yet"
-              >
+            courseWorkspaceHref ? (
+              <ButtonLink href={courseWorkspaceHref} variant="primary">
                 <Pencil aria-hidden="true" size={15} />
-                Edit fields
-              </Button>
+                Open course workspace
+              </ButtonLink>
+            ) : (
               <Button
                 disabled
-                title="Snapshot publication requires a dedicated database function"
-                variant="primary"
+                title="The permanent course identity is unavailable"
               >
-                <Send aria-hidden="true" size={15} />
-                Publish draft
+                <Pencil aria-hidden="true" size={15} /> Course workspace
               </Button>
-            </>
+            )
           ) : null}
         </div>
       }
@@ -504,18 +642,18 @@ export function CourseImportTargetReview({
           </TabsContent>
           <TabsContent value="source">
             <div className="space-y-4">
-              {detail.sourceDocument ? (
+              {detail.sourcePage ? (
                 <dl className="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <dt className="text-zinc-500">ANU page</dt>
                     <dd className="mt-1 break-all">
                       <a
                         className="text-brand-700 underline underline-offset-2"
-                        href={detail.sourceDocument.canonical_url}
+                        href={detail.sourcePage.canonical_url}
                         rel="noreferrer"
                         target="_blank"
                       >
-                        {detail.sourceDocument.canonical_url}
+                        {detail.sourcePage.canonical_url}
                       </a>
                     </dd>
                   </div>
@@ -523,23 +661,23 @@ export function CourseImportTargetReview({
                     <dt className="text-zinc-500">Fetched</dt>
                     <dd className="mt-1 tabular-nums">
                       {dateFormatter.format(
-                        new Date(detail.sourceDocument.fetched_at),
+                        new Date(detail.sourcePage.fetched_at),
                       )}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-zinc-500">HTTP status</dt>
                     <dd className="mt-1 tabular-nums">
-                      {detail.sourceDocument.http_status ?? "Not recorded"}
+                      {detail.sourcePage.http_status ?? "Not recorded"}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-zinc-500">Source hash</dt>
                     <dd
                       className="mt-1 truncate font-mono"
-                      title={detail.sourceDocument.content_sha256}
+                      title={detail.sourcePage.content_sha256}
                     >
-                      {detail.sourceDocument.content_sha256}
+                      {detail.sourcePage.content_sha256}
                     </dd>
                   </div>
                 </dl>

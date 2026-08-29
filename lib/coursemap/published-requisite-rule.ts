@@ -1,5 +1,5 @@
 import type { Json } from "@/types/database";
-import type { CatalogueRequisiteRule } from "./catalogue-types";
+import type { CourseRequisiteRule } from "./course-types";
 import type { RequisiteExpression } from "./requisite-summary";
 
 type RequisiteGroupPayload = {
@@ -55,7 +55,7 @@ function readNumber(value: Json | undefined, fallback = 0): number {
  */
 export function readPublishedRequisiteRule(
   value: Json | undefined,
-): CatalogueRequisiteRule | null {
+): CourseRequisiteRule | null {
   if (!isRecord(value)) return null;
 
   const sourceText = readString(value.source_text);
@@ -216,6 +216,8 @@ export function readPublishedRequisiteRule(
   return {
     confidence: readNumber(value.confidence),
     expression: completePayload ? expressionForGroup(roots[0].id) : null,
+    hardness: readString(value.hardness) === "advisory" ? "advisory" : "hard",
+    relationalExpression: null,
     reviewState:
       reviewState === "verified"
         ? "verified"

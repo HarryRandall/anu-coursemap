@@ -104,6 +104,31 @@ export type AdminRoleManagementData = {
   grants: AdminRolePermission[];
 };
 
+type AdminPlanItemRow = {
+  academic_period_id: number | null;
+  academic_year_id: number;
+  course_id: number;
+  created_at: string;
+  id: string;
+  planned_calendar_year: number | null;
+  planned_period_code: string | null;
+  sort_order: number;
+  updated_at: string;
+};
+
+type AdminCourseAttemptRow = {
+  academic_period_id: number;
+  course_id: number;
+  course_snapshot_id: number;
+  created_at: string;
+  id: string;
+  mark: number | null;
+  status: string;
+  units_attempted: number;
+  units_earned: number;
+  updated_at: string;
+};
+
 function mapUser(user: {
   user_id: string | null;
   email: string | null;
@@ -376,14 +401,14 @@ export async function loadAdminUserDetail(
         supabase
           .from("plan_items")
           .select(
-            "id,course_id,academic_period_id,planned_calendar_year,planned_period_code,created_at,updated_at,sort_order",
+            "id,course_id,academic_year_id,academic_period_id,planned_calendar_year,planned_period_code,created_at,updated_at,sort_order",
           )
           .eq("plan_id", plan.id)
           .order("sort_order"),
         supabase
           .from("course_attempts")
           .select(
-            "id,course_id,academic_period_id,status,mark,units_attempted,units_earned,created_at,updated_at",
+            "id,course_id,course_snapshot_id,academic_period_id,status,mark,units_attempted,units_earned,created_at,updated_at",
           )
           .eq("owner_id", userId)
           .order("created_at"),
@@ -399,8 +424,12 @@ export async function loadAdminUserDetail(
     }
 
     const structureRows = structuresResult.data ?? [];
-    const itemRows = itemsResult.data ?? [];
-    const attemptRows = attemptsResult.data ?? [];
+    // The explicit course year and snapshot lineage are introduced by the
+    // clean course cutover migration. Keep the local row contract exact while
+    // generated database types are refreshed alongside that migration.
+    const itemRows = (itemsResult.data ?? []) as unknown as AdminPlanItemRow[];
+    const attemptRows = (attemptsResult.data ??
+      []) as unknown as AdminCourseAttemptRow[];
     const structureVersionIds = structureRows.map(
       (structure) => structure.structure_version_id,
     );
@@ -422,7 +451,7 @@ export async function loadAdminUserDetail(
     const [
       structureVersionsResult,
       courseIdentitiesResult,
-      courseVersionsResult,
+      courseYearsResult,
       periodsResult,
     ] = await Promise.all([
       structureVersionIds.length
@@ -436,9 +465,9 @@ export async function loadAdminUserDetail(
         : Promise.resolve({ data: [], error: null }),
       courseIds.length
         ? supabase
-            .from("course_versions")
-            .select("course_id,title,units")
-            .eq("catalogue_year_id", plan.catalogue_year_id)
+            .from("course_years")
+            .select("course_id,academic_year_id,published_snapshot_id")
+            .eq("lifecycle_status", "active")
             .in("course_id", courseIds)
         : Promise.resolve({ data: [], error: null }),
       periodIds.length
@@ -452,7 +481,7 @@ export async function loadAdminUserDetail(
     const relatedError =
       structureVersionsResult.error ??
       courseIdentitiesResult.error ??
-      courseVersionsResult.error ??
+      courseYearsResult.error ??
       periodsResult.error;
     if (relatedError) {
       throw new Error("Coursemap could not load that user's study details.");
@@ -487,11 +516,35 @@ export async function loadAdminUserDetail(
         course.code,
       ]),
     );
-    const courseVersionById = new Map(
-      (courseVersionsResult.data ?? []).map((version) => [
-        version.course_id,
-        version,
+    const publishedSnapshotByCourseYear = new Map(
+      (courseYearsResult.data ?? []).flatMap((courseYear) =>
+        courseYear.published_snapshot_id
+          ? [
+              [
+                `${courseYear.course_id}:${courseYear.academic_year_id}`,
+                courseYear.published_snapshot_id,
+              ] as const,
+            ]
+          : [],
+      ),
+    );
+    const snapshotIds = [
+      ...new Set([
+        ...publishedSnapshotByCourseYear.values(),
+        ...attemptRows.map((attempt) => attempt.course_snapshot_id),
       ]),
+    ];
+    const snapshotsResult = snapshotIds.length
+      ? await supabase
+          .from("course_snapshots")
+          .select("id,title,units,minimum_units,maximum_units")
+          .in("id", snapshotIds)
+      : { data: [], error: null };
+    if (snapshotsResult.error) {
+      throw new Error("Coursemap could not load that user's course details.");
+    }
+    const snapshotById = new Map(
+      (snapshotsResult.data ?? []).map((snapshot) => [snapshot.id, snapshot]),
     );
     const periodById = new Map(
       (periodsResult.data ?? []).map((period) => [period.id, period]),
@@ -499,8 +552,13 @@ export async function loadAdminUserDetail(
 
     const plannedCourses: AdminUserCourse[] = itemRows.flatMap((item) => {
       const code = courseCodeById.get(item.course_id);
-      const version = courseVersionById.get(item.course_id);
-      if (!code || !version) return [];
+      if (!code) return [];
+      const publishedSnapshotId = publishedSnapshotByCourseYear.get(
+        `${item.course_id}:${item.academic_year_id}`,
+      );
+      const snapshot = publishedSnapshotId
+        ? snapshotById.get(publishedSnapshotId)
+        : null;
       const period = item.academic_period_id
         ? periodById.get(item.academic_period_id)
         : null;
@@ -508,8 +566,13 @@ export async function loadAdminUserDetail(
         {
           id: item.id,
           code,
-          title: version.title,
-          units: Number(version.units),
+          title: snapshot?.title ?? "Course details unavailable",
+          units: Number(
+            snapshot?.units ??
+              snapshot?.minimum_units ??
+              snapshot?.maximum_units ??
+              0,
+          ),
           unitsEarned: 0,
           calendarYear:
             period?.calendar_year ?? item.planned_calendar_year ?? null,
@@ -526,15 +589,15 @@ export async function loadAdminUserDetail(
     const recordedCourses: AdminUserCourse[] = attemptRows.flatMap(
       (attempt) => {
         const code = courseCodeById.get(attempt.course_id);
-        const version = courseVersionById.get(attempt.course_id);
+        const snapshot = snapshotById.get(attempt.course_snapshot_id);
         const period = periodById.get(attempt.academic_period_id);
         const status = courseStatus(attempt.status);
-        if (!code || !version || !status) return [];
+        if (!code || !status) return [];
         return [
           {
             id: attempt.id,
             code,
-            title: version.title,
+            title: snapshot?.title ?? "Course details unavailable",
             units: Number(attempt.units_attempted),
             unitsEarned: Number(attempt.units_earned),
             calendarYear: period?.calendar_year ?? null,

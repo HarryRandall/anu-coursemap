@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Check, LockKeyhole } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "@/lib/cn";
-import type { CataloguePrerequisiteEdge } from "@/lib/coursemap/catalogue-types";
+import type { CoursePrerequisiteEdge } from "@/lib/coursemap/course-types";
 
 const NODE_H = 46;
 const GAP = 14;
@@ -12,7 +12,7 @@ const STEP = NODE_H + GAP;
 
 type Layout = {
   columns: { label: string; codes: string[] }[];
-  edges: CataloguePrerequisiteEdge[];
+  edges: CoursePrerequisiteEdge[];
   position: Map<string, { col: number; row: number }>;
   rows: number;
 };
@@ -24,9 +24,9 @@ type Layout = {
  */
 function buildLayout(
   code: string,
-  prerequisiteEdges: readonly CataloguePrerequisiteEdge[],
+  prerequisiteEdges: readonly CoursePrerequisiteEdge[],
 ): Layout {
-  const incoming = new Map<string, CataloguePrerequisiteEdge[]>();
+  const incoming = new Map<string, CoursePrerequisiteEdge[]>();
   for (const edge of prerequisiteEdges) {
     const existing = incoming.get(edge.to) ?? [];
     existing.push(edge);
@@ -96,13 +96,15 @@ function buildLayout(
 }
 
 export function PrereqGraph({
+  academicYear,
   code,
   prerequisiteEdges,
   completedCodes,
   plannedCodes,
 }: {
+  academicYear: number;
   code: string;
-  prerequisiteEdges: readonly CataloguePrerequisiteEdge[];
+  prerequisiteEdges: readonly CoursePrerequisiteEdge[];
   completedCodes: ReadonlySet<string>;
   plannedCodes: ReadonlySet<string>;
 }) {
@@ -268,7 +270,7 @@ export function PrereqGraph({
                     return (
                       <Link
                         key={item}
-                        href={`/courses/${item}`}
+                        href={`/courses/${item}?year=${academicYear}`}
                         prefetch={false}
                         style={style}
                         className={nodeClassName}

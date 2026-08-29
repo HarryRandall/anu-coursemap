@@ -33,7 +33,7 @@ export function FixIssueButton({
         const result =
           step.type === "move"
             ? await reorderAttempt(step.attemptId, step.toTermId)
-            : await addCourse(step.courseCode, step.termId);
+            : await addCourse(step.courseCode, step.termId, step.academicYear);
         if (!result.ok) {
           notify(result.message, "warning");
           return;

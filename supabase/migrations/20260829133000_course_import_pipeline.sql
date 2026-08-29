@@ -2,6 +2,93 @@
 -- an external worker performs fetching, parsing and model calls. Canonical
 -- course data remains relational and publication always remains explicit.
 
+-- The foundation migration used "document" terminology while the agreed
+-- course model calls these immutable fetches source pages. Rename the table,
+-- its course-only foreign-key columns and every inherited database object
+-- before the durable pipeline is added. The generic catalogue source document
+-- table remains unchanged for the university calendar and future programmes.
+alter table public.course_source_documents
+  rename to course_source_pages;
+
+alter sequence public.course_source_documents_id_seq
+  rename to course_source_pages_id_seq;
+
+alter table public.course_source_pages
+  rename column document_kind to page_kind;
+
+alter table public.course_source_pages
+  rename constraint course_source_documents_pkey
+    to course_source_pages_pkey;
+alter table public.course_source_pages
+  rename constraint course_source_documents_source_id_fkey
+    to course_source_pages_source_id_fkey;
+alter table public.course_source_pages
+  rename constraint course_source_documents_academic_year_id_fkey
+    to course_source_pages_academic_year_id_fkey;
+alter table public.course_source_pages
+  rename constraint course_source_documents_id_year_unique
+    to course_source_pages_id_year_unique;
+alter table public.course_source_pages
+  rename constraint course_source_documents_snapshot_unique
+    to course_source_pages_snapshot_unique;
+alter table public.course_source_pages
+  rename constraint course_source_documents_document_kind_check
+    to course_source_pages_page_kind_check;
+alter table public.course_source_pages
+  rename constraint course_source_documents_external_key_not_blank_check
+    to course_source_pages_external_key_not_blank_check;
+alter table public.course_source_pages
+  rename constraint course_source_documents_canonical_url_check
+    to course_source_pages_canonical_url_check;
+alter table public.course_source_pages
+  rename constraint course_source_documents_media_type_not_blank_check
+    to course_source_pages_media_type_not_blank_check;
+alter table public.course_source_pages
+  rename constraint course_source_documents_content_sha256_check
+    to course_source_pages_content_sha256_check;
+alter table public.course_source_pages
+  rename constraint course_source_documents_http_status_check
+    to course_source_pages_http_status_check;
+alter table public.course_source_pages
+  rename constraint course_source_documents_byte_size_check
+    to course_source_pages_byte_size_check;
+alter table public.course_source_pages
+  rename constraint course_source_documents_storage_check
+    to course_source_pages_storage_check;
+
+alter index public.course_source_documents_academic_year_id_idx
+  rename to course_source_pages_academic_year_id_idx;
+alter trigger course_source_documents_reject_mutation
+  on public.course_source_pages rename to course_source_pages_reject_mutation;
+alter policy course_source_documents_import_admin_read
+  on public.course_source_pages rename to course_source_pages_import_admin_read;
+alter policy course_source_documents_import_admin_insert
+  on public.course_source_pages rename to course_source_pages_import_admin_insert;
+
+alter table public.course_directory_entries
+  rename column source_document_id to source_page_id;
+alter table public.course_directory_entries
+  rename constraint course_directory_entries_source_document_year_fkey
+    to course_directory_entries_source_page_year_fkey;
+alter index public.course_directory_entries_source_document_year_idx
+  rename to course_directory_entries_source_page_year_idx;
+
+alter table public.course_snapshots
+  rename column source_document_id to source_page_id;
+alter table public.course_snapshots
+  rename constraint course_snapshots_source_document_year_fkey
+    to course_snapshots_source_page_year_fkey;
+alter index public.course_snapshots_source_document_year_idx
+  rename to course_snapshots_source_page_year_idx;
+
+alter table public.course_snapshot_field_evidence
+  rename column source_document_id to source_page_id;
+alter table public.course_snapshot_field_evidence
+  rename constraint course_snapshot_field_evidence_source_document_year_fkey
+    to course_snapshot_field_evidence_source_page_year_fkey;
+alter index public.course_snapshot_field_evidence_source_document_year_idx
+  rename to course_snapshot_field_evidence_source_page_year_idx;
+
 -- ANU course identities may carry one uppercase variant suffix, for example
 -- COMP8900F or COMP8900P. Keep every live identity and source-code constraint
 -- aligned before the import pipeline starts writing suffixed courses.
@@ -154,7 +241,7 @@ create table public.course_import_targets (
   course_code text not null,
   course_id bigint,
   course_year_id bigint,
-  source_document_id bigint,
+  source_page_id bigint,
   baseline_draft_snapshot_id bigint,
   baseline_published_snapshot_id bigint,
   candidate_snapshot_id bigint,
@@ -192,9 +279,9 @@ create table public.course_import_targets (
   constraint course_import_targets_course_year_provenance_fkey
     foreign key (course_year_id, course_id, academic_year_id)
     references public.course_years (id, course_id, academic_year_id),
-  constraint course_import_targets_source_document_year_fkey
-    foreign key (source_document_id, academic_year_id)
-    references public.course_source_documents (id, academic_year_id),
+  constraint course_import_targets_source_page_year_fkey
+    foreign key (source_page_id, academic_year_id)
+    references public.course_source_pages (id, academic_year_id),
   constraint course_import_targets_baseline_draft_fkey
     foreign key (baseline_draft_snapshot_id, course_year_id)
     references public.course_snapshots (id, course_year_id),
@@ -820,13 +907,13 @@ alter table public.course_offerings
   alter column catalogue_year_id drop not null,
   alter column source_document_id drop not null,
   add column academic_year_id bigint,
-  add column course_source_document_id bigint,
+  add column course_source_page_id bigint,
   add constraint course_offerings_snapshot_year_fkey
     foreign key (course_snapshot_id, academic_year_id)
     references public.course_snapshots (id, academic_year_id) on delete cascade,
-  add constraint course_offerings_source_document_year_v2_fkey
-    foreign key (course_source_document_id, academic_year_id)
-    references public.course_source_documents (id, academic_year_id),
+  add constraint course_offerings_source_page_year_fkey
+    foreign key (course_source_page_id, academic_year_id)
+    references public.course_source_pages (id, academic_year_id),
   add constraint course_offerings_id_snapshot_unique
     unique (id, course_snapshot_id),
   add constraint course_offerings_storage_path_check check (
@@ -835,7 +922,7 @@ alter table public.course_offerings
       and catalogue_year_id is not null
       and source_document_id is not null
       and academic_year_id is null
-      and course_source_document_id is null
+      and course_source_page_id is null
     )
     or (
       course_version_id is null
@@ -843,7 +930,7 @@ alter table public.course_offerings
       and source_document_id is null
       and course_snapshot_id is not null
       and academic_year_id is not null
-      and course_source_document_id is not null
+      and course_source_page_id is not null
     )
   );
 
@@ -860,7 +947,7 @@ alter table public.offering_sessions
   alter column academic_period_id drop not null,
   add column course_snapshot_id bigint,
   add column academic_year_id bigint,
-  add column course_source_document_id bigint,
+  add column course_source_page_id bigint,
   add column position integer,
   add column source_text text,
   add column academic_period_code text,
@@ -908,23 +995,23 @@ alter table public.offering_sessions
   add constraint offering_sessions_snapshot_year_fkey
     foreign key (course_snapshot_id, academic_year_id)
     references public.course_snapshots (id, academic_year_id) on delete cascade,
-  add constraint offering_sessions_source_document_year_v2_fkey
-    foreign key (course_source_document_id, academic_year_id)
-    references public.course_source_documents (id, academic_year_id),
+  add constraint offering_sessions_source_page_year_fkey
+    foreign key (course_source_page_id, academic_year_id)
+    references public.course_source_pages (id, academic_year_id),
   add constraint offering_sessions_storage_path_check check (
     (
       catalogue_year_id is not null
       and source_document_id is not null
       and academic_period_id is not null
       and academic_year_id is null
-      and course_source_document_id is null
+      and course_source_page_id is null
     )
     or (
       catalogue_year_id is null
       and source_document_id is null
       and course_snapshot_id is not null
       and academic_year_id is not null
-      and course_source_document_id is not null
+      and course_source_page_id is not null
       and academic_period_code is not null
       and academic_period_name is not null
     )
@@ -999,13 +1086,13 @@ alter table public.course_rules
   alter column catalogue_year_id drop not null,
   alter column source_document_id drop not null,
   add column academic_year_id bigint,
-  add column course_source_document_id bigint,
+  add column course_source_page_id bigint,
   add constraint course_rules_snapshot_year_fkey
     foreign key (course_snapshot_id, academic_year_id)
     references public.course_snapshots (id, academic_year_id) on delete cascade,
-  add constraint course_rules_source_document_year_v2_fkey
-    foreign key (course_source_document_id, academic_year_id)
-    references public.course_source_documents (id, academic_year_id),
+  add constraint course_rules_source_page_year_fkey
+    foreign key (course_source_page_id, academic_year_id)
+    references public.course_source_pages (id, academic_year_id),
   add constraint course_rules_id_snapshot_unique unique (id, course_snapshot_id),
   add constraint course_rules_storage_path_check check (
     (
@@ -1013,7 +1100,7 @@ alter table public.course_rules
       and catalogue_year_id is not null
       and source_document_id is not null
       and academic_year_id is null
-      and course_source_document_id is null
+      and course_source_page_id is null
     )
     or (
       course_version_id is null
@@ -1021,7 +1108,7 @@ alter table public.course_rules
       and source_document_id is null
       and course_snapshot_id is not null
       and academic_year_id is not null
-      and course_source_document_id is not null
+      and course_source_page_id is not null
     )
   );
 
@@ -1396,8 +1483,8 @@ create index course_import_targets_course_year_provenance_idx
     academic_year_id
   );
 
-create index course_import_targets_source_document_year_idx
-  on public.course_import_targets (source_document_id, academic_year_id);
+create index course_import_targets_source_page_year_idx
+  on public.course_import_targets (source_page_id, academic_year_id);
 
 create index course_import_targets_baseline_draft_idx
   on public.course_import_targets (baseline_draft_snapshot_id, course_year_id);
@@ -1456,8 +1543,8 @@ create index course_offerings_academic_year_id_idx
 create index course_offerings_snapshot_year_idx
   on public.course_offerings (course_snapshot_id, academic_year_id);
 
-create index course_offerings_source_document_year_v2_idx
-  on public.course_offerings (course_source_document_id, academic_year_id);
+create index course_offerings_source_page_year_idx
+  on public.course_offerings (course_source_page_id, academic_year_id);
 
 create index offering_sessions_course_snapshot_id_idx
   on public.offering_sessions (course_snapshot_id);
@@ -1471,8 +1558,8 @@ create index offering_sessions_snapshot_year_idx
 create index offering_sessions_academic_year_id_idx
   on public.offering_sessions (academic_year_id);
 
-create index offering_sessions_source_document_year_v2_idx
-  on public.offering_sessions (course_source_document_id, academic_year_id);
+create index offering_sessions_source_page_year_idx
+  on public.offering_sessions (course_source_page_id, academic_year_id);
 
 create index course_rules_academic_year_id_idx
   on public.course_rules (academic_year_id);
@@ -1480,8 +1567,8 @@ create index course_rules_academic_year_id_idx
 create index course_rules_snapshot_year_idx
   on public.course_rules (course_snapshot_id, academic_year_id);
 
-create index course_rules_source_document_year_v2_idx
-  on public.course_rules (course_source_document_id, academic_year_id);
+create index course_rules_source_page_year_idx
+  on public.course_rules (course_source_page_id, academic_year_id);
 
 create index course_rule_groups_course_snapshot_id_idx
   on public.course_rule_groups (course_snapshot_id);
@@ -1866,7 +1953,7 @@ declare
   directory_course_id bigint;
   directory_source_id bigint;
   candidate_is_sealed boolean;
-  candidate_source_document_id bigint;
+  candidate_source_page_id bigint;
   candidate_is_published boolean;
 begin
   if tg_op = 'INSERT' then
@@ -1937,8 +2024,8 @@ begin
   select entries.course_id, documents.source_id
   into directory_course_id, directory_source_id
   from public.course_directory_entries as entries
-  join public.course_source_documents as documents
-    on documents.id = entries.source_document_id
+  join public.course_source_pages as documents
+    on documents.id = entries.source_page_id
    and documents.academic_year_id = entries.academic_year_id
   where entries.id = new.directory_entry_id
     and entries.academic_year_id = new.academic_year_id
@@ -1975,14 +2062,14 @@ begin
       using errcode = '23503';
   end if;
 
-  if new.source_document_id is not null
+  if new.source_page_id is not null
     and not exists (
       select 1
-      from public.course_source_documents as documents
-      where documents.id = new.source_document_id
+      from public.course_source_pages as documents
+      where documents.id = new.source_page_id
         and documents.source_id = new.source_id
         and documents.academic_year_id = new.academic_year_id
-        and documents.document_kind = 'course_page'
+        and documents.page_kind = 'course_page'
         and documents.external_key = new.course_code
     )
   then
@@ -1993,11 +2080,11 @@ begin
   if new.candidate_snapshot_id is not null then
     select
       snapshots.sealed_at is not null,
-      snapshots.source_document_id,
+      snapshots.source_page_id,
       course_years.published_snapshot_id = snapshots.id
     into
       candidate_is_sealed,
-      candidate_source_document_id,
+      candidate_source_page_id,
       candidate_is_published
     from public.course_snapshots as snapshots
     join public.course_years as course_years
@@ -2008,7 +2095,7 @@ begin
       and snapshots.origin = 'import';
 
     if not found
-      or candidate_source_document_id is distinct from new.source_document_id
+      or candidate_source_page_id is distinct from new.source_page_id
     then
       raise exception 'course import candidate snapshot provenance is invalid'
         using errcode = '23503';
@@ -2576,8 +2663,8 @@ begin
     on entries.academic_year_id = selected_year_id
    and entries.code = codes.code
    and entries.is_current
-  join public.course_source_documents as documents
-    on documents.id = entries.source_document_id
+  join public.course_source_pages as documents
+    on documents.id = entries.source_page_id
    and documents.academic_year_id = entries.academic_year_id;
 
   if matched_count <> cardinality(normalised_codes) then
@@ -3334,7 +3421,7 @@ create or replace function private.finish_course_import_target(
   p_change_kind text,
   p_course_id bigint,
   p_course_year_id bigint,
-  p_source_document_id bigint,
+  p_source_page_id bigint,
   p_candidate_snapshot_id bigint,
   p_error_code text default null,
   p_error_summary text default null
@@ -3404,7 +3491,7 @@ begin
     if p_change_kind not in ('new', 'changed')
       or p_course_id is null
       or p_course_year_id is null
-      or p_source_document_id is null
+      or p_source_page_id is null
       or p_candidate_snapshot_id is null
     then
       raise exception 'Changed candidates require complete snapshot provenance.'
@@ -3431,7 +3518,7 @@ begin
     where snapshots.id = p_candidate_snapshot_id
       and snapshots.course_year_id = p_course_year_id
       and snapshots.academic_year_id = selected_target.academic_year_id
-      and snapshots.source_document_id = p_source_document_id
+      and snapshots.source_page_id = p_source_page_id
       and snapshots.origin = 'import'
     for update;
 
@@ -3461,7 +3548,7 @@ begin
       or p_candidate_snapshot_id is not null
       or p_course_id is null
       or p_course_year_id is null
-      or p_source_document_id is null
+      or p_source_page_id is null
     then
       raise exception 'Unchanged results require source provenance and no candidate.'
         using errcode = '22023';
@@ -3484,9 +3571,9 @@ begin
   set
     course_id = coalesce(p_course_id, targets.course_id),
     course_year_id = coalesce(p_course_year_id, targets.course_year_id),
-    source_document_id = coalesce(
-      p_source_document_id,
-      targets.source_document_id
+    source_page_id = coalesce(
+      p_source_page_id,
+      targets.source_page_id
     ),
     candidate_snapshot_id = p_candidate_snapshot_id,
     processing_status = p_processing_status,

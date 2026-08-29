@@ -1,7 +1,7 @@
 import type { CourseImportArtifactLocator } from "./artifact-store.ts";
 import { isDemoMode } from "../supabase/config.ts";
 import {
-  createHostedCatalogueDatabaseClient,
+  createHostedImportDatabaseClient,
   createLocalDatabaseClient,
 } from "../../scripts/catalogue/lib/local-database.mjs";
 
@@ -49,7 +49,7 @@ function configuredImportDatabaseUrl() {
 export async function createCourseImportDatabaseClient() {
   return isDemoMode()
     ? createLocalDatabaseClient()
-    : createHostedCatalogueDatabaseClient(configuredImportDatabaseUrl());
+    : createHostedImportDatabaseClient(configuredImportDatabaseUrl());
 }
 
 export async function recordCourseImportDispatch({
@@ -443,10 +443,10 @@ export async function recordCourseSourcePage(
   },
 ) {
   await sql`
-    insert into public.course_source_documents (
+    insert into public.course_source_pages (
       source_id,
       academic_year_id,
-      document_kind,
+      page_kind,
       external_key,
       canonical_url,
       media_type,
@@ -477,17 +477,17 @@ export async function recordCourseSourcePage(
     on conflict (
       source_id,
       academic_year_id,
-      document_kind,
+      page_kind,
       external_key,
       content_sha256
     ) do nothing
   `;
   const [row] = await sql`
     select id
-    from public.course_source_documents
+    from public.course_source_pages
     where source_id = ${sourceId}
       and academic_year_id = ${academicYearId}
-      and document_kind = ${"course_page"}
+      and page_kind = ${"course_page"}
       and external_key = ${courseCode}
       and content_sha256 = ${contentSha256}
   `;
@@ -850,7 +850,7 @@ export async function finishCourseImportTarget(
     changeKind,
     courseId,
     courseYearId,
-    sourceDocumentId,
+    sourcePageId,
     candidateSnapshotId,
     errorCode = null,
     errorSummary = null,
@@ -864,7 +864,7 @@ export async function finishCourseImportTarget(
     changeKind: "new" | "changed" | "unchanged" | null;
     courseId: number | null;
     courseYearId: number | null;
-    sourceDocumentId: number | null;
+    sourcePageId: number | null;
     candidateSnapshotId: number | null;
     errorCode?: string | null;
     errorSummary?: string | null;
@@ -881,7 +881,7 @@ export async function finishCourseImportTarget(
       ${changeKind}::text,
       ${courseId}::bigint,
       ${courseYearId}::bigint,
-      ${sourceDocumentId}::bigint,
+      ${sourcePageId}::bigint,
       ${candidateSnapshotId}::bigint,
       ${errorCode}::text,
       ${errorSummary}::text

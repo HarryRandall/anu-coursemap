@@ -24,9 +24,12 @@ Next.js owns routing, server rendering and mutations. Supabase Auth owns identit
 Course identity, year-specific records and immutable saved states are separate:
 
 - `academic_years`, `course_directory_entries`, `courses` and `course_years`
+- `course_sources` and immutable `course_source_pages`
 - `course_snapshots` and their relational fees, attributes, outcomes, assessments,
   offerings, sessions and requisite rules
 - `course_rules`, nested `course_rule_groups` and `course_rule_conditions`
+- `course_import_runs`, `course_import_targets`, `course_import_stages`,
+  `course_import_artifacts`, `course_extractions` and `course_review_items`
 - `catalogue_years`, versioned `academic_structures` and `requirement_groups`
   remain the programme data model until the later programme migration
 - `university_calendar_events` keyed by calendar year, date and title
@@ -37,6 +40,11 @@ User-owned planning data is also separate:
 - `plans` and ordered `plan_items`
 - `course_attempts`
 - approval requests and immutable approval events
+
+The development cutover clears every previous course identity, version,
+snapshot, plan, attempt and programme row, then removes the old
+`course_versions` and course-directory compatibility schema. No legacy course
+lineage is retained.
 
 Course imports run asynchronously through a private Vercel Queue consumer. A
 durable run contains no more than ten course targets. Each target records HTML,

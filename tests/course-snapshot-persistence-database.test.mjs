@@ -63,10 +63,10 @@ test("persists and idempotently reuses a complete review candidate", async () =>
 
         const directoryHash = hash("course persistence directory fixture");
         const [directoryDocument] = await tx`
-          insert into public.course_source_documents (
+          insert into public.course_source_pages (
             source_id,
             academic_year_id,
-            document_kind,
+            page_kind,
             external_key,
             canonical_url,
             media_type,
@@ -91,11 +91,11 @@ test("persists and idempotently reuses a complete review candidate", async () =>
           returning id
         `;
         const sourceHash = hash(fixtureHtml);
-        const [sourceDocument] = await tx`
-          insert into public.course_source_documents (
+        const [sourcePage] = await tx`
+          insert into public.course_source_pages (
             source_id,
             academic_year_id,
-            document_kind,
+            page_kind,
             external_key,
             canonical_url,
             media_type,
@@ -125,7 +125,7 @@ test("persists and idempotently reuses a complete review candidate", async () =>
             code,
             title,
             units,
-            source_document_id
+            source_page_id
           ) values (
             ${year.id},
             ${courseCode},
@@ -137,7 +137,7 @@ test("persists and idempotently reuses a complete review candidate", async () =>
           set
             title = excluded.title,
             units = excluded.units,
-            source_document_id = excluded.source_document_id,
+            source_page_id = excluded.source_page_id,
             course_id = null,
             is_current = true
         `;
@@ -220,7 +220,7 @@ test("persists and idempotently reuses a complete review candidate", async () =>
 
         const first = await persistCourseSnapshotCandidate(tx, {
           claim,
-          sourceDocumentId: Number(sourceDocument.id),
+          sourcePageId: Number(sourcePage.id),
           projection,
           extraction,
         });
@@ -230,7 +230,7 @@ test("persists and idempotently reuses a complete review candidate", async () =>
 
         const second = await persistCourseSnapshotCandidate(tx, {
           claim,
-          sourceDocumentId: Number(sourceDocument.id),
+          sourcePageId: Number(sourcePage.id),
           projection,
           extraction,
         });
@@ -267,6 +267,21 @@ test("persists and idempotently reuses a complete review candidate", async () =>
         assert.equal(counts.assessments, projection.assessmentItems.length);
         assert.equal(counts.sessions, projection.offeringSessions.length);
         assert.equal(counts.attributes, projection.attributes.length);
+
+        const [offeringSession] = await tx`
+          select academic_period_id, academic_period_code, academic_period_name
+          from public.offering_sessions
+          where course_snapshot_id = ${first.candidateSnapshotId}
+        `;
+        assert.equal(offeringSession.academic_period_id, null);
+        assert.equal(
+          offeringSession.academic_period_code,
+          projection.offeringSessions[0].academicPeriodCode,
+        );
+        assert.equal(
+          offeringSession.academic_period_name,
+          projection.offeringSessions[0].academicPeriodName,
+        );
 
         const [snapshot] = await tx`
           select sealed_at

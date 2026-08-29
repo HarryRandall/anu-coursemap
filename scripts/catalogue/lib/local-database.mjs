@@ -155,7 +155,7 @@ export async function createLocalDatabaseClient(options = {}) {
   const connectionString = await discoverLocalDatabaseUrl(options);
 
   const sql = postgres(connectionString, {
-    application_name: "coursemap_catalogue_import",
+    application_name: "coursemap_import_runner",
     connect_timeout: 5,
     idle_timeout: 5,
     max: 1,
@@ -178,7 +178,7 @@ export function assertHostedSupabaseDatabaseUrl(connectionString) {
   const databaseUrl = parseDatabaseUrl(connectionString);
   if (!isHostedSupabaseDatabaseHost(databaseUrl.hostname)) {
     throw new Error(
-      "The hosted catalogue importer only accepts a Supabase database connection URL.",
+      "The hosted import runner only accepts a Supabase database connection URL.",
     );
   }
   return databaseUrl;
@@ -189,10 +189,10 @@ export function assertHostedSupabaseDatabaseUrl(connectionString) {
  * import runner. This is intentionally separate from the local-only client so
  * routine CLI imports cannot accidentally target production.
  */
-export function createHostedCatalogueDatabaseClient(connectionString) {
+export function createHostedImportDatabaseClient(connectionString) {
   const databaseUrl = assertHostedSupabaseDatabaseUrl(connectionString);
   const sql = postgres(databaseUrl.toString(), {
-    application_name: "coursemap_catalogue_import",
+    application_name: "coursemap_import_runner",
     connect_timeout: 10,
     idle_timeout: 5,
     max: 1,
@@ -203,14 +203,14 @@ export function createHostedCatalogueDatabaseClient(connectionString) {
   return sql;
 }
 
-export function assertVerifiedCatalogueImportClient(sql) {
+export function assertVerifiedImportDatabaseClient(sql) {
   if (!verifiedImportClients.has(sql)) {
     throw new Error(
-      "Catalogue imports require a client created by createLocalDatabaseClient() or createHostedCatalogueDatabaseClient().",
+      "Imports require a client created by createLocalDatabaseClient() or createHostedImportDatabaseClient().",
     );
   }
 }
 
 export function assertVerifiedLocalDatabaseClient(sql) {
-  assertVerifiedCatalogueImportClient(sql);
+  assertVerifiedImportDatabaseClient(sql);
 }

@@ -4,11 +4,11 @@ import { useEffect, useId, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
-  searchImportableCourses,
-  searchImportableProgrammes,
-  type ImportSearchResult,
-  type ProgrammeImportSearchResult,
-} from "@/lib/catalogue-import/search-actions";
+  searchRequisiteCourses,
+  searchRequisiteProgrammes,
+  type RequisiteCourseSearchResult,
+  type RequisiteProgrammeSearchResult,
+} from "@/lib/coursemap/requisite-search-actions";
 import {
   applyCourseMatch,
   CONDITION_FAMILY_KINDS,
@@ -67,6 +67,7 @@ const COURSE_MATCH_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "completed", label: "Must be completed" },
+  { value: "concurrent", label: "Completed or concurrent" },
   { value: "not_completed", label: "Must not be completed" },
   { value: "mark", label: "Mark of at least" },
 ];
@@ -75,7 +76,8 @@ const COURSE_MATCH_OPTIONS: Array<{
 const COURSE_LEVELS = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000];
 
 async function searchCourses(query: string) {
-  const results: ImportSearchResult[] = await searchImportableCourses(query);
+  const results: RequisiteCourseSearchResult[] =
+    await searchRequisiteCourses(query);
   return results.map((result) => ({
     code: result.code,
     title: result.title,
@@ -83,8 +85,8 @@ async function searchCourses(query: string) {
 }
 
 async function searchProgrammes(query: string) {
-  const results: ProgrammeImportSearchResult[] =
-    await searchImportableProgrammes(query);
+  const results: RequisiteProgrammeSearchResult[] =
+    await searchRequisiteProgrammes(query);
   return results.map((result) => ({
     code: result.code,
     title: result.title,

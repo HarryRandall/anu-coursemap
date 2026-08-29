@@ -1,7 +1,9 @@
 import type { Accent, Attempt, Course, Term } from "@/lib/coursemap/types";
+import { planningCourseForAttempt, unitsForAttempt } from "@/lib/planner";
 
 type DashboardCatalogue = {
   courses: readonly Course[];
+  snapshotCourses?: readonly Course[];
   terms: readonly Term[];
 };
 
@@ -46,32 +48,37 @@ function activeAttempts(attempts: readonly Attempt[]) {
   return [...byCourse.values()];
 }
 
-function courseByCode(courses: readonly Course[]) {
-  return new Map(courses.map((course) => [course.code, course]));
-}
-
 export function dashboardTermLoads({
   attempts,
   courses,
+  snapshotCourses,
   terms,
 }: DashboardCatalogue & {
   attempts: readonly Attempt[];
 }): DashboardTermPoint[] {
-  const coursesByCode = courseByCode(courses);
+  const catalogue = { courses, snapshotCourses, terms };
   const active = activeAttempts(attempts);
   return scheduledTerms(terms).map((term) => {
     const inTerm = active
       .filter((attempt) => attempt.termId === term.id)
       .flatMap((attempt) => {
-        const course = coursesByCode.get(attempt.courseCode);
+        const course = planningCourseForAttempt(attempt, catalogue);
         return course ? [{ attempt, course }] : [];
       });
     const completed = inTerm
       .filter(({ attempt }) => attempt.status === "completed")
-      .reduce((total, { course }) => total + course.units, 0);
+      .reduce(
+        (total, { attempt, course }) =>
+          total + unitsForAttempt(attempt, course),
+        0,
+      );
     const planned = inTerm
       .filter(({ attempt }) => attempt.status !== "completed")
-      .reduce((total, { course }) => total + course.units, 0);
+      .reduce(
+        (total, { attempt, course }) =>
+          total + unitsForAttempt(attempt, course),
+        0,
+      );
     return {
       id: term.id,
       label: termLabel(term),
@@ -103,14 +110,15 @@ export function cumulativeDashboardUnits(
 export function dashboardCalendarEvents({
   attempts,
   courses,
+  snapshotCourses,
   terms,
 }: DashboardCatalogue & {
   attempts: readonly Attempt[];
 }): DashboardCalendarEvent[] {
-  const coursesByCode = courseByCode(courses);
+  const catalogue = { courses, snapshotCourses, terms };
   const termsById = new Map(terms.map((term) => [term.id, term]));
   return activeAttempts(attempts).flatMap((attempt) => {
-    const course = coursesByCode.get(attempt.courseCode);
+    const course = planningCourseForAttempt(attempt, catalogue);
     const term = termsById.get(attempt.termId);
     if (!course || !term || term.id === "unscheduled") return [];
     return [

@@ -50,7 +50,6 @@ export type CourseImportQueueSend = (
 
 type CourseImportRequestBody = {
   academicYear?: unknown;
-  catalogueYear?: unknown;
   courseCodes?: unknown;
   requestedModel?: unknown;
 };
@@ -98,16 +97,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function parseAcademicYear(body: CourseImportRequestBody) {
-  const academicYear = body.academicYear ?? body.catalogueYear;
-  if (
-    body.academicYear !== undefined &&
-    body.catalogueYear !== undefined &&
-    body.academicYear !== body.catalogueYear
-  ) {
-    throw new CourseImportRequestError(
-      "academicYear and catalogueYear must match when both are provided.",
-    );
-  }
+  const academicYear = body.academicYear;
   if (
     !Number.isInteger(academicYear) ||
     Number(academicYear) < MIN_IMPORTABLE_ACADEMIC_YEAR ||

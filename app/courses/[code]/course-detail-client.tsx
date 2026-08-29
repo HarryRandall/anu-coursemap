@@ -12,14 +12,14 @@ import {
 import { TermChooser } from "@/components/overlays";
 import { AppShell } from "@/components/shell";
 import { Tabs } from "@/components/ui/tabs";
-import type { CatalogueCourse } from "@/lib/coursemap/catalogue-types";
+import type { CourseDetails } from "@/lib/coursemap/course-types";
 import type { CompletedRequisiteCourse } from "@/lib/coursemap/requisite-summary";
 
 export function CourseDetailClient({
   course,
   requisiteCompletion,
 }: {
-  course: CatalogueCourse;
+  course: CourseDetails;
   requisiteCompletion: {
     completedCourses: CompletedRequisiteCourse[];
     enrolledProgrammeCodes?: string[];
