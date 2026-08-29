@@ -43,6 +43,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
 import { parseCourseSnapshotProjection } from "@/lib/course-import/snapshot-projection-contract";
 import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";
+import { reviewConfidenceTone } from "@/lib/coursemap/course-import-review-state";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import {
   archiveCourseYear,
@@ -1190,11 +1191,10 @@ export function CourseReview({
             {record.snapshot?.overall_confidence !== null &&
             record.snapshot?.overall_confidence !== undefined ? (
               <Badge
-                tone={
-                  record.snapshot.overall_confidence >= 0.85
-                    ? "success"
-                    : "warning"
-                }
+                tone={reviewConfidenceTone(
+                  record.snapshot.overall_confidence,
+                  needsExplicitConfirmation,
+                )}
               >
                 {Math.round(record.snapshot.overall_confidence * 100)}%
                 confidence

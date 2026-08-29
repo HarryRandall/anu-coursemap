@@ -168,6 +168,44 @@ test("reports incomplete and uncounted course directory responses", () => {
   );
 });
 
+test("accepts a show-all response larger than ANU's capped total count", () => {
+  const items = Array.from({ length: 501 }, (_, index) => ({
+    CourseCode: `TEST${String(index).padStart(4, "0")}`,
+    Name: `Test course ${index}`,
+  }));
+  const directory = parseAnuCourseDirectory(
+    {
+      TotalCount: 500,
+      Items: items,
+    },
+    2026,
+  );
+
+  assert.equal(directory.receivedItemCount, 501);
+  assert.equal(directory.totalCount, 500);
+  assert.equal(directory.isComplete, true);
+  assert.deepEqual(directory.diagnostics, []);
+});
+
+test("rejects other under-reported directory totals", () => {
+  const directory = parseAnuCourseDirectory(
+    {
+      TotalCount: 1,
+      Items: [
+        { CourseCode: "COMP1100", Name: "Programming as Problem Solving" },
+        { CourseCode: "MATH1013", Name: "Mathematics and Applications 1" },
+      ],
+    },
+    2026,
+  );
+
+  assert.equal(directory.isComplete, false);
+  assert.equal(
+    directory.diagnostics.at(0)?.code,
+    "INCONSISTENT_DIRECTORY_TOTAL_COUNT",
+  );
+});
+
 test("fetches the directory with provenance metadata", async () => {
   const requests = [];
   const directory = await fetchAnuCourseDirectory(2025, {

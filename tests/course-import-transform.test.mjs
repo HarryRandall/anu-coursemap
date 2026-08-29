@@ -32,6 +32,7 @@ import { projectCourseSnapshot } from "../lib/course-import/project-snapshot.ts"
 import {
   countOpenBlockingReviewItems,
   courseImportConfidenceTone,
+  reviewConfidenceTone,
 } from "../lib/coursemap/course-import-review-state.ts";
 
 const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2400";
@@ -576,6 +577,8 @@ test("does not present high confidence as success while review blockers remain",
   );
   assert.equal(courseImportConfidenceTone(0.98, 0), "success");
   assert.equal(courseImportConfidenceTone(0.7, 0), "warning");
+  assert.equal(reviewConfidenceTone(0.98, true), "warning");
+  assert.equal(reviewConfidenceTone(0.98, false), "success");
 });
 
 test("evidence checking requires source text and support for scalar claims", () => {
