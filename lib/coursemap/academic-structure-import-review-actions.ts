@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { canManageCourseImports, canWriteCatalogue } from "@/lib/auth/viewer";
 import type { CoursemapActionResult } from "@/lib/coursemap/actions";
+import { allAdminAcademicStructureCollectionPaths } from "@/lib/coursemap/academic-structure-routes";
 import { createClient } from "@/lib/supabase/server";
 
 type ReviewDecisionInput = {
@@ -69,7 +70,9 @@ function revalidateImport(runId: string, targetId: string) {
   revalidatePath("/admin/imports/structures/runs");
   revalidatePath(`/admin/imports/structures/runs/${runId}`);
   revalidatePath(`/admin/imports/structures/runs/${runId}/targets/${targetId}`);
-  revalidatePath("/admin/programmes");
+  for (const path of allAdminAcademicStructureCollectionPaths()) {
+    revalidatePath(path);
+  }
 }
 
 async function decide(

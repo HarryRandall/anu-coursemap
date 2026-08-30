@@ -207,6 +207,79 @@ function normalisedSourceText(value: string) {
     .toLowerCase();
 }
 
+function sourceTokens(value: string) {
+  return normalisedSourceText(value).match(/[\p{L}\p{N}]+/gu) ?? [];
+}
+
+function sourceSupportsStructuredText(source: string, candidate: string) {
+  const normalisedCandidate = normalisedSourceText(candidate);
+  if (!normalisedCandidate) return true;
+  if (source.includes(normalisedCandidate)) return true;
+
+  const sourceWords = sourceTokens(source);
+  const candidateWords = sourceTokens(candidate);
+  if (candidateWords.length === 0) return false;
+
+  let sourceIndex = 0;
+  return candidateWords.every((candidateWord) => {
+    while (
+      sourceIndex < sourceWords.length &&
+      sourceWords[sourceIndex] !== candidateWord
+    ) {
+      sourceIndex += 1;
+    }
+    if (sourceIndex >= sourceWords.length) return false;
+    sourceIndex += 1;
+    return true;
+  });
+}
+
+function normaliseAcademicStructureModelExtraction(value: unknown) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return { value, normalisations: [] as string[] };
+  }
+
+  const normalised = structuredClone(value) as Record<string, unknown>;
+  const normalisations: string[] = [];
+  const requirements = normalised.requirements;
+  if (
+    typeof requirements !== "object" ||
+    requirements === null ||
+    Array.isArray(requirements)
+  ) {
+    return { value: normalised, normalisations };
+  }
+
+  const visitRule = (rule: unknown, path: string) => {
+    if (typeof rule !== "object" || rule === null || Array.isArray(rule)) {
+      return;
+    }
+    const record = rule as Record<string, unknown>;
+    if (record.type === "group" && Array.isArray(record.children)) {
+      record.children.forEach((child, index) =>
+        visitRule(child, `${path}.children.${index}`),
+      );
+      return;
+    }
+    if (
+      record.type === "condition" &&
+      record.conditionKind !== "free_text" &&
+      typeof record.freeText === "string"
+    ) {
+      record.freeText = null;
+      normalisations.push(
+        `${path}.freeText was cleared because sourceText already preserves the condition wording.`,
+      );
+    }
+  };
+
+  visitRule(
+    (requirements as Record<string, unknown>).rule,
+    "$.requirements.rule",
+  );
+  return { value: normalised, normalisations };
+}
+
 function requirementSourceTexts(
   rule: AcademicStructureRequirementRule | null,
 ): string[] {
@@ -224,7 +297,7 @@ function academicStructureModelEvidenceIssues(
   modelInput: string,
 ) {
   const source = normalisedSourceText(modelInput);
-  const candidates = [
+  const structuredSourceTexts = [
     ...extraction.summaryFields.map(({ sourceText }) => sourceText),
     ...extraction.sections.map(({ sourceText }) => sourceText),
     ...extraction.learningOutcomes.map(({ sourceText }) => sourceText),
@@ -235,11 +308,20 @@ function academicStructureModelEvidenceIssues(
       : []),
     ...requirementSourceTexts(extraction.requirements.rule),
     ...extraction.requirements.unmodelledText,
-    ...extraction.evidence.map(({ evidenceExcerpt }) => evidenceExcerpt),
   ];
+  const evidenceExcerpts = extraction.evidence.map(
+    ({ evidenceExcerpt }) => evidenceExcerpt,
+  );
   return [
-    ...new Set(
-      candidates.flatMap((candidate) => {
+    ...new Set([
+      ...structuredSourceTexts.flatMap((candidate) =>
+        sourceSupportsStructuredText(source, candidate)
+          ? []
+          : [
+              `Source wording was not supported by model input: ${candidate.slice(0, 160)}`,
+            ],
+      ),
+      ...evidenceExcerpts.flatMap((candidate) => {
         const normalised = normalisedSourceText(candidate);
         return normalised && !source.includes(normalised)
           ? [
@@ -247,7 +329,7 @@ function academicStructureModelEvidenceIssues(
             ]
           : [];
       }),
-    ),
+    ]),
   ];
 }
 
@@ -783,8 +865,11 @@ export async function processAcademicStructureImportTarget({
         }
       });
 
+      const normalisedModel = normaliseAcademicStructureModelExtraction(
+        modelResult.result.parsed,
+      );
       const providerValidation = await runStage("schema_validate", async () =>
-        validateAcademicStructureExtraction(modelResult.result.parsed, {
+        validateAcademicStructureExtraction(normalisedModel.value, {
           expectedKind: claim.structureKind,
           expectedCode: claim.structureCode,
           expectedYear: claim.academicYear,
@@ -821,6 +906,7 @@ export async function processAcademicStructureImportTarget({
               : providerValidation.issues,
             evidenceValid: evidenceIssues.length === 0,
             evidenceIssues,
+            providerNormalisations: normalisedModel.normalisations,
           }),
         });
 
@@ -984,6 +1070,7 @@ export const academicStructureImportTargetInternals = {
   isRetryableAcademicStructureImportError,
   mergeAcademicStructureExtractions,
   mergeFees,
+  normaliseAcademicStructureModelExtraction,
   recoverOrClaimAcademicStructureImportTarget,
   safeErrorSummary,
 };

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
+import { StructureMultiSelect } from "@/components/profile/structure-multi-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
@@ -45,6 +46,30 @@ export function ProfileEditor({
           degree?.majorCodes.includes(item.code),
       ),
     [catalogue.majors, degree?.majorCodes, draft.catalogueYear],
+  );
+  const minors = useMemo(
+    () =>
+      catalogue.minors.filter(
+        (item) =>
+          item.catalogueYear === draft.catalogueYear &&
+          (degree?.minorCodes.length ?? 0) > 0 &&
+          degree?.minorCodes.includes(item.code),
+      ),
+    [catalogue.minors, degree?.minorCodes, draft.catalogueYear],
+  );
+  const specialisations = useMemo(
+    () =>
+      catalogue.specialisations.filter(
+        (item) =>
+          item.catalogueYear === draft.catalogueYear &&
+          (degree?.specialisationCodes.length ?? 0) > 0 &&
+          degree?.specialisationCodes.includes(item.code),
+      ),
+    [
+      catalogue.specialisations,
+      degree?.specialisationCodes,
+      draft.catalogueYear,
+    ],
   );
   const catalogueYears = catalogue.catalogueYears.map((item) => item.year);
   const planningDuration = nominalProgrammeDuration(
@@ -164,7 +189,7 @@ export function ProfileEditor({
               />
             }
             title="Course of study"
-            description="Only administrator-published degrees and majors appear here."
+            description="Only administrator-published academic structures appear here."
           />
           <div className="grid gap-5 p-5 sm:grid-cols-2">
             <Field label="Catalogue year">
@@ -180,6 +205,8 @@ export function ProfileEditor({
                     catalogueYear,
                     degreeCode: degree?.code ?? "",
                     majorCode: "",
+                    minorCodes: [],
+                    specialisationCodes: [],
                   });
                 }}
                 options={catalogueYears.map((year) => ({
@@ -193,7 +220,13 @@ export function ProfileEditor({
               <Select
                 aria-label="Degree"
                 onChange={(value) =>
-                  setDraft({ ...draft, degreeCode: value, majorCode: "" })
+                  setDraft({
+                    ...draft,
+                    degreeCode: value,
+                    majorCode: "",
+                    minorCodes: [],
+                    specialisationCodes: [],
+                  })
                 }
                 options={degrees.map((item) => ({
                   value: item.code,
@@ -216,6 +249,28 @@ export function ProfileEditor({
                 value={draft.majorCode}
               />
             </Field>
+            {minors.length > 0 ? (
+              <StructureMultiSelect
+                className="sm:col-span-2"
+                hint="Optional. Select every minor included in this plan."
+                label="Minors"
+                onChange={(minorCodes) => setDraft({ ...draft, minorCodes })}
+                options={minors}
+                value={draft.minorCodes}
+              />
+            ) : null}
+            {specialisations.length > 0 ? (
+              <StructureMultiSelect
+                className="sm:col-span-2"
+                hint="Optional. Select every specialisation included in this plan."
+                label="Specialisations"
+                onChange={(specialisationCodes) =>
+                  setDraft({ ...draft, specialisationCodes })
+                }
+                options={specialisations}
+                value={draft.specialisationCodes}
+              />
+            ) : null}
             <Field label="When did you start this degree?">
               <Select
                 aria-label="Commencement year"

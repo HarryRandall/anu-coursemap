@@ -146,7 +146,10 @@ select
   'Complete 6 units from PGMI1000 or PGMX1000.',
   '#program-requirements'
 from public.academic_structure_requirement_groups as groups
-where groups.group_key = 'root';
+join public.academic_structure_snapshots as snapshots
+  on snapshots.id = groups.snapshot_id
+where groups.group_key = 'root'
+  and snapshots.name = 'Capability programme';
 
 insert into public.academic_structure_requirement_options (
   snapshot_id,

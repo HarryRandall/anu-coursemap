@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ACADEMIC_STRUCTURE_EXTRACTION_SCHEMA_VERSION =
-  "academic-structure-extraction.v2" as const;
+  "academic-structure-extraction.v3" as const;
 
 export const ACADEMIC_STRUCTURE_KINDS = [
   "programme",
@@ -11,6 +11,15 @@ export const ACADEMIC_STRUCTURE_KINDS = [
 ] as const;
 
 export type AcademicStructureKind = (typeof ACADEMIC_STRUCTURE_KINDS)[number];
+
+export function isAcademicStructureKind(
+  value: unknown,
+): value is AcademicStructureKind {
+  return (
+    typeof value === "string" &&
+    ACADEMIC_STRUCTURE_KINDS.includes(value as AcademicStructureKind)
+  );
+}
 
 export const ACADEMIC_STRUCTURE_CODE_PATTERN = /^[A-Z0-9][A-Z0-9-]{1,31}$/;
 export const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/;
@@ -216,7 +225,7 @@ const summaryFieldSchema = z
 const sectionSchema = z
   .object({
     position,
-    key: nonEmptyString.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    key: nonEmptyString.regex(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/),
     heading: nonEmptyString,
     markdown: nonEmptyString,
     sourceText: nonEmptyString,
@@ -466,6 +475,7 @@ const requirementConditionSchema: z.ZodType<AcademicStructureRequirementConditio
           disallowCommonReferences({
             allowStructureCodes: true,
             allowMinimumCourses: true,
+            allowUnits: true,
           });
           break;
         case "unit_total":
@@ -655,8 +665,8 @@ const academicStructureExtractionSchema: z.ZodType<AcademicStructureExtraction> 
 function codeMatchesKind(kind: AcademicStructureKind, code: string) {
   if (kind === "major") return code.endsWith("-MAJ");
   if (kind === "minor") return code.endsWith("-MIN");
-  if (kind === "specialisation") return code.endsWith("-SPEC");
-  return !/-(?:MAJ|MIN|SPEC)$/.test(code);
+  if (kind === "specialisation") return /-(?:HSPC|SPEC)$/.test(code);
+  return !/-(?:HSPC|MAJ|MIN|SPEC)$/.test(code);
 }
 
 export function normaliseAcademicStructureCode(code: string) {
@@ -875,7 +885,10 @@ export const ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA = {
       ],
       properties: {
         position: { type: "integer", minimum: 1 },
-        key: { type: "string", minLength: 1 },
+        key: {
+          type: "string",
+          pattern: "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+        },
         heading: { type: "string", minLength: 1 },
         markdown: { type: "string", minLength: 1 },
         sourceText: { type: "string", minLength: 1 },
@@ -1094,7 +1107,7 @@ export const ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA = {
         sourceLocator: { type: "string", minLength: 1 },
         evidenceExcerpt: { type: "string", minLength: 1 },
         confidence: { type: "number", minimum: 0, maximum: 1 },
-        method: { enum: ["deterministic", "model"] },
+        method: { const: "model" },
       },
     },
     reviewItem: {

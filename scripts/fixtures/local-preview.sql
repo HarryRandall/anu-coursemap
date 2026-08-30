@@ -237,6 +237,232 @@ set source_availability = 'available',
     availability_note = 'Local preview fixture'
 where year = 2026;
 
+-- Published academic structures for exercising the complete student selection
+-- and requirements flow locally. These remain loopback-only fixture records.
+insert into public.academic_structures (code, kind)
+values
+  ('LOCAL-PROGRAMME', 'programme'),
+  ('LOCAL-MAJ', 'major'),
+  ('LOCALA-MIN', 'minor'),
+  ('LOCALB-MIN', 'minor'),
+  ('LOCAL-SPEC', 'specialisation')
+on conflict (code) do update
+set kind = excluded.kind,
+    updated_at = now();
+
+insert into public.academic_structure_years (structure_id, academic_year_id)
+select structures.id, years.id
+from public.academic_structures as structures
+join public.academic_years as years on years.year = 2026
+where structures.code in (
+  'LOCAL-PROGRAMME',
+  'LOCAL-MAJ',
+  'LOCALA-MIN',
+  'LOCALB-MIN',
+  'LOCAL-SPEC'
+)
+on conflict (structure_id, academic_year_id) do nothing;
+
+insert into public.academic_structure_snapshots (
+  structure_year_id,
+  academic_year_id,
+  origin,
+  schema_version,
+  semantic_hash,
+  name,
+  description,
+  units,
+  duration_years,
+  overall_confidence,
+  confirmation_status,
+  created_by
+)
+select
+  structure_years.id,
+  structure_years.academic_year_id,
+  'manual',
+  'local-preview.v1',
+  md5(structures.code || ':2026:local-preview')
+    || md5('published:' || structures.code),
+  case structures.code
+    when 'LOCAL-PROGRAMME' then 'Local Bachelor of Testing'
+    when 'LOCAL-MAJ' then 'Local Systems Major'
+    when 'LOCALA-MIN' then 'Local Data Minor'
+    when 'LOCALB-MIN' then 'Local Design Minor'
+    else 'Local Artificial Intelligence Specialisation'
+  end,
+  'Published local fixture used to verify student academic structure selection.',
+  case structures.kind
+    when 'programme' then 144
+    when 'major' then 48
+    else 24
+  end,
+  case when structures.kind = 'programme' then 3 else null end,
+  1,
+  'not_required',
+  '90000000-0000-4000-8000-000000000001'
+from public.academic_structure_years as structure_years
+join public.academic_structures as structures
+  on structures.id = structure_years.structure_id
+join public.academic_years as years
+  on years.id = structure_years.academic_year_id
+ and years.year = 2026
+where structures.code in (
+  'LOCAL-PROGRAMME',
+  'LOCAL-MAJ',
+  'LOCALA-MIN',
+  'LOCALB-MIN',
+  'LOCAL-SPEC'
+);
+
+insert into public.academic_structure_snapshot_relationships (
+  snapshot_id,
+  position,
+  relationship_kind,
+  target_kind,
+  target_code,
+  target_title,
+  source_text,
+  source_locator
+)
+select
+  snapshots.id,
+  options.position,
+  'option',
+  options.target_kind,
+  options.target_code,
+  options.target_title,
+  options.source_text,
+  '#local-structure-options'
+from public.academic_structure_snapshots as snapshots
+join public.academic_structure_years as structure_years
+  on structure_years.id = snapshots.structure_year_id
+join public.academic_structures as structures
+  on structures.id = structure_years.structure_id
+cross join (
+  values
+    (1, 'major'::text, 'LOCAL-MAJ'::text, 'Local Systems Major'::text, 'Choose the Local Systems Major.'::text),
+    (2, 'minor', 'LOCALA-MIN', 'Local Data Minor', 'Choose the Local Data Minor.'),
+    (3, 'minor', 'LOCALB-MIN', 'Local Design Minor', 'Choose the Local Design Minor.'),
+    (4, 'specialisation', 'LOCAL-SPEC', 'Local Artificial Intelligence Specialisation', 'Choose the Local Artificial Intelligence Specialisation.')
+) as options(position, target_kind, target_code, target_title, source_text)
+where structures.code = 'LOCAL-PROGRAMME';
+
+insert into public.academic_structure_requirement_groups (
+  snapshot_id,
+  group_key,
+  title,
+  operator,
+  source_text,
+  source_locator,
+  position
+)
+select
+  snapshots.id,
+  'root',
+  snapshots.name || ' requirements',
+  'all_of',
+  'Complete all published requirements for ' || snapshots.name || '.',
+  '#local-requirements',
+  0
+from public.academic_structure_snapshots as snapshots
+join public.academic_structure_years as structure_years
+  on structure_years.id = snapshots.structure_year_id
+join public.academic_structures as structures
+  on structures.id = structure_years.structure_id
+where structures.code in (
+  'LOCAL-PROGRAMME',
+  'LOCAL-MAJ',
+  'LOCALA-MIN',
+  'LOCALB-MIN',
+  'LOCAL-SPEC'
+);
+
+insert into public.academic_structure_requirement_conditions (
+  snapshot_id,
+  requirement_group_id,
+  position,
+  projection_key,
+  condition_kind,
+  minimum_units,
+  source_text,
+  source_locator
+)
+select
+  groups.snapshot_id,
+  groups.id,
+  0,
+  'root:local-requirement',
+  case when structures.kind = 'programme' then 'unit_total' else 'course_list' end,
+  case when structures.kind = 'programme' then 144 else 6 end,
+  case
+    when structures.kind = 'programme' then 'Complete 144 units.'
+    else 'Complete the listed local fixture course.'
+  end,
+  '#local-requirements'
+from public.academic_structure_requirement_groups as groups
+join public.academic_structure_snapshots as snapshots
+  on snapshots.id = groups.snapshot_id
+join public.academic_structure_years as structure_years
+  on structure_years.id = snapshots.structure_year_id
+join public.academic_structures as structures
+  on structures.id = structure_years.structure_id
+where structures.code in (
+  'LOCAL-PROGRAMME',
+  'LOCAL-MAJ',
+  'LOCALA-MIN',
+  'LOCALB-MIN',
+  'LOCAL-SPEC'
+);
+
+insert into public.academic_structure_requirement_options (
+  snapshot_id,
+  requirement_condition_id,
+  position,
+  option_kind,
+  option_code
+)
+select
+  conditions.snapshot_id,
+  conditions.id,
+  1,
+  'course',
+  case structures.code
+    when 'LOCAL-MAJ' then 'COMP1110'
+    when 'LOCALA-MIN' then 'MATH1005'
+    when 'LOCALB-MIN' then 'COMP1100'
+    else 'COMP1110'
+  end
+from public.academic_structure_requirement_conditions as conditions
+join public.academic_structure_snapshots as snapshots
+  on snapshots.id = conditions.snapshot_id
+join public.academic_structure_years as structure_years
+  on structure_years.id = snapshots.structure_year_id
+join public.academic_structures as structures
+  on structures.id = structure_years.structure_id
+where structures.kind <> 'programme'
+  and structures.code in (
+    'LOCAL-MAJ',
+    'LOCALA-MIN',
+    'LOCALB-MIN',
+    'LOCAL-SPEC'
+  );
+
+update public.academic_structure_years as structure_years
+set published_snapshot_id = snapshots.id,
+    updated_at = now()
+from public.academic_structure_snapshots as snapshots
+join public.academic_structures as structures
+  on structures.code in (
+    'LOCAL-PROGRAMME',
+    'LOCAL-MAJ',
+    'LOCALA-MIN',
+    'LOCALB-MIN',
+    'LOCAL-SPEC'
+  )
+where snapshots.structure_year_id = structure_years.id
+  and structure_years.structure_id = structures.id;
+
 insert into public.course_sources (name, kind, base_url)
 values (
   'Coursemap local preview',

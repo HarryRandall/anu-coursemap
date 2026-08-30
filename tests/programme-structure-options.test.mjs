@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { collectSelectableMajorCodes } from "../lib/coursemap/programme-major-options.ts";
+import { collectSelectableStructureCodes } from "../lib/coursemap/programme-structure-options.ts";
 
-test("keeps only explicit programme-major relationship semantics", () => {
-  const codes = collectSelectableMajorCodes({
+test("keeps only explicit programme structure relationship semantics", () => {
+  const codes = collectSelectableStructureCodes({
     programmeSnapshotIds: new Set([101]),
     relationships: [
       relationship("required", "MATH-MAJ"),
@@ -21,18 +21,23 @@ test("keeps only explicit programme-major relationship semantics", () => {
     requirementOptions: [],
   });
 
-  assert.deepEqual(codes.get(101), ["COMP-MAJ", "MATH-MAJ"]);
+  assert.deepEqual(codes.get(101), {
+    major: ["COMP-MAJ", "MATH-MAJ"],
+    minor: ["DATA-MIN"],
+    specialisation: [],
+  });
   assert.equal(codes.has(202), false);
 });
 
-test("includes major options from programme structure-list requirements", () => {
-  const codes = collectSelectableMajorCodes({
+test("includes structure options from programme structure-list requirements", () => {
+  const codes = collectSelectableStructureCodes({
     programmeSnapshotIds: new Set([101]),
     relationships: [],
     requirementConditions: [
       condition(1, "structure_list", "major"),
       condition(2, "course_list", "major"),
       condition(3, "structure_list", "minor"),
+      condition(5, "structure_list", "specialisation"),
       { ...condition(4, "structure_list", "major"), snapshot_id: 202 },
     ],
     requirementOptions: [
@@ -40,13 +45,18 @@ test("includes major options from programme structure-list requirements", () => 
       option(1, "COMP-MAJ"),
       option(2, "STAT-MAJ"),
       option(3, "DATA-MIN", "minor"),
+      option(5, "AI-SPEC", "specialisation"),
       { ...option(1, "PHYS-MAJ"), snapshot_id: 202 },
       { ...option(4, "CHEM-MAJ"), snapshot_id: 202 },
       { ...option(1, "ECON-MAJ"), option_kind: "course" },
     ],
   });
 
-  assert.deepEqual(codes.get(101), ["COMP-MAJ", "MATH-MAJ"]);
+  assert.deepEqual(codes.get(101), {
+    major: ["COMP-MAJ", "MATH-MAJ"],
+    minor: ["DATA-MIN"],
+    specialisation: ["AI-SPEC"],
+  });
   assert.equal(codes.has(202), false);
 });
 
@@ -56,7 +66,7 @@ test("onboarding loads explicit relationship and structure-list semantics withou
     "utf8",
   );
 
-  assert.match(source, /collectSelectableMajorCodes/u);
+  assert.match(source, /collectSelectableStructureCodes/u);
   assert.match(
     source,
     /relationship_kind,snapshot_id,target_code,target_kind/u,

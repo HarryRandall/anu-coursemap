@@ -125,8 +125,9 @@ Draft course snapshots remain hidden by RLS until an authorised reviewer has
 inspected the source, model output, relational projection and review items,
 then explicitly publishes the snapshot. Student plan and attempt RPCs accept
 only an explicit course year and preserve the exact published snapshot used at
-the time. Programme, major and specialisation imports will be rebuilt as a
-separate later phase.
+the time. Programmes, majors, minors and specialisations use separate admin
+routes backed by the same year-specific directory, durable import, immutable
+draft review and explicit publication workflow.
 
 ANU Programs and Courses pages remain the authoritative source. Coursemap
 stores normalised facts with immutable provenance, not a replacement

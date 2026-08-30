@@ -587,6 +587,7 @@ function RequirementConditionEditor({
 
   const supportsUnits = [
     "course_list",
+    "structure_list",
     "unit_total",
     "level",
     "subject",

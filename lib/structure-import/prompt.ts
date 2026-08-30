@@ -5,9 +5,9 @@ import {
 } from "./contract.ts";
 
 export const ACADEMIC_STRUCTURE_IMPORT_PARSER_VERSION =
-  "coursemap-academic-structure-parser.v2";
+  "coursemap-academic-structure-parser.v3";
 export const ACADEMIC_STRUCTURE_IMPORT_PROMPT_VERSION =
-  "coursemap-academic-structure-prompt.v2";
+  "coursemap-academic-structure-prompt.v3";
 export const ACADEMIC_STRUCTURE_SNAPSHOT_SCHEMA_VERSION =
   "academic-structure-snapshot.v2";
 
@@ -39,7 +39,8 @@ Requirement interpretation:
 - Represent explicit AND as an all_of group and explicit OR as an any_of group.
 - Use minimum_count only when the source states an exact count such as "one of" or "two of", and set minimumCount to that literal count.
 - A finite linked course list may be a course_list condition. Keep the printed minimum or maximum units when present.
-- A finite linked programme, major, minor or specialisation list may be a structure_list condition only when every option has a literal code.
+- A finite linked programme, major, minor or specialisation list may be a structure_list condition only when every option has a literal code. Preserve literal unit limits on that condition.
+- Set freeText to null for every typed condition. Use it only when conditionKind is free_text.
 - Use unit_total, level, subject, tag or unrestricted only when the source states that constraint explicitly.
 - Do not infer grouping from indentation, commas, visual proximity or the order of unrelated paragraphs.
 - If connective scope is ambiguous, keep the exact prose in a free_text condition and unmodelledText, then add an actionable review item.
@@ -48,6 +49,7 @@ Requirement interpretation:
 
 Evidence and review:
 - Every model-interpreted field must have concise evidence whose excerpt occurs verbatim in the supplied input.
+- Set method to model for every evidence item. This response is produced by the model, never by the deterministic extractor.
 - Confidence measures source support, not plausibility.
 - Add specific review items for ambiguity, unsupported wording, conflicts, malformed references or missing evidence.
 - Do not include chain-of-thought, hidden reasoning, commentary or self-evaluation. Only return the schema fields.`;

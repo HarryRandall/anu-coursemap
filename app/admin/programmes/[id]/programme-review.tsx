@@ -16,6 +16,7 @@ import type {
   AdminStructureReviewGroup,
   AdminStructureReviewRecord,
 } from "@/lib/coursemap/admin-catalogue";
+import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
 import { AppShell } from "@/components/shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -65,13 +66,16 @@ function conditionText(condition: AdminStructureReviewCondition) {
       </>
     );
   }
-  if (condition.targetStructureCode) {
+  if (condition.targetStructureCode && condition.targetStructureKind) {
     return (
       <>
         Complete{" "}
         <Link
           className="font-mono font-semibold text-brand-700 hover:text-brand-900"
-          href={`/admin/programmes/${condition.targetStructureCode}`}
+          href={adminAcademicStructureDetailPath({
+            kind: condition.targetStructureKind,
+            publicId: condition.targetStructureCode,
+          })}
         >
           {condition.targetStructureCode}
         </Link>
@@ -176,6 +180,8 @@ export function ProgrammeReview({
       record.structureYearId,
       record.id,
       record.code,
+      record.kind,
+      record.publicId,
     );
     setPublishing(false);
     setMessage({

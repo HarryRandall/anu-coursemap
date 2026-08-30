@@ -53,10 +53,11 @@ snapshot, plan, attempt and academic-structure row, then removes the old
 `course_versions`, `academic_structure_versions`, `requirement_groups`,
 `requirement_conditions`, `academic_structure_relationships` and directory
 compatibility schema. No legacy course or academic-structure lineage is
-retained. The generic `catalogue_sources`, `catalogue_source_documents`,
-`catalogue_import_runs` and `catalogue_import_items` tables remain only because
-the university-calendar importer still uses them; course and academic-structure
-imports use their domain-specific provenance tables.
+retained. The generic `catalogue_years`, `catalogue_sources`,
+`catalogue_source_documents`, `catalogue_import_runs` and
+`catalogue_import_items` tables remain only because the university-calendar
+importer still uses them; course and academic-structure imports use their
+domain-specific provenance tables.
 
 Course imports run asynchronously through a private Vercel Queue consumer. A
 durable run contains no more than ten course targets. Each target records HTML,

@@ -95,6 +95,13 @@ const adminNav: NavSection[] = [
     items: [
       { href: "/admin/courses", label: "Courses", icon: Table2 },
       { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
+      { href: "/admin/majors", label: "Majors", icon: GraduationCap },
+      { href: "/admin/minors", label: "Minors", icon: GraduationCap },
+      {
+        href: "/admin/specialisations",
+        label: "Specialisations",
+        icon: GraduationCap,
+      },
     ],
   },
   {

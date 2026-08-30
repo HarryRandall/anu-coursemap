@@ -26,6 +26,14 @@ const runDetailPath = new URL(
   "../components/admin/imports/course-import-run-detail.tsx",
   import.meta.url,
 );
+const adminCoursePagePath = new URL(
+  "../app/admin/courses/[id]/page.tsx",
+  import.meta.url,
+);
+const adminCoursePreviewPath = new URL(
+  "../lib/coursemap/admin-course-preview.ts",
+  import.meta.url,
+);
 
 test("makes the pipeline the first and default course import review tab", async () => {
   const source = await readFile(targetReviewPath, "utf8");
@@ -105,4 +113,33 @@ test("uses numeric run labels while keeping UUIDs in internal routes", async () 
   assert.match(targetSource, /Run #\$\{detail\.run\.runNumber\}/);
   assert.match(listSource, /runs\/\$\{run\.id\}/);
   assert.match(detailSource, /runs\/\$\{run\.id\}\/targets\/\$\{target\.id\}/);
+});
+
+test("keeps the requisite editor and complete student-preview chain", async () => {
+  const [pageSource, previewSource, reviewSource, editorSource] =
+    await Promise.all([
+      readFile(adminCoursePagePath, "utf8"),
+      readFile(adminCoursePreviewPath, "utf8"),
+      readFile(
+        new URL("../app/admin/courses/[id]/course-review.tsx", import.meta.url),
+        "utf8",
+      ),
+      readFile(
+        new URL(
+          "../components/admin/course-snapshot-rule-editor.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ]);
+
+  assert.match(pageSource, /publishedPrerequisites/);
+  assert.match(previewSource, /prerequisiteEdgesWithSnapshotFallback/);
+  assert.match(previewSource, /course\.prerequisiteEdges/);
+  assert.match(reviewSource, /value="requisites"/);
+  assert.match(reviewSource, /Edit rule tree/);
+  assert.match(editorSource, />List</);
+  assert.match(editorSource, />Diagram</);
+  assert.match(editorSource, /<RequisiteRuleTree/);
+  assert.match(editorSource, /<RequisiteRuleGraph/);
 });

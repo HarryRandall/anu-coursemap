@@ -70,6 +70,8 @@ test("shows complete candidate relational areas and concrete database tables", a
   ]) {
     assert.match(targetSource, new RegExp(requiredArea));
   }
+  assert.match(targetSource, /conditionUnits/);
+  assert.match(targetSource, /Whole import/);
   for (const table of [
     "academic_structures",
     "academic_structure_years",

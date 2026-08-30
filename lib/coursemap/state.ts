@@ -32,6 +32,8 @@ export function emptyCoursemapState(viewer: AuthViewer): AppState {
       catalogueYear: new Date().getFullYear(),
       degreeCode: "",
       majorCode: "",
+      minorCodes: [],
+      specialisationCodes: [],
       studyLoad: "Full time",
       extensionYears: 0,
     },
@@ -264,6 +266,16 @@ export async function loadCoursemapState(
             structures.find((item) => item.role === "major")
               ?.structure_year_id ?? -1,
           ) ?? "",
+        minorCodes: structures.flatMap((item) => {
+          if (item.role !== "minor") return [];
+          const code = structureCodeByYear.get(item.structure_year_id);
+          return code ? [code] : [];
+        }),
+        specialisationCodes: structures.flatMap((item) => {
+          if (item.role !== "specialisation") return [];
+          const code = structureCodeByYear.get(item.structure_year_id);
+          return code ? [code] : [];
+        }),
       },
       attempts: [...plannedAttempts, ...recordedAttempts],
     };

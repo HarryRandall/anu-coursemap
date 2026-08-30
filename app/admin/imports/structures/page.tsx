@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Academic structure directories are split into kind tabs on this page. */
+/** Programmes are the default entry point for the separate structure routes. */
 export default function AcademicStructureImportsPage() {
   redirect("/admin/programmes");
 }

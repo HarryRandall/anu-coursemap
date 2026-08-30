@@ -96,7 +96,7 @@ export type OpenRouterCourseExtraction = {
 
 export class OpenRouterConfigurationError extends Error {
   constructor(
-    message = "Configure a dedicated OPENROUTER_API_KEY before importing courses.",
+    message = "Configure a dedicated OPENROUTER_API_KEY before running imports.",
   ) {
     super(message);
     this.name = "OpenRouterConfigurationError";

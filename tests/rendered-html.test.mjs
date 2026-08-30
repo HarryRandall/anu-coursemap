@@ -23,6 +23,7 @@ before(
           ...process.env,
           NODE_ENV: "production",
           COURSEMAP_DEMO_MODE: "true",
+          COURSEMAP_QUEUE_IMPORTS_ENABLED: "false",
         },
         stdio: ["ignore", "pipe", "pipe"],
       },

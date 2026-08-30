@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { canWriteCatalogue } from "@/lib/auth/viewer";
 import type { CoursemapActionResult } from "@/lib/coursemap/actions";
+import {
+  adminAcademicStructureCollectionPath,
+  adminAcademicStructureDetailPath,
+} from "@/lib/coursemap/academic-structure-routes";
+import type { AcademicStructureKind } from "@/lib/structure-import/contract";
 import { createClient } from "@/lib/supabase/server";
 
 function errorMessage(error: unknown) {
@@ -15,6 +20,8 @@ export async function publishStructureSnapshot(
   structureYearId: number,
   snapshotId: number,
   code: string,
+  kind: AcademicStructureKind,
+  publicId: string,
 ): Promise<CoursemapActionResult> {
   if (!(await canWriteCatalogue())) {
     return {
@@ -37,8 +44,8 @@ export async function publishStructureSnapshot(
     revalidatePath("/profile");
     revalidatePath("/plan");
     revalidatePath("/requirements");
-    revalidatePath("/admin/programmes");
-    revalidatePath(`/admin/programmes/${code}`);
+    revalidatePath(adminAcademicStructureCollectionPath(kind));
+    revalidatePath(adminAcademicStructureDetailPath({ kind, publicId }));
     return {
       ok: true,
       message: `${code.toUpperCase()} is now available for student plans.`,

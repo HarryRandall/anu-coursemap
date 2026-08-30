@@ -25,6 +25,11 @@ registerHooks({
 
 const { academicStructureDirectoryRecordStatus } =
   await import("../lib/coursemap/admin-academic-structures.ts");
+const {
+  adminAcademicStructureCollectionPath,
+  adminAcademicStructureDetailPath,
+  legacyAdminAcademicStructureCollectionRedirect,
+} = await import("../lib/coursemap/academic-structure-routes.ts");
 
 function record(overrides = {}) {
   return {
@@ -43,6 +48,61 @@ function latest(overrides = {}) {
     ...overrides,
   };
 }
+
+test("builds distinct admin collection and detail routes for every structure kind", () => {
+  const expected = {
+    programme: "/admin/programmes",
+    major: "/admin/majors",
+    minor: "/admin/minors",
+    specialisation: "/admin/specialisations",
+  };
+
+  for (const [kind, path] of Object.entries(expected)) {
+    assert.equal(adminAcademicStructureCollectionPath(kind), path);
+    assert.equal(
+      adminAcademicStructureDetailPath({
+        kind,
+        publicId: "00000000-0000-4000-8000-000000000001",
+        year: 2026,
+      }),
+      `${path}/00000000-0000-4000-8000-000000000001?year=2026`,
+    );
+  }
+});
+
+test("redirects old kind query URLs to the matching collection route", () => {
+  assert.equal(
+    legacyAdminAcademicStructureCollectionRedirect({
+      availability: "available",
+      kind: "major",
+      page: "2",
+      q: "data science",
+      status: "published",
+      year: "2026",
+    }),
+    "/admin/majors?availability=available&page=2&q=data+science&status=published&year=2026",
+  );
+  assert.equal(
+    legacyAdminAcademicStructureCollectionRedirect({ kind: "minor" }),
+    "/admin/minors",
+  );
+  assert.equal(
+    legacyAdminAcademicStructureCollectionRedirect({ kind: "specialisation" }),
+    "/admin/specialisations",
+  );
+  assert.equal(
+    legacyAdminAcademicStructureCollectionRedirect({ kind: "" }),
+    "/admin/programmes",
+  );
+  assert.equal(
+    legacyAdminAcademicStructureCollectionRedirect({ kind: "unknown" }),
+    "/admin/programmes",
+  );
+  assert.equal(
+    legacyAdminAcademicStructureCollectionRedirect({ year: "2026" }),
+    null,
+  );
+});
 
 test("derives one clear directory status from processing, review and publication state", () => {
   assert.equal(academicStructureDirectoryRecordStatus(record()), "directory");
@@ -121,10 +181,38 @@ test("loader reads only the new structure directory and snapshot-native tables",
   assert.match(source, /ACADEMIC_STRUCTURE_IMPORT_YEARS/u);
 });
 
-test("launcher keeps kind and year in the URL and submits the exact import contract", async () => {
-  const [page, component] = await Promise.all([
+test("each structure kind has separate collection and detail routes", async () => {
+  const [
+    pages,
+    detailPages,
+    sharedPage,
+    component,
+    routes,
+    sidebar,
+    breadcrumbs,
+    legacyPage,
+  ] = await Promise.all([
+    Promise.all(
+      ["programmes", "majors", "minors", "specialisations"].map((route) =>
+        readFile(
+          new URL(`../app/admin/${route}/page.tsx`, import.meta.url),
+          "utf8",
+        ),
+      ),
+    ),
+    Promise.all(
+      ["programmes", "majors", "minors", "specialisations"].map((route) =>
+        readFile(
+          new URL(`../app/admin/${route}/[id]/page.tsx`, import.meta.url),
+          "utf8",
+        ),
+      ),
+    ),
     readFile(
-      new URL("../app/admin/programmes/page.tsx", import.meta.url),
+      new URL(
+        "../components/admin/academic-structures/structure-directory-page.tsx",
+        import.meta.url,
+      ),
       "utf8",
     ),
     readFile(
@@ -134,17 +222,52 @@ test("launcher keeps kind and year in the URL and submits the exact import contr
       ),
       "utf8",
     ),
+    readFile(
+      new URL("../lib/coursemap/academic-structure-routes.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/shell/sidebar.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/shell/breadcrumbs.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../app/admin/programmes/page.tsx", import.meta.url),
+      "utf8",
+    ),
   ]);
 
-  assert.match(page, /kind\?: string \| string\[\]/u);
-  assert.match(page, /year\?: string \| string\[\]/u);
-  for (const kind of ["programme", "major", "minor", "specialisation"]) {
-    assert.match(component, new RegExp(`${kind}:`, "u"));
+  for (const [index, kind] of [
+    "programme",
+    "major",
+    "minor",
+    "specialisation",
+  ].entries()) {
+    assert.match(pages[index], new RegExp(`kind="${kind}"`, "u"));
+    assert.match(detailPages[index], new RegExp(`expectedKind="${kind}"`, "u"));
   }
+  for (const route of ["programmes", "majors", "minors", "specialisations"]) {
+    assert.match(routes, new RegExp(`/admin/${route}`, "u"));
+    assert.match(sidebar, new RegExp(`/admin/${route}`, "u"));
+    assert.match(breadcrumbs, new RegExp(`${route}:`, "u"));
+  }
+  assert.match(sharedPage, /year\?: string \| string\[\]/u);
+  assert.doesNotMatch(
+    component,
+    /DirectoryTabs|Academic structure type|\/admin\/programmes\?kind=/u,
+  );
+  assert.match(
+    legacyPage,
+    /legacyAdminAcademicStructureCollectionRedirect\(params\)/u,
+  );
   assert.match(
     component,
-    /\/admin\/programmes\?kind=\$\{kind\}&year=\$\{year\}/u,
+    /adminAcademicStructureCollectionPath\(data\.kind\)/u,
   );
+  assert.match(component, /adminAcademicStructureDetailPath/u);
   assert.match(component, /\/api\/admin\/academic-structure-directory/u);
   assert.match(component, /\/api\/admin\/academic-structure-imports/u);
   assert.match(component, /structureKind: data\.kind/u);

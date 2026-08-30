@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { BrandMark } from "@/components/brand-mark";
+import { StructureMultiSelect } from "@/components/profile/structure-multi-select";
 import { cn } from "@/lib/cn";
 import { saveProfileAndPlan } from "@/lib/coursemap/actions";
 import type {
@@ -62,6 +63,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
   );
   const [degreeCode, setDegreeCode] = useState(degrees[0]?.code ?? "");
   const [majorCode, setMajorCode] = useState("");
+  const [minorCodes, setMinorCodes] = useState<string[]>([]);
+  const [specialisationCodes, setSpecialisationCodes] = useState<string[]>([]);
   const [yearOfStudy, setYearOfStudy] = useState(1);
   const [studyLoad, setStudyLoad] = useState<"Full time" | "Part time">(
     "Full time",
@@ -82,6 +85,26 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
           degree?.majorCodes.includes(item.code),
       ),
     [catalogue.majors, catalogueYear, degree?.majorCodes],
+  );
+  const minors = useMemo(
+    () =>
+      catalogue.minors.filter(
+        (item) =>
+          item.catalogueYear === catalogueYear &&
+          (degree?.minorCodes.length ?? 0) > 0 &&
+          degree?.minorCodes.includes(item.code),
+      ),
+    [catalogue.minors, catalogueYear, degree?.minorCodes],
+  );
+  const specialisations = useMemo(
+    () =>
+      catalogue.specialisations.filter(
+        (item) =>
+          item.catalogueYear === catalogueYear &&
+          (degree?.specialisationCodes.length ?? 0) > 0 &&
+          degree?.specialisationCodes.includes(item.code),
+      ),
+    [catalogue.specialisations, catalogueYear, degree?.specialisationCodes],
   );
   const studyYears = yearsOfStudy(degree);
   const planningDurationAvailable = studyYears.length > 0;
@@ -134,6 +157,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       commencementYear: catalogueYear - (yearOfStudy - 1),
       degreeCode,
       majorCode,
+      minorCodes,
+      specialisationCodes,
       studyLoad,
       extensionYears: 0,
     });
@@ -267,6 +292,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                         setCatalogueYear(nextYear);
                         setDegreeCode(nextDegree?.code ?? "");
                         setMajorCode("");
+                        setMinorCodes([]);
+                        setSpecialisationCodes([]);
                         setYearOfStudy(1);
                       }}
                       options={catalogue.catalogueYears.map((item) => ({
@@ -283,6 +310,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                       onChange={(value) => {
                         setDegreeCode(value);
                         setMajorCode("");
+                        setMinorCodes([]);
+                        setSpecialisationCodes([]);
                         setYearOfStudy(1);
                       }}
                       options={degrees.map((item) => ({
@@ -310,6 +339,24 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                       value={majorCode}
                     />
                   </Field>
+                  {minors.length > 0 ? (
+                    <StructureMultiSelect
+                      hint="Optional. Select every minor you want included in this plan."
+                      label="Minors"
+                      onChange={setMinorCodes}
+                      options={minors}
+                      value={minorCodes}
+                    />
+                  ) : null}
+                  {specialisations.length > 0 ? (
+                    <StructureMultiSelect
+                      hint="Optional. Select every specialisation you want included in this plan."
+                      label="Specialisations"
+                      onChange={setSpecialisationCodes}
+                      options={specialisations}
+                      value={specialisationCodes}
+                    />
+                  ) : null}
                 </fieldset>
               )}
 
@@ -384,6 +431,36 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                           {major ? major.name : "Choose later"}
                         </dd>
                       </div>
+                      {minors.length > 0 ? (
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-zinc-500">Minors</dt>
+                          <dd className="text-right font-medium text-zinc-900">
+                            {minorCodes.length > 0
+                              ? minors
+                                  .filter((item) =>
+                                    minorCodes.includes(item.code),
+                                  )
+                                  .map((item) => item.name)
+                                  .join(", ")
+                              : "Choose later"}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {specialisations.length > 0 ? (
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-zinc-500">Specialisations</dt>
+                          <dd className="text-right font-medium text-zinc-900">
+                            {specialisationCodes.length > 0
+                              ? specialisations
+                                  .filter((item) =>
+                                    specialisationCodes.includes(item.code),
+                                  )
+                                  .map((item) => item.name)
+                                  .join(", ")
+                              : "Choose later"}
+                          </dd>
+                        </div>
+                      ) : null}
                       <div className="flex justify-between gap-4">
                         <dt className="text-zinc-500">Rules year</dt>
                         <dd className="font-medium text-zinc-900">

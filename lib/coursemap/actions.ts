@@ -48,6 +48,8 @@ export async function saveProfileAndPlan(
           profile.studyLoad === "Part time" ? "part_time" : "full_time",
         p_programme_code: profile.degreeCode,
         p_major_code: profile.majorCode || undefined,
+        p_minor_codes: profile.minorCodes,
+        p_specialisation_codes: profile.specialisationCodes,
       },
     );
     if (error) throw error;

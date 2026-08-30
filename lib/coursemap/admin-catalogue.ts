@@ -5,6 +5,10 @@ import {
   parseAcademicStructureManualSnapshotProjection,
   type AcademicStructureManualSnapshotProjection,
 } from "@/lib/structure-import/manual-snapshot";
+import {
+  isAcademicStructureKind,
+  type AcademicStructureKind,
+} from "@/lib/structure-import/contract";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,9 +17,9 @@ export type AdminCatalogueSummary = {
   courseHistory: number[];
   courses: number;
   draftHistory: number[];
+  programmeHistory: number[];
+  programmes: number;
   structureDrafts: number;
-  structureHistory: number[];
-  structures: number;
 };
 
 const STRUCTURE_KINDS = [
@@ -30,9 +34,9 @@ const emptyCatalogueSummary = (): AdminCatalogueSummary => ({
   courseHistory: [],
   courses: 0,
   draftHistory: [],
+  programmeHistory: [],
+  programmes: 0,
   structureDrafts: 0,
-  structureHistory: [],
-  structures: 0,
 });
 
 export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary> {
@@ -43,9 +47,9 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
     courseDrafts,
     courseCreated,
     courseDraftCreated,
-    structures,
+    programmes,
     structureDrafts,
-    structureCreated,
+    programmeCreated,
     structureDraftCreated,
   ] = await Promise.all([
     supabase.from("courses").select("id", { count: "exact", head: true }),
@@ -62,7 +66,7 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
     supabase
       .from("academic_structures")
       .select("id", { count: "exact", head: true })
-      .in("kind", [...STRUCTURE_KINDS]),
+      .eq("kind", "programme"),
     supabase
       .from("academic_structure_years")
       .select("id", { count: "exact", head: true })
@@ -70,7 +74,7 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
     supabase
       .from("academic_structures")
       .select("created_at")
-      .in("kind", [...STRUCTURE_KINDS])
+      .eq("kind", "programme")
       .limit(5000),
     supabase
       .from("academic_structure_years")
@@ -83,9 +87,9 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
     courseDrafts,
     courseCreated,
     courseDraftCreated,
-    structures,
+    programmes,
     structureDrafts,
-    structureCreated,
+    programmeCreated,
     structureDraftCreated,
   ]
     .map((result) => result.error)
@@ -98,10 +102,10 @@ export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary
     courseHistory: cumulativeGrowthSeries(
       (courseCreated.data ?? []).map((row) => row.created_at),
     ),
-    structures: structures.count ?? 0,
+    programmes: programmes.count ?? 0,
     structureDrafts: structureDrafts.count ?? 0,
-    structureHistory: cumulativeGrowthSeries(
-      (structureCreated.data ?? []).map((row) => row.created_at),
+    programmeHistory: cumulativeGrowthSeries(
+      (programmeCreated.data ?? []).map((row) => row.created_at),
     ),
     draftHistory: cumulativeGrowthSeries([
       ...(courseDraftCreated.data ?? []).map((row) => row.created_at),
@@ -124,6 +128,7 @@ export type AdminStructureReviewCondition = {
   sourceText: string | null;
   subjectCode: string | null;
   targetStructureCode: string | null;
+  targetStructureKind: AcademicStructureKind | null;
 };
 
 export type AdminStructureReviewGroup = {
@@ -144,7 +149,7 @@ export type AdminStructureReviewRecord = {
   description: string;
   groups: AdminStructureReviewGroup[];
   id: number;
-  kind: string;
+  kind: AcademicStructureKind;
   name: string;
   projection: AcademicStructureManualSnapshotProjection;
   publicationStatus: string;
@@ -551,6 +556,11 @@ export async function loadAdminStructureReview(
               onlyOption?.option_kind === "structure"
                 ? onlyOption.option_code
                 : null,
+            targetStructureKind:
+              onlyOption?.option_kind === "structure" &&
+              isAcademicStructureKind(onlyOption.structure_kind)
+                ? onlyOption.structure_kind
+                : null,
           };
         }),
       description: group.description,
@@ -563,7 +573,7 @@ export async function loadAdminStructureReview(
       parentGroupId: group.parent_group_id,
     })),
     id: snapshot.id,
-    kind: structure.kind,
+    kind: structure.kind as AcademicStructureKind,
     name: snapshot.name,
     projection,
     publicationStatus:

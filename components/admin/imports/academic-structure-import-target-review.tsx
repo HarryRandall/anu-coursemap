@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
+import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
 import {
   acceptAcademicStructureImportTarget,
   publishAcademicStructureDraft,
@@ -161,6 +162,25 @@ function RequirementTree({
     return readable(condition.condition_kind);
   }
 
+  function conditionUnits(condition: (typeof conditions)[number]) {
+    if (
+      condition.condition_kind === "unit_total" ||
+      (condition.minimum_units === null && condition.maximum_units === null)
+    ) {
+      return null;
+    }
+    if (condition.minimum_units === condition.maximum_units) {
+      return `${condition.minimum_units} units`;
+    }
+    if (condition.minimum_units !== null && condition.maximum_units !== null) {
+      return `${condition.minimum_units} to ${condition.maximum_units} units`;
+    }
+    if (condition.minimum_units !== null) {
+      return `At least ${condition.minimum_units} units`;
+    }
+    return `Up to ${condition.maximum_units} units`;
+  }
+
   function Group({
     group,
     visited,
@@ -198,6 +218,7 @@ function RequirementTree({
         <CardContent className="space-y-3">
           {groupConditions.map((condition) => {
             const conditionOptions = optionsByCondition.get(condition.id) ?? [];
+            const units = conditionUnits(condition);
             return (
               <div
                 className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-3"
@@ -215,6 +236,7 @@ function RequirementTree({
                       At least {condition.minimum_courses} courses
                     </Badge>
                   ) : null}
+                  {units ? <Badge tone="neutral">{units}</Badge> : null}
                 </div>
                 {conditionOptions.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -707,7 +729,7 @@ function ReviewItems({
                       {item.message}
                     </span>
                     <span className="mt-0.5 block font-mono text-[10px] text-zinc-500">
-                      {item.field_key}
+                      {item.field_key === "$" ? "Whole import" : item.field_key}
                     </span>
                   </span>
                   <span className="flex shrink-0 gap-1.5">
@@ -780,7 +802,11 @@ export function AcademicStructureImportTargetReview({
     detail.target.structureYearId !== null &&
     currentDraftSnapshotId !== null;
   const workspaceHref = detail.target.structurePublicId
-    ? `/admin/programmes/${detail.target.structurePublicId}?year=${detail.run.academicYear}`
+    ? adminAcademicStructureDetailPath({
+        kind: detail.run.structureKind,
+        publicId: detail.target.structurePublicId,
+        year: detail.run.academicYear,
+      })
     : null;
 
   async function decide(decision: "accept" | "reject") {

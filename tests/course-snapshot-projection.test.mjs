@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { registerHooks } from "node:module";
 import test from "node:test";
 import { extractAnuCourseCodes } from "../lib/course-import/course-codes.ts";
 import { extractDeterministicCourse } from "../lib/course-import/deterministic.ts";
@@ -11,6 +12,57 @@ import {
   compareCourseSnapshotProjections,
 } from "../lib/coursemap/course-snapshot-diff.ts";
 import { COURSE_SNAPSHOT_RELATIONAL_QUERY_SHAPE } from "../lib/coursemap/course-import-query-shape.ts";
+import { evaluateRequisiteExpression } from "../lib/coursemap/requisite-summary.ts";
+
+const emptyServerModule = "data:text/javascript,export {}";
+const nextCacheStub =
+  "data:text/javascript,export const unstable_cache = (callback) => callback";
+const supabaseConfigStub =
+  "data:text/javascript,export const isDemoMode = () => false";
+const supabaseClientStub =
+  "data:text/javascript,export const createPublicClient = () => { throw new Error('Not available in this test') }";
+const courseAccentStub =
+  "data:text/javascript,export const accentFor = () => 'blue'";
+
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier === "server-only") {
+      return { shortCircuit: true, url: emptyServerModule };
+    }
+    if (specifier === "next/cache") {
+      return { shortCircuit: true, url: nextCacheStub };
+    }
+    if (specifier === "@/lib/supabase/config") {
+      return { shortCircuit: true, url: supabaseConfigStub };
+    }
+    if (specifier === "@/lib/supabase/public-server") {
+      return { shortCircuit: true, url: supabaseClientStub };
+    }
+    if (specifier === "@/lib/coursemap/course-accent") {
+      return { shortCircuit: true, url: courseAccentStub };
+    }
+    if (specifier === "./requisite-summary") {
+      return {
+        shortCircuit: true,
+        url: new URL("../lib/coursemap/requisite-summary.ts", import.meta.url)
+          .href,
+      };
+    }
+    if (specifier === "./snapshot-prerequisite-codes") {
+      return {
+        shortCircuit: true,
+        url: new URL(
+          "../lib/coursemap/snapshot-prerequisite-codes.ts",
+          import.meta.url,
+        ).href,
+      };
+    }
+    return nextResolve(specifier, context);
+  },
+});
+
+const { readProjectionPrerequisiteRule } =
+  await import("../lib/coursemap/published-courses.ts");
 
 const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2400";
 const html = await readFile(
@@ -435,11 +487,31 @@ test("flattens nested rules without losing typed requisite semantics", () => {
     ).minimumWam,
     70,
   );
-  assert.match(
+  assert.deepEqual(
     projection.ruleConditions.find(
       ({ conditionKind }) => conditionKind === "admission",
-    ).freeText,
-    /B-COMP/,
+    ),
+    {
+      key: "prerequisite:condition:6",
+      ruleKey: "prerequisite",
+      groupKey: "prerequisite:group:root",
+      position: 6,
+      conditionKind: "admission",
+      requiredCourseCode: null,
+      requiredStructureCode: "B-COMP",
+      minimumUnits: null,
+      minimumMark: null,
+      subjectCode: null,
+      minimumCourseLevel: null,
+      maximumCourseLevel: null,
+      minimumGpa: null,
+      minimumYear: null,
+      minimumWam: null,
+      freeText: null,
+      courseRequirementMode: null,
+      hardness: "hard",
+      sourceText: "Enrolment in programme B-COMP",
+    },
   );
   assert.equal(
     projection.ruleConditions.find(
@@ -459,6 +531,56 @@ test("flattens nested rules without losing typed requisite semantics", () => {
       .filter(({ ruleKey }) => ruleKey === "prerequisite")
       .map(({ referencedCourseCode }) => referencedCourseCode),
     ["COMP1100", "COMP1130", "COMP1710", "COMP1730"],
+  );
+});
+
+test("keeps programme enrolment evaluable through the published projection", () => {
+  const programmeOnly = structuredClone(extraction);
+  programmeOnly.requisites = {
+    prerequisiteText: "Enrolment in programme B-COMP",
+    corequisiteText: null,
+    incompatibilityText: null,
+    prerequisiteRule: { op: "enrolled_in", programmeCode: "B-COMP" },
+    corequisiteRule: null,
+    incompatibilityCourseCodes: [],
+    softIncompatibilityCourseCodes: [],
+    unmodelledText: [],
+  };
+
+  const projection = projectCourseSnapshot(programmeOnly);
+  const publishedRule = readProjectionPrerequisiteRule({
+    ...projection,
+    rules: projection.rules.map((rule) => ({
+      ...rule,
+      confidence: 0.95,
+      reviewState: "verified",
+    })),
+    ruleConditions: projection.ruleConditions.map((condition) => ({
+      ...condition,
+      confidence: 0.95,
+      reviewState: "verified",
+    })),
+  });
+
+  assert.deepEqual(publishedRule?.expression, {
+    kind: "group",
+    operator: "all_of",
+    conditions: [
+      {
+        kind: "programme_enrolment",
+        code: "B-COMP",
+        name: "B-COMP",
+      },
+    ],
+  });
+  assert.equal(
+    evaluateRequisiteExpression(publishedRule.expression, [], ["b-comp"])
+      .satisfied,
+    true,
+  );
+  assert.equal(
+    evaluateRequisiteExpression(publishedRule.expression, [], []).satisfied,
+    false,
   );
 });
 

@@ -9,6 +9,11 @@ import {
 } from "../scripts/local/reset-preview.mjs";
 import { seedLocalPreview } from "../scripts/local/seed-preview.mjs";
 
+const devPreviewSource = new URL(
+  "../scripts/local/dev-preview.mjs",
+  import.meta.url,
+);
+
 test("keeps predictable preview credentials out of Supabase's default seed", async () => {
   const defaultSeed = await readFile(
     new URL("../supabase/seed.sql", import.meta.url),
@@ -18,6 +23,30 @@ test("keeps predictable preview credentials out of Supabase's default seed", asy
   assert.doesNotMatch(defaultSeed, /test@test\.com/u);
   assert.doesNotMatch(defaultSeed, /encrypted_password/u);
   assert.doesNotMatch(defaultSeed, /local_mock/u);
+});
+
+test("the local preview publishes every selectable academic structure kind", async () => {
+  const previewSeed = await readFile(
+    new URL("../scripts/fixtures/local-preview.sql", import.meta.url),
+    "utf8",
+  );
+
+  for (const kind of ["programme", "major", "minor", "specialisation"]) {
+    assert.match(previewSeed, new RegExp(`'${kind}'`, "u"));
+  }
+  assert.match(previewSeed, /LOCAL-MAJ/u);
+  assert.match(previewSeed, /LOCALA-MIN/u);
+  assert.match(previewSeed, /LOCALB-MIN/u);
+  assert.match(previewSeed, /LOCAL-SPEC/u);
+  assert.match(previewSeed, /set published_snapshot_id = snapshots\.id/u);
+});
+
+test("passes the local server key to durable import workers", async () => {
+  const source = await readFile(devPreviewSource, "utf8");
+
+  assert.match(source, /values\.get\("SECRET_KEY"\)/u);
+  assert.match(source, /values\.get\("SERVICE_ROLE_KEY"\)/u);
+  assert.match(source, /SUPABASE_SECRET_KEY: secretKey/u);
 });
 
 test("runs the preview fixture through the verified local database client", async () => {

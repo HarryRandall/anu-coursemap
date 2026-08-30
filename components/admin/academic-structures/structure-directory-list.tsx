@@ -38,6 +38,10 @@ import type {
   AcademicStructureDirectoryRecord,
   AcademicStructureYearOption,
 } from "@/lib/coursemap/admin-academic-structures";
+import {
+  adminAcademicStructureCollectionPath,
+  adminAcademicStructureDetailPath,
+} from "@/lib/coursemap/academic-structure-routes";
 import type { AcademicStructureKind } from "@/lib/structure-import/contract";
 import type { Tone } from "@/lib/ui";
 
@@ -175,41 +179,6 @@ function structureDetails(record: AcademicStructureDirectoryRecord) {
   return record.units === null ? "-" : `${record.units} units`;
 }
 
-function DirectoryTabs({
-  activeKind,
-  year,
-}: {
-  activeKind: AcademicStructureKind;
-  year: number;
-}) {
-  return (
-    <div className="overflow-x-auto border-b border-zinc-200">
-      <nav
-        aria-label="Academic structure type"
-        className="flex min-w-max gap-5"
-      >
-        {(Object.keys(KIND_DETAILS) as AcademicStructureKind[]).map((kind) => {
-          const active = kind === activeKind;
-          return (
-            <Link
-              aria-current={active ? "page" : undefined}
-              className={`inline-flex h-11 items-center border-b-2 px-0.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none ${
-                active
-                  ? "border-brand-600 text-brand-700"
-                  : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900"
-              }`}
-              href={`/admin/programmes?kind=${kind}&year=${year}`}
-              key={kind}
-            >
-              {KIND_DETAILS[kind].label}
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
-  );
-}
-
 function ReviewStatus({
   record,
 }: {
@@ -245,6 +214,7 @@ export function StructureDirectoryList({
     text: string;
   } | null>(null);
   const labels = KIND_DETAILS[data.kind];
+  const collectionPath = adminAcademicStructureCollectionPath(data.kind);
 
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const eligibleRecords = data.records.filter((record) => record.isAvailable);
@@ -256,7 +226,7 @@ export function StructureDirectoryList({
   );
 
   function chooseYear(year: number) {
-    router.replace(`/admin/programmes?kind=${data.kind}&year=${year}`);
+    router.replace(`${collectionPath}?year=${year}`);
   }
 
   function toggleStructure(code: string, checked: boolean) {
@@ -426,9 +396,7 @@ export function StructureDirectoryList({
   return (
     <AppShell admin>
       <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
-        <h1 className="sr-only">Academic structures</h1>
-
-        <DirectoryTabs activeKind={data.kind} year={data.year.year} />
+        <h1 className="sr-only">{labels.label}</h1>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
@@ -607,7 +575,7 @@ export function StructureDirectoryList({
               itemName={labels.plural}
               page={data.page}
               pageSize={data.pageSize}
-              pathname="/admin/programmes"
+              pathname={collectionPath}
               searchParams={searchParams}
               total={data.total}
             />
@@ -754,7 +722,11 @@ export function StructureDirectoryList({
                         <Link
                           aria-label={`Open ${record.code} ${data.year.year} workspace`}
                           className="inline-grid size-10 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                          href={`/admin/programmes/${record.structurePublicId}?year=${data.year.year}`}
+                          href={adminAcademicStructureDetailPath({
+                            kind: record.kind,
+                            publicId: record.structurePublicId,
+                            year: data.year.year,
+                          })}
                         >
                           <ArrowUpRight aria-hidden="true" size={15} />
                         </Link>

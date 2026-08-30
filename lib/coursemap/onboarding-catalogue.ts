@@ -1,11 +1,13 @@
 import "server-only";
 
 import {
-  collectSelectableMajorCodes,
-  type ProgrammeMajorRelationship,
-  type ProgrammeMajorRequirementCondition,
-  type ProgrammeMajorRequirementOption,
-} from "@/lib/coursemap/programme-major-options";
+  collectSelectableStructureCodes,
+  emptySelectableStructureCodes,
+  type ProgrammeStructureRelationship,
+  type ProgrammeStructureRequirementCondition,
+  type ProgrammeStructureRequirementOption,
+  type SelectableStructureKind,
+} from "@/lib/coursemap/programme-structure-options";
 import { createPublicClient } from "@/lib/supabase/public-server";
 
 export type CatalogueYearOption = {
@@ -19,7 +21,9 @@ export type ProgrammeOption = {
   description: string;
   durationYears: number | null;
   majorCodes: string[];
+  minorCodes: string[];
   name: string;
+  specialisationCodes: string[];
   units: number | null;
 };
 
@@ -27,6 +31,8 @@ export type OnboardingCatalogue = {
   catalogueYears: CatalogueYearOption[];
   degrees: ProgrammeOption[];
   majors: ProgrammeOption[];
+  minors: ProgrammeOption[];
+  specialisations: ProgrammeOption[];
 };
 
 /**
@@ -50,7 +56,13 @@ export async function loadOnboardingCatalogue(): Promise<OnboardingCatalogue> {
     } => row.published_snapshot_id !== null,
   );
   if (publishedYears.length === 0) {
-    return { catalogueYears: [], degrees: [], majors: [] };
+    return {
+      catalogueYears: [],
+      degrees: [],
+      majors: [],
+      minors: [],
+      specialisations: [],
+    };
   }
 
   const academicYearIds = [
@@ -84,22 +96,19 @@ export async function loadOnboardingCatalogue(): Promise<OnboardingCatalogue> {
     supabase
       .from("academic_structure_snapshot_relationships")
       .select("relationship_kind,snapshot_id,target_code,target_kind")
-      .in("snapshot_id", snapshotIds)
-      .eq("target_kind", "major"),
+      .in("snapshot_id", snapshotIds),
     supabase
       .from("academic_structure_requirement_conditions")
       .select("condition_kind,id,snapshot_id,structure_kind")
       .in("snapshot_id", snapshotIds)
-      .eq("condition_kind", "structure_list")
-      .eq("structure_kind", "major"),
+      .eq("condition_kind", "structure_list"),
     supabase
       .from("academic_structure_requirement_options")
       .select(
         "option_code,option_kind,requirement_condition_id,snapshot_id,structure_kind",
       )
       .in("snapshot_id", snapshotIds)
-      .eq("option_kind", "structure")
-      .eq("structure_kind", "major"),
+      .eq("option_kind", "structure"),
   ]);
   const error = [
     yearsResult.error,
@@ -126,17 +135,19 @@ export async function loadOnboardingCatalogue(): Promise<OnboardingCatalogue> {
       return identity?.kind === "programme" ? [row.published_snapshot_id] : [];
     }),
   );
-  const majorCodesByProgrammeSnapshot = collectSelectableMajorCodes({
+  const structureCodesByProgrammeSnapshot = collectSelectableStructureCodes({
     programmeSnapshotIds,
     relationships: (relationshipsResult.data ??
-      []) as ProgrammeMajorRelationship[],
+      []) as ProgrammeStructureRelationship[],
     requirementConditions: (requirementConditionsResult.data ??
-      []) as ProgrammeMajorRequirementCondition[],
+      []) as ProgrammeStructureRequirementCondition[],
     requirementOptions: (requirementOptionsResult.data ??
-      []) as ProgrammeMajorRequirementOption[],
+      []) as ProgrammeStructureRequirementOption[],
   });
 
-  const options = (kind: "programme" | "major") =>
+  const options = (
+    kind: "programme" | SelectableStructureKind,
+  ): ProgrammeOption[] =>
     (snapshotsResult.data ?? [])
       .flatMap((snapshot) => {
         const structureYear = publishedYearBySnapshotId.get(snapshot.id);
@@ -147,6 +158,11 @@ export async function loadOnboardingCatalogue(): Promise<OnboardingCatalogue> {
           ? yearById.get(structureYear.academic_year_id)
           : null;
         if (!identity || !academicYear || identity.kind !== kind) return [];
+        const selectableCodes =
+          kind === "programme"
+            ? (structureCodesByProgrammeSnapshot.get(snapshot.id) ??
+              emptySelectableStructureCodes())
+            : emptySelectableStructureCodes();
         return [
           {
             catalogueYear: academicYear,
@@ -156,11 +172,10 @@ export async function loadOnboardingCatalogue(): Promise<OnboardingCatalogue> {
               snapshot.duration_years === null
                 ? null
                 : Number(snapshot.duration_years),
-            majorCodes:
-              kind === "programme"
-                ? (majorCodesByProgrammeSnapshot.get(snapshot.id) ?? [])
-                : [],
+            majorCodes: selectableCodes.major,
+            minorCodes: selectableCodes.minor,
             name: snapshot.name,
+            specialisationCodes: selectableCodes.specialisation,
             units: snapshot.units === null ? null : Number(snapshot.units),
           } satisfies ProgrammeOption,
         ];
@@ -180,5 +195,7 @@ export async function loadOnboardingCatalogue(): Promise<OnboardingCatalogue> {
     ),
     degrees: options("programme"),
     majors: options("major"),
+    minors: options("minor"),
+    specialisations: options("specialisation"),
   };
 }

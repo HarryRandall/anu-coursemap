@@ -188,6 +188,14 @@ test("selects the latest year through published programme pointers and loads rel
   }
   assert.doesNotMatch(source, /from\("requirement_groups"\)/u);
   assert.match(source, /structureRequirements/u);
+  for (const kind of ["programme", "major", "minor", "specialisation"]) {
+    assert.match(source, new RegExp(`"${kind}"`, "u"));
+  }
+  assert.match(
+    source,
+    /requirement\.structureKind === "programme"/u,
+    "the programme requirement signal must not be widened to supplementary structures",
+  );
   assert.doesNotMatch(source, /snapshot\.units === null \? 0/u);
   assert.match(
     source,
@@ -206,9 +214,46 @@ test("requirements view distinguishes source wording, interpretation and nested 
   assert.match(source, /group\.operator === "any_of"/u);
   assert.match(source, />\s*or\s*</u);
   assert.match(source, /state\.profile\.majorCode/u);
+  assert.match(source, /state\.profile\.minorCodes/u);
+  assert.match(source, /state\.profile\.specialisationCodes/u);
+  assert.match(source, /selectedStructureCodes/u);
+  assert.match(source, /<Badge tone="success">Selected<\/Badge>/u);
   assert.match(source, /Source rules requiring a manual check/u);
   assert.match(
     source,
     /Always confirm enrolment and graduation\s+requirements/u,
   );
+});
+
+test("student and administrator flows preserve every selected structure role", async () => {
+  const [actions, state, onboarding, profile, adminUser] = await Promise.all([
+    readFile(new URL("../lib/coursemap/actions.ts", import.meta.url), "utf8"),
+    readFile(new URL("../lib/coursemap/state.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/onboarding/onboarding-form.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../app/profile/profile-editor.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../components/admin/user-detail.tsx", import.meta.url),
+      "utf8",
+    ),
+  ]);
+
+  assert.match(actions, /p_minor_codes: profile\.minorCodes/u);
+  assert.match(
+    actions,
+    /p_specialisation_codes: profile\.specialisationCodes/u,
+  );
+  assert.match(state, /item\.role !== "minor"/u);
+  assert.match(state, /item\.role !== "specialisation"/u);
+  assert.match(onboarding, /<StructureMultiSelect/u);
+  assert.match(onboarding, /minorCodes/u);
+  assert.match(onboarding, /specialisationCodes/u);
+  assert.match(profile, /<StructureMultiSelect/u);
+  assert.match(adminUser, /structure\.role === "minor"/u);
+  assert.match(adminUser, /structure\.role === "specialisation"/u);
 });

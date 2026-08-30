@@ -64,7 +64,7 @@ export const helpArticles: HelpArticle[] = [
     sections: [
       {
         heading: "What the page shows",
-        body: "Requirements groups the rules for your selected programme and major. Each group shows how many units are completed, planned or still needed, and which courses are possible matches.",
+        body: "Requirements groups the rules for your selected programme, major, minors and specialisations. Each group shows the imported rules and which courses are possible matches.",
       },
       {
         heading: "Why the same course can appear twice",
@@ -79,13 +79,13 @@ export const helpArticles: HelpArticle[] = [
   {
     slug: "account-and-degree",
     title: "Account and degree",
-    description: "Update your profile, programme, major and rules year.",
+    description: "Update your profile, academic structures and rules year.",
     productHref: "/profile",
     productLabel: "Open your profile",
     sections: [
       {
         heading: "Keep your details in one place",
-        body: "Open Profile from the bottom of the navigation. Name, student ID, programme, major and catalogue year are kept together so plan and requirements views use the same rules.",
+        body: "Open Profile from the bottom of the navigation. Name, student ID, programme, major, minors, specialisations and catalogue year are kept together so plan and requirements views use the same rules.",
       },
       {
         heading: "How to change your degree or catalogue year",

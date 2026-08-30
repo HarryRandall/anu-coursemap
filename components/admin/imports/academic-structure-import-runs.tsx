@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { ArrowUpRight, Import } from "lucide-react";
+import { ArrowUpRight, ChevronDown, Import } from "lucide-react";
 import { AppShell } from "@/components/shell";
 import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   DataTableEmpty,
   DataTableShell,
@@ -14,6 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/data-table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import type { AcademicStructureImportRunPage } from "@/lib/coursemap/admin-academic-structure-imports";
 import type { Tone } from "@/lib/ui";
@@ -60,10 +66,27 @@ export function AcademicStructureImportRuns({
       <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
         <h1 className="sr-only">Academic structure import runs</h1>
         <div className="flex justify-end">
-          <ButtonLink href="/admin/programmes" variant="primary">
-            <Import aria-hidden="true" size={15} />
-            Import structures
-          </ButtonLink>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="primary">
+                <Import aria-hidden="true" size={15} />
+                Start import
+                <ChevronDown aria-hidden="true" size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {[
+                ["Programmes", "/admin/programmes"],
+                ["Majors", "/admin/majors"],
+                ["Minors", "/admin/minors"],
+                ["Specialisations", "/admin/specialisations"],
+              ].map(([label, href]) => (
+                <DropdownMenuItem asChild key={href}>
+                  <Link href={href}>{label}</Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <DataTableShell

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  ACADEMIC_STRUCTURE_EXTRACTION_SCHEMA_VERSION,
   ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA,
   validateAcademicStructureExtraction,
 } from "../lib/structure-import/contract.ts";
@@ -10,6 +11,9 @@ import {
   convertAcademicStructureHtmlToMarkdown,
 } from "../lib/structure-import/markdown.ts";
 import {
+  ACADEMIC_STRUCTURE_IMPORT_PARSER_VERSION,
+  ACADEMIC_STRUCTURE_IMPORT_PROMPT_VERSION,
+  ACADEMIC_STRUCTURE_SNAPSHOT_SCHEMA_VERSION,
   buildAcademicStructureExtractionSystemPrompt,
   buildAcademicStructureExtractionUserPrompt,
 } from "../lib/structure-import/prompt.ts";
@@ -369,6 +373,87 @@ test("keeps absent and ambiguous snapshot metadata nullable", () => {
   );
 });
 
+test("deterministically extracts every non-programme structure kind", () => {
+  for (const target of [
+    {
+      kind: "major",
+      route: "major",
+      code: "DATA-MAJ",
+      title: "Data Science",
+      units: 48,
+    },
+    {
+      kind: "minor",
+      route: "minor",
+      code: "COMM-MIN",
+      title: "Computing",
+      units: 24,
+    },
+    {
+      kind: "specialisation",
+      route: "specialisation",
+      code: "SYAR-SPEC",
+      title: "Systems and Architecture",
+      units: 24,
+    },
+    {
+      kind: "specialisation",
+      route: "specialisation",
+      code: "ANTH-HSPC",
+      title: "Anthropology Honours",
+      units: 48,
+    },
+  ]) {
+    const targetUrl = `https://programsandcourses.anu.edu.au/2026/${target.route}/${target.code}`;
+    const html = `<!doctype html>
+      <html>
+        <head>
+          <title>${target.title}</title>
+          <meta name="${target.route}-code" content="${target.code}">
+          <meta name="${target.route}-year" content="2026">
+          <meta name="${target.route}-name" content="${target.title}">
+          <link rel="canonical" href="${targetUrl}">
+        </head>
+        <body>
+          <main>
+            <h1>${target.title}</h1>
+            <ul class="degree-summary hide-mobile">
+              <li class="degree-summary__requirements-units">
+                <span class="degree-summary__requirements-heading">Minimum</span>
+                ${target.units} Units
+              </li>
+            </ul>
+            <div class="tab-content">
+              <h2 id="requirements">Requirements</h2>
+              <p>Completion of ${target.units} units.</p>
+            </div>
+          </main>
+        </body>
+      </html>`;
+    const extraction = extractDeterministicAcademicStructure({
+      html,
+      kind: target.kind,
+      code: target.code,
+      year: 2026,
+      sourceUrl: targetUrl,
+    });
+
+    assert.equal(extraction.kind, target.kind);
+    assert.equal(extraction.code, target.code);
+    assert.equal(extraction.title, target.title);
+    assert.equal(extraction.totalUnits, target.units);
+    assert.equal(
+      validateAcademicStructureExtraction(extraction, {
+        expectedKind: target.kind,
+        expectedCode: target.code,
+        expectedYear: 2026,
+        evidenceMethod: "deterministic",
+      }).success,
+      true,
+    );
+  }
+});
+
 test("strict validation rejects extra keys and selected-target mismatches", () => {
   const extra = { ...structuredClone(deterministic), invented: true };
   assert.equal(validateAcademicStructureExtraction(extra).success, false);
@@ -387,11 +472,38 @@ test("strict validation rejects extra keys and selected-target mismatches", () =
   wrongKind.kind = "major";
   const kindMismatch = validateAcademicStructureExtraction(wrongKind);
   assert.equal(kindMismatch.success, false);
+
+  const underscoredSection = structuredClone(deterministic);
+  underscoredSection.sections[0].key = "other_information";
+  assert.equal(
+    validateAcademicStructureExtraction(underscoredSection).success,
+    true,
+  );
   assert.ok(
     kindMismatch.issues.some(
       ({ path, message }) =>
         path === "$.code" && message.includes("major code convention"),
     ),
+  );
+
+  for (const code of ["SYAR-SPEC", "ANTH-HSPC"]) {
+    const specialisation = structuredClone(deterministic);
+    specialisation.kind = "specialisation";
+    specialisation.code = code;
+    assert.equal(
+      validateAcademicStructureExtraction(specialisation).success,
+      true,
+      `${code} should match the ANU specialisation code convention`,
+    );
+  }
+
+  const programmeWithSpecialisationCode = structuredClone(deterministic);
+  programmeWithSpecialisationCode.kind = "programme";
+  programmeWithSpecialisationCode.code = "ANTH-HSPC";
+  assert.equal(
+    validateAcademicStructureExtraction(programmeWithSpecialisationCode)
+      .success,
+    false,
   );
 });
 
@@ -600,9 +712,30 @@ test("projects an explicit nested requirement tree without flattening its logic"
 
 test("provides a strict OpenRouter prompt and recursive JSON schema", () => {
   const systemPrompt = buildAcademicStructureExtractionSystemPrompt();
+  assert.equal(
+    ACADEMIC_STRUCTURE_IMPORT_PARSER_VERSION,
+    "coursemap-academic-structure-parser.v3",
+  );
+  assert.equal(
+    ACADEMIC_STRUCTURE_IMPORT_PROMPT_VERSION,
+    "coursemap-academic-structure-prompt.v3",
+  );
+  assert.equal(
+    ACADEMIC_STRUCTURE_EXTRACTION_SCHEMA_VERSION,
+    "academic-structure-extraction.v3",
+  );
+  assert.equal(
+    ACADEMIC_STRUCTURE_SNAPSHOT_SCHEMA_VERSION,
+    "academic-structure-snapshot.v2",
+  );
+  assert.equal(
+    ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA.properties.schemaVersion.const,
+    ACADEMIC_STRUCTURE_EXTRACTION_SCHEMA_VERSION,
+  );
   assert.match(systemPrompt, /Never invent/);
   assert.match(systemPrompt, /explicit AND/);
   assert.match(systemPrompt, /free_text/);
+  assert.match(systemPrompt, /Set freeText to null/);
   assert.match(systemPrompt, /canCombineVertical/);
   assert.match(systemPrompt, /literally states yes, no, true or false/);
   assert.equal(
@@ -651,6 +784,17 @@ test("provides a strict OpenRouter prompt and recursive JSON schema", () => {
       .type,
     ["boolean", "null"],
   );
+  assert.equal(
+    ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA.$defs.evidence.properties.method
+      .const,
+    "model",
+  );
+  assert.equal(
+    ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA.$defs.section.properties.key
+      .pattern,
+    "^[a-z0-9]+(?:[-_][a-z0-9]+)*$",
+  );
+  assert.match(systemPrompt, /Set method to model/);
   assert.match(
     buildAcademicStructureExtractionUserPrompt({
       expectedKind: "programme",

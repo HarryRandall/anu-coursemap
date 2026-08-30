@@ -126,23 +126,31 @@ function attemptTone(status: string) {
   return "info" as const;
 }
 
+const structureKindLabels = {
+  programme: "Programme",
+  major: "Major",
+  minor: "Minor",
+  specialisation: "Specialisation",
+} as const;
+
 function RequirementConditionView({
   condition,
   catalogue,
   attemptStatusByCode,
+  selectedStructureCodes,
 }: {
   condition: PlanRequirementCondition;
   catalogue: PlanCatalogue;
   attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
 }) {
   const interpretation = conditionInterpretation(condition);
   const courseByCode = new Map(
     catalogue.courses.map((course) => [course.code, course]),
   );
-  const structureNameByCode = new Map([
-    ...catalogue.degrees.map((degree) => [degree.code, degree.name] as const),
-    ...catalogue.majors.map((major) => [major.code, major.name] as const),
-  ]);
+  const structureNameByCode = new Map(
+    catalogue.structures.map((structure) => [structure.code, structure.name]),
+  );
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4">
@@ -170,6 +178,9 @@ function RequirementConditionView({
             const course = courseByCode.get(option.code);
             const attemptStatus = attemptStatusByCode.get(option.code);
             const structureName = structureNameByCode.get(option.code);
+            const selectedStructure =
+              option.kind === "structure" &&
+              selectedStructureCodes.has(option.code);
             return (
               <li
                 className="flex min-w-0 items-center gap-2 rounded-md border border-zinc-100 px-2.5 py-2"
@@ -196,7 +207,9 @@ function RequirementConditionView({
                     </span>
                   ) : null}
                 </span>
-                {attemptStatus ? (
+                {selectedStructure ? (
+                  <Badge tone="success">Selected</Badge>
+                ) : attemptStatus ? (
                   <Badge tone={attemptTone(attemptStatus)}>
                     {attemptStatus}
                   </Badge>
@@ -214,11 +227,13 @@ function RequirementNodeView({
   node,
   catalogue,
   attemptStatusByCode,
+  selectedStructureCodes,
   depth,
 }: {
   node: PlanRequirementNode;
   catalogue: PlanCatalogue;
   attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
   depth: number;
 }) {
   if (node.type === "condition") {
@@ -227,6 +242,7 @@ function RequirementNodeView({
         attemptStatusByCode={attemptStatusByCode}
         catalogue={catalogue}
         condition={node}
+        selectedStructureCodes={selectedStructureCodes}
       />
     );
   }
@@ -236,6 +252,7 @@ function RequirementNodeView({
       catalogue={catalogue}
       depth={depth}
       group={node}
+      selectedStructureCodes={selectedStructureCodes}
     />
   );
 }
@@ -244,11 +261,13 @@ function RequirementGroupView({
   group,
   catalogue,
   attemptStatusByCode,
+  selectedStructureCodes,
   depth = 0,
 }: {
   group: PlanRequirementGroup;
   catalogue: PlanCatalogue;
   attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
   depth?: number;
 }) {
   const units = unitsDescription(group.minimumUnits, group.maximumUnits);
@@ -302,6 +321,7 @@ function RequirementGroupView({
                 catalogue={catalogue}
                 depth={depth + 1}
                 node={child}
+                selectedStructureCodes={selectedStructureCodes}
               />
             </li>
           ))}
@@ -328,13 +348,14 @@ function StructureRequirementsCard({
   requirements,
   catalogue,
   attemptStatusByCode,
+  selectedStructureCodes,
 }: {
   requirements: PlanStructureRequirements;
   catalogue: PlanCatalogue;
   attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
 }) {
-  const typeLabel =
-    requirements.structureKind === "programme" ? "Programme" : "Major";
+  const typeLabel = structureKindLabels[requirements.structureKind];
   return (
     <Card className="overflow-hidden">
       <CardHeader
@@ -353,6 +374,7 @@ function StructureRequirementsCard({
             attemptStatusByCode={attemptStatusByCode}
             catalogue={catalogue}
             group={requirements.root}
+            selectedStructureCodes={selectedStructureCodes}
           />
         ) : (
           <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
@@ -415,34 +437,58 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
       ),
     [state.attempts],
   );
+  const selectedStructureCodes = useMemo(
+    () =>
+      new Set(
+        [
+          state.profile.degreeCode,
+          state.profile.majorCode,
+          ...state.profile.minorCodes,
+          ...state.profile.specialisationCodes,
+        ].filter(Boolean),
+      ),
+    [
+      state.profile.degreeCode,
+      state.profile.majorCode,
+      state.profile.minorCodes,
+      state.profile.specialisationCodes,
+    ],
+  );
   const selectedRequirements = useMemo(
     () =>
       catalogue.structureRequirements
-        .filter(
-          (requirement) =>
-            (requirement.structureKind === "programme" &&
-              requirement.structureCode === state.profile.degreeCode) ||
-            (requirement.structureKind === "major" &&
-              requirement.structureCode === state.profile.majorCode),
+        .filter((requirement) =>
+          selectedStructureCodes.has(requirement.structureCode),
         )
-        .toSorted((left, right) =>
-          left.structureKind === right.structureKind
-            ? 0
-            : left.structureKind === "programme"
-              ? -1
-              : 1,
-        ),
-    [
-      catalogue.structureRequirements,
-      state.profile.degreeCode,
-      state.profile.majorCode,
-    ],
+        .toSorted((left, right) => {
+          const kindOrder = {
+            programme: 0,
+            major: 1,
+            minor: 2,
+            specialisation: 3,
+          } as const;
+          return (
+            kindOrder[left.structureKind] - kindOrder[right.structureKind] ||
+            left.structureCode.localeCompare(right.structureCode)
+          );
+        }),
+    [catalogue.structureRequirements, selectedStructureCodes],
   );
   const programmeRequirements = selectedRequirements.find(
     (requirement) => requirement.structureKind === "programme",
   );
-  const majorRequirements = selectedRequirements.find(
-    (requirement) => requirement.structureKind === "major",
+  const selectedSupplementaryStructures = catalogue.structures.filter(
+    (structure) =>
+      structure.kind !== "programme" &&
+      selectedStructureCodes.has(structure.code),
+  );
+  const structuresMissingRequirements = selectedSupplementaryStructures.filter(
+    (structure) =>
+      !selectedRequirements.some(
+        (requirements) =>
+          requirements.structureCode === structure.code &&
+          hasRequirementContent(requirements),
+      ),
   );
   const hasPublishedProgrammeRequirements = programmeRequirements
     ? hasRequirementContent(programmeRequirements)
@@ -522,20 +568,22 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
               </Alert>
             ) : null}
 
-            {state.profile.majorCode &&
-            (!majorRequirements ||
-              !hasRequirementContent(majorRequirements)) ? (
-              <Alert tone="warning" className="rounded-xl px-5 py-4">
+            {structuresMissingRequirements.map((structure) => (
+              <Alert
+                className="rounded-xl px-5 py-4"
+                key={`${structure.kind}-${structure.code}`}
+                tone="warning"
+              >
                 <CircleAlert aria-hidden="true" />
                 <AlertTitle>
-                  Published major requirements are not available yet
+                  Published {structure.kind} requirements are not available yet
                 </AlertTitle>
                 <AlertDescription>
-                  Coursemap will show this major&apos;s reviewed source rules
-                  once its published snapshot includes them.
+                  Coursemap will show {structure.name}&apos;s reviewed source
+                  rules once its published snapshot includes them.
                 </AlertDescription>
               </Alert>
-            ) : null}
+            ))}
 
             {selectedRequirements
               .filter(hasRequirementContent)
@@ -545,6 +593,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                   catalogue={catalogue}
                   key={`${requirements.structureKind}-${requirements.snapshotId}`}
                   requirements={requirements}
+                  selectedStructureCodes={selectedStructureCodes}
                 />
               ))}
 

@@ -21,6 +21,7 @@ export type PlanCatalogue = {
   terms: Term[];
   degrees: Degree[];
   majors: Major[];
+  structures: PlanStructureSummary[];
   programmeRequirementsImported: boolean;
   structureRequirements: PlanStructureRequirements[];
 };
@@ -75,13 +76,22 @@ export type PlanStructureRequirements = {
   root: PlanRequirementGroup | null;
   snapshotId: number;
   structureCode: string;
-  structureKind: "programme" | "major";
+  structureKind: PlanStructureKind;
   structureName: string;
   unmodelled: Array<{
     position: number;
     sourceLocator: string | null;
     sourceText: string;
   }>;
+};
+
+export type PlanStructureKind =
+  "programme" | "major" | "minor" | "specialisation";
+
+export type PlanStructureSummary = {
+  code: string;
+  kind: PlanStructureKind;
+  name: string;
 };
 
 type AcademicPeriodRow = {
@@ -119,6 +129,10 @@ type AttemptSnapshotRow = {
   academic_year_id: number;
   id: number;
 };
+
+function isPlanStructureKind(value: string): value is PlanStructureKind {
+  return ["programme", "major", "minor", "specialisation"].includes(value);
+}
 
 function formatDateRange(startsOn: string, endsOn: string) {
   const format = new Intl.DateTimeFormat("en-AU", {
@@ -343,6 +357,18 @@ export async function loadPublishedPlanCatalogue(
       terms: demoTerms,
       degrees: demoDegrees,
       majors: demoMajors,
+      structures: [
+        ...demoDegrees.map((degree) => ({
+          code: degree.code,
+          kind: "programme" as const,
+          name: degree.name,
+        })),
+        ...demoMajors.map((major) => ({
+          code: major.code,
+          kind: "major" as const,
+          name: major.name,
+        })),
+      ],
       programmeRequirementsImported: true,
       structureRequirements: [],
     };
@@ -360,6 +386,7 @@ export async function loadPublishedPlanCatalogue(
       terms: [],
       degrees: [],
       majors: [],
+      structures: [],
       programmeRequirementsImported: false,
       structureRequirements: [],
     };
@@ -439,7 +466,8 @@ export async function loadPublishedPlanCatalogue(
   const requirementsSnapshotIds = structureYears.flatMap((structureYear) => {
     const kind = identitiesById.get(structureYear.structure_id)?.kind;
     return selectedStructureYears.has(structureYear.id) &&
-      (kind === "programme" || kind === "major")
+      kind !== undefined &&
+      isPlanStructureKind(kind)
       ? [structureYear.published_snapshot_id]
       : [];
   });
@@ -516,6 +544,19 @@ export async function loadPublishedPlanCatalogue(
       } satisfies Degree,
     ];
   });
+  const structures = structureYears.flatMap((structureYear) => {
+    const identity = identitiesById.get(structureYear.structure_id);
+    const snapshot = snapshotsById.get(structureYear.published_snapshot_id);
+    if (!identity || !snapshot || !isPlanStructureKind(identity.kind))
+      return [];
+    return [
+      {
+        code: identity.code,
+        kind: identity.kind,
+        name: snapshot.name,
+      } satisfies PlanStructureSummary,
+    ];
+  });
   const structureRequirements = structureYears.flatMap((structureYear) => {
     const identity = identitiesById.get(structureYear.structure_id);
     const snapshot = snapshotsById.get(structureYear.published_snapshot_id);
@@ -523,7 +564,7 @@ export async function loadPublishedPlanCatalogue(
       !identity ||
       !snapshot ||
       !requirementsSnapshotIdSet.has(structureYear.published_snapshot_id) ||
-      (identity.kind !== "programme" && identity.kind !== "major")
+      !isPlanStructureKind(identity.kind)
     ) {
       return [];
     }
@@ -600,6 +641,7 @@ export async function loadPublishedPlanCatalogue(
     terms,
     degrees,
     majors,
+    structures,
     programmeRequirementsImported: structureRequirements.some(
       (requirement) =>
         requirement.structureKind === "programme" &&

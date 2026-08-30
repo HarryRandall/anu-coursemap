@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { canWriteCatalogue } from "@/lib/auth/viewer";
 import type { CoursemapActionResult } from "@/lib/coursemap/actions";
 import {
+  adminAcademicStructureCollectionPath,
+  adminAcademicStructureDetailPath,
+} from "@/lib/coursemap/academic-structure-routes";
+import {
   parseAcademicStructureManualSnapshotProjection,
   type AcademicStructureManualSnapshotProjection,
 } from "@/lib/structure-import/manual-snapshot";
@@ -97,10 +101,21 @@ export async function saveAcademicStructureManualSnapshot(
       throw new Error("The manual snapshot identifier was not returned.");
     }
 
-    revalidatePath("/admin/programmes");
-    revalidatePath(`/admin/programmes/${input.structurePublicId}`);
     revalidatePath(
-      `/admin/programmes/${input.structurePublicId}?year=${projection.academicYear}`,
+      adminAcademicStructureCollectionPath(projection.structureKind),
+    );
+    revalidatePath(
+      adminAcademicStructureDetailPath({
+        kind: projection.structureKind,
+        publicId: input.structurePublicId,
+      }),
+    );
+    revalidatePath(
+      adminAcademicStructureDetailPath({
+        kind: projection.structureKind,
+        publicId: input.structurePublicId,
+        year: projection.academicYear,
+      }),
     );
     return {
       ok: true,

@@ -320,7 +320,7 @@ test("keeps modelled fees when deterministic extraction cannot classify them", (
   assert.equal(merged.fees[0].amount, 53_700);
 });
 
-test("requires every model source fragment to appear in the exact model input", () => {
+test("requires every model evidence excerpt to appear in the exact model input", () => {
   const supported = extraction({
     evidence: [
       {
@@ -349,6 +349,63 @@ test("requires every model source fragment to appear in the exact model input", 
     )[0],
     /Invented requirement/,
   );
+});
+
+test("accepts structured source wording that omits Markdown table presentation", () => {
+  const structured = extraction();
+  structured.requirements.sourceText =
+    "12 units from completion of the following courses: BUSN1001, BUSN1002";
+  structured.requirements.rule.sourceText = structured.requirements.sourceText;
+  structured.requirements.rule.children[0].sourceText =
+    structured.requirements.sourceText;
+  structured.requirements.unmodelledText = [];
+
+  const modelInput = `12 units from completion of the following courses:
+
+| Code | Title | Units |
+| --- | --- | --- |
+| [BUSN1001](course:BUSN1001) | Business Reporting and Analysis | 6 |
+| [BUSN1002](course:BUSN1002) | Accounting Processes and Systems | 6 |`;
+
+  assert.deepEqual(
+    academicStructureImportTargetInternals.academicStructureModelEvidenceIssues(
+      structured,
+      modelInput,
+    ),
+    [],
+  );
+
+  structured.requirements.rule.children[0].sourceText =
+    "12 units from completion of BUSN1001 and invented course BUSN9999";
+  assert.match(
+    academicStructureImportTargetInternals.academicStructureModelEvidenceIssues(
+      structured,
+      modelInput,
+    )[0],
+    /BUSN9999/,
+  );
+});
+
+test("clears redundant free text from typed model conditions without changing the stored response", () => {
+  const response = extraction();
+  const condition = response.requirements.rule.children[0];
+  condition.conditionKind = "structure_list";
+  condition.structureKind = "specialisation";
+  condition.structureCodes = ["COMP-HSPC"];
+  condition.freeText = "Complete the Computer Science Honours specialisation";
+  condition.minimumUnits = 48;
+  condition.maximumUnits = 48;
+
+  const normalised =
+    academicStructureImportTargetInternals.normaliseAcademicStructureModelExtraction(
+      response,
+    );
+  assert.equal(normalised.value.requirements.rule.children[0].freeText, null);
+  assert.equal(
+    response.requirements.rule.children[0].freeText,
+    condition.freeText,
+  );
+  assert.match(normalised.normalisations[0], /freeText was cleared/);
 });
 
 test("wraps a valid root condition so relational persistence has one root group", () => {

@@ -2067,50 +2067,6 @@ export type Database = {
           },
         ]
       }
-      catalogue_import_diagnostics: {
-        Row: {
-          created_at: string
-          details: Json
-          field: string | null
-          id: number
-          import_item_id: number
-          issue_code: string
-          severity: string
-          source_fingerprint: string
-          summary: string
-        }
-        Insert: {
-          created_at?: string
-          details?: Json
-          field?: string | null
-          id?: never
-          import_item_id: number
-          issue_code: string
-          severity?: string
-          source_fingerprint?: string
-          summary: string
-        }
-        Update: {
-          created_at?: string
-          details?: Json
-          field?: string | null
-          id?: never
-          import_item_id?: number
-          issue_code?: string
-          severity?: string
-          source_fingerprint?: string
-          summary?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "catalogue_import_diagnostics_import_item_id_fkey"
-            columns: ["import_item_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_import_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       catalogue_import_items: {
         Row: {
           catalogue_year_id: number
@@ -2234,74 +2190,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "catalogue_sources"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      catalogue_review_items: {
-        Row: {
-          assigned_to: string | null
-          catalogue_year_id: number
-          created_at: string
-          details: Json
-          field: string
-          id: number
-          import_item_id: number
-          issue_code: string
-          new_value: Json | null
-          old_value: Json | null
-          resolved_at: string | null
-          resolved_by: string | null
-          status: string
-          summary: string
-          target_key: string
-          target_kind: string
-          updated_at: string
-        }
-        Insert: {
-          assigned_to?: string | null
-          catalogue_year_id: number
-          created_at?: string
-          details?: Json
-          field: string
-          id?: never
-          import_item_id: number
-          issue_code: string
-          new_value?: Json | null
-          old_value?: Json | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: string
-          summary: string
-          target_key: string
-          target_kind: string
-          updated_at?: string
-        }
-        Update: {
-          assigned_to?: string | null
-          catalogue_year_id?: number
-          created_at?: string
-          details?: Json
-          field?: string
-          id?: never
-          import_item_id?: number
-          issue_code?: string
-          new_value?: Json | null
-          old_value?: Json | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: string
-          summary?: string
-          target_key?: string
-          target_kind?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "catalogue_review_items_item_provenance_fkey"
-            columns: ["import_item_id", "catalogue_year_id"]
-            isOneToOne: false
-            referencedRelation: "catalogue_import_items"
-            referencedColumns: ["id", "catalogue_year_id"]
           },
         ]
       }
@@ -5061,7 +4949,6 @@ export type Database = {
         }
         Returns: number
       }
-      catalogue_change_issue_codes: { Args: never; Returns: string[] }
       confirm_course_manual_snapshot: {
         Args: {
           p_blocking_review_item_ids: string[]
@@ -5228,7 +5115,9 @@ export type Database = {
           p_commencement_year: number
           p_display_name: string
           p_major_code?: string
+          p_minor_codes?: string[]
           p_programme_code: string
+          p_specialisation_codes?: string[]
           p_student_number: string
           p_study_load: string
         }

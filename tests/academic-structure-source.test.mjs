@@ -42,6 +42,10 @@ test("builds official year-specific URLs for every academic structure kind", () 
     createAnuAcademicStructureUrl(2026, "specialisation", "syar-spec"),
     "https://programsandcourses.anu.edu.au/2026/specialisation/SYAR-SPEC",
   );
+  assert.equal(
+    createAnuAcademicStructureUrl(2026, "specialisation", "anth-hspc"),
+    "https://programsandcourses.anu.edu.au/2026/specialisation/ANTH-HSPC",
+  );
   assert.throws(
     () => createAnuAcademicStructureUrl(2019, "programme", "BCOMP"),
     /2020 through 2030/,
@@ -81,6 +85,12 @@ test("validates authoritative metadata for each supported ANU route", () => {
       route: "specialisation",
       code: "SYAR-SPEC",
       title: "Systems and Architecture",
+    },
+    {
+      kind: "specialisation",
+      route: "specialisation",
+      code: "ANTH-HSPC",
+      title: "Anthropology Honours",
     },
   ]) {
     const result = validateAnuAcademicStructurePage({

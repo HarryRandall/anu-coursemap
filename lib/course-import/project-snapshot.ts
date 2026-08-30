@@ -467,7 +467,7 @@ function addAtomicRule(
         hardness,
         sourceText,
       });
-      condition.freeText = sourceText;
+      condition.requiredStructureCode = rule.programmeCode;
       accumulator.ruleConditions.push(condition);
       return;
     }

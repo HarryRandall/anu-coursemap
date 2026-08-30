@@ -34,9 +34,9 @@ export default async function AdminOverviewPage() {
             href="/admin/programmes"
             icon={<GraduationCap aria-hidden="true" />}
             label="Programmes"
-            trend={summary.structureHistory}
+            trend={summary.programmeHistory}
             trendLabel="Programme catalogue growth to the current total"
-            value={summary.structures}
+            value={summary.programmes}
           />
           <StatTile
             href="/admin/courses?status=draft"
