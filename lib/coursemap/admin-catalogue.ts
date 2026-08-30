@@ -1,313 +1,121 @@
 import "server-only";
 
 import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
+import {
+  parseAcademicStructureManualSnapshotProjection,
+  type AcademicStructureManualSnapshotProjection,
+} from "@/lib/structure-import/manual-snapshot";
+import {
+  isAcademicStructureKind,
+  type AcademicStructureKind,
+} from "@/lib/structure-import/contract";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-
-export type AdminStructureRecord = {
-  code: string;
-  publicId: string;
-  description: string;
-  id: number;
-  kind: string;
-  name: string;
-  publicationStatus: string;
-  reviewState: string;
-  units: number;
-  year: number;
-};
-
-export type PaginatedAdminResult<T> = {
-  page: number;
-  pageSize: number;
-  records: T[];
-  total: number;
-};
 
 export type AdminCatalogueSummary = {
   courseDrafts: number;
   courseHistory: number[];
   courses: number;
   draftHistory: number[];
+  programmeHistory: number[];
+  programmes: number;
   structureDrafts: number;
-  structureHistory: number[];
-  structures: number;
 };
 
-type CourseRow = { code: string; id: number; public_id: string };
-type StructureVersionRow = {
-  description: string;
-  id: number;
-  name: string;
-  publication_status: string;
-  review_state: string;
-  structure_id: number;
-  units: number;
-};
-type StructureRow = {
-  code: string;
-  id: number;
-  kind: string;
-  public_id: string;
-};
-
-async function currentCatalogueYear() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("catalogue_years")
-    .select("id,year")
-    .eq("status", "published")
-    .order("year", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
-/** Admin routes address records by public_id; codes stay valid as a redirect. */
-export const PUBLIC_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
-
-function safePage(value?: number) {
-  return value !== undefined && Number.isFinite(value)
-    ? Math.max(1, Math.floor(value))
-    : 1;
-}
-
-function safeQuery(value?: string) {
-  return (
-    value
-      ?.trim()
-      .slice(0, 120)
-      .replace(/[,%()]/g, " ") ?? ""
-  );
-}
-
-export type AdminCourseListStatus =
-  "all" | "draft" | "published" | "archived" | "needs-review" | "verified";
-
-export async function loadAdminStructurePage({
-  page,
-  pageSize = 24,
-  query,
-  status = "all",
-  kind,
-}: {
-  page?: number;
-  pageSize?: number;
-  query?: string;
-  status?: AdminCourseListStatus;
-  kind?: string;
-} = {}): Promise<PaginatedAdminResult<AdminStructureRecord>> {
-  const currentPage = safePage(page);
-  const currentPageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
-  if (isDemoMode()) {
-    return {
-      page: currentPage,
-      pageSize: currentPageSize,
-      records: [],
-      total: 0,
-    };
-  }
-  const [supabase, year] = await Promise.all([
-    createClient(),
-    currentCatalogueYear(),
-  ]);
-  if (!year) {
-    return {
-      page: currentPage,
-      pageSize: currentPageSize,
-      records: [],
-      total: 0,
-    };
-  }
-  const search = safeQuery(query);
-  const { data: matchingStructures, error: matchingStructuresError } = search
-    ? await supabase
-        .from("academic_structures")
-        .select("id")
-        .ilike("code", `%${search}%`)
-        .limit(500)
-    : { data: [], error: null };
-  if (matchingStructuresError) throw matchingStructuresError;
-  const structureIds = (matchingStructures ?? []).map(
-    (structure) => structure.id,
-  );
-  const { data: kindStructures, error: kindStructuresError } = kind
-    ? await supabase
-        .from("academic_structures")
-        .select("id")
-        .eq("kind", kind)
-        .limit(2000)
-    : { data: null, error: null };
-  if (kindStructuresError) throw kindStructuresError;
-
-  let versionsQuery = supabase
-    .from("academic_structure_versions")
-    .select(
-      "description,id,name,publication_status,review_state,structure_id,units",
-      { count: "exact" },
-    )
-    .eq("catalogue_year_id", year.id);
-  if (search) {
-    const pattern = `*${search}*`;
-    const codeClause = structureIds.length
-      ? `,structure_id.in.(${structureIds.join(",")})`
-      : "";
-    versionsQuery = versionsQuery.or(`name.ilike.${pattern}${codeClause}`);
-  }
-  if (kindStructures) {
-    const kindIds = kindStructures.map((structure) => structure.id);
-    versionsQuery = kindIds.length
-      ? versionsQuery.in("structure_id", kindIds)
-      : versionsQuery.eq("structure_id", -1);
-  }
-  if (status === "archived") {
-    versionsQuery = versionsQuery.eq("publication_status", "archived");
-  } else if (status === "draft" || status === "published") {
-    versionsQuery = versionsQuery.eq("publication_status", status);
-  } else if (status === "verified") {
-    versionsQuery = versionsQuery.eq("review_state", "verified");
-  } else if (status === "needs-review") {
-    versionsQuery = versionsQuery.neq("review_state", "verified");
-  }
-  const start = (currentPage - 1) * currentPageSize;
-  const {
-    data: versions,
-    count,
-    error: versionsError,
-  } = await versionsQuery
-    .order("name")
-    .range(start, start + currentPageSize - 1);
-  if (versionsError) throw versionsError;
-  const rows = (versions ?? []) as StructureVersionRow[];
-  const ids = [...new Set(rows.map((row) => row.structure_id))];
-  const { data: structures, error: structuresError } = ids.length
-    ? await supabase
-        .from("academic_structures")
-        .select("code,id,kind,public_id")
-        .in("id", ids)
-    : { data: [], error: null };
-  if (structuresError) throw structuresError;
-  const structureById = new Map(
-    ((structures ?? []) as StructureRow[]).map((structure) => [
-      structure.id,
-      structure,
-    ]),
-  );
-  return {
-    page: currentPage,
-    pageSize: currentPageSize,
-    total: count ?? 0,
-    records: rows.flatMap((row) => {
-      const structure = structureById.get(row.structure_id);
-      return structure
-        ? [
-            {
-              code: structure.code,
-              publicId: structure.public_id,
-              description: row.description,
-              id: row.id,
-              kind: structure.kind,
-              name: row.name,
-              publicationStatus: row.publication_status,
-              reviewState: row.review_state,
-              units: row.units,
-              year: year.year,
-            },
-          ]
-        : [];
-    }),
-  };
-}
+const STRUCTURE_KINDS = [
+  "programme",
+  "major",
+  "minor",
+  "specialisation",
+] as const;
 
 const emptyCatalogueSummary = (): AdminCatalogueSummary => ({
   courseDrafts: 0,
   courseHistory: [],
   courses: 0,
   draftHistory: [],
+  programmeHistory: [],
+  programmes: 0,
   structureDrafts: 0,
-  structureHistory: [],
-  structures: 0,
 });
 
 export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary> {
   if (isDemoMode()) return emptyCatalogueSummary();
   const supabase = await createClient();
-  const [year, courses, courseDrafts, courseCreated, courseDraftCreated] =
-    await Promise.all([
-      currentCatalogueYear(),
-      supabase.from("courses").select("id", { count: "exact", head: true }),
-      supabase
-        .from("course_years")
-        .select("id", { count: "exact", head: true })
-        .not("draft_snapshot_id", "is", null),
-      supabase.from("courses").select("created_at").limit(5000),
-      supabase
-        .from("course_years")
-        .select("created_at")
-        .not("draft_snapshot_id", "is", null)
-        .limit(5000),
-    ]);
-  const courseError = [courses, courseDrafts, courseCreated, courseDraftCreated]
+  const [
+    courses,
+    courseDrafts,
+    courseCreated,
+    courseDraftCreated,
+    programmes,
+    structureDrafts,
+    programmeCreated,
+    structureDraftCreated,
+  ] = await Promise.all([
+    supabase.from("courses").select("id", { count: "exact", head: true }),
+    supabase
+      .from("course_years")
+      .select("id", { count: "exact", head: true })
+      .not("draft_snapshot_id", "is", null),
+    supabase.from("courses").select("created_at").limit(5000),
+    supabase
+      .from("course_years")
+      .select("created_at")
+      .not("draft_snapshot_id", "is", null)
+      .limit(5000),
+    supabase
+      .from("academic_structures")
+      .select("id", { count: "exact", head: true })
+      .eq("kind", "programme"),
+    supabase
+      .from("academic_structure_years")
+      .select("id", { count: "exact", head: true })
+      .not("draft_snapshot_id", "is", null),
+    supabase
+      .from("academic_structures")
+      .select("created_at")
+      .eq("kind", "programme")
+      .limit(5000),
+    supabase
+      .from("academic_structure_years")
+      .select("created_at")
+      .not("draft_snapshot_id", "is", null)
+      .limit(5000),
+  ]);
+  const error = [
+    courses,
+    courseDrafts,
+    courseCreated,
+    courseDraftCreated,
+    programmes,
+    structureDrafts,
+    programmeCreated,
+    structureDraftCreated,
+  ]
     .map((result) => result.error)
     .find(Boolean);
-  if (courseError) throw courseError;
-
-  let structures = 0;
-  let structureDrafts = 0;
-  let structureRows: Array<{
-    created_at: string;
-    publication_status: string;
-  }> = [];
-  if (year) {
-    const [structureCount, draftCount, structureCreated] = await Promise.all([
-      supabase
-        .from("academic_structure_versions")
-        .select("id", { count: "exact", head: true })
-        .eq("catalogue_year_id", year.id),
-      supabase
-        .from("academic_structure_versions")
-        .select("id", { count: "exact", head: true })
-        .eq("catalogue_year_id", year.id)
-        .neq("publication_status", "published"),
-      supabase
-        .from("academic_structure_versions")
-        .select("created_at,publication_status")
-        .eq("catalogue_year_id", year.id)
-        .limit(5000),
-    ]);
-    const structureError = [structureCount, draftCount, structureCreated]
-      .map((result) => result.error)
-      .find(Boolean);
-    if (structureError) throw structureError;
-    structures = structureCount.count ?? 0;
-    structureDrafts = draftCount.count ?? 0;
-    structureRows = structureCreated.data ?? [];
-  }
-
-  const courseRows = courseCreated.data ?? [];
-  const draftCreatedAt = [
-    ...(courseDraftCreated.data ?? []).map((row) => row.created_at),
-    ...structureRows
-      .filter((row) => row.publication_status !== "published")
-      .map((row) => row.created_at),
-  ];
+  if (error) throw error;
 
   return {
     courses: courses.count ?? 0,
     courseDrafts: courseDrafts.count ?? 0,
     courseHistory: cumulativeGrowthSeries(
-      courseRows.map((row) => row.created_at),
+      (courseCreated.data ?? []).map((row) => row.created_at),
     ),
-    structures,
-    structureDrafts,
-    structureHistory: cumulativeGrowthSeries(
-      structureRows.map((row) => row.created_at),
+    programmes: programmes.count ?? 0,
+    structureDrafts: structureDrafts.count ?? 0,
+    programmeHistory: cumulativeGrowthSeries(
+      (programmeCreated.data ?? []).map((row) => row.created_at),
     ),
-    draftHistory: cumulativeGrowthSeries(draftCreatedAt),
+    draftHistory: cumulativeGrowthSeries([
+      ...(courseDraftCreated.data ?? []).map((row) => row.created_at),
+      ...(structureDraftCreated.data ?? []).map((row) => row.created_at),
+    ]),
   };
 }
+
+export const PUBLIC_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
 export type AdminStructureReviewCondition = {
   courseCode: string | null;
@@ -316,9 +124,11 @@ export type AdminStructureReviewCondition = {
   maximumLevel: number | null;
   minimumLevel: number | null;
   minimumUnits: number | null;
+  optionCodes: string[];
   sourceText: string | null;
   subjectCode: string | null;
   targetStructureCode: string | null;
+  targetStructureKind: AcademicStructureKind | null;
 };
 
 export type AdminStructureReviewGroup = {
@@ -339,26 +149,71 @@ export type AdminStructureReviewRecord = {
   description: string;
   groups: AdminStructureReviewGroup[];
   id: number;
-  kind: string;
+  kind: AcademicStructureKind;
   name: string;
+  projection: AcademicStructureManualSnapshotProjection;
   publicationStatus: string;
   reviewState: string;
   source: {
     canonicalUrl: string;
-    contentHash: string | null;
-    fetchedAt: string | null;
+    contentHash: string;
+    fetchedAt: string;
     lastModified: string | null;
   } | null;
-  units: number;
+  structureYearId: number;
+  units: number | null;
   year: number;
 };
 
-/**
- * Loads one programme version with its requirement tree so a reviewer can
- * check the imported structure against the ANU page before publishing it.
- */
+async function selectStructureYear(
+  structureId: number,
+  requestedYear?: number,
+) {
+  const supabase = await createClient();
+  if (requestedYear !== undefined) {
+    const { data: academicYear, error: yearError } = await supabase
+      .from("academic_years")
+      .select("id,year")
+      .eq("year", requestedYear)
+      .maybeSingle();
+    if (yearError) throw yearError;
+    if (!academicYear) return null;
+    const { data: structureYear, error: structureYearError } = await supabase
+      .from("academic_structure_years")
+      .select("id,academic_year_id,draft_snapshot_id,published_snapshot_id")
+      .eq("structure_id", structureId)
+      .eq("academic_year_id", academicYear.id)
+      .maybeSingle();
+    if (structureYearError) throw structureYearError;
+    return structureYear ? { academicYear, structureYear } : null;
+  }
+
+  const { data: candidates, error: candidatesError } = await supabase
+    .from("academic_structure_years")
+    .select("id,academic_year_id,draft_snapshot_id,published_snapshot_id")
+    .eq("structure_id", structureId)
+    .not("draft_snapshot_id", "is", null);
+  if (candidatesError) throw candidatesError;
+  const yearIds = (candidates ?? []).map((row) => row.academic_year_id);
+  if (yearIds.length === 0) return null;
+  const { data: years, error: yearsError } = await supabase
+    .from("academic_years")
+    .select("id,year")
+    .in("id", yearIds)
+    .order("year", { ascending: false });
+  if (yearsError) throw yearsError;
+  const academicYear = years?.[0];
+  if (!academicYear) return null;
+  const structureYear = candidates?.find(
+    (row) => row.academic_year_id === academicYear.id,
+  );
+  return structureYear ? { academicYear, structureYear } : null;
+}
+
+/** Load the current draft, falling back to the published snapshot. */
 export async function loadAdminStructureReview(
   identifier: string,
+  requestedYear?: number,
 ): Promise<AdminStructureReviewRecord | null> {
   const value = identifier.trim();
   const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
@@ -366,153 +221,376 @@ export async function loadAdminStructureReview(
   if (!publicId && !/^[A-Z0-9][A-Z0-9-]*$/.test(code ?? "")) return null;
   if (isDemoMode()) return null;
 
-  const [supabase, year] = await Promise.all([
-    createClient(),
-    currentCatalogueYear(),
-  ]);
-  if (!year) return null;
-
-  const { data: structure, error: structureError } = await supabase
+  const supabase = await createClient();
+  let structureQuery = supabase
     .from("academic_structures")
-    .select("id,code,kind,public_id")
-    .eq(publicId ? "public_id" : "code", publicId ?? (code as string))
-    .maybeSingle();
+    .select("id,code,kind,public_id");
+  structureQuery = publicId
+    ? structureQuery.eq("public_id", publicId)
+    : structureQuery.eq("code", code as string);
+  const { data: structures, error: structureError } = await structureQuery
+    .in("kind", [...STRUCTURE_KINDS])
+    .limit(1);
   if (structureError) throw structureError;
+  const structure = structures?.[0];
   if (!structure) return null;
 
-  const { data: version, error: versionError } = await supabase
-    .from("academic_structure_versions")
-    .select("description,id,name,publication_status,review_state,units")
-    .eq("structure_id", structure.id)
-    .eq("catalogue_year_id", year.id)
-    .maybeSingle();
-  if (versionError) throw versionError;
-  if (!version) return null;
+  const selection = await selectStructureYear(structure.id, requestedYear);
+  if (!selection) return null;
+  const { academicYear, structureYear } = selection;
+  const snapshotId =
+    structureYear.draft_snapshot_id ?? structureYear.published_snapshot_id;
+  if (snapshotId === null) return null;
 
-  const { data: groupRows, error: groupsError } = await supabase
-    .from("requirement_groups")
-    .select(
-      "code,description,id,minimum_count,minimum_units,name,operator,parent_group_id,position,source_document_id",
-    )
-    .eq("structure_version_id", version.id)
-    .order("position");
-  if (groupsError) throw groupsError;
-  const groups = groupRows ?? [];
+  const [
+    snapshotResult,
+    summaryFieldsResult,
+    sectionsResult,
+    outcomesResult,
+    feesResult,
+    relationshipsResult,
+    groupsResult,
+    conditionsResult,
+    optionsResult,
+    unmodelledResult,
+    evidenceResult,
+  ] = await Promise.all([
+    supabase
+      .from("academic_structure_snapshots")
+      .select(
+        "academic_career,acronym,atar,can_combine,can_combine_vertical,college,confirmation_status,contact_text,critical_uncertainty,description,duration_years,id,introduction,mode_of_delivery,name,overall_confidence,schema_version,selection_rank,short_name,source_page_id,study_as,units",
+      )
+      .eq("id", snapshotId)
+      .maybeSingle(),
+    supabase
+      .from("academic_structure_summary_fields")
+      .select("field_key,field_value,label,position,source_text,value_position")
+      .eq("snapshot_id", snapshotId)
+      .order("position")
+      .order("value_position"),
+    supabase
+      .from("academic_structure_snapshot_sections")
+      .select(
+        "heading,id,markdown,position,section_key,source_locator,source_text",
+      )
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_learning_outcomes")
+      .select("id,outcome_text,position,source_locator,source_text")
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_fees")
+      .select(
+        "amount,audience,basis,currency,fee_type,fee_year,id,position,source_label,source_locator,source_text",
+      )
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_snapshot_relationships")
+      .select(
+        "id,position,relationship_kind,source_locator,source_text,target_code,target_kind,target_title",
+      )
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_requirement_groups")
+      .select(
+        "description,group_key,id,maximum_units,minimum_count,minimum_units,operator,parent_group_id,position,source_locator,source_text,title",
+      )
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_requirement_conditions")
+      .select(
+        "condition_kind,free_text,id,maximum_level,maximum_units,minimum_courses,minimum_level,minimum_units,position,projection_key,requirement_group_id,source_locator,source_text,structure_kind,subject_code,tag",
+      )
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_requirement_options")
+      .select(
+        "option_code,option_kind,position,requirement_condition_id,structure_kind",
+      )
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_unmodelled_requirements")
+      .select("id,position,source_locator,source_text")
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+    supabase
+      .from("academic_structure_snapshot_evidence")
+      .select(
+        "confidence,evidence_excerpt,field_key,method,position,source_locator",
+      )
+      .eq("snapshot_id", snapshotId)
+      .order("position"),
+  ]);
+  const readError = [
+    snapshotResult,
+    summaryFieldsResult,
+    sectionsResult,
+    outcomesResult,
+    feesResult,
+    relationshipsResult,
+    groupsResult,
+    conditionsResult,
+    optionsResult,
+    unmodelledResult,
+    evidenceResult,
+  ]
+    .map((result) => result.error)
+    .find(Boolean);
+  if (readError) throw readError;
+  const snapshot = snapshotResult.data;
+  if (!snapshot) return null;
 
-  const { data: conditionRows, error: conditionsError } = groups.length
-    ? await supabase
-        .from("requirement_conditions")
-        .select(
-          "condition_kind,course_id,id,maximum_course_level,minimum_course_level,minimum_units,position,requirement_group_id,source_text,subject_code,target_structure_id",
-        )
-        .in(
-          "requirement_group_id",
-          groups.map((group) => group.id),
-        )
-        .order("position")
-    : { data: [], error: null };
-  if (conditionsError) throw conditionsError;
-  const conditions = conditionRows ?? [];
+  const [sourceResult, reviewResult] = await Promise.all([
+    snapshot.source_page_id === null
+      ? Promise.resolve({ data: null, error: null })
+      : supabase
+          .from("academic_structure_source_pages")
+          .select(
+            "canonical_url,content_sha256,fetched_at,source_last_modified",
+          )
+          .eq("id", snapshot.source_page_id)
+          .maybeSingle(),
+    supabase
+      .from("academic_structure_review_items")
+      .select("id", { count: "exact", head: true })
+      .eq("snapshot_id", snapshotId)
+      .eq("status", "open"),
+  ]);
+  if (sourceResult.error) throw sourceResult.error;
+  if (reviewResult.error) throw reviewResult.error;
 
-  const courseIds = [
-    ...new Set(
-      conditions
-        .map((condition) => condition.course_id)
-        .filter((id): id is number => typeof id === "number"),
-    ),
-  ];
-  const { data: conditionCourses } = courseIds.length
-    ? await supabase
-        .from("courses")
-        .select("code,id,public_id")
-        .in("id", courseIds)
-    : { data: [] };
-  const courseCodeById = new Map(
-    ((conditionCourses ?? []) as CourseRow[]).map((course) => [
-      course.id,
-      course.code,
-    ]),
+  const conditions = conditionsResult.data ?? [];
+  const options = optionsResult.data ?? [];
+  const needsReview =
+    snapshot.critical_uncertainty ||
+    snapshot.confirmation_status === "required" ||
+    (reviewResult.count ?? 0) > 0;
+
+  const groupKeyById = new Map(
+    (groupsResult.data ?? []).map((group) => [group.id, group.group_key]),
   );
-
-  const targetIds = [
-    ...new Set(
-      conditions
-        .map((condition) => condition.target_structure_id)
-        .filter((id): id is number => typeof id === "number"),
-    ),
-  ];
-  const { data: targetStructures } = targetIds.length
-    ? await supabase
-        .from("academic_structures")
-        .select("code,id")
-        .in("id", targetIds)
-    : { data: [] };
-  const structureCodeById = new Map(
-    ((targetStructures ?? []) as Array<{ code: string; id: number }>).map(
-      (item) => [item.id, item.code],
-    ),
+  const conditionKeyById = new Map(
+    conditions.map((condition) => [condition.id, condition.projection_key]),
   );
-
-  const sourceDocumentId = groups[0]?.source_document_id ?? null;
-  const { data: sourceDocument } = sourceDocumentId
-    ? await supabase
-        .from("catalogue_source_documents")
-        .select("canonical_url,content_sha256,fetched_at,source_last_modified")
-        .eq("id", sourceDocumentId)
-        .maybeSingle()
-    : { data: null };
+  const rootGroup = (groupsResult.data ?? []).find(
+    ({ parent_group_id: parentGroupId }) => parentGroupId === null,
+  );
+  const projection = parseAcademicStructureManualSnapshotProjection({
+    schemaVersion: snapshot.schema_version,
+    structureKind: structure.kind,
+    structureCode: structure.code,
+    academicYear: academicYear.year,
+    snapshot: {
+      title: snapshot.name,
+      acronym: snapshot.acronym,
+      shortName: snapshot.short_name,
+      introduction: snapshot.introduction,
+      description: snapshot.description,
+      totalUnits: snapshot.units === null ? null : Number(snapshot.units),
+      durationYears:
+        snapshot.duration_years === null
+          ? null
+          : Number(snapshot.duration_years),
+      academicCareer: snapshot.academic_career,
+      college: snapshot.college,
+      deliveryMode: snapshot.mode_of_delivery,
+      selectionRank:
+        snapshot.selection_rank === null
+          ? null
+          : Number(snapshot.selection_rank),
+      atar: snapshot.atar === null ? null : Number(snapshot.atar),
+      canCombine: snapshot.can_combine,
+      canCombineVertical: snapshot.can_combine_vertical,
+      studyAs: snapshot.study_as,
+      contactText: snapshot.contact_text,
+      overallConfidence:
+        snapshot.overall_confidence === null
+          ? null
+          : Number(snapshot.overall_confidence),
+    },
+    summaryFields: (summaryFieldsResult.data ?? []).map((field) => ({
+      position: field.position,
+      valuePosition: field.value_position,
+      fieldKey: field.field_key,
+      label: field.label,
+      fieldValue: field.field_value,
+      sourceText: field.source_text,
+    })),
+    sections: (sectionsResult.data ?? []).map((section) => ({
+      position: section.position,
+      sectionKey: section.section_key,
+      heading: section.heading,
+      markdown: section.markdown,
+      sourceText: section.source_text,
+      sourceLocator: section.source_locator,
+    })),
+    learningOutcomes: (outcomesResult.data ?? []).map((outcome) => ({
+      position: outcome.position,
+      outcomeText: outcome.outcome_text,
+      sourceText: outcome.source_text,
+      sourceLocator: outcome.source_locator,
+    })),
+    fees: (feesResult.data ?? []).map((fee) => ({
+      position: fee.position,
+      feeYear: fee.fee_year,
+      audience: fee.audience,
+      feeType: fee.fee_type,
+      amount: fee.amount === null ? null : Number(fee.amount),
+      currency: fee.currency === null ? null : fee.currency.trim(),
+      basis: fee.basis,
+      sourceLabel: fee.source_label,
+      sourceText: fee.source_text,
+      sourceLocator: fee.source_locator,
+    })),
+    relationships: (relationshipsResult.data ?? []).map((relationship) => ({
+      position: relationship.position,
+      relationshipKind: relationship.relationship_kind,
+      targetKind: relationship.target_kind,
+      targetCode: relationship.target_code,
+      targetTitle: relationship.target_title,
+      sourceText: relationship.source_text,
+      sourceLocator: relationship.source_locator,
+    })),
+    requirementRootKey: rootGroup?.group_key ?? null,
+    requirementGroups: (groupsResult.data ?? []).map((group) => ({
+      key: group.group_key,
+      parentGroupKey:
+        group.parent_group_id === null
+          ? null
+          : (groupKeyById.get(group.parent_group_id) ?? null),
+      position: group.position,
+      operator: group.operator,
+      minimumCount: group.minimum_count,
+      minimumUnits:
+        group.minimum_units === null ? null : Number(group.minimum_units),
+      maximumUnits:
+        group.maximum_units === null ? null : Number(group.maximum_units),
+      title: group.title,
+      description: group.description,
+      sourceText: group.source_text,
+      sourceLocator: group.source_locator,
+    })),
+    requirementConditions: conditions.map((condition) => ({
+      key: condition.projection_key,
+      groupKey: groupKeyById.get(condition.requirement_group_id),
+      position: condition.position,
+      conditionKind: condition.condition_kind,
+      minimumUnits:
+        condition.minimum_units === null
+          ? null
+          : Number(condition.minimum_units),
+      maximumUnits:
+        condition.maximum_units === null
+          ? null
+          : Number(condition.maximum_units),
+      minimumCourses: condition.minimum_courses,
+      structureKind: condition.structure_kind,
+      subjectCode: condition.subject_code,
+      minimumLevel: condition.minimum_level,
+      maximumLevel: condition.maximum_level,
+      tag: condition.tag,
+      freeText: condition.free_text,
+      sourceText: condition.source_text,
+      sourceLocator: condition.source_locator,
+    })),
+    requirementOptions: options.map((option) => ({
+      conditionKey: conditionKeyById.get(option.requirement_condition_id),
+      position: option.position,
+      optionKind: option.option_kind,
+      optionCode: option.option_code,
+      structureKind: option.structure_kind,
+    })),
+    unmodelledRequirements: (unmodelledResult.data ?? []).map((item) => ({
+      position: item.position,
+      sourceText: item.source_text,
+      sourceLocator: item.source_locator,
+    })),
+    evidence: (evidenceResult.data ?? []).map((item) => ({
+      position: item.position,
+      fieldKey: item.field_key,
+      sourceLocator: item.source_locator,
+      evidenceExcerpt: item.evidence_excerpt,
+      confidence: Number(item.confidence),
+      method: item.method,
+    })),
+  });
 
   return {
     code: structure.code,
     publicId: structure.public_id,
-    description: version.description,
-    id: version.id,
-    kind: structure.kind,
-    name: version.name,
-    publicationStatus: version.publication_status,
-    reviewState: version.review_state,
-    units: version.units,
-    year: year.year,
-    source: sourceDocument
-      ? {
-          canonicalUrl: sourceDocument.canonical_url,
-          contentHash: sourceDocument.content_sha256,
-          fetchedAt: sourceDocument.fetched_at,
-          lastModified: sourceDocument.source_last_modified,
-        }
-      : null,
-    groups: groups.map((group) => ({
-      code: group.code,
+    description: snapshot.description ?? "",
+    groups: (groupsResult.data ?? []).map((group) => ({
+      code: group.group_key,
+      conditions: conditions
+        .filter((condition) => condition.requirement_group_id === group.id)
+        .map((condition) => {
+          const conditionOptions = options.filter(
+            (option) => option.requirement_condition_id === condition.id,
+          );
+          const onlyOption =
+            conditionOptions.length === 1 ? conditionOptions[0] : null;
+          return {
+            courseCode:
+              onlyOption?.option_kind === "course"
+                ? onlyOption.option_code
+                : null,
+            id: condition.id,
+            kind: condition.condition_kind,
+            maximumLevel: condition.maximum_level,
+            minimumLevel: condition.minimum_level,
+            minimumUnits:
+              condition.minimum_units === null
+                ? null
+                : Number(condition.minimum_units),
+            optionCodes: conditionOptions.map((option) => option.option_code),
+            sourceText: condition.free_text ?? condition.source_text,
+            subjectCode: condition.subject_code,
+            targetStructureCode:
+              onlyOption?.option_kind === "structure"
+                ? onlyOption.option_code
+                : null,
+            targetStructureKind:
+              onlyOption?.option_kind === "structure" &&
+              isAcademicStructureKind(onlyOption.structure_kind)
+                ? onlyOption.structure_kind
+                : null,
+          };
+        }),
       description: group.description,
       id: group.id,
       minimumCount: group.minimum_count,
       minimumUnits:
         group.minimum_units === null ? null : Number(group.minimum_units),
-      name: group.name,
+      name: group.title ?? group.group_key,
       operator: group.operator,
       parentGroupId: group.parent_group_id,
-      conditions: conditions
-        .filter((condition) => condition.requirement_group_id === group.id)
-        .map((condition) => ({
-          courseCode:
-            condition.course_id === null
-              ? null
-              : (courseCodeById.get(condition.course_id) ?? null),
-          id: condition.id,
-          kind: condition.condition_kind,
-          maximumLevel: condition.maximum_course_level,
-          minimumLevel: condition.minimum_course_level,
-          minimumUnits:
-            condition.minimum_units === null
-              ? null
-              : Number(condition.minimum_units),
-          sourceText: condition.source_text,
-          subjectCode: condition.subject_code,
-          targetStructureCode:
-            condition.target_structure_id === null
-              ? null
-              : (structureCodeById.get(condition.target_structure_id) ?? null),
-        })),
     })),
+    id: snapshot.id,
+    kind: structure.kind as AcademicStructureKind,
+    name: snapshot.name,
+    projection,
+    publicationStatus:
+      structureYear.published_snapshot_id === snapshot.id
+        ? "published"
+        : "draft",
+    reviewState: needsReview ? "needs_review" : "verified",
+    source: sourceResult.data
+      ? {
+          canonicalUrl: sourceResult.data.canonical_url,
+          contentHash: sourceResult.data.content_sha256,
+          fetchedAt: sourceResult.data.fetched_at,
+          lastModified: sourceResult.data.source_last_modified,
+        }
+      : null,
+    structureYearId: structureYear.id,
+    units: snapshot.units === null ? null : Number(snapshot.units),
+    year: academicYear.year,
   };
 }

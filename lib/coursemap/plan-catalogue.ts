@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Database } from "@/types/database";
 import type { Course, Degree, Major, Term } from "@/lib/coursemap/types";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
@@ -13,13 +14,84 @@ import { createClient } from "@/lib/supabase/server";
 import { collectPlanCatalogueCourseIds } from "@/lib/coursemap/plan-course-ids";
 
 export type PlanCatalogue = {
+  academicYear: number | null;
   courses: Course[];
   /** Snapshot-pinned course rows used only by recorded attempts. */
   snapshotCourses?: Course[];
   terms: Term[];
   degrees: Degree[];
   majors: Major[];
+  structures: PlanStructureSummary[];
   programmeRequirementsImported: boolean;
+  structureRequirements: PlanStructureRequirements[];
+};
+
+export type PlanRequirementOption = {
+  code: string;
+  kind: string;
+  position: number;
+  structureKind: string | null;
+};
+
+export type PlanRequirementCondition = {
+  type: "condition";
+  conditionKind: string;
+  freeText: string | null;
+  id: number;
+  maximumLevel: number | null;
+  maximumUnits: number | null;
+  minimumCourses: number | null;
+  minimumLevel: number | null;
+  minimumUnits: number | null;
+  options: PlanRequirementOption[];
+  position: number;
+  projectionKey: string;
+  sourceLocator: string;
+  sourceText: string;
+  structureKind: string | null;
+  subjectCode: string | null;
+  tag: string | null;
+};
+
+export type PlanRequirementGroup = {
+  type: "group";
+  children: PlanRequirementNode[];
+  description: string | null;
+  groupKey: string;
+  id: number;
+  maximumUnits: number | null;
+  minimumCount: number | null;
+  minimumUnits: number | null;
+  operator: string;
+  position: number;
+  sourceLocator: string;
+  sourceText: string;
+  title: string | null;
+};
+
+export type PlanRequirementNode =
+  PlanRequirementGroup | PlanRequirementCondition;
+
+export type PlanStructureRequirements = {
+  root: PlanRequirementGroup | null;
+  snapshotId: number;
+  structureCode: string;
+  structureKind: PlanStructureKind;
+  structureName: string;
+  unmodelled: Array<{
+    position: number;
+    sourceLocator: string | null;
+    sourceText: string;
+  }>;
+};
+
+export type PlanStructureKind =
+  "programme" | "major" | "minor" | "specialisation";
+
+export type PlanStructureSummary = {
+  code: string;
+  kind: PlanStructureKind;
+  name: string;
 };
 
 type AcademicPeriodRow = {
@@ -30,14 +102,25 @@ type AcademicPeriodRow = {
   short_name: string;
   starts_on: string;
 };
-type StructureVersionRow = {
+type StructureSnapshotRow = {
+  college: string | null;
+  description: string | null;
   duration_years: number | null;
+  id: number;
   name: string;
-  structure_id: number;
-  units: number;
+  units: number | null;
 };
 type StructureIdentityRow = { code: string; id: number; kind: string };
+type RequirementGroupRow =
+  Database["public"]["Tables"]["academic_structure_requirement_groups"]["Row"];
+type RequirementConditionRow =
+  Database["public"]["Tables"]["academic_structure_requirement_conditions"]["Row"];
+type RequirementOptionRow =
+  Database["public"]["Tables"]["academic_structure_requirement_options"]["Row"];
+type UnmodelledRequirementRow =
+  Database["public"]["Tables"]["academic_structure_unmodelled_requirements"]["Row"];
 type PlanCourseRow = { academic_year_id: number; course_id: number };
+type PlanStructureRow = { structure_year_id: number };
 type AttemptCourseRow = {
   course_id: number;
   course_snapshot_id: number;
@@ -46,6 +129,10 @@ type AttemptSnapshotRow = {
   academic_year_id: number;
   id: number;
 };
+
+function isPlanStructureKind(value: string): value is PlanStructureKind {
+  return ["programme", "major", "minor", "specialisation"].includes(value);
+}
 
 function formatDateRange(startsOn: string, endsOn: string) {
   const format = new Intl.DateTimeFormat("en-AU", {
@@ -92,9 +179,156 @@ function planCourseFromDetails(course: CourseDetails): Course {
   };
 }
 
+export function buildAcademicStructureRequirementTree({
+  groups,
+  conditions,
+  options,
+}: {
+  groups: RequirementGroupRow[];
+  conditions: RequirementConditionRow[];
+  options: RequirementOptionRow[];
+}): PlanRequirementGroup | null {
+  const root = groups.find((group) => group.parent_group_id === null);
+  if (!root) return null;
+
+  const childGroupsByParent = new Map<number, RequirementGroupRow[]>();
+  for (const group of groups) {
+    if (group.parent_group_id === null) continue;
+    const siblings = childGroupsByParent.get(group.parent_group_id) ?? [];
+    siblings.push(group);
+    childGroupsByParent.set(group.parent_group_id, siblings);
+  }
+  const conditionsByGroup = new Map<number, RequirementConditionRow[]>();
+  for (const condition of conditions) {
+    const siblings =
+      conditionsByGroup.get(condition.requirement_group_id) ?? [];
+    siblings.push(condition);
+    conditionsByGroup.set(condition.requirement_group_id, siblings);
+  }
+  const optionsByCondition = new Map<number, RequirementOptionRow[]>();
+  for (const option of options) {
+    const siblings =
+      optionsByCondition.get(option.requirement_condition_id) ?? [];
+    siblings.push(option);
+    optionsByCondition.set(option.requirement_condition_id, siblings);
+  }
+
+  function conditionNode(
+    condition: RequirementConditionRow,
+  ): PlanRequirementCondition {
+    return {
+      type: "condition",
+      conditionKind: condition.condition_kind,
+      freeText: condition.free_text,
+      id: condition.id,
+      maximumLevel: condition.maximum_level,
+      maximumUnits: condition.maximum_units,
+      minimumCourses: condition.minimum_courses,
+      minimumLevel: condition.minimum_level,
+      minimumUnits: condition.minimum_units,
+      options: (optionsByCondition.get(condition.id) ?? [])
+        .toSorted((left, right) => left.position - right.position)
+        .map((option) => ({
+          code: option.option_code,
+          kind: option.option_kind,
+          position: option.position,
+          structureKind: option.structure_kind,
+        })),
+      position: condition.position,
+      projectionKey: condition.projection_key,
+      sourceLocator: condition.source_locator,
+      sourceText: condition.source_text,
+      structureKind: condition.structure_kind,
+      subjectCode: condition.subject_code,
+      tag: condition.tag,
+    };
+  }
+
+  function groupNode(
+    group: RequirementGroupRow,
+    ancestors: ReadonlySet<number>,
+  ): PlanRequirementGroup {
+    const nextAncestors = new Set(ancestors).add(group.id);
+    const childGroups = (childGroupsByParent.get(group.id) ?? [])
+      .filter((child) => !nextAncestors.has(child.id))
+      .map((child) => groupNode(child, nextAncestors));
+    const childConditions = (conditionsByGroup.get(group.id) ?? []).map(
+      conditionNode,
+    );
+    return {
+      type: "group",
+      children: [...childGroups, ...childConditions].toSorted(
+        (left, right) => left.position - right.position,
+      ),
+      description: group.description,
+      groupKey: group.group_key,
+      id: group.id,
+      maximumUnits: group.maximum_units,
+      minimumCount: group.minimum_count,
+      minimumUnits: group.minimum_units,
+      operator: group.operator,
+      position: group.position,
+      sourceLocator: group.source_locator,
+      sourceText: group.source_text,
+      title: group.title,
+    };
+  }
+
+  return groupNode(root, new Set());
+}
+
+async function loadAcademicYearRecord(
+  supabase: ReturnType<typeof createPublicClient>,
+  catalogueYear?: number,
+) {
+  if (catalogueYear) {
+    const result = await supabase
+      .from("academic_years")
+      .select("id,year")
+      .eq("year", catalogueYear)
+      .maybeSingle();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  const programmeStructuresResult = await supabase
+    .from("academic_structures")
+    .select("id")
+    .eq("kind", "programme");
+  if (programmeStructuresResult.error) throw programmeStructuresResult.error;
+  const programmeStructureIds = (programmeStructuresResult.data ?? []).map(
+    (structure) => structure.id,
+  );
+  if (programmeStructureIds.length === 0) return null;
+
+  const programmeYearsResult = await supabase
+    .from("academic_structure_years")
+    .select("academic_year_id")
+    .in("structure_id", programmeStructureIds)
+    .not("published_snapshot_id", "is", null);
+  if (programmeYearsResult.error) throw programmeYearsResult.error;
+  const academicYearIds = [
+    ...new Set(
+      (programmeYearsResult.data ?? []).map((row) => row.academic_year_id),
+    ),
+  ];
+  if (academicYearIds.length === 0) return null;
+
+  const latestYearResult = await supabase
+    .from("academic_years")
+    .select("id,year")
+    .in("id", academicYearIds)
+    .order("year", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestYearResult.error) throw latestYearResult.error;
+  return latestYearResult.data;
+}
+
 export async function loadPublishedPlanCatalogue(
   catalogueYear?: number,
   courseSelections: readonly { code: string; year: number }[] = [],
+  selectedStructureYearIds: readonly number[] = [],
 ): Promise<PlanCatalogue> {
   if (isDemoMode()) {
     const {
@@ -118,106 +352,266 @@ export async function loadPublishedPlanCatalogue(
       })),
     );
     return {
+      academicYear: planningYears.at(0) ?? null,
       courses: annualDemoCourses,
       terms: demoTerms,
       degrees: demoDegrees,
       majors: demoMajors,
+      structures: [
+        ...demoDegrees.map((degree) => ({
+          code: degree.code,
+          kind: "programme" as const,
+          name: degree.name,
+        })),
+        ...demoMajors.map((major) => ({
+          code: major.code,
+          kind: "major" as const,
+          name: major.name,
+        })),
+      ],
       programmeRequirementsImported: true,
+      structureRequirements: [],
     };
   }
 
   const supabase = createPublicClient();
-  const yearsResult = catalogueYear
-    ? await supabase
-        .from("catalogue_years")
-        .select("id,year")
-        .eq("status", "published")
-        .eq("year", catalogueYear)
-        .maybeSingle()
-    : await supabase
-        .from("catalogue_years")
-        .select("id,year")
-        .eq("status", "published")
-        .order("year", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-  if (yearsResult.error) throw yearsResult.error;
-  const catalogueYearRecord = yearsResult.data;
-  if (!catalogueYearRecord) {
+  const academicYearRecord = await loadAcademicYearRecord(
+    supabase,
+    catalogueYear,
+  );
+  if (!academicYearRecord) {
     return {
+      academicYear: null,
       courses: [],
       terms: [],
       degrees: [],
       majors: [],
+      structures: [],
       programmeRequirementsImported: false,
+      structureRequirements: [],
     };
   }
-  const [catalogueCourses, periodsResult, structureVersionsResult] =
+  const [catalogueCourses, periodsResult, structureYearsResult] =
     await Promise.all([
       loadPublishedCoursesBySelections(courseSelections),
       supabase
         .from("academic_periods")
         .select("calendar_year,code,ends_on,name,short_name,starts_on")
-        .eq("calendar_year", catalogueYearRecord.year)
+        .eq("calendar_year", academicYearRecord.year)
         .eq("status", "published")
         .order("calendar_year")
         .order("sort_order"),
       supabase
-        .from("academic_structure_versions")
-        .select("duration_years,name,structure_id,units")
-        .eq("catalogue_year_id", catalogueYearRecord.id)
-        .eq("publication_status", "published"),
+        .from("academic_structure_years")
+        .select("id,published_snapshot_id,structure_id")
+        .eq("academic_year_id", academicYearRecord.id)
+        .not("published_snapshot_id", "is", null),
     ]);
   if (periodsResult.error) throw periodsResult.error;
-  if (structureVersionsResult.error) throw structureVersionsResult.error;
+  if (structureYearsResult.error) throw structureYearsResult.error;
 
-  const structureVersions = (structureVersionsResult.data ??
-    []) as StructureVersionRow[];
+  const structureYears = (structureYearsResult.data ?? []).filter(
+    (
+      row,
+    ): row is typeof row & {
+      published_snapshot_id: number;
+    } => row.published_snapshot_id !== null,
+  );
   const structureIds = [
-    ...new Set(structureVersions.map((version) => version.structure_id)),
+    ...new Set(
+      structureYears.map((structureYear) => structureYear.structure_id),
+    ),
   ];
-  const { data: structureIdentities, error: structureIdentitiesError } =
-    structureIds.length
-      ? await supabase
-          .from("academic_structures")
-          .select("code,id,kind")
-          .in("id", structureIds)
-      : { data: [], error: null };
-  if (structureIdentitiesError) throw structureIdentitiesError;
+  const snapshotIds = structureYears.map(
+    (structureYear) => structureYear.published_snapshot_id,
+  );
+  const [structureIdentitiesResult, structureSnapshotsResult] =
+    await Promise.all([
+      structureIds.length
+        ? supabase
+            .from("academic_structures")
+            .select("code,id,kind")
+            .in("id", structureIds)
+        : Promise.resolve({ data: [], error: null }),
+      snapshotIds.length
+        ? supabase
+            .from("academic_structure_snapshots")
+            .select("college,description,duration_years,id,name,units")
+            .in("id", snapshotIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+  const structureError = [
+    structureIdentitiesResult.error,
+    structureSnapshotsResult.error,
+  ].find(Boolean);
+  if (structureError) throw structureError;
 
   const identitiesById = new Map(
-    ((structureIdentities ?? []) as StructureIdentityRow[]).map((identity) => [
-      identity.id,
-      identity,
-    ]),
+    ((structureIdentitiesResult.data ?? []) as StructureIdentityRow[]).map(
+      (identity) => [identity.id, identity],
+    ),
   );
-  const degrees = structureVersions.flatMap((version) => {
-    const identity = identitiesById.get(version.structure_id);
-    if (!identity || identity.kind !== "degree") return [];
+  const snapshotsById = new Map(
+    ((structureSnapshotsResult.data ?? []) as StructureSnapshotRow[]).map(
+      (snapshot) => [snapshot.id, snapshot],
+    ),
+  );
+
+  const selectedStructureYears = new Set(
+    selectedStructureYearIds.filter(
+      (structureYearId) =>
+        Number.isInteger(structureYearId) && structureYearId > 0,
+    ),
+  );
+  const requirementsSnapshotIds = structureYears.flatMap((structureYear) => {
+    const kind = identitiesById.get(structureYear.structure_id)?.kind;
+    return selectedStructureYears.has(structureYear.id) &&
+      kind !== undefined &&
+      isPlanStructureKind(kind)
+      ? [structureYear.published_snapshot_id]
+      : [];
+  });
+  const requirementsSnapshotIdSet = new Set(requirementsSnapshotIds);
+  const [groupsResult, conditionsResult, optionsResult, unmodelledResult] =
+    await Promise.all([
+      requirementsSnapshotIds.length
+        ? supabase
+            .from("academic_structure_requirement_groups")
+            .select("*")
+            .in("snapshot_id", requirementsSnapshotIds)
+            .order("position")
+        : Promise.resolve({ data: [], error: null }),
+      requirementsSnapshotIds.length
+        ? supabase
+            .from("academic_structure_requirement_conditions")
+            .select("*")
+            .in("snapshot_id", requirementsSnapshotIds)
+            .order("position")
+        : Promise.resolve({ data: [], error: null }),
+      requirementsSnapshotIds.length
+        ? supabase
+            .from("academic_structure_requirement_options")
+            .select("*")
+            .in("snapshot_id", requirementsSnapshotIds)
+            .order("position")
+        : Promise.resolve({ data: [], error: null }),
+      requirementsSnapshotIds.length
+        ? supabase
+            .from("academic_structure_unmodelled_requirements")
+            .select("*")
+            .in("snapshot_id", requirementsSnapshotIds)
+            .order("position")
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+  const requirementsError = [
+    groupsResult.error,
+    conditionsResult.error,
+    optionsResult.error,
+    unmodelledResult.error,
+  ].find(Boolean);
+  if (requirementsError) throw requirementsError;
+
+  const requirementGroups = (groupsResult.data ?? []) as RequirementGroupRow[];
+  const requirementConditions = (conditionsResult.data ??
+    []) as RequirementConditionRow[];
+  const requirementOptions = (optionsResult.data ??
+    []) as RequirementOptionRow[];
+  const unmodelledRequirements = (unmodelledResult.data ??
+    []) as UnmodelledRequirementRow[];
+  const courseCodesBySnapshotId = new Map<number, Set<string>>();
+  for (const option of requirementOptions) {
+    if (option.option_kind !== "course") continue;
+    const codes =
+      courseCodesBySnapshotId.get(option.snapshot_id) ?? new Set<string>();
+    codes.add(option.option_code);
+    courseCodesBySnapshotId.set(option.snapshot_id, codes);
+  }
+  const degrees = structureYears.flatMap((structureYear) => {
+    const identity = identitiesById.get(structureYear.structure_id);
+    const snapshot = snapshotsById.get(structureYear.published_snapshot_id);
+    if (!identity || !snapshot || identity.kind !== "programme") return [];
     return [
       {
         code: identity.code,
-        name: version.name,
-        units: version.units,
-        duration: version.duration_years ?? 0,
-        college: "Not listed",
-        description:
-          "Programme requirements will appear after their source is imported.",
+        name: snapshot.name,
+        units: snapshot.units === null ? null : Number(snapshot.units),
+        duration:
+          snapshot.duration_years === null
+            ? null
+            : Number(snapshot.duration_years),
+        college: snapshot.college ?? "Not listed",
+        description: snapshot.description ?? "",
       } satisfies Degree,
     ];
   });
-  const majors = structureVersions.flatMap((version) => {
-    const identity = identitiesById.get(version.structure_id);
-    if (!identity || identity.kind !== "major") return [];
+  const structures = structureYears.flatMap((structureYear) => {
+    const identity = identitiesById.get(structureYear.structure_id);
+    const snapshot = snapshotsById.get(structureYear.published_snapshot_id);
+    if (!identity || !snapshot || !isPlanStructureKind(identity.kind))
+      return [];
     return [
       {
         code: identity.code,
-        name: version.name,
-        units: version.units,
+        kind: identity.kind,
+        name: snapshot.name,
+      } satisfies PlanStructureSummary,
+    ];
+  });
+  const structureRequirements = structureYears.flatMap((structureYear) => {
+    const identity = identitiesById.get(structureYear.structure_id);
+    const snapshot = snapshotsById.get(structureYear.published_snapshot_id);
+    if (
+      !identity ||
+      !snapshot ||
+      !requirementsSnapshotIdSet.has(structureYear.published_snapshot_id) ||
+      !isPlanStructureKind(identity.kind)
+    ) {
+      return [];
+    }
+    const snapshotId = structureYear.published_snapshot_id;
+    return [
+      {
+        root: buildAcademicStructureRequirementTree({
+          groups: requirementGroups.filter(
+            (group) => group.snapshot_id === snapshotId,
+          ),
+          conditions: requirementConditions.filter(
+            (condition) => condition.snapshot_id === snapshotId,
+          ),
+          options: requirementOptions.filter(
+            (option) => option.snapshot_id === snapshotId,
+          ),
+        }),
+        snapshotId,
+        structureCode: identity.code,
+        structureKind: identity.kind,
+        structureName: snapshot.name,
+        unmodelled: unmodelledRequirements
+          .filter((item) => item.snapshot_id === snapshotId)
+          .map((item) => ({
+            position: item.position,
+            sourceLocator: item.source_locator,
+            sourceText: item.source_text,
+          })),
+      } satisfies PlanStructureRequirements,
+    ];
+  });
+  const majors = structureYears.flatMap((structureYear) => {
+    const identity = identitiesById.get(structureYear.structure_id);
+    const snapshot = snapshotsById.get(structureYear.published_snapshot_id);
+    if (!identity || !snapshot || identity.kind !== "major") return [];
+    return [
+      {
+        code: identity.code,
+        name: snapshot.name,
+        units: snapshot.units === null ? null : Number(snapshot.units),
         colour: "zinc",
-        description:
-          "Major requirements will appear after their source is imported.",
-        courseCodes: [],
+        description: snapshot.description ?? "",
+        courseCodes: [
+          ...(courseCodesBySnapshotId.get(
+            structureYear.published_snapshot_id,
+          ) ?? []),
+        ].sort(),
       } satisfies Major,
     ];
   });
@@ -242,15 +636,22 @@ export async function loadPublishedPlanCatalogue(
   });
 
   return {
+    academicYear: academicYearRecord.year,
     courses: catalogueCourses.map(planCourseFromDetails),
     terms,
     degrees,
     majors,
-    programmeRequirementsImported: false,
+    structures,
+    programmeRequirementsImported: structureRequirements.some(
+      (requirement) =>
+        requirement.structureKind === "programme" &&
+        (requirement.root !== null || requirement.unmodelled.length > 0),
+    ),
+    structureRequirements,
   };
 }
 
-/** Loads the catalogue year saved on the signed-in user's primary plan. */
+/** Loads the academic rules year saved on the signed-in user's primary plan. */
 export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
   if (isDemoMode()) return loadPublishedPlanCatalogue();
 
@@ -260,20 +661,20 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
   const supabase = await createClient();
   const { data: plan, error } = await supabase
     .from("plans")
-    .select("id,catalogue_year_id")
+    .select("academic_year_id,id")
     .eq("owner_id", viewer.id)
     .eq("is_primary", true)
     .maybeSingle();
   if (error || !plan) return loadPublishedPlanCatalogue();
 
   const { data: year, error: yearError } = await supabase
-    .from("catalogue_years")
+    .from("academic_years")
     .select("year")
-    .eq("id", plan.catalogue_year_id)
+    .eq("id", plan.academic_year_id)
     .maybeSingle();
   if (yearError || !year) return loadPublishedPlanCatalogue();
 
-  const [itemsResult, attemptsResult] = await Promise.all([
+  const [itemsResult, attemptsResult, structuresResult] = await Promise.all([
     supabase
       .from("plan_items")
       .select("course_id,academic_year_id")
@@ -282,8 +683,12 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
       .from("course_attempts")
       .select("course_id,course_snapshot_id")
       .eq("owner_id", viewer.id),
+    supabase
+      .from("plan_structures")
+      .select("structure_year_id")
+      .eq("plan_id", plan.id),
   ]);
-  if (itemsResult.error || attemptsResult.error) {
+  if (itemsResult.error || attemptsResult.error || structuresResult.error) {
     return loadPublishedPlanCatalogue(year.year);
   }
   // These columns are introduced by the clean snapshot cutover migration.
@@ -291,6 +696,8 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
   const planItems = (itemsResult.data ?? []) as unknown as PlanCourseRow[];
   const courseAttempts = (attemptsResult.data ??
     []) as unknown as AttemptCourseRow[];
+  const planStructures = (structuresResult.data ??
+    []) as unknown as PlanStructureRow[];
   const courseIds = collectPlanCatalogueCourseIds(planItems, courseAttempts);
   const academicYearIds = [
     ...new Set(planItems.map((item) => item.academic_year_id)),
@@ -357,7 +764,11 @@ export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
       return code && academicYear ? [{ code, year: academicYear }] : [];
     }),
   ];
-  const catalogue = await loadPublishedPlanCatalogue(year.year, selections);
+  const catalogue = await loadPublishedPlanCatalogue(
+    year.year,
+    selections,
+    planStructures.map((structure) => structure.structure_year_id),
+  );
   const publishedSnapshotIds = new Set(
     catalogue.courses.flatMap((course) =>
       course.snapshotId === undefined ? [] : [course.snapshotId],

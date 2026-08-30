@@ -1,5 +1,13 @@
 import "server-only";
 
+import {
+  collectSelectableStructureCodes,
+  emptySelectableStructureCodes,
+  type ProgrammeStructureRelationship,
+  type ProgrammeStructureRequirementCondition,
+  type ProgrammeStructureRequirementOption,
+  type SelectableStructureKind,
+} from "@/lib/coursemap/programme-structure-options";
 import { createPublicClient } from "@/lib/supabase/public-server";
 
 export type CatalogueYearOption = {
@@ -13,127 +21,181 @@ export type ProgrammeOption = {
   description: string;
   durationYears: number | null;
   majorCodes: string[];
+  minorCodes: string[];
   name: string;
-  units: number;
+  specialisationCodes: string[];
+  units: number | null;
 };
 
 export type OnboardingCatalogue = {
   catalogueYears: CatalogueYearOption[];
   degrees: ProgrammeOption[];
   majors: ProgrammeOption[];
-};
-
-type StructureIdentityRow = { code: string; id: number; kind: string };
-type StructureVersionRow = {
-  catalogue_year_id: number;
-  description: string;
-  duration_years: number | null;
-  id: number;
-  name: string;
-  structure_id: number;
-  units: number;
-};
-type StructureRelationshipRow = {
-  child_structure_version_id: number;
-  parent_structure_version_id: number;
+  minors: ProgrammeOption[];
+  specialisations: ProgrammeOption[];
 };
 
 /**
- * The source of truth for student programme choices. Only catalogue records
- * intentionally published to students may appear here.
+ * Student choices come only from explicitly published immutable snapshots.
+ * The legacy `degrees` property is retained at the component boundary while
+ * the database and import vocabulary consistently use `programme`.
  */
 export async function loadOnboardingCatalogue(): Promise<OnboardingCatalogue> {
   const supabase = createPublicClient();
-  const [yearsResult, versionsResult] = await Promise.all([
+  const { data: structureYears, error: structureYearsError } = await supabase
+    .from("academic_structure_years")
+    .select("academic_year_id,published_snapshot_id,structure_id")
+    .not("published_snapshot_id", "is", null);
+  if (structureYearsError) throw structureYearsError;
+
+  const publishedYears = (structureYears ?? []).filter(
+    (
+      row,
+    ): row is typeof row & {
+      published_snapshot_id: number;
+    } => row.published_snapshot_id !== null,
+  );
+  if (publishedYears.length === 0) {
+    return {
+      catalogueYears: [],
+      degrees: [],
+      majors: [],
+      minors: [],
+      specialisations: [],
+    };
+  }
+
+  const academicYearIds = [
+    ...new Set(publishedYears.map((row) => row.academic_year_id)),
+  ];
+  const structureIds = [
+    ...new Set(publishedYears.map((row) => row.structure_id)),
+  ];
+  const snapshotIds = publishedYears.map((row) => row.published_snapshot_id);
+  const [
+    yearsResult,
+    structuresResult,
+    snapshotsResult,
+    relationshipsResult,
+    requirementConditionsResult,
+    requirementOptionsResult,
+  ] = await Promise.all([
     supabase
-      .from("catalogue_years")
+      .from("academic_years")
       .select("id,year")
-      .eq("status", "published")
+      .in("id", academicYearIds)
       .order("year", { ascending: false }),
     supabase
-      .from("academic_structure_versions")
+      .from("academic_structures")
+      .select("code,id,kind")
+      .in("id", structureIds),
+    supabase
+      .from("academic_structure_snapshots")
+      .select("description,duration_years,id,name,structure_year_id,units")
+      .in("id", snapshotIds),
+    supabase
+      .from("academic_structure_snapshot_relationships")
+      .select("relationship_kind,snapshot_id,target_code,target_kind")
+      .in("snapshot_id", snapshotIds),
+    supabase
+      .from("academic_structure_requirement_conditions")
+      .select("condition_kind,id,snapshot_id,structure_kind")
+      .in("snapshot_id", snapshotIds)
+      .eq("condition_kind", "structure_list"),
+    supabase
+      .from("academic_structure_requirement_options")
       .select(
-        "catalogue_year_id,description,duration_years,id,name,structure_id,units",
+        "option_code,option_kind,requirement_condition_id,snapshot_id,structure_kind",
       )
-      .eq("publication_status", "published"),
+      .in("snapshot_id", snapshotIds)
+      .eq("option_kind", "structure"),
   ]);
-  if (yearsResult.error) throw yearsResult.error;
-  if (versionsResult.error) throw versionsResult.error;
+  const error = [
+    yearsResult.error,
+    structuresResult.error,
+    snapshotsResult.error,
+    relationshipsResult.error,
+    requirementConditionsResult.error,
+    requirementOptionsResult.error,
+  ].find(Boolean);
+  if (error) throw error;
 
-  const versions = (versionsResult.data ?? []) as StructureVersionRow[];
-  const structureIds = [
-    ...new Set(versions.map((version) => version.structure_id)),
-  ];
-  const { data: identities, error: identitiesError } = structureIds.length
-    ? await supabase
-        .from("academic_structures")
-        .select("code,id,kind")
-        .in("id", structureIds)
-    : { data: [], error: null };
-  if (identitiesError) throw identitiesError;
-
-  const versionIds = versions.map((version) => version.id);
-  const { data: relationships, error: relationshipsError } = versionIds.length
-    ? await supabase
-        .from("academic_structure_relationships")
-        .select("child_structure_version_id,parent_structure_version_id")
-        .in("parent_structure_version_id", versionIds)
-    : { data: [], error: null };
-  if (relationshipsError) throw relationshipsError;
-
-  const identityById = new Map(
-    ((identities ?? []) as StructureIdentityRow[]).map((identity) => [
-      identity.id,
-      identity,
-    ]),
+  const yearById = new Map(
+    (yearsResult.data ?? []).map((year) => [year.id, year.year]),
   );
-  const catalogueYearById = new Map(
-    ((yearsResult.data ?? []) as CatalogueYearOption[]).map((year) => [
-      year.id,
-      year.year,
-    ]),
+  const structureById = new Map(
+    (structuresResult.data ?? []).map((structure) => [structure.id, structure]),
   );
-  const majorCodesByDegreeVersion = new Map<number, string[]>();
-  const versionById = new Map(versions.map((version) => [version.id, version]));
-  for (const relationship of (relationships ??
-    []) as StructureRelationshipRow[]) {
-    const child = versionById.get(relationship.child_structure_version_id);
-    const identity = child && identityById.get(child.structure_id);
-    if (!identity || identity.kind !== "major") continue;
-    const current =
-      majorCodesByDegreeVersion.get(relationship.parent_structure_version_id) ??
-      [];
-    majorCodesByDegreeVersion.set(relationship.parent_structure_version_id, [
-      ...current,
-      identity.code,
-    ]);
-  }
-  const options = (kind: "degree" | "major") =>
-    versions
-      .flatMap((version) => {
-        const identity = identityById.get(version.structure_id);
-        const catalogueYear = catalogueYearById.get(version.catalogue_year_id);
-        if (!identity || !catalogueYear || identity.kind !== kind) return [];
+  const publishedYearBySnapshotId = new Map(
+    publishedYears.map((row) => [row.published_snapshot_id, row]),
+  );
+  const programmeSnapshotIds = new Set(
+    publishedYears.flatMap((row) => {
+      const identity = structureById.get(row.structure_id);
+      return identity?.kind === "programme" ? [row.published_snapshot_id] : [];
+    }),
+  );
+  const structureCodesByProgrammeSnapshot = collectSelectableStructureCodes({
+    programmeSnapshotIds,
+    relationships: (relationshipsResult.data ??
+      []) as ProgrammeStructureRelationship[],
+    requirementConditions: (requirementConditionsResult.data ??
+      []) as ProgrammeStructureRequirementCondition[],
+    requirementOptions: (requirementOptionsResult.data ??
+      []) as ProgrammeStructureRequirementOption[],
+  });
+
+  const options = (
+    kind: "programme" | SelectableStructureKind,
+  ): ProgrammeOption[] =>
+    (snapshotsResult.data ?? [])
+      .flatMap((snapshot) => {
+        const structureYear = publishedYearBySnapshotId.get(snapshot.id);
+        const identity = structureYear
+          ? structureById.get(structureYear.structure_id)
+          : null;
+        const academicYear = structureYear
+          ? yearById.get(structureYear.academic_year_id)
+          : null;
+        if (!identity || !academicYear || identity.kind !== kind) return [];
+        const selectableCodes =
+          kind === "programme"
+            ? (structureCodesByProgrammeSnapshot.get(snapshot.id) ??
+              emptySelectableStructureCodes())
+            : emptySelectableStructureCodes();
         return [
           {
-            catalogueYear,
+            catalogueYear: academicYear,
             code: identity.code,
-            description: version.description,
-            durationYears: version.duration_years,
-            majorCodes:
-              kind === "degree"
-                ? (majorCodesByDegreeVersion.get(version.id) ?? []).sort()
-                : [],
-            name: version.name,
-            units: version.units,
+            description: snapshot.description ?? "",
+            durationYears:
+              snapshot.duration_years === null
+                ? null
+                : Number(snapshot.duration_years),
+            majorCodes: selectableCodes.major,
+            minorCodes: selectableCodes.minor,
+            name: snapshot.name,
+            specialisationCodes: selectableCodes.specialisation,
+            units: snapshot.units === null ? null : Number(snapshot.units),
           } satisfies ProgrammeOption,
         ];
       })
       .sort((left, right) => left.name.localeCompare(right.name));
 
+  const programmeYearIds = new Set(
+    publishedYears.flatMap((row) => {
+      const identity = structureById.get(row.structure_id);
+      return identity?.kind === "programme" ? [row.academic_year_id] : [];
+    }),
+  );
+
   return {
-    catalogueYears: (yearsResult.data ?? []) as CatalogueYearOption[],
-    degrees: options("degree"),
+    catalogueYears: (yearsResult.data ?? []).filter((year) =>
+      programmeYearIds.has(year.id),
+    ),
+    degrees: options("programme"),
     majors: options("major"),
+    minors: options("minor"),
+    specialisations: options("specialisation"),
   };
 }

@@ -95,6 +95,13 @@ const adminNav: NavSection[] = [
     items: [
       { href: "/admin/courses", label: "Courses", icon: Table2 },
       { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
+      { href: "/admin/majors", label: "Majors", icon: GraduationCap },
+      { href: "/admin/minors", label: "Minors", icon: GraduationCap },
+      {
+        href: "/admin/specialisations",
+        label: "Specialisations",
+        icon: GraduationCap,
+      },
     ],
   },
   {
@@ -106,6 +113,11 @@ const adminNav: NavSection[] = [
     label: "Imports",
     items: [
       { href: "/admin/imports/runs", label: "Course runs", icon: History },
+      {
+        href: "/admin/imports/structures/runs",
+        label: "Structure runs",
+        icon: History,
+      },
     ],
   },
   {

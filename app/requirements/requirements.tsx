@@ -1,10 +1,16 @@
 "use client";
 
-import { BookOpenCheck, CircleAlert, ListChecks } from "lucide-react";
+import {
+  BookOpenCheck,
+  CircleAlert,
+  GitBranch,
+  ListChecks,
+} from "lucide-react";
 import { useMemo } from "react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import {
   Card,
@@ -22,21 +28,389 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
+import type {
+  PlanCatalogue,
+  PlanRequirementCondition,
+  PlanRequirementGroup,
+  PlanRequirementNode,
+  PlanStructureRequirements,
+} from "@/lib/coursemap/plan-catalogue";
 import {
   degreeUnitProgress,
   planningCourseForAttempt,
   unitsForAttempt,
 } from "@/lib/planner";
 
+function formatUnits(units: number) {
+  return `${units.toLocaleString("en-AU", {
+    maximumFractionDigits: 2,
+  })} units`;
+}
+
+function unitsDescription(minimum: number | null, maximum: number | null) {
+  if (minimum !== null && maximum !== null && minimum === maximum) {
+    return formatUnits(minimum);
+  }
+  if (minimum !== null && maximum !== null) {
+    return `${formatUnits(minimum)} to ${formatUnits(maximum)}`;
+  }
+  if (minimum !== null) return `At least ${formatUnits(minimum)}`;
+  if (maximum !== null) return `Up to ${formatUnits(maximum)}`;
+  return null;
+}
+
+function groupInstruction(group: PlanRequirementGroup) {
+  if (group.operator === "any_of") return "Choose one alternative";
+  if (group.operator === "minimum_count") {
+    return group.minimumCount
+      ? `Choose at least ${group.minimumCount}`
+      : "Choose the required number";
+  }
+  return "Complete every item";
+}
+
+function conditionInterpretation(condition: PlanRequirementCondition) {
+  const parts: string[] = [];
+  if (condition.conditionKind === "unit_total") {
+    const units = unitsDescription(
+      condition.minimumUnits,
+      condition.maximumUnits,
+    );
+    if (units) parts.push(units);
+  } else if (condition.conditionKind === "course_list") {
+    parts.push(
+      condition.minimumCourses
+        ? `Complete at least ${condition.minimumCourses} listed course${condition.minimumCourses === 1 ? "" : "s"}`
+        : "Complete from the listed courses",
+    );
+  } else if (condition.conditionKind === "structure_list") {
+    parts.push(
+      condition.minimumCourses
+        ? `Complete at least ${condition.minimumCourses} listed academic structure${condition.minimumCourses === 1 ? "" : "s"}`
+        : "Complete from the listed academic structures",
+    );
+  } else if (condition.conditionKind === "subject" && condition.subjectCode) {
+    parts.push(`${condition.subjectCode} coded courses`);
+  } else if (condition.conditionKind === "level") {
+    if (condition.minimumLevel !== null && condition.maximumLevel !== null) {
+      parts.push(
+        `${condition.minimumLevel} to ${condition.maximumLevel} level courses`,
+      );
+    } else if (condition.minimumLevel !== null) {
+      parts.push(`${condition.minimumLevel} level courses or above`);
+    } else if (condition.maximumLevel !== null) {
+      parts.push(`Courses up to ${condition.maximumLevel} level`);
+    }
+  } else if (condition.conditionKind === "tag" && condition.tag) {
+    parts.push(condition.tag);
+  } else if (condition.conditionKind === "unrestricted") {
+    parts.push("Unrestricted elective courses");
+  } else if (condition.freeText) {
+    parts.push(condition.freeText);
+  }
+
+  if (condition.conditionKind !== "unit_total") {
+    const units = unitsDescription(
+      condition.minimumUnits,
+      condition.maximumUnits,
+    );
+    if (units) parts.push(units);
+  }
+  return parts.join(" · ");
+}
+
+function attemptTone(status: string) {
+  if (status === "completed") return "success" as const;
+  if (status === "failed") return "danger" as const;
+  if (status === "enrolled") return "brand" as const;
+  return "info" as const;
+}
+
+const structureKindLabels = {
+  programme: "Programme",
+  major: "Major",
+  minor: "Minor",
+  specialisation: "Specialisation",
+} as const;
+
+function RequirementConditionView({
+  condition,
+  catalogue,
+  attemptStatusByCode,
+  selectedStructureCodes,
+}: {
+  condition: PlanRequirementCondition;
+  catalogue: PlanCatalogue;
+  attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
+}) {
+  const interpretation = conditionInterpretation(condition);
+  const courseByCode = new Map(
+    catalogue.courses.map((course) => [course.code, course]),
+  );
+  const structureNameByCode = new Map(
+    catalogue.structures.map((structure) => [structure.code, structure.name]),
+  );
+
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-4">
+      <p className="text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">
+        ANU source wording
+      </p>
+      <blockquote className="mt-1 text-sm leading-6 whitespace-pre-wrap text-zinc-800">
+        {condition.sourceText}
+      </blockquote>
+
+      {interpretation ? (
+        <div className="mt-3 rounded-md bg-zinc-50 px-3 py-2">
+          <p className="text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">
+            Structured interpretation
+          </p>
+          <p className="mt-0.5 text-xs leading-5 text-zinc-700">
+            {interpretation}
+          </p>
+        </div>
+      ) : null}
+
+      {condition.options.length > 0 ? (
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {condition.options.map((option) => {
+            const course = courseByCode.get(option.code);
+            const attemptStatus = attemptStatusByCode.get(option.code);
+            const structureName = structureNameByCode.get(option.code);
+            const selectedStructure =
+              option.kind === "structure" &&
+              selectedStructureCodes.has(option.code);
+            return (
+              <li
+                className="flex min-w-0 items-center gap-2 rounded-md border border-zinc-100 px-2.5 py-2"
+                key={`${condition.id}-${option.kind}-${option.code}`}
+              >
+                {option.kind === "course" ? (
+                  <CourseToken
+                    accent={course?.accent ?? "violet"}
+                    code={option.code}
+                    size="sm"
+                  />
+                ) : (
+                  <Badge tone="neutral">
+                    {option.structureKind ?? "structure"}
+                  </Badge>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block font-mono text-xs font-semibold text-zinc-900">
+                    {option.code}
+                  </span>
+                  {course?.name || structureName ? (
+                    <span className="block truncate text-xs text-zinc-500">
+                      {course?.name ?? structureName}
+                    </span>
+                  ) : null}
+                </span>
+                {selectedStructure ? (
+                  <Badge tone="success">Selected</Badge>
+                ) : attemptStatus ? (
+                  <Badge tone={attemptTone(attemptStatus)}>
+                    {attemptStatus}
+                  </Badge>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function RequirementNodeView({
+  node,
+  catalogue,
+  attemptStatusByCode,
+  selectedStructureCodes,
+  depth,
+}: {
+  node: PlanRequirementNode;
+  catalogue: PlanCatalogue;
+  attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
+  depth: number;
+}) {
+  if (node.type === "condition") {
+    return (
+      <RequirementConditionView
+        attemptStatusByCode={attemptStatusByCode}
+        catalogue={catalogue}
+        condition={node}
+        selectedStructureCodes={selectedStructureCodes}
+      />
+    );
+  }
+  return (
+    <RequirementGroupView
+      attemptStatusByCode={attemptStatusByCode}
+      catalogue={catalogue}
+      depth={depth}
+      group={node}
+      selectedStructureCodes={selectedStructureCodes}
+    />
+  );
+}
+
+function RequirementGroupView({
+  group,
+  catalogue,
+  attemptStatusByCode,
+  selectedStructureCodes,
+  depth = 0,
+}: {
+  group: PlanRequirementGroup;
+  catalogue: PlanCatalogue;
+  attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
+  depth?: number;
+}) {
+  const units = unitsDescription(group.minimumUnits, group.maximumUnits);
+  const alternative = group.operator === "any_of";
+  return (
+    <div
+      className={
+        depth === 0
+          ? "rounded-lg border border-brand-100 bg-brand-50/40 p-4"
+          : "rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:p-4"
+      }
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-zinc-950">
+            {group.title ?? groupInstruction(group)}
+          </p>
+          {group.description ? (
+            <p className="mt-1 text-xs leading-5 text-zinc-600">
+              {group.description}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge tone={alternative ? "brand" : "neutral"}>
+            <GitBranch aria-hidden="true" />
+            {groupInstruction(group)}
+          </Badge>
+          {units ? <Badge tone="neutral">{units}</Badge> : null}
+        </div>
+      </div>
+
+      {group.children.length > 0 ? (
+        <ol className="mt-4 space-y-3">
+          {group.children.map((child, index) => (
+            <li key={`${child.type}-${child.id}`}>
+              {alternative && index > 0 ? (
+                <div
+                  className="mb-3 flex items-center gap-2"
+                  aria-hidden="true"
+                >
+                  <span className="h-px flex-1 bg-brand-100" />
+                  <span className="text-[10px] font-semibold tracking-wider text-brand-700 uppercase">
+                    or
+                  </span>
+                  <span className="h-px flex-1 bg-brand-100" />
+                </div>
+              ) : null}
+              <RequirementNodeView
+                attemptStatusByCode={attemptStatusByCode}
+                catalogue={catalogue}
+                depth={depth + 1}
+                node={child}
+                selectedStructureCodes={selectedStructureCodes}
+              />
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      <details className="mt-3 text-xs text-zinc-600">
+        <summary className="min-h-11 cursor-pointer py-3 font-medium text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+          ANU group source wording
+        </summary>
+        <p className="border-l-2 border-zinc-200 pl-3 whitespace-pre-wrap">
+          {group.sourceText}
+        </p>
+      </details>
+    </div>
+  );
+}
+
+function hasRequirementContent(requirements: PlanStructureRequirements) {
+  return requirements.root !== null || requirements.unmodelled.length > 0;
+}
+
+function StructureRequirementsCard({
+  requirements,
+  catalogue,
+  attemptStatusByCode,
+  selectedStructureCodes,
+}: {
+  requirements: PlanStructureRequirements;
+  catalogue: PlanCatalogue;
+  attemptStatusByCode: ReadonlyMap<string, string>;
+  selectedStructureCodes: ReadonlySet<string>;
+}) {
+  const typeLabel = structureKindLabels[requirements.structureKind];
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader
+        className="border-b border-zinc-100"
+        description={`${typeLabel} ${requirements.structureCode}${catalogue.academicYear ? ` · Published ${catalogue.academicYear}` : ""}`}
+        icon={
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
+            <ListChecks aria-hidden="true" size={17} />
+          </span>
+        }
+        title={`${requirements.structureName} requirements`}
+      />
+      <CardContent className="space-y-4 pt-5">
+        {requirements.root ? (
+          <RequirementGroupView
+            attemptStatusByCode={attemptStatusByCode}
+            catalogue={catalogue}
+            group={requirements.root}
+            selectedStructureCodes={selectedStructureCodes}
+          />
+        ) : (
+          <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+            This published snapshot has no structured requirement tree.
+          </p>
+        )}
+
+        {requirements.unmodelled.length > 0 ? (
+          <Alert tone="warning">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>Source rules requiring a manual check</AlertTitle>
+            <AlertDescription>
+              <ul className="mt-2 list-disc space-y-2 pl-4">
+                {requirements.unmodelled.map((item) => (
+                  <li key={`${requirements.snapshotId}-${item.position}`}>
+                    {item.sourceText}
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
   const { state } = useCoursemap();
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
   );
+  const unitTarget = degree?.units ?? null;
   const progress = degreeUnitProgress(
     state.attempts,
-    degree?.units ?? 0,
+    unitTarget ?? 0,
     catalogue,
   );
   const courses = useMemo(
@@ -56,6 +430,70 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
         ),
     [catalogue, state],
   );
+  const attemptStatusByCode = useMemo(
+    () =>
+      new Map(
+        state.attempts.map((attempt) => [attempt.courseCode, attempt.status]),
+      ),
+    [state.attempts],
+  );
+  const selectedStructureCodes = useMemo(
+    () =>
+      new Set(
+        [
+          state.profile.degreeCode,
+          state.profile.majorCode,
+          ...state.profile.minorCodes,
+          ...state.profile.specialisationCodes,
+        ].filter(Boolean),
+      ),
+    [
+      state.profile.degreeCode,
+      state.profile.majorCode,
+      state.profile.minorCodes,
+      state.profile.specialisationCodes,
+    ],
+  );
+  const selectedRequirements = useMemo(
+    () =>
+      catalogue.structureRequirements
+        .filter((requirement) =>
+          selectedStructureCodes.has(requirement.structureCode),
+        )
+        .toSorted((left, right) => {
+          const kindOrder = {
+            programme: 0,
+            major: 1,
+            minor: 2,
+            specialisation: 3,
+          } as const;
+          return (
+            kindOrder[left.structureKind] - kindOrder[right.structureKind] ||
+            left.structureCode.localeCompare(right.structureCode)
+          );
+        }),
+    [catalogue.structureRequirements, selectedStructureCodes],
+  );
+  const programmeRequirements = selectedRequirements.find(
+    (requirement) => requirement.structureKind === "programme",
+  );
+  const selectedSupplementaryStructures = catalogue.structures.filter(
+    (structure) =>
+      structure.kind !== "programme" &&
+      selectedStructureCodes.has(structure.code),
+  );
+  const structuresMissingRequirements = selectedSupplementaryStructures.filter(
+    (structure) =>
+      !selectedRequirements.some(
+        (requirements) =>
+          requirements.structureCode === structure.code &&
+          hasRequirementContent(requirements),
+      ),
+  );
+  const hasPublishedProgrammeRequirements = programmeRequirements
+    ? hasRequirementContent(programmeRequirements)
+    : catalogue.structureRequirements.length === 0 &&
+      catalogue.programmeRequirementsImported;
 
   return (
     <AppShell>
@@ -86,38 +524,78 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                 <CardTitle>Overall unit progress</CardTitle>
                 <CardAction>
                   <strong className="text-2xl tracking-tight text-zinc-950">
-                    {progress.percent}%
+                    {unitTarget === null
+                      ? "Not recorded"
+                      : `${progress.percent}%`}
                   </strong>
                 </CardAction>
               </CardHeader>
               <CardContent>
-                <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
-                  <span
-                    className="block h-full bg-brand-700"
-                    style={{ width: `${Math.min(100, progress.percent)}%` }}
-                  />
-                </div>
-                <p className="mt-3 text-xs text-zinc-600">
-                  {progress.completed} completed units · {progress.planned}{" "}
-                  planned units · {progress.remaining} units still to plan
-                </p>
+                {unitTarget === null ? (
+                  <p className="rounded-lg bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-950 ring-1 ring-amber-200 ring-inset">
+                    {progress.completed} completed and {progress.planned}{" "}
+                    planned units are mapped. The published programme does not
+                    record a total unit target, so Coursemap cannot calculate
+                    remaining units or a completion percentage.
+                  </p>
+                ) : (
+                  <>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                      <span
+                        className="block h-full bg-brand-700"
+                        style={{ width: `${Math.min(100, progress.percent)}%` }}
+                      />
+                    </div>
+                    <p className="mt-3 text-xs text-zinc-600">
+                      {progress.completed} completed units · {progress.planned}{" "}
+                      planned units · {progress.remaining} units still to plan
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {!catalogue.programmeRequirementsImported && (
+            {!hasPublishedProgrammeRequirements ? (
               <Alert tone="warning" className="rounded-xl px-5 py-4">
                 <CircleAlert aria-hidden="true" />
                 <AlertTitle>
-                  Detailed requirement mapping is not imported yet
+                  Published programme requirements are not available yet
                 </AlertTitle>
                 <AlertDescription>
-                  Coursemap will not pretend that the old sample core, elective
-                  or major buckets are this degree&apos;s official rules.
-                  Imported programme requirements will replace this notice when
-                  they are reviewed.
+                  Coursemap will not substitute sample core, elective or major
+                  buckets for this programme&apos;s official rules.
                 </AlertDescription>
               </Alert>
-            )}
+            ) : null}
+
+            {structuresMissingRequirements.map((structure) => (
+              <Alert
+                className="rounded-xl px-5 py-4"
+                key={`${structure.kind}-${structure.code}`}
+                tone="warning"
+              >
+                <CircleAlert aria-hidden="true" />
+                <AlertTitle>
+                  Published {structure.kind} requirements are not available yet
+                </AlertTitle>
+                <AlertDescription>
+                  Coursemap will show {structure.name}&apos;s reviewed source
+                  rules once its published snapshot includes them.
+                </AlertDescription>
+              </Alert>
+            ))}
+
+            {selectedRequirements
+              .filter(hasRequirementContent)
+              .map((requirements) => (
+                <StructureRequirementsCard
+                  attemptStatusByCode={attemptStatusByCode}
+                  catalogue={catalogue}
+                  key={`${requirements.structureKind}-${requirements.snapshotId}`}
+                  requirements={requirements}
+                  selectedStructureCodes={selectedStructureCodes}
+                />
+              ))}
 
             <Card className="overflow-hidden">
               <CardHeader

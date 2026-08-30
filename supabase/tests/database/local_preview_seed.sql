@@ -150,8 +150,12 @@ reset role;
 
 select extensions.ok(
   (select count(*) from public.plans) = 0
-  and (select count(*) from public.academic_structure_versions) = 0,
-  'the minimal preview does not recreate disposable plans or programme data'
+  and (
+    select count(*)
+    from public.academic_structure_years
+    where published_snapshot_id is not null
+  ) = 5,
+  'the preview keeps plans empty while publishing every selectable structure fixture'
 );
 
 select * from extensions.finish();

@@ -32,6 +32,8 @@ export function emptyCoursemapState(viewer: AuthViewer): AppState {
       catalogueYear: new Date().getFullYear(),
       degreeCode: "",
       majorCode: "",
+      minorCodes: [],
+      specialisationCodes: [],
       studyLoad: "Full time",
       extensionYears: 0,
     },
@@ -70,7 +72,7 @@ export async function loadCoursemapState(
       supabase
         .from("plans")
         .select(
-          "id,catalogue_year_id,commencement_year,study_load,extension_years",
+          "academic_year_id,id,commencement_year,study_load,extension_years",
         )
         .eq("owner_id", viewer.id)
         .eq("is_primary", true)
@@ -90,13 +92,13 @@ export async function loadCoursemapState(
     const [yearResult, structuresResult, itemsResult, attemptsResult] =
       await Promise.all([
         supabase
-          .from("catalogue_years")
+          .from("academic_years")
           .select("year")
-          .eq("id", plan.catalogue_year_id)
+          .eq("id", plan.academic_year_id)
           .maybeSingle(),
         supabase
           .from("plan_structures")
-          .select("role,structure_version_id")
+          .select("role,structure_year_id")
           .eq("plan_id", plan.id)
           .order("position"),
         supabase
@@ -116,33 +118,31 @@ export async function loadCoursemapState(
       ]);
 
     const structures = structuresResult.data ?? [];
-    const structureVersionIds = structures.map(
-      (item) => item.structure_version_id,
-    );
-    const { data: versions } = structureVersionIds.length
+    const structureYearIds = structures.map((item) => item.structure_year_id);
+    const { data: structureYears } = structureYearIds.length
       ? await supabase
-          .from("academic_structure_versions")
+          .from("academic_structure_years")
           .select("id,structure_id")
-          .in("id", structureVersionIds)
+          .in("id", structureYearIds)
       : { data: [] };
-    const structureIds = (versions ?? []).map((item) => item.structure_id);
+    const structureIds = (structureYears ?? []).map(
+      (item) => item.structure_id,
+    );
     const { data: structureIdentities } = structureIds.length
       ? await supabase
           .from("academic_structures")
           .select("id,code")
           .in("id", structureIds)
       : { data: [] };
-    const structureCodeByVersion = new Map(
-      (versions ?? []).map((version) => [
-        version.id,
+    const structureCodeByYear = new Map(
+      (structureYears ?? []).map((structureYear) => [
+        structureYear.id,
         (structureIdentities ?? []).find(
-          (identity) => identity.id === version.structure_id,
+          (identity) => identity.id === structureYear.structure_id,
         )?.code,
       ]),
     );
 
-    // These columns are introduced by the clean snapshot cutover migration.
-    // Keep the row contract local while generated database types are refreshed.
     const items = (itemsResult.data ?? []) as unknown as PlanItemRow[];
     const attempts = (attemptsResult.data ??
       []) as unknown as CourseAttemptRow[];
@@ -257,15 +257,25 @@ export async function loadCoursemapState(
         studyLoad: plan.study_load === "part_time" ? "Part time" : "Full time",
         extensionYears: plan.extension_years,
         degreeCode:
-          structureCodeByVersion.get(
+          structureCodeByYear.get(
             structures.find((item) => item.role === "programme")
-              ?.structure_version_id ?? -1,
+              ?.structure_year_id ?? -1,
           ) ?? state.profile.degreeCode,
         majorCode:
-          structureCodeByVersion.get(
+          structureCodeByYear.get(
             structures.find((item) => item.role === "major")
-              ?.structure_version_id ?? -1,
+              ?.structure_year_id ?? -1,
           ) ?? "",
+        minorCodes: structures.flatMap((item) => {
+          if (item.role !== "minor") return [];
+          const code = structureCodeByYear.get(item.structure_year_id);
+          return code ? [code] : [];
+        }),
+        specialisationCodes: structures.flatMap((item) => {
+          if (item.role !== "specialisation") return [];
+          const code = structureCodeByYear.get(item.structure_year_id);
+          return code ? [code] : [];
+        }),
       },
       attempts: [...plannedAttempts, ...recordedAttempts],
     };

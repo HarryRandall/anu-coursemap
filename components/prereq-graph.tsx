@@ -100,12 +100,14 @@ export function PrereqGraph({
   code,
   prerequisiteEdges,
   completedCodes,
+  hasPrerequisiteWording,
   plannedCodes,
 }: {
   academicYear: number;
   code: string;
   prerequisiteEdges: readonly CoursePrerequisiteEdge[];
   completedCodes: ReadonlySet<string>;
+  hasPrerequisiteWording: boolean;
   plannedCodes: ReadonlySet<string>;
 }) {
   const layout = useMemo(
@@ -211,7 +213,9 @@ export function PrereqGraph({
                     >
                       {column.label === "Unlocks"
                         ? "No imported unlocks yet"
-                        : "No prerequisite listed"}
+                        : hasPrerequisiteWording
+                          ? "No mapped course references yet"
+                          : "No prerequisite listed"}
                     </div>
                   )}
                   {column.codes.map((item, row) => {

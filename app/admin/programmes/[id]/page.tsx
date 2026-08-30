@@ -1,21 +1,19 @@
-import { notFound, redirect } from "next/navigation";
-import { loadAdminStructureReview } from "@/lib/coursemap/admin-catalogue";
-import { isDemoMode } from "@/lib/supabase/config";
-import { ProgrammeReview } from "./programme-review";
+import { AcademicStructureDetailPage } from "@/components/admin/academic-structures/academic-structure-detail-page";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminProgrammeDetailPage({
+export default function AdminProgrammeDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ year?: string }>;
 }) {
-  const { id } = await params;
-  const record = await loadAdminStructureReview(id);
-  if (!record) notFound();
-  if (id !== record.publicId) {
-    redirect(`/admin/programmes/${record.publicId}`);
-  }
-
-  return <ProgrammeReview canPublish={!isDemoMode()} record={record} />;
+  return (
+    <AcademicStructureDetailPage
+      expectedKind="programme"
+      params={params}
+      searchParams={searchParams}
+    />
+  );
 }

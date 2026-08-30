@@ -6,6 +6,7 @@ import { Check, CircleAlert, Clock3, Pencil, X } from "lucide-react";
 import { CourseImportDatabaseRows } from "@/components/admin/imports/course-import-database-rows";
 import { CourseImportArtifactViewer } from "@/components/admin/imports/course-import-artifact-viewer";
 import { CourseImportAutoRefresh } from "@/components/admin/imports/course-import-auto-refresh";
+import { CourseImportPipeline } from "@/components/admin/imports/course-import-pipeline";
 import {
   CourseDetailTabsList,
   CourseDetailView,
@@ -16,17 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  DataTableEmpty,
-  DataTableShell,
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/data-table";
+import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   acceptCourseImportTarget,
@@ -68,15 +59,6 @@ function statusTone(status: string): Tone {
     return "success";
   }
   return "neutral";
-}
-
-function duration(startedAt: string | null, completedAt: string | null) {
-  if (!startedAt || !completedAt) return "—";
-  const milliseconds =
-    new Date(completedAt).getTime() - new Date(startedAt).getTime();
-  if (!Number.isFinite(milliseconds) || milliseconds < 0) return "—";
-  if (milliseconds < 1_000) return `${milliseconds}ms`;
-  return `${(milliseconds / 1_000).toFixed(1)}s`;
 }
 
 function confidence(value: number | null) {
@@ -385,122 +367,6 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
   );
 }
 
-function Pipeline({ detail }: { detail: CourseImportTargetDetail }) {
-  return (
-    <div className="space-y-4">
-      <DataTableShell>
-        <Table className="min-w-[720px]">
-          <TableCaption>Import pipeline stages</TableCaption>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-16">Step</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Attempts</TableHead>
-              <TableHead className="text-right">Duration</TableHead>
-              <TableHead>Error</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {detail.stages.map((stage) => (
-              <TableRow key={stage.id}>
-                <TableCell className="text-xs text-zinc-500 tabular-nums">
-                  {stage.position}
-                </TableCell>
-                <TableCell className="text-xs font-medium text-zinc-800">
-                  {readable(stage.stage_name)}
-                </TableCell>
-                <TableCell>
-                  <Badge tone={statusTone(stage.status)}>
-                    {readable(stage.status)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right text-xs text-zinc-600 tabular-nums">
-                  {stage.attempt_count}
-                </TableCell>
-                <TableCell className="text-right text-xs text-zinc-600 tabular-nums">
-                  {duration(stage.started_at, stage.completed_at)}
-                </TableCell>
-                <TableCell className="max-w-72 truncate text-xs text-rose-700">
-                  {stage.error_summary ?? "—"}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </DataTableShell>
-
-      {detail.extractions.map((extraction) => (
-        <Card key={extraction.id}>
-          <CardHeader
-            action={
-              <Badge tone={statusTone(extraction.validation_status)}>
-                {readable(extraction.validation_status)}
-              </Badge>
-            }
-            description={`Extraction attempt ${extraction.extraction_number}`}
-            title={extraction.resolved_model ?? extraction.requested_model}
-          />
-          <CardContent>
-            <dl className="grid gap-3 text-xs sm:grid-cols-3 lg:grid-cols-6">
-              <div>
-                <dt className="text-zinc-500">Input</dt>
-                <dd className="mt-1 tabular-nums">
-                  {extraction.input_tokens.toLocaleString("en-AU")}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-zinc-500">Cached input</dt>
-                <dd className="mt-1 tabular-nums">
-                  {extraction.cached_input_tokens.toLocaleString("en-AU")}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-zinc-500">Output</dt>
-                <dd className="mt-1 tabular-nums">
-                  {extraction.output_tokens.toLocaleString("en-AU")}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-zinc-500">Reasoning</dt>
-                <dd className="mt-1 tabular-nums">
-                  {extraction.reasoning_tokens.toLocaleString("en-AU")}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-zinc-500">Cost</dt>
-                <dd className="mt-1 tabular-nums">
-                  ${extraction.cost_usd.toFixed(6)} USD ·{" "}
-                  {extraction.cost_source}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-zinc-500">Latency</dt>
-                <dd className="mt-1 tabular-nums">
-                  {extraction.latency_ms === null
-                    ? "—"
-                    : `${extraction.latency_ms}ms`}
-                </dd>
-              </div>
-            </dl>
-            {extraction.error_summary ? (
-              <p className="mt-3 text-xs text-rose-700">
-                {extraction.error_summary}
-              </p>
-            ) : null}
-            {extraction.reused_from_extraction_id ? (
-              <p className="mt-3 text-xs text-zinc-500">
-                Reused an identical earlier extraction, so no additional model
-                cost was incurred.
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
 export function CourseImportTargetReview({
   detail,
   previewCourse,
@@ -603,7 +469,7 @@ export function CourseImportTargetReview({
       }
       admin
       breadcrumbSegmentLabels={{
-        [detail.run.id]: `${detail.run.academicYear} course run`,
+        [detail.run.id]: `Run #${detail.run.runNumber}`,
         targets: null,
       }}
       currentBreadcrumbLabel={detail.target.courseCode}
@@ -616,6 +482,7 @@ export function CourseImportTargetReview({
           <span className="font-mono text-lg font-semibold text-zinc-950">
             {detail.target.courseCode}
           </span>
+          <Badge tone="neutral">Run #{detail.run.runNumber}</Badge>
           <Badge tone="neutral">{detail.run.academicYear}</Badge>
           <Badge tone={statusTone(detail.target.processingStatus)}>
             {readable(detail.target.processingStatus)}
@@ -679,12 +546,15 @@ export function CourseImportTargetReview({
               <TabsTrigger value="changes">Review</TabsTrigger>
               <TabsTrigger value="source">Source and artefacts</TabsTrigger>
               <TabsTrigger value="database">Database rows</TabsTrigger>
-              <TabsTrigger value="preview">Student preview</TabsTrigger>
+              <TabsTrigger value="preview">Course preview</TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="pipeline">
-            <Pipeline detail={detail} />
+            <CourseImportPipeline
+              extractions={detail.extractions}
+              stages={detail.stages}
+            />
           </TabsContent>
           <TabsContent value="changes">
             <ReviewChanges detail={detail} />
@@ -763,9 +633,9 @@ export function CourseImportTargetReview({
               <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
                 <Alert className="m-4" tone="neutral">
                   <AlertDescription>
-                    This is the full student course view using the candidate
-                    data. Planning actions are disabled and nothing is published
-                    from this tab.
+                    This is the full student-facing course view using the
+                    candidate data. Planning actions are disabled and nothing is
+                    published from this tab.
                   </AlertDescription>
                 </Alert>
                 <Tabs className="gap-0" defaultValue="overview">

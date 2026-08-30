@@ -13,11 +13,11 @@ export function UnitsTrendChart({
   degreeUnits,
 }: {
   points: readonly DashboardTermPoint[];
-  degreeUnits: number;
+  degreeUnits: number | null;
 }) {
   const [active, setActive] = useState<number | null>(null);
   const maxMapped = Math.max(
-    degreeUnits,
+    degreeUnits ?? 0,
     ...points.map((point) => point.units),
     24,
   );
@@ -67,8 +67,9 @@ export function UnitsTrendChart({
             Units over time
           </h2>
           <p className="mt-0.5 text-[11px] text-zinc-500">
-            Earned so far and where your saved plan lands · degree target{" "}
-            {degreeUnits}u
+            {degreeUnits === null
+              ? "Earned so far and where your saved plan lands · degree target not recorded"
+              : `Earned so far and where your saved plan lands · degree target ${degreeUnits}u`}
           </p>
         </div>
         <div className="flex items-center gap-4 text-[11px] text-zinc-500">
@@ -131,14 +132,16 @@ export function UnitsTrendChart({
                 </text>
               </g>
             ))}
-            <line
-              x1={pad.left}
-              x2={width - pad.right}
-              y1={y(degreeUnits)}
-              y2={y(degreeUnits)}
-              stroke="var(--color-brand-200, #ddd6fe)"
-              strokeDasharray="3 3"
-            />
+            {degreeUnits !== null ? (
+              <line
+                x1={pad.left}
+                x2={width - pad.right}
+                y1={y(degreeUnits)}
+                y2={y(degreeUnits)}
+                stroke="var(--color-brand-200, #ddd6fe)"
+                strokeDasharray="3 3"
+              />
+            ) : null}
             <path
               d={path((point) => point.units)}
               fill="none"

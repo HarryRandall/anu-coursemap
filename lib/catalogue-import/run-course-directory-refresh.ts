@@ -456,7 +456,10 @@ export async function refreshCourseDirectoryForYear({
     return demoResult();
   }
 
-  const sql = createHostedImportDatabaseClient(configuredImportDatabaseUrl());
+  const sql =
+    process.env.NODE_ENV === "development"
+      ? await createLocalDatabaseClient()
+      : createHostedImportDatabaseClient(configuredImportDatabaseUrl());
 
   try {
     return await refreshCourseDirectory(

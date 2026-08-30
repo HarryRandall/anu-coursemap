@@ -31,6 +31,8 @@ export type Profile = {
   catalogueYear: number;
   degreeCode: string;
   majorCode: string;
+  minorCodes: string[];
+  specialisationCodes: string[];
   studyLoad: "Full time" | "Part time";
   extensionYears: number;
 };
@@ -131,6 +133,8 @@ function createDemoState(initialAttempts: Attempt[]): AppState {
       catalogueYear: new Date().getFullYear(),
       degreeCode: "",
       majorCode: "",
+      minorCodes: [],
+      specialisationCodes: [],
       studyLoad: "Full time",
       extensionYears: 0,
     },
@@ -155,6 +159,8 @@ function createInitialState(
       catalogueYear: new Date().getFullYear(),
       degreeCode: "",
       majorCode: "",
+      minorCodes: [],
+      specialisationCodes: [],
       studyLoad: "Full time",
       extensionYears: 0,
     },
@@ -223,6 +229,17 @@ export function AppProvider({
             if (!cancelled) {
               setState({
                 ...parsed,
+                profile: {
+                  ...parsed.profile,
+                  minorCodes: Array.isArray(parsed.profile.minorCodes)
+                    ? parsed.profile.minorCodes
+                    : [],
+                  specialisationCodes: Array.isArray(
+                    parsed.profile.specialisationCodes,
+                  )
+                    ? parsed.profile.specialisationCodes
+                    : [],
+                },
                 attempts: normaliseAttempts(parsed.attempts),
               });
             }

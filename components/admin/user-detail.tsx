@@ -155,6 +155,12 @@ export function AdminUserDetail({
   const major = data.study.structures.find(
     (structure) => structure.role === "major",
   );
+  const minors = data.study.structures.filter(
+    (structure) => structure.role === "minor",
+  );
+  const specialisations = data.study.structures.filter(
+    (structure) => structure.role === "specialisation",
+  );
   const progress = useMemo(
     () => adminUserStudyProgress(data.study),
     [data.study],
@@ -422,6 +428,35 @@ export function AdminUserDetail({
                           value={
                             major
                               ? major.name + " (" + major.code + ")"
+                              : "None selected"
+                          }
+                        />
+                        <DetailRow
+                          label="Minors"
+                          value={
+                            minors.length > 0
+                              ? minors
+                                  .map(
+                                    (minor) =>
+                                      minor.name + " (" + minor.code + ")",
+                                  )
+                                  .join(", ")
+                              : "None selected"
+                          }
+                        />
+                        <DetailRow
+                          label="Specialisations"
+                          value={
+                            specialisations.length > 0
+                              ? specialisations
+                                  .map(
+                                    (specialisation) =>
+                                      specialisation.name +
+                                      " (" +
+                                      specialisation.code +
+                                      ")",
+                                  )
+                                  .join(", ")
                               : "None selected"
                           }
                         />

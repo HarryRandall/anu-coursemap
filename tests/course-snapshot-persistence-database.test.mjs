@@ -13,6 +13,7 @@ const rollbackSignal = new Error(
 );
 const academicYear = 2026;
 const courseCode = "COMP2400";
+const programmeCode = "PERSIST-PROG";
 const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2400";
 const fixtureHtml = await readFile(
   new URL(
@@ -27,6 +28,20 @@ const extraction = extractDeterministicCourse({
   year: academicYear,
   sourceUrl,
 });
+if (!extraction.requisites.prerequisiteRule) {
+  throw new Error("The course persistence fixture must have a prerequisite.");
+}
+extraction.requisites = {
+  ...extraction.requisites,
+  prerequisiteText: `${extraction.requisites.prerequisiteText} Enrolment in ${programmeCode} is also required.`,
+  prerequisiteRule: {
+    op: "all_of",
+    rules: [
+      extraction.requisites.prerequisiteRule,
+      { op: "enrolled_in", programmeCode },
+    ],
+  },
+};
 const projection = projectCourseSnapshot(extraction);
 
 function hash(value) {
@@ -267,6 +282,39 @@ test("persists and idempotently reuses a complete review candidate", async () =>
         assert.equal(counts.assessments, projection.assessmentItems.length);
         assert.equal(counts.sessions, projection.offeringSessions.length);
         assert.equal(counts.attributes, projection.attributes.length);
+
+        const [programmeCondition] = await tx`
+          select
+            conditions.free_text,
+            conditions.required_structure_id,
+            structures.code,
+            structures.kind
+          from public.course_rule_conditions as conditions
+          join public.academic_structures as structures
+            on structures.id = conditions.required_structure_id
+          where conditions.course_snapshot_id = ${first.candidateSnapshotId}
+            and conditions.condition_kind = ${"admission"}
+        `;
+        assert.ok(programmeCondition);
+        assert.equal(programmeCondition.code, programmeCode);
+        assert.equal(programmeCondition.kind, "programme");
+        assert.equal(programmeCondition.free_text, null);
+        assert.ok(programmeCondition.required_structure_id);
+
+        const [storedProjection] = await tx`
+          select private.course_snapshot_projection(
+            ${first.candidateSnapshotId}
+          ) as value
+        `;
+        const projectedProgrammeCondition =
+          storedProjection.value.ruleConditions.find(
+            (condition) => condition.conditionKind === "admission",
+          );
+        assert.equal(
+          projectedProgrammeCondition.requiredStructureCode,
+          programmeCode,
+        );
+        assert.equal(projectedProgrammeCondition.freeText, null);
 
         const [offeringSession] = await tx`
           select academic_period_id, academic_period_code, academic_period_name

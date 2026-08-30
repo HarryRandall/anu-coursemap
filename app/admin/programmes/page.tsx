@@ -1,51 +1,29 @@
+import { redirect } from "next/navigation";
 import {
-  loadAdminStructurePage,
-  type AdminCourseListStatus,
-} from "@/lib/coursemap/admin-catalogue";
-import { ProgrammeList } from "./programme-list";
+  AcademicStructureDirectoryPage,
+  type AcademicStructureDirectorySearchParams,
+} from "@/components/admin/academic-structures/structure-directory-page";
+import { legacyAdminAcademicStructureCollectionRedirect } from "@/lib/coursemap/academic-structure-routes";
 
 export const dynamic = "force-dynamic";
-
-const statuses: AdminCourseListStatus[] = [
-  "all",
-  "draft",
-  "published",
-  "archived",
-  "needs-review",
-  "verified",
-];
-
-function first(input: string | string[] | undefined) {
-  return Array.isArray(input) ? input[0] : input;
-}
 
 export default async function AdminProgrammesPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    page?: string | string[];
-    q?: string | string[];
-    status?: string | string[];
-    kind?: string | string[];
-  }>;
+  searchParams: Promise<
+    AcademicStructureDirectorySearchParams & {
+      kind?: string | string[];
+    }
+  >;
 }) {
   const params = await searchParams;
-  const page = Number(first(params.page));
-  const query = (first(params.q) ?? "").trim();
-  const kind = (first(params.kind) ?? "").trim();
-  const requestedStatus = first(params.status) ?? "all";
-  const status = statuses.includes(requestedStatus as AdminCourseListStatus)
-    ? (requestedStatus as AdminCourseListStatus)
-    : "all";
+  const legacyRedirect = legacyAdminAcademicStructureCollectionRedirect(params);
+  if (legacyRedirect) redirect(legacyRedirect);
 
   return (
-    <ProgrammeList
-      data={await loadAdminStructurePage({ page, query, status, kind })}
-      searchParams={{
-        ...(query ? { q: query } : {}),
-        ...(status === "all" ? {} : { status }),
-        ...(kind ? { kind } : {}),
-      }}
+    <AcademicStructureDirectoryPage
+      kind="programme"
+      searchParams={Promise.resolve(params)}
     />
   );
 }

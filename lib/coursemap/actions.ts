@@ -42,12 +42,14 @@ export async function saveProfileAndPlan(
       {
         p_display_name: profile.name,
         p_student_number: profile.studentId,
-        p_catalogue_year: profile.catalogueYear,
+        p_academic_year: profile.catalogueYear,
         p_commencement_year: profile.commencementYear,
         p_study_load:
           profile.studyLoad === "Part time" ? "part_time" : "full_time",
         p_programme_code: profile.degreeCode,
         p_major_code: profile.majorCode || undefined,
+        p_minor_codes: profile.minorCodes,
+        p_specialisation_codes: profile.specialisationCodes,
       },
     );
     if (error) throw error;

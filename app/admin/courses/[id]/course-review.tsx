@@ -19,6 +19,7 @@ import {
   type ReactNode,
 } from "react";
 import { CourseImportArtifactViewer } from "@/components/admin/imports/course-import-artifact-viewer";
+import { CourseImportPipeline } from "@/components/admin/imports/course-import-pipeline";
 import {
   CourseSnapshotRuleEditor,
   CourseSnapshotRuleViewer,
@@ -37,14 +38,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { JsonCode } from "@/components/ui/json-code";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -94,6 +87,9 @@ const positionedCollectionKeys = [
   "learningOutcomes",
   "assessmentItems",
 ] as const;
+
+const COURSE_REVIEW_CONFIRMATION_NOTE =
+  "Administrator confirmed the snapshot against the stored ANU source and resolved every blocking import review item.";
 
 const academicCareerOptions: Array<{
   value: "" | NonNullable<SnapshotFields["academicCareer"]>;
@@ -834,7 +830,9 @@ export function CourseReview({
   record: AdminCourseYearRecord;
 }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<CourseReviewTab>("changes");
+  const [activeTab, setActiveTab] = useState<CourseReviewTab>(
+    record.importTarget ? "pipeline" : "course",
+  );
   const [editing, setEditing] = useState(false);
   const [editingRuleKind, setEditingRuleKind] =
     useState<EditableRuleKind | null>(null);
@@ -847,8 +845,6 @@ export function CourseReview({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [confirmationNote, setConfirmationNote] = useState("");
   const [archiving, setArchiving] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -915,7 +911,7 @@ export function CourseReview({
     setDraft(structuredClone(projection.snapshot));
     setCollectionsJson(collectionEditorValue(projection));
     setEditing(true);
-    setActiveTab("fields");
+    setActiveTab("course");
     setMessage(null);
   }
 
@@ -1000,18 +996,12 @@ export function CourseReview({
   }
 
   async function confirmReviewedSnapshot() {
-    if (
-      !projection ||
-      record.currentSnapshotId === null ||
-      !confirmationNote.trim()
-    ) {
-      return;
-    }
+    if (!projection || record.currentSnapshotId === null) return;
     setConfirming(true);
     setMessage(null);
     const result = await confirmCourseSnapshot({
       blockingReviewItemIds: record.blockingReviewItems.map((item) => item.id),
-      confirmationNote,
+      confirmationNote: COURSE_REVIEW_CONFIRMATION_NOTE,
       coursePublicId: record.publicId,
       courseYearId: record.courseYearId,
       expectedBaseSnapshotId: record.currentSnapshotId,
@@ -1023,8 +1013,6 @@ export function CourseReview({
       tone: result.ok ? "success" : "danger",
     });
     if (result.ok) {
-      setReviewDialogOpen(false);
-      setConfirmationNote("");
       router.refresh();
     }
   }
@@ -1080,13 +1068,18 @@ export function CourseReview({
               </ButtonLink>
             ) : null}
             {needsExplicitConfirmation && isDraft && !viewingHistorical ? (
-              <Button
-                disabled={!canWrite || confirming}
-                onClick={() => setReviewDialogOpen(true)}
-                size="sm"
-              >
-                <CheckCircle2 aria-hidden="true" size={15} /> Confirm review
-              </Button>
+              <ConfirmDialog
+                confirmLabel="Confirm review"
+                description={`Confirm that ${record.code} ${record.year} has been checked against the stored ANU source. This creates a confirmed manual draft, clears any blocking import checks and records a standard audit note.`}
+                onConfirm={confirmReviewedSnapshot}
+                title={`Confirm review of ${record.code}?`}
+                trigger={
+                  <Button disabled={!canWrite || confirming} size="sm">
+                    <CheckCircle2 aria-hidden="true" size={15} />
+                    {confirming ? "Confirming..." : "Confirm review"}
+                  </Button>
+                }
+              />
             ) : null}
             {isDraft ? (
               <ConfirmDialog
@@ -1134,7 +1127,7 @@ export function CourseReview({
         }
         admin
         currentBreadcrumbLabel={projection?.snapshot.title ?? record.code}
-        tabs={<CourseReviewTabs />}
+        tabs={<CourseReviewTabs hasImport={record.importTarget !== null} />}
       >
         <div className="mx-auto w-full max-w-7xl min-w-0 pb-10">
           <h1 className="sr-only">
@@ -1231,213 +1224,217 @@ export function CourseReview({
             </Alert>
           ) : null}
 
-          <Dialog onOpenChange={setReviewDialogOpen} open={reviewDialogOpen}>
-            <DialogContent className="max-w-lg">
-              <div className="space-y-5 p-5 pr-14 sm:p-6 sm:pr-16">
-                <DialogHeader>
-                  <DialogTitle>Confirm course review</DialogTitle>
-                  <DialogDescription>
-                    Record the checks you made before clearing the remaining
-                    import uncertainty for {record.code} {record.year}.
-                  </DialogDescription>
-                </DialogHeader>
-                <Alert tone="warning">
-                  <CircleAlert aria-hidden="true" />
-                  <AlertDescription>
-                    {record.blockingReviewItems.length > 0
-                      ? `${record.blockingReviewItems.length} blocking review ${record.blockingReviewItems.length === 1 ? "item" : "items"} will be resolved.`
-                      : "This snapshot is marked critically uncertain."}
-                  </AlertDescription>
-                </Alert>
-                <Field
-                  hint="For example: checked the source page, fees, offerings and prerequisite logic."
-                  label="Confirmation note"
-                >
-                  <Textarea
-                    className="min-h-28"
-                    onChange={(event) =>
-                      setConfirmationNote(event.target.value)
-                    }
-                    placeholder="Describe what you checked and any judgement applied."
-                    value={confirmationNote}
-                  />
-                </Field>
-              </div>
-              <DialogFooter>
-                <Button
-                  disabled={confirming}
-                  onClick={() => setReviewDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={!canWrite || confirming || !confirmationNote.trim()}
-                  onClick={() => void confirmReviewedSnapshot()}
-                  variant="primary"
-                >
-                  <CheckCircle2 aria-hidden="true" size={15} />
-                  {confirming ? "Confirming..." : "Confirm review"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          {record.importTarget ? (
+            <TabsContent className="mt-0" value="pipeline">
+              <CourseImportPipeline
+                extractions={record.importTarget.extractions}
+                reviewHref={`/admin/imports/runs/${record.importTarget.runId}/targets/${record.importTarget.targetId}`}
+                stages={record.importTarget.stages}
+              />
+            </TabsContent>
+          ) : null}
 
-          <TabsContent className="mt-0" value="changes">
-            <Panel label="Snapshot changes">
-              <div className="grid grid-cols-2 border-b border-zinc-200 sm:grid-cols-4">
-                {[
-                  ["Course year", String(record.year)],
-                  [
-                    "Snapshot",
-                    record.snapshot
-                      ? `${record.snapshot.snapshot_number} · ${readable(record.snapshot.origin)}`
-                      : "None",
-                  ],
-                  [
-                    "Validation",
-                    record.snapshot
-                      ? readable(record.snapshot.validation_status)
-                      : "Not recorded",
-                  ],
-                  ["Changed sections", String(changes.length)],
-                ].map(([label, value], index) => (
-                  <div
-                    className={`px-4 py-4 sm:px-6 ${index ? "border-l border-zinc-200" : ""}`}
-                    key={label}
-                  >
-                    <p className="text-xs font-medium text-zinc-500">{label}</p>
-                    <p className="mt-1 text-sm font-semibold text-zinc-950">
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              <div className="divide-y divide-zinc-100 px-5 sm:px-6">
-                {changes.length ? (
-                  changes.map((change) => (
-                    <div className="py-3 text-sm text-zinc-700" key={change}>
-                      {change}
+          <TabsContent className="mt-0" value="course">
+            <div className="space-y-4">
+              <Panel label="Published comparison">
+                <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
+                  <h2 className="text-sm font-semibold text-zinc-950">
+                    Published comparison
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    A short summary of the current snapshot compared with the
+                    student-facing version. Field evidence appears below when
+                    the import recorded it.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 border-b border-zinc-200 sm:grid-cols-4">
+                  {[
+                    ["Course year", String(record.year)],
+                    [
+                      "Snapshot",
+                      record.snapshot
+                        ? `${record.snapshot.snapshot_number} · ${readable(record.snapshot.origin)}`
+                        : "None",
+                    ],
+                    [
+                      "Validation",
+                      record.snapshot
+                        ? readable(record.snapshot.validation_status)
+                        : "Not recorded",
+                    ],
+                    ["Differences", String(changes.length)],
+                  ].map(([label, value], index) => (
+                    <div
+                      className={`px-4 py-4 sm:px-6 ${index ? "border-l border-zinc-200" : ""}`}
+                      key={label}
+                    >
+                      <p className="text-xs font-medium text-zinc-500">
+                        {label}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-zinc-950">
+                        {value}
+                      </p>
                     </div>
-                  ))
+                  ))}
+                </div>
+                <div className="divide-y divide-zinc-100 px-5 sm:px-6">
+                  {changes.length ? (
+                    changes.map((change) => (
+                      <div className="py-3 text-sm text-zinc-700" key={change}>
+                        <span className="inline-flex rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">
+                          {change}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="py-7 text-sm text-zinc-500">
+                      The draft matches the currently published projection.
+                    </p>
+                  )}
+                </div>
+                {record.evidence.length ? (
+                  <details className="border-t border-zinc-200">
+                    <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 sm:px-6">
+                      Field evidence ({record.evidence.length})
+                    </summary>
+                    <JsonCode
+                      label="Snapshot field evidence"
+                      value={record.evidence}
+                    />
+                  </details>
+                ) : null}
+              </Panel>
+              <Panel label="Course fields">
+                <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
+                  <h2 className="text-sm font-semibold text-zinc-950">
+                    Course fields
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                    Review the saved values or create a manual draft from the
+                    complete relational course record.
+                  </p>
+                </div>
+                {editing && draft ? (
+                  <SnapshotFieldsEditor
+                    collectionsJson={collectionsJson}
+                    draft={draft}
+                    error={editorState.error}
+                    onCancel={cancelEditing}
+                    onCollectionsChange={setCollectionsJson}
+                    onDraftChange={setDraft}
+                    onSubmit={saveDraft}
+                    preview={editorState.preview}
+                    saving={saving}
+                  />
+                ) : projection ? (
+                  <>
+                    <div className="px-5 sm:px-6">
+                      <dl>
+                        <FieldValue label="Course code" value={record.code} />
+                        <FieldValue
+                          label="Title"
+                          value={projection.snapshot.title}
+                        />
+                        <FieldValue label="Academic year" value={record.year} />
+                        <FieldValue
+                          label="Units"
+                          value={
+                            projection.snapshot.units ??
+                            `${projection.snapshot.minimumUnits ?? "?"} to ${projection.snapshot.maximumUnits ?? "?"}`
+                          }
+                        />
+                        <FieldValue
+                          label="Subject"
+                          value={`${projection.snapshot.subjectCode}${projection.snapshot.subjectName ? ` · ${projection.snapshot.subjectName}` : ""}`}
+                        />
+                        <FieldValue
+                          label="Level"
+                          value={projection.snapshot.level}
+                        />
+                        <FieldValue
+                          label="School"
+                          value={projection.snapshot.school}
+                        />
+                        <FieldValue
+                          label="College"
+                          value={projection.snapshot.college}
+                        />
+                        <FieldValue
+                          label="Career"
+                          value={projection.snapshot.academicCareer}
+                        />
+                        <FieldValue
+                          label="Convenor"
+                          value={projection.snapshot.convenerText}
+                        />
+                        <FieldValue
+                          label="Delivery"
+                          value={projection.snapshot.deliverySummary}
+                        />
+                        <FieldValue
+                          label="Description"
+                          value={projection.snapshot.description}
+                        />
+                        <FieldValue
+                          label="Workload"
+                          value={projection.snapshot.workloadText}
+                        />
+                        <FieldValue
+                          label="Source updated"
+                          value={formatDate(
+                            projection.snapshot.sourceUpdatedAt,
+                          )}
+                        />
+                      </dl>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3 sm:px-6">
+                      <div className="flex flex-wrap gap-2">
+                        {collectionSummary(advancedCollections(projection)).map(
+                          ([label, count]) => (
+                            <Badge key={label} tone="neutral">
+                              {count} {label.toLowerCase()}
+                            </Badge>
+                          ),
+                        )}
+                      </div>
+                      <Button
+                        disabled={!canEdit}
+                        onClick={startEditing}
+                        size="sm"
+                      >
+                        <Pencil aria-hidden="true" size={14} /> Edit complete
+                        snapshot
+                      </Button>
+                    </div>
+                  </>
                 ) : (
-                  <p className="py-7 text-sm text-zinc-500">
-                    The draft matches the currently published projection.
+                  <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                    This course year does not have a draft or published
+                    snapshot.
                   </p>
                 )}
-              </div>
-              {record.evidence.length ? (
-                <details className="border-t border-zinc-200">
-                  <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 sm:px-6">
-                    Field evidence ({record.evidence.length})
+              </Panel>
+              <Panel label="Relational projection">
+                <details>
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-zinc-950 marker:content-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none sm:px-6">
+                    <FileCode2
+                      aria-hidden="true"
+                      className="text-zinc-400"
+                      size={17}
+                    />
+                    Relational projection
                   </summary>
+                  <p className="border-t border-zinc-100 px-5 py-3 text-xs leading-5 text-zinc-500 sm:px-6">
+                    Assembled from the saved snapshot and child rows. This is an
+                    inspection view, not a stored import JSON blob.
+                  </p>
                   <JsonCode
-                    label="Snapshot field evidence"
-                    value={record.evidence}
+                    label="Canonical course projection"
+                    value={projection}
                   />
                 </details>
-              ) : null}
-            </Panel>
-          </TabsContent>
-
-          <TabsContent className="mt-0" value="fields">
-            <Panel label="All fields">
-              {editing && draft ? (
-                <SnapshotFieldsEditor
-                  collectionsJson={collectionsJson}
-                  draft={draft}
-                  error={editorState.error}
-                  onCancel={cancelEditing}
-                  onCollectionsChange={setCollectionsJson}
-                  onDraftChange={setDraft}
-                  onSubmit={saveDraft}
-                  preview={editorState.preview}
-                  saving={saving}
-                />
-              ) : projection ? (
-                <>
-                  <div className="px-5 sm:px-6">
-                    <dl>
-                      <FieldValue label="Course code" value={record.code} />
-                      <FieldValue
-                        label="Title"
-                        value={projection.snapshot.title}
-                      />
-                      <FieldValue label="Academic year" value={record.year} />
-                      <FieldValue
-                        label="Units"
-                        value={
-                          projection.snapshot.units ??
-                          `${projection.snapshot.minimumUnits ?? "?"} to ${projection.snapshot.maximumUnits ?? "?"}`
-                        }
-                      />
-                      <FieldValue
-                        label="Subject"
-                        value={`${projection.snapshot.subjectCode}${projection.snapshot.subjectName ? ` · ${projection.snapshot.subjectName}` : ""}`}
-                      />
-                      <FieldValue
-                        label="Level"
-                        value={projection.snapshot.level}
-                      />
-                      <FieldValue
-                        label="School"
-                        value={projection.snapshot.school}
-                      />
-                      <FieldValue
-                        label="College"
-                        value={projection.snapshot.college}
-                      />
-                      <FieldValue
-                        label="Career"
-                        value={projection.snapshot.academicCareer}
-                      />
-                      <FieldValue
-                        label="Convenor"
-                        value={projection.snapshot.convenerText}
-                      />
-                      <FieldValue
-                        label="Delivery"
-                        value={projection.snapshot.deliverySummary}
-                      />
-                      <FieldValue
-                        label="Description"
-                        value={projection.snapshot.description}
-                      />
-                      <FieldValue
-                        label="Workload"
-                        value={projection.snapshot.workloadText}
-                      />
-                      <FieldValue
-                        label="Source updated"
-                        value={formatDate(projection.snapshot.sourceUpdatedAt)}
-                      />
-                    </dl>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3 sm:px-6">
-                    <div className="flex flex-wrap gap-2">
-                      {collectionSummary(advancedCollections(projection)).map(
-                        ([label, count]) => (
-                          <Badge key={label} tone="neutral">
-                            {count} {label.toLowerCase()}
-                          </Badge>
-                        ),
-                      )}
-                    </div>
-                    <Button
-                      disabled={!canEdit}
-                      onClick={startEditing}
-                      size="sm"
-                    >
-                      <Pencil aria-hidden="true" size={14} /> Edit complete
-                      snapshot
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
-                  This course year does not have a draft or published snapshot.
-                </p>
-              )}
-            </Panel>
+              </Panel>
+            </div>
           </TabsContent>
 
           <TabsContent className="mt-0" value="source">
@@ -1518,32 +1515,7 @@ export function CourseReview({
             </div>
           </TabsContent>
 
-          <TabsContent className="mt-0" value="parsed">
-            <Panel label="Parsed output">
-              <div className="flex items-center gap-2 px-5 py-4 sm:px-6">
-                <FileCode2
-                  aria-hidden="true"
-                  className="text-zinc-400"
-                  size={17}
-                />
-                <div>
-                  <h2 className="text-sm font-semibold text-zinc-950">
-                    Canonical relational projection
-                  </h2>
-                  <p className="mt-0.5 text-xs text-zinc-500">
-                    Assembled from the saved snapshot and child rows, not an
-                    import JSON blob.
-                  </p>
-                </div>
-              </div>
-              <JsonCode
-                label="Canonical course projection"
-                value={projection}
-              />
-            </Panel>
-          </TabsContent>
-
-          <TabsContent className="mt-0" value="prerequisites">
+          <TabsContent className="mt-0" value="requisites">
             {projection ? (
               <div className="space-y-4">
                 <RequisitePanel
@@ -1586,22 +1558,17 @@ export function CourseReview({
                   onSave={saveRuleProjection}
                   projection={projection}
                 />
+                <RequisitePanel
+                  canEdit={canEdit}
+                  empty="No incompatibility rules are stored for this snapshot."
+                  editing={editingRuleKind === "incompatibility"}
+                  kind="incompatibility"
+                  onCancelEdit={() => setEditingRuleKind(null)}
+                  onEdit={() => startRuleEditing("incompatibility")}
+                  onSave={saveRuleProjection}
+                  projection={projection}
+                />
               </div>
-            ) : null}
-          </TabsContent>
-
-          <TabsContent className="mt-0" value="incompatibilities">
-            {projection ? (
-              <RequisitePanel
-                canEdit={canEdit}
-                empty="No incompatibility rules are stored for this snapshot."
-                editing={editingRuleKind === "incompatibility"}
-                kind="incompatibility"
-                onCancelEdit={() => setEditingRuleKind(null)}
-                onEdit={() => startRuleEditing("incompatibility")}
-                onSave={saveRuleProjection}
-                projection={projection}
-              />
             ) : null}
           </TabsContent>
 
@@ -1623,10 +1590,9 @@ export function CourseReview({
                 </div>
               </Tabs>
             ) : (
-              <Panel label="Student preview">
+              <Panel label="Course preview">
                 <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
-                  A snapshot is required before the student preview is
-                  available.
+                  A snapshot is required before the course preview is available.
                 </p>
               </Panel>
             )}

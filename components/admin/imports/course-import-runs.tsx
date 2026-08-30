@@ -81,10 +81,11 @@ export function CourseImportRuns({ data }: { data: CourseImportRunPage }) {
               title="No course import runs"
             />
           ) : (
-            <Table className="min-w-[1040px]">
+            <Table className="min-w-[1100px]">
               <TableCaption>Course import runs, newest first</TableCaption>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
+                  <TableHead>Run</TableHead>
                   <TableHead>Started</TableHead>
                   <TableHead>Courses</TableHead>
                   <TableHead>Year</TableHead>
@@ -102,6 +103,11 @@ export function CourseImportRuns({ data }: { data: CourseImportRunPage }) {
               <TableBody>
                 {data.records.map((run) => (
                   <TableRow key={run.id}>
+                    <TableCell>
+                      <span className="font-mono text-xs font-medium text-zinc-950 tabular-nums">
+                        #{run.runNumber}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <time
                         className="text-xs text-zinc-600 tabular-nums"
@@ -148,7 +154,7 @@ export function CourseImportRuns({ data }: { data: CourseImportRunPage }) {
                     </TableCell>
                     <TableCell className="text-right">
                       <Link
-                        aria-label={`Open import run from ${dateFormatter.format(new Date(run.createdAt))}`}
+                        aria-label={`Open course import run ${run.runNumber}`}
                         className="inline-grid size-8 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
                         href={`/admin/imports/runs/${run.id}`}
                       >

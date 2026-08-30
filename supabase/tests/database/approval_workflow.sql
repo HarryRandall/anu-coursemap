@@ -57,7 +57,7 @@ where courses.code = 'TEST1000';
 insert into public.plans (
   id,
   owner_id,
-  catalogue_year_id,
+  academic_year_id,
   name,
   commencement_year,
   study_load
@@ -65,7 +65,7 @@ insert into public.plans (
 values (
   '31000000-0000-4000-8000-000000000001',
   '30000000-0000-4000-8000-000000000001',
-  (select id from public.catalogue_years where year = 2029),
+  (select id from public.academic_years where year = 2029),
   'Approval test plan',
   2029,
   'full_time'

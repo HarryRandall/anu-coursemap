@@ -91,6 +91,12 @@ function allReferencedCourseCodes(projection: CourseSnapshotProjection) {
   ];
 }
 
+function allReferencedProgrammeCodes(projection: CourseSnapshotProjection) {
+  return projection.ruleConditions.flatMap(({ requiredStructureCode }) =>
+    requiredStructureCode ? [requiredStructureCode] : [],
+  );
+}
+
 async function ensureCourseIds(
   tx: postgres.TransactionSql,
   codes: readonly string[],
@@ -113,6 +119,36 @@ async function ensureCourseIds(
     throw new Error("Not every referenced course identity was resolved.");
   }
   return output;
+}
+
+async function ensureProgrammeStructureIds(
+  tx: postgres.TransactionSql,
+  codes: readonly string[],
+) {
+  const uniqueCodes = [...new Set(codes)].sort();
+  if (uniqueCodes.length === 0) return new Map<string, number>();
+  await tx`
+    insert into public.academic_structures ${tx(
+      uniqueCodes.map((code) => ({ code, kind: "programme" })),
+    )}
+    on conflict (code) do nothing
+  `;
+  const rows = await tx`
+    select id, code, kind
+    from public.academic_structures
+    where code = any(${tx.array(uniqueCodes)}::text[])
+  `;
+  if (
+    rows.length !== uniqueCodes.length ||
+    rows.some((row) => String(row.kind) !== "programme")
+  ) {
+    throw new Error(
+      "Not every required programme identity was resolved as a programme.",
+    );
+  }
+  return new Map(
+    rows.map((row) => [String(row.code), Number(row.id)] as const),
+  );
 }
 
 function makeChangeSet({
@@ -333,6 +369,10 @@ export async function persistCourseSnapshotCandidate(
     const courseIds = await ensureCourseIds(
       tx,
       allReferencedCourseCodes(projection),
+    );
+    const programmeStructureIds = await ensureProgrammeStructureIds(
+      tx,
+      allReferencedProgrammeCodes(projection),
     );
     const courseId = courseIds.get(projection.courseCode)!;
     if (claim.courseId !== null && claim.courseId !== courseId) {
@@ -887,6 +927,7 @@ export async function persistCourseSnapshotCandidate(
           group_id,
           condition_kind,
           required_course_id,
+          required_structure_id,
           minimum_units,
           minimum_mark,
           subject_code,
@@ -918,6 +959,15 @@ export async function persistCourseSnapshotCandidate(
                   courseIds,
                   condition.requiredCourseCode,
                   "Required course",
+                )
+              : null
+          },
+          ${
+            condition.requiredStructureCode
+              ? requiredMapValue(
+                  programmeStructureIds,
+                  condition.requiredStructureCode,
+                  "Required programme",
                 )
               : null
           },

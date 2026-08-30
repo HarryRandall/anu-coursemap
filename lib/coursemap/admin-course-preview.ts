@@ -2,10 +2,16 @@ import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";
 import { accentFor } from "@/lib/coursemap/course-accent";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import { parseRequisiteSummary } from "@/lib/coursemap/requisite-summary";
+import {
+  prerequisiteCodesFromSnapshotProjection,
+  prerequisiteEdgesWithSnapshotFallback,
+} from "@/lib/coursemap/snapshot-prerequisite-codes";
+
+type PublishedPrerequisite = Pick<CourseDetails, "code" | "prerequisiteEdges">;
 
 export function toStudentPreviewCourseYear(
   record: AdminCourseYearRecord,
-  publishedCourseCodes: readonly string[] = [],
+  publishedPrerequisites: readonly PublishedPrerequisite[] = [],
 ): CourseDetails | null {
   const projection = record.projection;
   if (!projection) return null;
@@ -24,16 +30,23 @@ export function toStudentPreviewCourseYear(
     .map((rule) => rule.sourceText.trim())
     .filter(Boolean)
     .join("\n\n");
-  const prerequisiteCodes = [
-    ...new Set(
-      projection.ruleCourseReferences
-        .filter((reference) => reference.ruleKey === "prerequisite")
-        .map((reference) => reference.referencedCourseCode),
+  const prerequisiteCodes = prerequisiteCodesFromSnapshotProjection(
+    projection,
+  ).filter((code) => code !== record.code);
+  const prerequisiteEdges = prerequisiteEdgesWithSnapshotFallback({
+    courseCode: record.code,
+    fallbackDetails: Object.fromEntries(
+      publishedPrerequisites.map((course) => [
+        course.code.toUpperCase(),
+        {
+          isAvailable: true,
+          prerequisiteEdges: course.prerequisiteEdges,
+        },
+      ]),
     ),
-  ].filter((code) => code !== record.code);
-  const published = new Set(
-    publishedCourseCodes.map((code) => code.toUpperCase()),
-  );
+    projection,
+    storedEdges: [],
+  });
   const sessions = [
     ...new Set(
       projection.offeringSessions.map((session) => session.academicPeriodName),
@@ -180,12 +193,7 @@ export function toStudentPreviewCourseYear(
       .filter(Boolean)
       .join("\n\n"),
     prerequisiteCodes,
-    prerequisiteEdges: prerequisiteCodes.map((from) => ({
-      from,
-      to: record.code,
-      fromIsAvailable: published.has(from),
-      toIsAvailable: publicationStatus === "published",
-    })),
+    prerequisiteEdges,
     prerequisiteRule: prerequisiteRules[0]
       ? {
           confidence,
@@ -199,7 +207,10 @@ export function toStudentPreviewCourseYear(
       : null,
     availableCourseCodes: [
       ...new Set([
-        ...prerequisiteCodes.filter((code) => published.has(code)),
+        ...prerequisiteEdges.flatMap((edge) => [
+          ...(edge.fromIsAvailable ? [edge.from] : []),
+          ...(edge.toIsAvailable ? [edge.to] : []),
+        ]),
         ...(publicationStatus === "published" ? [record.code] : []),
       ]),
     ].sort(),

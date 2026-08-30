@@ -210,7 +210,7 @@ set
 
 insert into public.plans (
   owner_id,
-  catalogue_year_id,
+  academic_year_id,
   name,
   is_primary,
   status,
@@ -226,7 +226,7 @@ select
   years.year,
   'full_time'
 from auth.users as users
-cross join public.catalogue_years as years
+cross join public.academic_years as years
 where users.id in (
     '70000000-0000-4000-8000-000000000001',
     '70000000-0000-4000-8000-000000000002'

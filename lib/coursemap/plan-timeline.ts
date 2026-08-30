@@ -9,10 +9,25 @@ export type PlanTimelineYear = {
   year: number;
 };
 
-function nominalDegreeDuration(degree: TimelineDegree) {
-  const declaredDuration = Math.ceil(degree?.duration ?? 0);
-  const unitDerivedDuration = Math.ceil((degree?.units ?? 0) / 48);
-  return Math.max(1, declaredDuration, unitDerivedDuration);
+export function nominalProgrammeDuration(degree: TimelineDegree) {
+  const declaredDuration =
+    degree?.duration !== null &&
+    degree?.duration !== undefined &&
+    Number.isFinite(degree.duration) &&
+    degree.duration > 0
+      ? Math.ceil(degree.duration)
+      : null;
+  const unitDerivedDuration =
+    degree?.units !== null &&
+    degree?.units !== undefined &&
+    Number.isFinite(degree.units) &&
+    degree.units > 0
+      ? Math.ceil(degree.units / 48)
+      : null;
+  const candidates = [declaredDuration, unitDerivedDuration].filter(
+    (duration): duration is number => duration !== null,
+  );
+  return candidates.length > 0 ? Math.max(...candidates) : null;
 }
 
 export function planTimelineYears({
@@ -24,7 +39,9 @@ export function planTimelineYears({
   commencementYear: number;
   extensionYears?: number;
 }): PlanTimelineYear[] {
-  const duration = nominalDegreeDuration(degree) + Math.max(0, extensionYears);
+  const nominalDuration = nominalProgrammeDuration(degree);
+  if (nominalDuration === null) return [];
+  const duration = nominalDuration + Math.max(0, extensionYears);
   return Array.from({ length: duration }, (_, index) => ({
     studyYear: index + 1,
     year: commencementYear + index,

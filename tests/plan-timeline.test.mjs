@@ -24,7 +24,8 @@ async function loadTimeline() {
   return import(pathToFileURL(target).href);
 }
 
-const { planTimelineTerms, planTimelineYears } = await loadTimeline();
+const { nominalProgrammeDuration, planTimelineTerms, planTimelineYears } =
+  await loadTimeline();
 
 test("creates each nominal degree year even when future calendar periods are absent", () => {
   const years = planTimelineYears({
@@ -74,10 +75,31 @@ test("creates each nominal degree year even when future calendar periods are abs
 
 test("extends the timeline after the nominal degree duration", () => {
   const years = planTimelineYears({
-    degree: { duration: 0, units: 144 },
+    degree: { duration: null, units: 144 },
     commencementYear: 2026,
     extensionYears: 2,
   });
   assert.equal(years.length, 5);
   assert.deepEqual(years.at(-1), { studyYear: 5, year: 2030 });
+});
+
+test("does not invent a one-year timeline when planning data is absent", () => {
+  assert.equal(nominalProgrammeDuration({ duration: null, units: null }), null);
+  assert.deepEqual(
+    planTimelineYears({
+      degree: { duration: null, units: null },
+      commencementYear: 2026,
+      extensionYears: 4,
+    }),
+    [],
+  );
+  assert.deepEqual(
+    planTimelineYears({ degree: undefined, commencementYear: 2026 }),
+    [],
+  );
+});
+
+test("derives a planning duration from units without replacing source data", () => {
+  assert.equal(nominalProgrammeDuration({ duration: null, units: 144 }), 3);
+  assert.equal(nominalProgrammeDuration({ duration: 4, units: null }), 4);
 });

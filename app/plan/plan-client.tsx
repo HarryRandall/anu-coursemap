@@ -20,6 +20,7 @@ import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { CourseDrawer, CoursePicker } from "@/components/overlays";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/overlay";
 import type { Attempt, Course, Term } from "@/lib/coursemap/types";
@@ -75,7 +76,7 @@ function StatusMark({
 }
 
 function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
-  const { state, reorderAttempt, notify } = useCoursemap();
+  const { demoMode, state, reorderAttempt, notify } = useCoursemap();
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [overloadTerm, setOverloadTerm] = useState<string | null>(null);
   const [pendingDrop, setPendingDrop] = useState<PendingDrop | null>(null);
@@ -90,14 +91,20 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
   );
+  const timelineDegree =
+    degree ?? (demoMode ? catalogue.degrees[0] : undefined);
   const degreeYears = useMemo(
     () =>
       planTimelineYears({
-        degree,
+        degree: timelineDegree,
         commencementYear: state.profile.commencementYear,
         extensionYears: state.profile.extensionYears,
       }),
-    [degree, state.profile.commencementYear, state.profile.extensionYears],
+    [
+      state.profile.commencementYear,
+      state.profile.extensionYears,
+      timelineDegree,
+    ],
   );
   const timelineTerms = useMemo(
     () => planTimelineTerms({ terms: catalogue.terms, years: degreeYears }),
@@ -578,6 +585,19 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
 
   return (
     <AppShell>
+      {degree && (degree.duration === null || degree.units === null) ? (
+        <Alert className="mb-5" tone="warning">
+          <AlertTriangle aria-hidden="true" />
+          <AlertTitle>Programme planning data is incomplete</AlertTitle>
+          <AlertDescription>
+            {degreeYears.length === 0
+              ? "Programme duration and unit total are not recorded, so Coursemap cannot create a year-by-year timeline. Courses can remain in Later until an administrator publishes those details."
+              : degree.duration === null
+                ? `Programme duration is not recorded. This timeline is sized from its published ${degree.units} unit total.`
+                : "Programme unit total is not recorded. The published duration can still size this timeline, but completion progress is unavailable."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <section aria-label="Course plan" className="year-board">
         <div data-testid="roadmap-board" className="flex flex-col gap-5">
           {scheduledYears.map((yearGroup) => {

@@ -16,12 +16,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
 import { BrandMark } from "@/components/brand-mark";
+import { StructureMultiSelect } from "@/components/profile/structure-multi-select";
 import { cn } from "@/lib/cn";
 import { saveProfileAndPlan } from "@/lib/coursemap/actions";
 import type {
   OnboardingCatalogue,
   ProgrammeOption,
 } from "@/lib/coursemap/onboarding-catalogue";
+import { nominalProgrammeDuration } from "@/lib/coursemap/plan-timeline";
 
 type OnboardingFormProps = {
   catalogue: OnboardingCatalogue;
@@ -37,7 +39,12 @@ const steps = [
 type StepId = (typeof steps)[number]["id"];
 
 function yearsOfStudy(degree: ProgrammeOption | undefined) {
-  const duration = Math.max(1, Math.ceil(degree?.durationYears ?? 1));
+  const duration = nominalProgrammeDuration(
+    degree
+      ? { duration: degree.durationYears, units: degree.units }
+      : undefined,
+  );
+  if (duration === null) return [];
   return Array.from({ length: duration }, (_, index) => index + 1);
 }
 
@@ -56,6 +63,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
   );
   const [degreeCode, setDegreeCode] = useState(degrees[0]?.code ?? "");
   const [majorCode, setMajorCode] = useState("");
+  const [minorCodes, setMinorCodes] = useState<string[]>([]);
+  const [specialisationCodes, setSpecialisationCodes] = useState<string[]>([]);
   const [yearOfStudy, setYearOfStudy] = useState(1);
   const [studyLoad, setStudyLoad] = useState<"Full time" | "Part time">(
     "Full time",
@@ -77,7 +86,28 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       ),
     [catalogue.majors, catalogueYear, degree?.majorCodes],
   );
+  const minors = useMemo(
+    () =>
+      catalogue.minors.filter(
+        (item) =>
+          item.catalogueYear === catalogueYear &&
+          (degree?.minorCodes.length ?? 0) > 0 &&
+          degree?.minorCodes.includes(item.code),
+      ),
+    [catalogue.minors, catalogueYear, degree?.minorCodes],
+  );
+  const specialisations = useMemo(
+    () =>
+      catalogue.specialisations.filter(
+        (item) =>
+          item.catalogueYear === catalogueYear &&
+          (degree?.specialisationCodes.length ?? 0) > 0 &&
+          degree?.specialisationCodes.includes(item.code),
+      ),
+    [catalogue.specialisations, catalogueYear, degree?.specialisationCodes],
+  );
   const studyYears = yearsOfStudy(degree);
+  const planningDurationAvailable = studyYears.length > 0;
   const major = majors.find((item) => item.code === majorCode);
 
   const stepIndex = steps.findIndex((step) => step.id === stepId);
@@ -111,6 +141,12 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       setMessage("Choose a published degree and add your name to continue.");
       return;
     }
+    if (!planningDurationAvailable) {
+      setMessage(
+        "This programme does not have duration or unit information recorded yet, so Coursemap cannot create its timeline.",
+      );
+      return;
+    }
     setSubmitting(true);
     setMessage(null);
     const result = await saveProfileAndPlan({
@@ -121,6 +157,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       commencementYear: catalogueYear - (yearOfStudy - 1),
       degreeCode,
       majorCode,
+      minorCodes,
+      specialisationCodes,
       studyLoad,
       extensionYears: 0,
     });
@@ -254,6 +292,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                         setCatalogueYear(nextYear);
                         setDegreeCode(nextDegree?.code ?? "");
                         setMajorCode("");
+                        setMinorCodes([]);
+                        setSpecialisationCodes([]);
                         setYearOfStudy(1);
                       }}
                       options={catalogue.catalogueYears.map((item) => ({
@@ -270,6 +310,8 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                       onChange={(value) => {
                         setDegreeCode(value);
                         setMajorCode("");
+                        setMinorCodes([]);
+                        setSpecialisationCodes([]);
                         setYearOfStudy(1);
                       }}
                       options={degrees.map((item) => ({
@@ -297,6 +339,24 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                       value={majorCode}
                     />
                   </Field>
+                  {minors.length > 0 ? (
+                    <StructureMultiSelect
+                      hint="Optional. Select every minor you want included in this plan."
+                      label="Minors"
+                      onChange={setMinorCodes}
+                      options={minors}
+                      value={minorCodes}
+                    />
+                  ) : null}
+                  {specialisations.length > 0 ? (
+                    <StructureMultiSelect
+                      hint="Optional. Select every specialisation you want included in this plan."
+                      label="Specialisations"
+                      onChange={setSpecialisationCodes}
+                      options={specialisations}
+                      value={specialisationCodes}
+                    />
+                  ) : null}
                 </fieldset>
               )}
 
@@ -310,6 +370,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                       <Select
                         aria-label="Year of study"
                         className="min-h-11"
+                        disabled={!planningDurationAvailable}
                         onChange={setYearOfStudy}
                         options={studyYears.map((year) => ({
                           value: year,
@@ -334,6 +395,19 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     </Field>
                   </div>
 
+                  {degree?.durationYears === null || degree?.units === null ? (
+                    <Alert tone="warning">
+                      <TriangleAlert aria-hidden="true" />
+                      <AlertDescription>
+                        {!planningDurationAvailable
+                          ? "Programme duration and unit total are not recorded. An administrator must publish at least one before a year-by-year plan can be created."
+                          : degree.durationYears === null
+                            ? `Programme duration is not recorded. Coursemap is using the published ${degree.units} unit total to size the planning timeline.`
+                            : "Programme unit total is not recorded. Coursemap can build the timeline from its published duration, but unit progress will remain unavailable."}
+                      </AlertDescription>
+                    </Alert>
+                  ) : null}
+
                   <div className="rounded-2xl bg-zinc-50 p-4 ring-1 ring-zinc-100">
                     <p className="text-xs font-bold tracking-wider text-zinc-400 uppercase">
                       Your plan
@@ -357,6 +431,36 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                           {major ? major.name : "Choose later"}
                         </dd>
                       </div>
+                      {minors.length > 0 ? (
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-zinc-500">Minors</dt>
+                          <dd className="text-right font-medium text-zinc-900">
+                            {minorCodes.length > 0
+                              ? minors
+                                  .filter((item) =>
+                                    minorCodes.includes(item.code),
+                                  )
+                                  .map((item) => item.name)
+                                  .join(", ")
+                              : "Choose later"}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {specialisations.length > 0 ? (
+                        <div className="flex justify-between gap-4">
+                          <dt className="text-zinc-500">Specialisations</dt>
+                          <dd className="text-right font-medium text-zinc-900">
+                            {specialisationCodes.length > 0
+                              ? specialisations
+                                  .filter((item) =>
+                                    specialisationCodes.includes(item.code),
+                                  )
+                                  .map((item) => item.name)
+                                  .join(", ")
+                              : "Choose later"}
+                          </dd>
+                        </div>
+                      ) : null}
                       <div className="flex justify-between gap-4">
                         <dt className="text-zinc-500">Rules year</dt>
                         <dd className="font-medium text-zinc-900">
@@ -366,7 +470,9 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                       <div className="flex justify-between gap-4">
                         <dt className="text-zinc-500">Load</dt>
                         <dd className="font-medium text-zinc-900">
-                          Year {yearOfStudy} · {studyLoad}
+                          {planningDurationAvailable
+                            ? `Year ${yearOfStudy} · ${studyLoad}`
+                            : `Study year not available · ${studyLoad}`}
                         </dd>
                       </div>
                     </dl>
@@ -396,7 +502,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     type="submit"
                     variant="primary"
                     className="min-h-11 !rounded-xl px-6"
-                    disabled={submitting}
+                    disabled={submitting || !planningDurationAvailable}
                   >
                     {submitting ? "Saving your plan…" : "Create my plan"}
                   </Button>
