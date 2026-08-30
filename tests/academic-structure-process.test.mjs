@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ACADEMIC_STRUCTURE_EXTRACTION_SCHEMA_VERSION } from "../lib/structure-import/contract.ts";
+import {
+  ACADEMIC_STRUCTURE_EXTRACTION_SCHEMA_VERSION,
+  validateAcademicStructureExtraction,
+} from "../lib/structure-import/contract.ts";
 import {
   OpenRouterConfigurationError,
   OpenRouterRequestError,
@@ -406,6 +409,57 @@ test("clears redundant free text from typed model conditions without changing th
     condition.freeText,
   );
   assert.match(normalised.normalisations[0], /freeText was cleared/);
+});
+
+test("normalises subject-scoped level rules without discarding constraints", () => {
+  const response = extraction();
+  response.requirements.rule.children.push({
+    type: "condition",
+    key: "comp_3k_4k",
+    conditionKind: "level",
+    minimumUnits: 24,
+    maximumUnits: null,
+    minimumCourses: null,
+    courseCodes: [],
+    structureKind: null,
+    structureCodes: [],
+    subjectCode: "COMP",
+    minimumLevel: 3000,
+    maximumLevel: 4000,
+    tag: null,
+    freeText: null,
+    sourceText:
+      "A minimum of 24 units must come from completion of 3000 and 4000-level COMP courses",
+    sourceLocator: "Program Requirements",
+  });
+
+  const normalised =
+    academicStructureImportTargetInternals.normaliseAcademicStructureModelExtraction(
+      response,
+    );
+  const condition = normalised.value.requirements.rule.children[1];
+
+  assert.equal(condition.conditionKind, "subject");
+  assert.equal(condition.subjectCode, "COMP");
+  assert.equal(condition.minimumLevel, 3000);
+  assert.equal(condition.maximumLevel, 4000);
+  assert.equal(condition.minimumUnits, 24);
+  assert.equal(response.requirements.rule.children[1].conditionKind, "level");
+  assert.match(
+    normalised.normalisations[0],
+    /\$\.requirements\.rule\.children\.1\.conditionKind was changed from level to subject/u,
+  );
+
+  const validation = validateAcademicStructureExtraction(normalised.value, {
+    expectedKind: "programme",
+    expectedCode: "BCOMP",
+    expectedYear: 2026,
+  });
+  assert.equal(
+    validation.success,
+    true,
+    validation.success ? undefined : JSON.stringify(validation.issues),
+  );
 });
 
 test("wraps a valid root condition so relational persistence has one root group", () => {

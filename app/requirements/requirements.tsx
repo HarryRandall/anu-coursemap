@@ -69,6 +69,20 @@ function groupInstruction(group: PlanRequirementGroup) {
   return "Complete every item";
 }
 
+function levelCourseDescription(
+  minimumLevel: number | null,
+  maximumLevel: number | null,
+) {
+  if (minimumLevel !== null && maximumLevel !== null) {
+    return minimumLevel === maximumLevel
+      ? `${minimumLevel} level courses`
+      : `${minimumLevel} to ${maximumLevel} level courses`;
+  }
+  if (minimumLevel !== null) return `${minimumLevel} level courses or above`;
+  if (maximumLevel !== null) return `Courses up to ${maximumLevel} level`;
+  return null;
+}
+
 function conditionInterpretation(condition: PlanRequirementCondition) {
   const parts: string[] = [];
   if (condition.conditionKind === "unit_total") {
@@ -90,17 +104,21 @@ function conditionInterpretation(condition: PlanRequirementCondition) {
         : "Complete from the listed academic structures",
     );
   } else if (condition.conditionKind === "subject" && condition.subjectCode) {
-    parts.push(`${condition.subjectCode} coded courses`);
+    const levels = levelCourseDescription(
+      condition.minimumLevel,
+      condition.maximumLevel,
+    );
+    parts.push(
+      levels
+        ? `${condition.subjectCode} ${levels.toLowerCase()}`
+        : `${condition.subjectCode} coded courses`,
+    );
   } else if (condition.conditionKind === "level") {
-    if (condition.minimumLevel !== null && condition.maximumLevel !== null) {
-      parts.push(
-        `${condition.minimumLevel} to ${condition.maximumLevel} level courses`,
-      );
-    } else if (condition.minimumLevel !== null) {
-      parts.push(`${condition.minimumLevel} level courses or above`);
-    } else if (condition.maximumLevel !== null) {
-      parts.push(`Courses up to ${condition.maximumLevel} level`);
-    }
+    const levels = levelCourseDescription(
+      condition.minimumLevel,
+      condition.maximumLevel,
+    );
+    if (levels) parts.push(levels);
   } else if (condition.conditionKind === "tag" && condition.tag) {
     parts.push(condition.tag);
   } else if (condition.conditionKind === "unrestricted") {

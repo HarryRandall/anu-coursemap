@@ -263,6 +263,17 @@ function normaliseAcademicStructureModelExtraction(value: unknown) {
     }
     if (
       record.type === "condition" &&
+      record.conditionKind === "level" &&
+      typeof record.subjectCode === "string" &&
+      record.subjectCode.trim() !== ""
+    ) {
+      record.conditionKind = "subject";
+      normalisations.push(
+        `${path}.conditionKind was changed from level to subject because the condition includes subjectCode.`,
+      );
+    }
+    if (
+      record.type === "condition" &&
       record.conditionKind !== "free_text" &&
       typeof record.freeText === "string"
     ) {

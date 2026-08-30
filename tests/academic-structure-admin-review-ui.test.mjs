@@ -26,6 +26,14 @@ const runDetailPath = new URL(
   "../components/admin/imports/academic-structure-import-run-detail.tsx",
   import.meta.url,
 );
+const programmeReviewPath = new URL(
+  "../app/admin/programmes/[id]/programme-review.tsx",
+  import.meta.url,
+);
+const requirementsViewPath = new URL(
+  "../app/requirements/requirements.tsx",
+  import.meta.url,
+);
 
 test("makes the pipeline the first and default structure review tab", async () => {
   const source = await readFile(targetReviewPath, "utf8");
@@ -111,4 +119,19 @@ test("renders JSON artefacts and database projections with the light viewer", as
   assert.match(source, /projectedAcademicStructureDatabaseTables\(parsed\)/);
   assert.match(source, /\/api\/admin\/academic-structure-imports\/artifacts\//);
   assert.doesNotMatch(source, /bg-black|bg-zinc-950/);
+});
+
+test("renders combined subject and level requirements without inflating levels", async () => {
+  const [programmeSource, requirementsSource] = await Promise.all([
+    readFile(programmeReviewPath, "utf8"),
+    readFile(requirementsViewPath, "utf8"),
+  ]);
+
+  assert.match(requirementsSource, /function levelCourseDescription/u);
+  assert.match(
+    requirementsSource,
+    /\$\{condition\.subjectCode\} \$\{levels\.toLowerCase\(\)\}/u,
+  );
+  assert.doesNotMatch(programmeSource, /minimumLevel\}00/u);
+  assert.doesNotMatch(programmeSource, /maximumLevel\}00/u);
 });

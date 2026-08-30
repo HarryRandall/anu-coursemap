@@ -85,9 +85,9 @@ function conditionText(condition: AdminStructureReviewCondition) {
 
   const level =
     condition.minimumLevel && condition.maximumLevel
-      ? `${condition.minimumLevel}00 to ${condition.maximumLevel}00 level `
+      ? `${condition.minimumLevel} to ${condition.maximumLevel} level `
       : condition.minimumLevel
-        ? `${condition.minimumLevel}00 level or above `
+        ? `${condition.minimumLevel} level or above `
         : "";
   const units = condition.minimumUnits
     ? `${condition.minimumUnits} units `
