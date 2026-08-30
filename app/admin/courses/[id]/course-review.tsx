@@ -21,6 +21,7 @@ import {
 import { CourseImportArtifactViewer } from "@/components/admin/imports/course-import-artifact-viewer";
 import {
   CourseSnapshotRuleEditor,
+  CourseSnapshotRuleViewer,
   type EditableRuleKind,
 } from "@/components/admin/course-snapshot-rule-editor";
 import {
@@ -35,8 +36,15 @@ import { AppShell } from "@/components/shell";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { JsonCode } from "@/components/ui/json-code";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -763,25 +771,6 @@ function RequisitePanel({
   projection: CourseSnapshotProjectionData;
 }) {
   const rules = projection.rules.filter((rule) => rule.ruleKind === kind);
-  const ruleKeys = new Set(rules.map((rule) => rule.key));
-  const relevantConditions = projection.ruleConditions.filter((condition) =>
-    ruleKeys.has(condition.ruleKey),
-  );
-  const tree = {
-    rules,
-    groups: projection.ruleGroups.filter((group) =>
-      ruleKeys.has(group.ruleKey),
-    ),
-    conditions: relevantConditions,
-    courseSets: projection.ruleConditionCourses.filter((member) =>
-      relevantConditions.some(
-        (condition) => condition.key === member.conditionKey,
-      ),
-    ),
-    courseReferences: projection.ruleCourseReferences.filter((reference) =>
-      ruleKeys.has(reference.ruleKey),
-    ),
-  };
   return (
     <Panel label={readable(kind)}>
       {editing ? (
@@ -813,12 +802,7 @@ function RequisitePanel({
               </div>
             ))}
           </div>
-          <details className="border-t border-zinc-200">
-            <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 sm:px-6">
-              Structured rule tree
-            </summary>
-            <JsonCode label={`${readable(kind)} rule tree`} value={tree} />
-          </details>
+          <CourseSnapshotRuleViewer kind={kind} projection={projection} />
           <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3 sm:px-6">
             <p className="text-xs text-zinc-500">
               Edit the source wording and complete relational tree together.
@@ -863,9 +847,8 @@ export function CourseReview({
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [confirmationNote, setConfirmationNote] = useState("");
-  const [confirmationAcknowledged, setConfirmationAcknowledged] =
-    useState(false);
   const [archiving, setArchiving] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
@@ -1020,7 +1003,6 @@ export function CourseReview({
     if (
       !projection ||
       record.currentSnapshotId === null ||
-      !confirmationAcknowledged ||
       !confirmationNote.trim()
     ) {
       return;
@@ -1041,7 +1023,7 @@ export function CourseReview({
       tone: result.ok ? "success" : "danger",
     });
     if (result.ok) {
-      setConfirmationAcknowledged(false);
+      setReviewDialogOpen(false);
       setConfirmationNote("");
       router.refresh();
     }
@@ -1096,6 +1078,15 @@ export function CourseReview({
               >
                 <ExternalLink aria-hidden="true" size={15} /> Student page
               </ButtonLink>
+            ) : null}
+            {needsExplicitConfirmation && isDraft && !viewingHistorical ? (
+              <Button
+                disabled={!canWrite || confirming}
+                onClick={() => setReviewDialogOpen(true)}
+                size="sm"
+              >
+                <CheckCircle2 aria-hidden="true" size={15} /> Confirm review
+              </Button>
             ) : null}
             {isDraft ? (
               <ConfirmDialog
@@ -1239,54 +1230,31 @@ export function CourseReview({
               </AlertDescription>
             </Alert>
           ) : null}
-          {needsExplicitConfirmation && isDraft && !viewingHistorical ? (
-            <Panel label="Explicit review confirmation">
-              <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
-                <h2 className="text-sm font-semibold text-zinc-950">
-                  Confirm the reviewed course
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">
-                  Saving edits does not clear import uncertainty. Compare the
-                  source and parsed result, resolve the exact blocking items
-                  below, then record why this snapshot is authoritative.
-                </p>
-              </div>
-              {record.blockingReviewItems.length > 0 ? (
-                <ul className="divide-y divide-zinc-100">
-                  {record.blockingReviewItems.map((item) => (
-                    <li className="px-5 py-3 sm:px-6" key={item.id}>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge tone="warning">
-                          {readable(item.importance)}
-                        </Badge>
-                        <span className="font-mono text-[11px] text-zinc-500">
-                          {item.field_path}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-sm text-zinc-800">
-                        {item.summary}
-                      </p>
-                      {item.source_excerpt ? (
-                        <p className="mt-1 border-l-2 border-zinc-200 pl-3 text-xs leading-5 text-zinc-500">
-                          {item.source_excerpt}
-                        </p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="px-5 py-3 text-xs text-zinc-500 sm:px-6">
-                  The snapshot is marked critically uncertain even though no
-                  individual blocking row remains.
-                </p>
-              )}
-              <div className="space-y-4 border-t border-zinc-200 px-5 py-4 sm:px-6">
+
+          <Dialog onOpenChange={setReviewDialogOpen} open={reviewDialogOpen}>
+            <DialogContent className="max-w-lg">
+              <div className="space-y-5 p-5 pr-14 sm:p-6 sm:pr-16">
+                <DialogHeader>
+                  <DialogTitle>Confirm course review</DialogTitle>
+                  <DialogDescription>
+                    Record the checks you made before clearing the remaining
+                    import uncertainty for {record.code} {record.year}.
+                  </DialogDescription>
+                </DialogHeader>
+                <Alert tone="warning">
+                  <CircleAlert aria-hidden="true" />
+                  <AlertDescription>
+                    {record.blockingReviewItems.length > 0
+                      ? `${record.blockingReviewItems.length} blocking review ${record.blockingReviewItems.length === 1 ? "item" : "items"} will be resolved.`
+                      : "This snapshot is marked critically uncertain."}
+                  </AlertDescription>
+                </Alert>
                 <Field
-                  hint="For example: checked course page, fees, offerings and prerequisite logic against the saved source."
+                  hint="For example: checked the source page, fees, offerings and prerequisite logic."
                   label="Confirmation note"
                 >
                   <Textarea
-                    className="min-h-24"
+                    className="min-h-28"
                     onChange={(event) =>
                       setConfirmationNote(event.target.value)
                     }
@@ -1294,36 +1262,25 @@ export function CourseReview({
                     value={confirmationNote}
                   />
                 </Field>
-                <label className="flex items-start gap-3 text-sm leading-5 text-zinc-700">
-                  <Checkbox
-                    checked={confirmationAcknowledged}
-                    onCheckedChange={(checked) =>
-                      setConfirmationAcknowledged(checked === true)
-                    }
-                  />
-                  <span>
-                    I checked the original source, the AI interpretation and
-                    every blocking item shown above.
-                  </span>
-                </label>
-                <div className="flex justify-end">
-                  <Button
-                    disabled={
-                      !canWrite ||
-                      confirming ||
-                      !confirmationAcknowledged ||
-                      !confirmationNote.trim()
-                    }
-                    onClick={() => void confirmReviewedSnapshot()}
-                    variant="primary"
-                  >
-                    <CheckCircle2 aria-hidden="true" size={15} />
-                    {confirming ? "Confirming..." : "Confirm reviewed snapshot"}
-                  </Button>
-                </div>
               </div>
-            </Panel>
-          ) : null}
+              <DialogFooter>
+                <Button
+                  disabled={confirming}
+                  onClick={() => setReviewDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!canWrite || confirming || !confirmationNote.trim()}
+                  onClick={() => void confirmReviewedSnapshot()}
+                  variant="primary"
+                >
+                  <CheckCircle2 aria-hidden="true" size={15} />
+                  {confirming ? "Confirming..." : "Confirm review"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <TabsContent className="mt-0" value="changes">
             <Panel label="Snapshot changes">

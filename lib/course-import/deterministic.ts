@@ -9,11 +9,16 @@ import {
   type CourseFee,
   type CourseOfferingClass,
   type CourseRelatedCourse,
+  type CourseRule,
   type CourseUnitValue,
   normaliseAnuClassSummaryUrl,
   parseCourseExtraction,
 } from "./contract.ts";
 import { validateAnuCoursePage } from "./source.ts";
+import {
+  parseRequisiteSummary,
+  type RequisiteExpression,
+} from "../coursemap/requisite-summary.ts";
 
 const MONTHS = new Map(
   [
@@ -407,6 +412,72 @@ function offeringClasses(
   return { observed: true, offerings, rejectedClassSummaryLinkCount };
 }
 
+function courseRuleFromExpression(
+  expression: RequisiteExpression,
+  courseMode: "completed" | "completed_or_concurrent",
+): CourseRule | null {
+  switch (expression.kind) {
+    case "course":
+      return { op: courseMode, courseCode: expression.code };
+    case "subject_units":
+      return {
+        op: "min_units_from_subject",
+        minimumUnits: expression.units,
+        subjectCode: expression.subject,
+      };
+    case "level_units":
+      if (expression.subject) return null;
+      return {
+        op: "min_units_at_level",
+        minimumUnits: expression.units,
+        level: expression.level,
+      };
+    case "units_total":
+      return {
+        op: "min_units_total",
+        minimumUnits: expression.units,
+      };
+    case "programme_enrolment":
+      return { op: "enrolled_in", programmeCode: expression.code };
+    case "group": {
+      const rules = expression.conditions.map((condition) =>
+        courseRuleFromExpression(condition, courseMode),
+      );
+      if (rules.some((rule) => rule === null)) return null;
+      return {
+        op: expression.operator === "all_of" ? "all_of" : "one_of",
+        rules: rules as CourseRule[],
+      };
+    }
+  }
+}
+
+function parseRuleText(
+  sourceText: string | null,
+  kind: "prerequisite" | "corequisite",
+) {
+  if (!sourceText) return null;
+  let parseable = sourceText.replace(
+    /^(?:pre-?requisites?|co-?requisites?)\s*:?\s*/iu,
+    "",
+  );
+  if (kind === "corequisite") {
+    parseable = parseable
+      .replace(/^(?:students?|you)\s+(?:must\s+)?(?:be\s+)?/iu, "")
+      .replace(
+        /^(?:must\s+)?(?:be\s+)?(?:concurrently enrolled in|enrolled concurrently in|complete or be concurrently enrolled in)\s+/iu,
+        "",
+      );
+  }
+  const expression = parseRequisiteSummary(parseable);
+  return expression
+    ? courseRuleFromExpression(
+        expression,
+        kind === "corequisite" ? "completed_or_concurrent" : "completed",
+      )
+    : null;
+}
+
 function requisiteDetails($: CheerioAPI) {
   const sourceNodes = sectionNodes(
     $,
@@ -466,12 +537,14 @@ function requisiteDetails($: CheerioAPI) {
       ),
     ),
   ];
+  const prerequisiteText = cleanText(prerequisite.join(" "));
+  const corequisiteText = cleanText(corequisite.join(" "));
   return {
-    prerequisiteText: cleanText(prerequisite.join(" ")),
-    corequisiteText: cleanText(corequisite.join(" ")),
+    prerequisiteText,
+    corequisiteText,
     incompatibilityText: cleanText([...hard, ...soft].join(" ")),
-    prerequisiteRule: null,
-    corequisiteRule: null,
+    prerequisiteRule: parseRuleText(prerequisiteText, "prerequisite"),
+    corequisiteRule: parseRuleText(corequisiteText, "corequisite"),
     incompatibilityCourseCodes: codes(hard),
     softIncompatibilityCourseCodes: codes(soft),
     unmodelledText: [],
@@ -691,11 +764,41 @@ export function extractDeterministicCourse({
     "#incompatibility",
     requisites.prerequisiteText,
   );
+  if (requisites.prerequisiteRule) {
+    addEvidence(
+      "requisites.prerequisiteRule",
+      "#incompatibility",
+      requisites.prerequisiteText,
+    );
+  } else if (requisites.prerequisiteText) {
+    reviewItems.push({
+      fieldKey: "requisites.prerequisiteRule",
+      kind: "ambiguous",
+      severity: "warning",
+      message:
+        "The prerequisite wording could not be safely converted into a rule tree. The original wording was preserved for review.",
+    });
+  }
   addEvidence(
     "requisites.corequisiteText",
     "#incompatibility",
     requisites.corequisiteText,
   );
+  if (requisites.corequisiteRule) {
+    addEvidence(
+      "requisites.corequisiteRule",
+      "#incompatibility",
+      requisites.corequisiteText,
+    );
+  } else if (requisites.corequisiteText) {
+    reviewItems.push({
+      fieldKey: "requisites.corequisiteRule",
+      kind: "ambiguous",
+      severity: "warning",
+      message:
+        "The corequisite wording could not be safely converted into a rule tree. The original wording was preserved for review.",
+    });
+  }
   addEvidence(
     "requisites.incompatibilityText",
     "#incompatibility",

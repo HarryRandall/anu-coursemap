@@ -44,7 +44,10 @@ export const KIND_OPTIONS = CONDITION_FAMILY_KINDS.map((kind) => ({
       units_total: "Total units",
       subject_units: "Subject units",
       level_units: "Level units",
+      course_set_units: "Courses worth units",
+      year_standing: "Year standing",
       gpa: "Grade average",
+      wam: "WAM",
       permission: "Permission",
       other: "Other wording",
     }[kind] ?? CONDITION_KIND_LABELS[kind],
@@ -296,6 +299,37 @@ function UnitsInput({
   );
 }
 
+function CourseCodesInput({
+  condition,
+  onChange,
+}: {
+  condition: ReviewedConditionNode;
+  onChange: (next: ReviewedConditionNode) => void;
+}) {
+  const [value, setValue] = useState(() =>
+    (condition.courseCodes ?? []).join(", "),
+  );
+  return (
+    <Input
+      aria-label="Course codes"
+      className={cn(
+        inlineControl,
+        "w-64 min-w-64 max-md:w-full max-md:min-w-0",
+      )}
+      onChange={(event) => {
+        const next = event.target.value.toUpperCase();
+        setValue(next);
+        onChange({
+          ...condition,
+          courseCodes: next.split(/[\s,;]+/u).filter(Boolean),
+        });
+      }}
+      placeholder="COMP1100, COMP1110"
+      value={value}
+    />
+  );
+}
+
 function CourseMarkInput({
   condition,
   onChange,
@@ -465,6 +499,45 @@ function InlineValueFields({
     );
   }
 
+  if (condition.kind === "course_set_units") {
+    return (
+      <>
+        <UnitsInput condition={condition} onChange={onChange} />
+        <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+          from
+        </span>
+        <CourseCodesInput condition={condition} onChange={onChange} />
+      </>
+    );
+  }
+
+  if (condition.kind === "year_standing") {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Input
+          aria-label="Minimum year standing"
+          className={cn(inlineControl, "w-20 min-w-20")}
+          max={10}
+          min={1}
+          onChange={(event) =>
+            onChange({
+              ...condition,
+              minimumYear:
+                event.target.value === "" ? null : Number(event.target.value),
+            })
+          }
+          placeholder="2"
+          step="1"
+          type="number"
+          value={condition.minimumYear ?? ""}
+        />
+        <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+          year
+        </span>
+      </span>
+    );
+  }
+
   if (condition.kind === "gpa") {
     return (
       <Input
@@ -479,6 +552,27 @@ function InlineValueFields({
         step="0.25"
         type="number"
         value={condition.gpa ?? ""}
+      />
+    );
+  }
+
+  if (condition.kind === "wam") {
+    return (
+      <Input
+        aria-label="Minimum WAM"
+        className={cn(inlineControl, "w-24 min-w-24")}
+        max={100}
+        min={0}
+        onChange={(event) =>
+          onChange({
+            ...condition,
+            wam: event.target.value === "" ? null : Number(event.target.value),
+          })
+        }
+        placeholder="65"
+        step="0.5"
+        type="number"
+        value={condition.wam ?? ""}
       />
     );
   }

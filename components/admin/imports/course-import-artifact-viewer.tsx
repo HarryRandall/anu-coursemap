@@ -2,11 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { FileCode2, LoaderCircle } from "lucide-react";
+import { CourseImportDatabaseRows } from "@/components/admin/imports/course-import-database-rows";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { JsonCode } from "@/components/ui/json-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CourseImportArtifact } from "@/lib/coursemap/admin-course-imports";
+import { projectedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
 
 const artefactOrder = [
   "raw_html",
@@ -30,17 +33,133 @@ const labels: Record<string, string> = {
   model_response: "Model response",
   validated_json: "Validated JSON",
   validation_report: "Validation",
-  database_projection: "Database projection",
-  change_set: "Change set",
+  database_projection: "Planned database rows",
+  change_set: "Persistence decision",
 };
 
-function displayContent(content: string, mediaType: string) {
-  if (mediaType !== "application/json") return content;
+function parseJson(content: string) {
   try {
-    return JSON.stringify(JSON.parse(content), null, 2);
+    return JSON.parse(content) as unknown;
   } catch {
-    return content;
+    return null;
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function yesNo(value: unknown) {
+  return value === true ? "Yes" : value === false ? "No" : "Not recorded";
+}
+
+function PersistenceDecision({ value }: { value: unknown }) {
+  if (!isRecord(value)) {
+    return <JsonCode label="Persistence decision" value={value} />;
+  }
+  const changeKind =
+    typeof value.changeKind === "string" ? value.changeKind : "unknown";
+  const decision =
+    changeKind === "new"
+      ? "Create a new candidate snapshot"
+      : changeKind === "changed"
+        ? "Create a changed candidate snapshot"
+        : changeKind === "unchanged"
+          ? "Reuse the existing saved course data"
+          : "Persistence decision not recorded";
+
+  return (
+    <div className="space-y-4 p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
+        <div>
+          <p className="text-xs font-medium text-zinc-500">Database action</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-950">{decision}</p>
+        </div>
+        <Badge tone={changeKind === "unchanged" ? "neutral" : "warning"}>
+          {changeKind.replaceAll("_", " ")}
+        </Badge>
+      </div>
+      <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <dt className="text-zinc-500">Compared snapshot</dt>
+          <dd className="mt-1 font-mono text-zinc-800">
+            {String(value.comparedSnapshotId ?? "None")}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">Candidate snapshot</dt>
+          <dd className="mt-1 font-mono text-zinc-800">
+            {String(value.candidateSnapshotId ?? "None")}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">Manual review required</dt>
+          <dd className="mt-1 text-zinc-800">
+            {yesNo(value.requiresManualReview)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-zinc-500">Course changed during import</dt>
+          <dd className="mt-1 text-zinc-800">
+            {yesNo(value.baselineChangedDuringImport)}
+          </dd>
+        </div>
+      </dl>
+      <details className="group rounded-lg border border-zinc-200 bg-white">
+        <summary className="cursor-pointer px-4 py-3 text-xs font-medium text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+          View complete persistence record
+        </summary>
+        <JsonCode label="Complete persistence decision" value={value} />
+      </details>
+    </div>
+  );
+}
+
+function ArtifactContent({
+  artifact,
+  content,
+}: {
+  artifact: CourseImportArtifact;
+  content: string;
+}) {
+  const parsed =
+    artifact.mediaType === "application/json" ? parseJson(content) : null;
+
+  if (artifact.kind === "database_projection" && parsed !== null) {
+    return (
+      <div className="space-y-4 bg-zinc-50/40 p-4 sm:p-5">
+        <p className="text-xs leading-5 text-zinc-600">
+          These are the destination tables and row shapes prepared by the
+          import. Angle-bracketed values are identifiers assigned when the
+          candidate is saved.
+        </p>
+        <CourseImportDatabaseRows
+          emptyLabel="0 rows"
+          tables={projectedCourseDatabaseTables(parsed)}
+        />
+      </div>
+    );
+  }
+  if (artifact.kind === "change_set" && parsed !== null) {
+    return <PersistenceDecision value={parsed} />;
+  }
+  if (parsed !== null) {
+    return (
+      <JsonCode
+        label={`${labels[artifact.kind] ?? artifact.kind} content`}
+        value={parsed}
+      />
+    );
+  }
+  return (
+    <pre
+      aria-label={`${labels[artifact.kind] ?? artifact.kind} content`}
+      className="max-h-[70vh] overflow-auto border-t border-zinc-200 bg-zinc-50/60 px-5 py-4 font-mono text-xs leading-5 whitespace-pre text-zinc-700 outline-none selection:bg-brand-100 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-inset"
+      tabIndex={0}
+    >
+      <code>{content}</code>
+    </pre>
+  );
 }
 
 export function CourseImportArtifactViewer({
@@ -98,7 +217,7 @@ export function CourseImportArtifactViewer({
         }
         setContent((current) => ({
           ...current,
-          [artifact.id]: displayContent(text, artifact.mediaType),
+          [artifact.id]: text,
         }));
       })
       .catch((reason: unknown) => {
@@ -190,13 +309,10 @@ export function CourseImportArtifactViewer({
                 Loading artefact...
               </div>
             ) : content[artifact.id] ? (
-              <pre
-                aria-label={`${labels[artifact.kind] ?? artifact.kind} content`}
-                className="max-h-[70vh] overflow-auto bg-zinc-950 px-4 py-4 font-mono text-xs leading-5 whitespace-pre text-zinc-100 outline-none selection:bg-brand-500/40 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-inset"
-                tabIndex={0}
-              >
-                <code>{content[artifact.id]}</code>
-              </pre>
+              <ArtifactContent
+                artifact={artifact}
+                content={content[artifact.id]}
+              />
             ) : (
               <div className="grid min-h-64 place-items-center">
                 <Button onClick={() => loadArtifact(artifact)}>

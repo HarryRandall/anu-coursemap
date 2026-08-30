@@ -49,14 +49,18 @@ const supportedConditionKinds = new Set([
   "units_total",
   "subject_units",
   "level_units",
+  "course_set_units",
+  "year_standing",
   "permission",
   "admission",
   "gpa",
+  "wam",
   "other",
 ]);
 
 function conditionFromProjection(
   condition: CourseSnapshotProjectionData["ruleConditions"][number],
+  courseCodes: string[],
 ): ReviewedConditionNode | null {
   if (!supportedConditionKinds.has(condition.conditionKind)) return null;
   const base = {
@@ -107,8 +111,23 @@ function conditionFromProjection(
         level: condition.minimumCourseLevel,
         subjectCode: condition.subjectCode,
       };
+    case "course_set_units":
+      return {
+        ...base,
+        kind: "course_set_units",
+        units: condition.minimumUnits,
+        courseCodes,
+      };
+    case "year_standing":
+      return {
+        ...base,
+        kind: "year_standing",
+        minimumYear: condition.minimumYear,
+      };
     case "gpa":
       return { ...base, kind: "gpa", gpa: condition.minimumGpa };
+    case "wam":
+      return { ...base, kind: "wam", wam: condition.minimumWam };
     case "permission":
       return { ...base, kind: "permission", freeText: condition.freeText };
     case "other":
@@ -152,7 +171,11 @@ function ruleTreeFromProjection(
       ...conditions
         .filter((condition) => condition.groupKey === group.key)
         .flatMap((condition) => {
-          const node = conditionFromProjection(condition);
+          const courseCodes = projection.ruleConditionCourses
+            .filter((member) => member.conditionKey === condition.key)
+            .sort((left, right) => left.position - right.position)
+            .map((member) => member.sourceCourseCode);
+          const node = conditionFromProjection(condition, courseCodes);
           return node ? [{ position: condition.position, node }] : [];
         }),
     ]
@@ -199,7 +222,8 @@ function conditionProjection(
     minimumUnits:
       condition.kind === "units_total" ||
       condition.kind === "subject_units" ||
-      condition.kind === "level_units"
+      condition.kind === "level_units" ||
+      condition.kind === "course_set_units"
         ? (condition.units ?? null)
         : null,
     minimumMark: condition.kind === "course" ? (condition.mark ?? null) : null,
@@ -214,8 +238,11 @@ function conditionProjection(
         ? condition.level + 999
         : null,
     minimumGpa: condition.kind === "gpa" ? (condition.gpa ?? null) : null,
-    minimumYear: null,
-    minimumWam: null,
+    minimumYear:
+      condition.kind === "year_standing"
+        ? (condition.minimumYear ?? null)
+        : null,
+    minimumWam: condition.kind === "wam" ? (condition.wam ?? null) : null,
     freeText:
       condition.kind === "admission" ||
       condition.kind === "permission" ||
@@ -296,6 +323,18 @@ export function applyRuleTreeToProjection({
         }),
       );
       if (child.courseCode) referencedCodes.add(child.courseCode);
+      if (child.kind === "course_set_units") {
+        const memberSourceText = conditionSourceText(child);
+        (child.courseCodes ?? []).forEach((courseCode, index) => {
+          next.ruleConditionCourses.push({
+            conditionKey,
+            position: index + 1,
+            sourceCourseCode: courseCode,
+            sourceText: memberSourceText,
+          });
+          referencedCodes.add(courseCode);
+        });
+      }
     });
   }
   visitGroup(tree, null, [], 0);
@@ -307,6 +346,71 @@ export function applyRuleTreeToProjection({
     })),
   );
   return parseCourseSnapshotProjection(next);
+}
+
+function RuleViews({
+  canEdit,
+  onChange,
+  tree,
+}: {
+  canEdit: boolean;
+  onChange: (tree: ReviewedRuleTree) => void;
+  tree: ReviewedRuleTree;
+}) {
+  const [view, setView] = useState<"tree" | "graph">("tree");
+  return (
+    <Tabs
+      onValueChange={(value) => setView(value === "graph" ? "graph" : "tree")}
+      value={view}
+    >
+      <TabsList aria-label="Condition view">
+        <TabsTrigger value="tree">List</TabsTrigger>
+        <TabsTrigger value="graph">Diagram</TabsTrigger>
+      </TabsList>
+      <TabsContent value="tree">
+        <RequisiteRuleTree canEdit={canEdit} onChange={onChange} tree={tree} />
+      </TabsContent>
+      <TabsContent value="graph">
+        <RequisiteRuleGraph canEdit={canEdit} onChange={onChange} tree={tree} />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function UnsupportedConditions({ kinds }: { kinds: string[] }) {
+  if (kinds.length === 0) return null;
+  return (
+    <Alert tone="warning">
+      <AlertDescription>
+        This rule contains unsupported conditions (
+        {[...new Set(kinds)].join(", ")}). They remain in the saved snapshot,
+        but cannot be changed in the visual editor.
+      </AlertDescription>
+    </Alert>
+  );
+}
+
+export function CourseSnapshotRuleViewer({
+  kind,
+  projection,
+}: {
+  kind: EditableRuleKind;
+  projection: CourseSnapshotProjectionData;
+}) {
+  const initial = useMemo(
+    () => ruleTreeFromProjection(projection, kind),
+    [kind, projection],
+  );
+  return (
+    <div className="space-y-4 px-5 pb-5 sm:px-6">
+      <UnsupportedConditions kinds={initial.unsupportedKinds} />
+      <RuleViews
+        canEdit={false}
+        onChange={() => undefined}
+        tree={initial.tree}
+      />
+    </div>
+  );
 }
 
 export function CourseSnapshotRuleEditor({
@@ -333,7 +437,6 @@ export function CourseSnapshotRuleEditor({
     existingRule?.hardness ??
       (kind === "assumed_knowledge" ? "advisory" : "hard"),
   );
-  const [view, setView] = useState<"tree" | "graph">("tree");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const expression = useMemo(
@@ -383,16 +486,7 @@ export function CourseSnapshotRuleEditor({
 
   return (
     <div className="space-y-4 px-5 py-5 sm:px-6">
-      {initial.unsupportedKinds.length > 0 ? (
-        <Alert tone="warning">
-          <AlertDescription>
-            This rule contains advanced conditions (
-            {[...new Set(initial.unsupportedKinds)].join(", ")}) that the visual
-            editor cannot change yet. Use All fields to preserve and edit the
-            full relational JSON.
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      <UnsupportedConditions kinds={initial.unsupportedKinds} />
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
         <Field label="Original ANU wording">
           <Textarea
@@ -425,29 +519,11 @@ export function CourseSnapshotRuleEditor({
         }}
       />
 
-      <Tabs
-        onValueChange={(value) => setView(value === "graph" ? "graph" : "tree")}
-        value={view}
-      >
-        <TabsList aria-label="Condition view">
-          <TabsTrigger value="tree">List</TabsTrigger>
-          <TabsTrigger value="graph">Diagram</TabsTrigger>
-        </TabsList>
-        <TabsContent value="tree">
-          <RequisiteRuleTree
-            canEdit={canEdit && initial.unsupportedKinds.length === 0}
-            onChange={setTree}
-            tree={tree}
-          />
-        </TabsContent>
-        <TabsContent value="graph">
-          <RequisiteRuleGraph
-            canEdit={canEdit && initial.unsupportedKinds.length === 0}
-            onChange={setTree}
-            tree={tree}
-          />
-        </TabsContent>
-      </Tabs>
+      <RuleViews
+        canEdit={canEdit && initial.unsupportedKinds.length === 0}
+        onChange={setTree}
+        tree={tree}
+      />
 
       {error ? (
         <Alert tone="danger">

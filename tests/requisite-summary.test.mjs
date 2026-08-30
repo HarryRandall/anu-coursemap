@@ -26,6 +26,13 @@ async function loadSummaryParser() {
 const { evaluateRequisiteExpression, parseRequisiteSummary } =
   await loadSummaryParser();
 
+test("strips a direct completed-course preamble", () => {
+  assert.deepEqual(parseRequisiteSummary("You must have completed MATH1005."), {
+    kind: "course",
+    code: "MATH1005",
+  });
+});
+
 test("summarises COMP3600 subject-unit and alternative-course requisites", () => {
   assert.deepEqual(
     parseRequisiteSummary(`

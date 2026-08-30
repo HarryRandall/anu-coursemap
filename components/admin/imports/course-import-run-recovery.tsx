@@ -24,8 +24,8 @@ export function CourseImportRunRecovery({ runId }: { runId: string }) {
   return (
     <div className="space-y-2">
       <ConfirmDialog
-        confirmLabel="Check stalled targets"
-        description="Only expired processing leases and queued targets without confirmed worker activity for at least 30 minutes are marked failed. Fresh dispatches and current workers are not interrupted."
+        confirmLabel="Check stalled courses"
+        description="Only courses with expired processing leases or no confirmed worker activity for at least 30 minutes are marked failed. Fresh dispatches and current workers are not interrupted."
         onConfirm={recover}
         title="Recover stalled import work?"
         trigger={

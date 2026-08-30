@@ -110,6 +110,10 @@ function stripPreamble(value: string) {
     .replace(
       /^to enrol in [A-Z]{4}\d{4}[A-Z]?,? (?:you|students) must\s+(?:have (?:successfully )?completed:?\s*)?/iu,
       "",
+    )
+    .replace(
+      /^(?:you|students) must (?:have )?(?:successfully )?completed:?\s*/iu,
+      "",
     );
 }
 

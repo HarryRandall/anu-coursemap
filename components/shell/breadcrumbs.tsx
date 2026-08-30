@@ -100,7 +100,10 @@ function fallbackLabel(segment: string) {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
+function buildCrumbs(
+  pathname: string,
+  segmentLabels: Record<string, string | null> = {},
+): { crumbs: Crumb[]; admin: boolean } {
   const segments = pathname.split("/").filter(Boolean);
   const admin = segments[0] === "admin";
   const crumbs: Crumb[] = [];
@@ -108,14 +111,17 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
 
   segments.forEach((segment, index) => {
     href += `/${segment}`;
+    if (segmentLabels[segment] === null) return;
     const isLast = index === segments.length - 1;
     const isAdminDashboard = admin && segment === "dashboard";
     const isAdminRooms = admin && segment === "rooms";
-    const label = isAdminDashboard
-      ? "Dashboard"
-      : isAdminRooms
-        ? "Indoor maps"
-        : (labels[segment] ?? fallbackLabel(segment));
+    const label =
+      segmentLabels[segment] ??
+      (isAdminDashboard
+        ? "Dashboard"
+        : isAdminRooms
+          ? "Indoor maps"
+          : (labels[segment] ?? fallbackLabel(segment)));
     const icon = isAdminDashboard
       ? LayoutDashboard
       : isAdminRooms
@@ -140,9 +146,16 @@ function buildCrumbs(pathname: string): { crumbs: Crumb[]; admin: boolean } {
   return { crumbs, admin };
 }
 
-export function Breadcrumbs({ currentLabel }: { currentLabel?: string }) {
+export function Breadcrumbs({
+  currentLabel,
+  segmentLabels,
+}: {
+  currentLabel?: string;
+  /** Relabels a route segment, or hides it when the value is null. */
+  segmentLabels?: Record<string, string | null>;
+}) {
   const pathname = usePathname();
-  const { crumbs } = buildCrumbs(pathname);
+  const { crumbs } = buildCrumbs(pathname, segmentLabels);
   const visibleCrumbs = currentLabel
     ? crumbs.map((crumb, index) =>
         index === crumbs.length - 1 ? { ...crumb, label: currentLabel } : crumb,

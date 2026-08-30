@@ -50,7 +50,10 @@ const CONDITION_ICONS: Record<ReviewedConditionKind, LucideIcon> = {
   units_total: Layers,
   subject_units: SquareStack,
   level_units: ChartNoAxesColumn,
+  course_set_units: SquareStack,
+  year_standing: GraduationCap,
   gpa: Gauge,
+  wam: Gauge,
   permission: KeyRound,
   other: FileText,
 };
