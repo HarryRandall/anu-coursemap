@@ -98,7 +98,11 @@ test("shows complete candidate relational areas and concrete database tables", a
   assert.match(rowsSource, /<ImportDatabaseRowTable/);
   assert.match(tableSource, /<TableCaption>/);
   assert.match(tableSource, /table\.columns\.map/);
-  assert.match(tableSource, /JSON\.stringify\(value, null, 2\)/);
+  assert.match(tableSource, /JSON\.stringify\(value\)/);
+  assert.match(tableSource, /className="h-12"/);
+  assert.match(tableSource, /max-w-\[28rem\]/);
+  assert.match(tableSource, /overflow-x-auto overflow-y-hidden/);
+  assert.match(tableSource, /whitespace-nowrap/);
 });
 
 test("uses numeric run numbers as visible identifiers", async () => {
@@ -118,6 +122,10 @@ test("renders JSON artefacts and database projections with the light viewer", as
   assert.match(source, /<JsonCode/);
   assert.match(source, /projectedAcademicStructureDatabaseTables\(parsed\)/);
   assert.match(source, /\/api\/admin\/academic-structure-imports\/artifacts\//);
+  assert.match(source, /const grouped = useMemo/);
+  assert.match(source, /<Select/);
+  assert.match(source, /Attempt \$\{artifact\.attemptNumber\}/);
+  assert.doesNotMatch(source, /` · attempt \$\{artifact\.attemptNumber\}`/);
   assert.doesNotMatch(source, /bg-black|bg-zinc-950/);
 });
 

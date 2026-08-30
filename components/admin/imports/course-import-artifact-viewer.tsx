@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { JsonCode } from "@/components/ui/json-code";
+import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CourseImportArtifact } from "@/lib/coursemap/admin-course-imports";
 import { projectedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
@@ -169,26 +170,48 @@ export function CourseImportArtifactViewer({
 }) {
   const ordered = useMemo(() => {
     return [...artifacts].sort((left, right) => {
-      const leftPosition = artefactOrder.indexOf(left.kind);
-      const rightPosition = artefactOrder.indexOf(right.kind);
+      const leftIndex = artefactOrder.indexOf(left.kind);
+      const rightIndex = artefactOrder.indexOf(right.kind);
+      const leftPosition = leftIndex === -1 ? artefactOrder.length : leftIndex;
+      const rightPosition =
+        rightIndex === -1 ? artefactOrder.length : rightIndex;
       if (leftPosition !== rightPosition) return leftPosition - rightPosition;
       return right.attemptNumber - left.attemptNumber;
     });
   }, [artifacts]);
-  const attemptCountByKind = useMemo(() => {
-    const counts = new Map<string, number>();
+  const grouped = useMemo(() => {
+    const groups = new Map<string, CourseImportArtifact[]>();
     for (const artifact of ordered) {
-      counts.set(artifact.kind, (counts.get(artifact.kind) ?? 0) + 1);
+      const group = groups.get(artifact.kind) ?? [];
+      group.push(artifact);
+      groups.set(artifact.kind, group);
     }
-    return counts;
+    return [...groups].map(([kind, attempts]) => ({ kind, attempts }));
   }, [ordered]);
-  const [active, setActive] = useState(ordered[0]?.id ?? "");
+  const [activeKind, setActiveKind] = useState(grouped[0]?.kind ?? "");
+  const [selectedAttempts, setSelectedAttempts] = useState<
+    Record<string, string>
+  >({});
   const [content, setContent] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const selected =
-    ordered.find((artifact) => artifact.id === active) ?? ordered[0] ?? null;
+  const selectedGroup =
+    grouped.find((group) => group.kind === activeKind) ?? grouped[0] ?? null;
+  const selected = selectedGroup
+    ? (selectedGroup.attempts.find(
+        (artifact) => artifact.id === selectedAttempts[selectedGroup.kind],
+      ) ?? selectedGroup.attempts[0])
+    : null;
+
+  function selectedArtifactForKind(kind: string) {
+    const group = grouped.find((candidate) => candidate.kind === kind);
+    return group
+      ? (group.attempts.find(
+          (artifact) => artifact.id === selectedAttempts[kind],
+        ) ?? group.attempts[0])
+      : null;
+  }
 
   function loadArtifact(artifact: CourseImportArtifact) {
     if (content[artifact.id] || loading.includes(artifact.id)) return;
@@ -256,50 +279,75 @@ export function CourseImportArtifactViewer({
   return (
     <Tabs
       onValueChange={(value) => {
-        setActive(value);
-        const artifact = ordered.find((candidate) => candidate.id === value);
+        setActiveKind(value);
+        const artifact = selectedArtifactForKind(value);
         if (artifact) loadArtifact(artifact);
       }}
-      value={selected?.id ?? ""}
+      value={selectedGroup?.kind ?? ""}
     >
       <div className="overflow-x-auto pb-1">
         <TabsList className="h-auto min-w-max">
-          {ordered.map((artifact) => (
+          {grouped.map((group) => (
             <TabsTrigger
-              key={artifact.id}
-              onFocus={() => loadArtifact(artifact)}
-              onPointerEnter={() => loadArtifact(artifact)}
-              value={artifact.id}
+              key={group.kind}
+              onFocus={() => {
+                const artifact = selectedArtifactForKind(group.kind);
+                if (artifact) loadArtifact(artifact);
+              }}
+              onPointerEnter={() => {
+                const artifact = selectedArtifactForKind(group.kind);
+                if (artifact) loadArtifact(artifact);
+              }}
+              value={group.kind}
             >
-              {labels[artifact.kind] ?? artifact.kind}
-              {(attemptCountByKind.get(artifact.kind) ?? 0) > 1
-                ? ` · attempt ${artifact.attemptNumber}`
-                : ""}
+              {labels[group.kind] ?? group.kind}
             </TabsTrigger>
           ))}
         </TabsList>
       </div>
-      {ordered.map((artifact) => (
-        <TabsContent key={artifact.id} value={artifact.id}>
+      {selected && selectedGroup ? (
+        <TabsContent key={selectedGroup.kind} value={selectedGroup.kind}>
           <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
             <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3 text-xs text-zinc-500">
-              <Badge tone="neutral">Attempt {artifact.attemptNumber}</Badge>
-              <span>{artifact.mediaType}</span>
+              {selectedGroup.attempts.length > 1 ? (
+                <Select
+                  aria-label={`Choose ${labels[selected.kind] ?? selected.kind} attempt`}
+                  className="w-40"
+                  onChange={(artifactId) => {
+                    setSelectedAttempts((current) => ({
+                      ...current,
+                      [selectedGroup.kind]: artifactId,
+                    }));
+                    const artifact = selectedGroup.attempts.find(
+                      (candidate) => candidate.id === artifactId,
+                    );
+                    if (artifact) loadArtifact(artifact);
+                  }}
+                  options={selectedGroup.attempts.map((artifact, index) => ({
+                    value: artifact.id,
+                    label: `Attempt ${artifact.attemptNumber}${index === 0 ? " (latest)" : ""}`,
+                  }))}
+                  value={selected.id}
+                />
+              ) : (
+                <Badge tone="neutral">Attempt {selected.attemptNumber}</Badge>
+              )}
+              <span>{selected.mediaType}</span>
               <span className="tabular-nums">
-                {artifact.byteSize.toLocaleString("en-AU")} bytes
+                {selected.byteSize.toLocaleString("en-AU")} bytes
               </span>
               <span
                 className="min-w-0 truncate font-mono"
-                title={artifact.contentSha256}
+                title={selected.contentSha256}
               >
-                sha256:{artifact.contentSha256.slice(0, 12)}
+                sha256:{selected.contentSha256.slice(0, 12)}
               </span>
             </div>
-            {errors[artifact.id] ? (
+            {errors[selected.id] ? (
               <Alert className="m-4" tone="danger">
-                <AlertDescription>{errors[artifact.id]}</AlertDescription>
+                <AlertDescription>{errors[selected.id]}</AlertDescription>
               </Alert>
-            ) : loading.includes(artifact.id) && !content[artifact.id] ? (
+            ) : loading.includes(selected.id) && !content[selected.id] ? (
               <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-zinc-500">
                 <LoaderCircle
                   aria-hidden="true"
@@ -308,21 +356,21 @@ export function CourseImportArtifactViewer({
                 />
                 Loading artefact...
               </div>
-            ) : content[artifact.id] ? (
+            ) : content[selected.id] ? (
               <ArtifactContent
-                artifact={artifact}
-                content={content[artifact.id]}
+                artifact={selected}
+                content={content[selected.id]}
               />
             ) : (
               <div className="grid min-h-64 place-items-center">
-                <Button onClick={() => loadArtifact(artifact)}>
-                  Load {labels[artifact.kind] ?? artifact.kind}
+                <Button onClick={() => loadArtifact(selected)}>
+                  Load {labels[selected.kind] ?? selected.kind}
                 </Button>
               </div>
             )}
           </section>
         </TabsContent>
-      ))}
+      ) : null}
     </Tabs>
   );
 }

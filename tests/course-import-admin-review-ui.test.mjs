@@ -98,6 +98,16 @@ test("uses light JSON artefacts and table-shaped database projections", async ()
   assert.match(tableSource, /<TableRow/);
   assert.match(tableSource, /<TableCell/);
   assert.match(tableSource, /normaliseImportDatabaseTable\(rows\)/);
+  assert.match(tableSource, /className="h-12"/);
+  assert.match(tableSource, /max-w-\[28rem\]/);
+  assert.match(tableSource, /overflow-x-auto overflow-y-hidden/);
+  assert.match(artifactSource, /const grouped = useMemo/);
+  assert.match(artifactSource, /<Select/);
+  assert.match(artifactSource, /Attempt \$\{artifact\.attemptNumber\}/);
+  assert.doesNotMatch(
+    artifactSource,
+    /` · attempt \$\{artifact\.attemptNumber\}`/,
+  );
   assert.doesNotMatch(artifactSource, /bg-black|bg-zinc-950/);
 });
 

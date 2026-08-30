@@ -410,7 +410,14 @@ export function extractDeterministicAcademicStructure({
   };
   const introduction = cleanText($("#introduction").first().text());
   const descriptionSource = metadata("description");
-  const description = visibleMetaDescription(descriptionSource);
+  const parsedDescription = visibleMetaDescription(descriptionSource);
+  const description =
+    introduction &&
+    parsedDescription?.localeCompare(introduction, undefined, {
+      sensitivity: "accent",
+    }) === 0
+      ? null
+      : parsedDescription;
   const shortNameSource = labelledSource("short-name", "short_name");
   const shortName = shortNameSource?.value ?? null;
   const durationSource = labelledSource(
