@@ -795,6 +795,7 @@ export function CourseDetailView({
               code={course.code}
               prerequisiteEdges={course.prerequisiteEdges}
               completedCodes={completedCodes}
+              hasPrerequisiteWording={hasPrerequisiteWording}
               plannedCodes={plannedCodes}
             />
           </CardContent>

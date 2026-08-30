@@ -33,10 +33,7 @@ async function loadModule() {
   await writeFile(summaryPath, compiledSummary);
   await writeFile(
     path,
-    compiled.replaceAll(
-      "@/lib/coursemap/requisite-summary",
-      "./requisite-summary.js",
-    ),
+    compiled.replaceAll("./requisite-summary.ts", "./requisite-summary.js"),
   );
   return import(pathToFileURL(path).href);
 }

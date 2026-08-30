@@ -21,7 +21,12 @@ import type {
 import { accentFor } from "@/lib/coursemap/course-accent";
 import { parseRequisiteSummary } from "./requisite-summary";
 import type { RequisiteExpression } from "./requisite-summary";
-import { prerequisiteCodesFromSnapshotProjection } from "./snapshot-prerequisite-codes";
+import {
+  type PrerequisiteFallbackDetail,
+  prerequisiteCodesFromSnapshotProjection,
+  prerequisiteEdgesWithSnapshotFallback,
+  resolvePrerequisiteFallbackDetails,
+} from "./snapshot-prerequisite-codes";
 
 const ANU_SOURCE_BASE_URL = "https://programsandcourses.anu.edu.au";
 const COURSE_CODE_PATTERN = /^[A-Z]{4}\d{4}[A-Z]?$/u;
@@ -218,8 +223,11 @@ function displayUnits(value: CourseUnitValue) {
 function readPrerequisiteEdges(value: Json | undefined) {
   return readArray(value).flatMap<CoursePrerequisiteEdge>((item) => {
     if (!isRecord(item)) return [];
-    const from = readString(item.from).toUpperCase();
-    const to = readString(item.to).toUpperCase();
+    const from = readString(
+      item.from,
+      readString(item.from_code),
+    ).toUpperCase();
+    const to = readString(item.to, readString(item.to_code)).toUpperCase();
     if (!COURSE_CODE_PATTERN.test(from) || !COURSE_CODE_PATTERN.test(to)) {
       return [];
     }
@@ -714,7 +722,10 @@ function readAssessments(root: { [key: string]: Json | undefined }) {
   });
 }
 
-function detailAsCourseDetails(value: Json): CourseDetails | null {
+function detailAsCourseDetails(
+  value: Json,
+  fallbackDetails: Readonly<Record<string, PrerequisiteFallbackDetail>> = {},
+): CourseDetails | null {
   if (!isRecord(value) || !isRecord(value.snapshot)) return null;
   const code = readString(
     value.code,
@@ -727,7 +738,12 @@ function detailAsCourseDetails(value: Json): CourseDetails | null {
   const snapshot = value.snapshot;
   const unitValue = readUnitValue(snapshot, value);
   const offerings = readOfferings(value.offeringSessions, academicYear);
-  const prerequisiteEdges = readPrerequisiteEdges(value.prerequisiteEdges);
+  const prerequisiteEdges = prerequisiteEdgesWithSnapshotFallback({
+    courseCode: code,
+    fallbackDetails,
+    projection: value,
+    storedEdges: readPrerequisiteEdges(value.prerequisiteEdges),
+  });
   const prerequisiteCodes = [
     ...new Set(
       [
@@ -1519,6 +1535,39 @@ type LooseRpcClient = {
   ) => Promise<{ data: Json | null; error: { message: string } | null }>;
 };
 
+async function loadPrerequisiteFallbackDetails(
+  client: LooseRpcClient,
+  projection: Json,
+  courseCode: string,
+  academicYear: number,
+) {
+  if (!isRecord(projection)) return {};
+  const storedEdges = readPrerequisiteEdges(projection.prerequisiteEdges);
+  return resolvePrerequisiteFallbackDetails({
+    courseCode,
+    projection,
+    storedEdges,
+    loadNode: async (prerequisiteCode) => {
+      const { data, error } = await client.rpc("published_course_detail", {
+        p_academic_year: academicYear,
+        p_course_code: prerequisiteCode,
+      });
+      if (error || !isRecord(data)) {
+        return {
+          isAvailable: false,
+          prerequisiteEdges: [],
+          projection: null,
+        };
+      }
+      return {
+        isAvailable: true,
+        prerequisiteEdges: readPrerequisiteEdges(data.prerequisiteEdges),
+        projection: data,
+      };
+    },
+  });
+}
+
 export async function loadPublishedCourse(
   code: string,
   academicYear: number,
@@ -1543,7 +1592,14 @@ export async function loadPublishedCourse(
         p_course_code: normalisedCode,
       });
       if (error) throw new Error(error.message);
-      return data ? detailAsCourseDetails(data) : null;
+      if (!data) return null;
+      const fallbackDetails = await loadPrerequisiteFallbackDetails(
+        client,
+        data,
+        normalisedCode,
+        academicYear,
+      );
+      return detailAsCourseDetails(data, fallbackDetails);
     },
     ["published-course-detail", String(academicYear), normalisedCode],
     {

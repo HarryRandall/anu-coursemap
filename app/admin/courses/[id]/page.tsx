@@ -4,6 +4,7 @@ import { canManageCourseImports, canWriteCourses } from "@/lib/auth/viewer";
 import { loadAdminCourseYear } from "@/lib/coursemap/admin-course-year";
 import { toStudentPreviewCourseYear } from "@/lib/coursemap/admin-course-preview";
 import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-courses";
+import { prerequisiteCodesFromSnapshotProjection } from "@/lib/coursemap/snapshot-prerequisite-codes";
 import { isDemoMode } from "@/lib/supabase/config";
 
 function first(value: string | string[] | undefined) {
@@ -63,9 +64,9 @@ export default async function AdminCourseDetailPage({
 
   const referenced = [
     ...new Set(
-      record.projection?.ruleCourseReferences.map(
-        (reference) => reference.referencedCourseCode,
-      ) ?? [],
+      record.projection
+        ? prerequisiteCodesFromSnapshotProjection(record.projection)
+        : [],
     ),
   ].filter((code) => code !== record.code);
   let publishedCourseCodes: string[] = [];

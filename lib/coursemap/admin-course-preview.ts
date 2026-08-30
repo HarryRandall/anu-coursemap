@@ -2,6 +2,7 @@ import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";
 import { accentFor } from "@/lib/coursemap/course-accent";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import { parseRequisiteSummary } from "@/lib/coursemap/requisite-summary";
+import { prerequisiteCodesFromSnapshotProjection } from "@/lib/coursemap/snapshot-prerequisite-codes";
 
 export function toStudentPreviewCourseYear(
   record: AdminCourseYearRecord,
@@ -24,13 +25,9 @@ export function toStudentPreviewCourseYear(
     .map((rule) => rule.sourceText.trim())
     .filter(Boolean)
     .join("\n\n");
-  const prerequisiteCodes = [
-    ...new Set(
-      projection.ruleCourseReferences
-        .filter((reference) => reference.ruleKey === "prerequisite")
-        .map((reference) => reference.referencedCourseCode),
-    ),
-  ].filter((code) => code !== record.code);
+  const prerequisiteCodes = prerequisiteCodesFromSnapshotProjection(
+    projection,
+  ).filter((code) => code !== record.code);
   const published = new Set(
     publishedCourseCodes.map((code) => code.toUpperCase()),
   );
