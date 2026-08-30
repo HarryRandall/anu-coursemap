@@ -1590,10 +1590,9 @@ export function CourseReview({
                 </div>
               </Tabs>
             ) : (
-              <Panel label="Student preview">
+              <Panel label="Course preview">
                 <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
-                  A snapshot is required before the student preview is
-                  available.
+                  A snapshot is required before the course preview is available.
                 </p>
               </Panel>
             )}

@@ -47,7 +47,7 @@ function configuredImportDatabaseUrl() {
 }
 
 export async function createCourseImportDatabaseClient() {
-  return isDemoMode()
+  return isDemoMode() || process.env.NODE_ENV === "development"
     ? createLocalDatabaseClient()
     : createHostedImportDatabaseClient(configuredImportDatabaseUrl());
 }

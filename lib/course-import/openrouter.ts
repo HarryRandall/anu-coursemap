@@ -37,6 +37,7 @@ type OpenRouterResponse = {
   id?: unknown;
   model?: unknown;
   created?: unknown;
+  openrouter_metadata?: unknown;
   choices?: Array<{
     finish_reason?: unknown;
     message?: {
@@ -44,6 +45,21 @@ type OpenRouterResponse = {
     };
   }>;
   usage?: OpenRouterUsage | null;
+};
+
+export type OpenRouterRouterMetadata = {
+  requested: string | null;
+  strategy: string | null;
+  region: string | null;
+  summary: string | null;
+  attempt: number | null;
+  isByok: boolean | null;
+  selectedProvider: string | null;
+  attempts: Array<{
+    provider: string | null;
+    model: string | null;
+    status: number | null;
+  }>;
 };
 
 export type OpenRouterCourseExtraction = {
@@ -55,6 +71,7 @@ export type OpenRouterCourseExtraction = {
   parsed: unknown;
   responseError: string | null;
   latencyMilliseconds: number;
+  routerMetadata: OpenRouterRouterMetadata | null;
   usage: {
     inputTokens: number | null;
     outputTokens: number | null;
@@ -71,6 +88,7 @@ export type OpenRouterCourseExtraction = {
     content: string | null;
     responseError: string | null;
     rawResponseText: string | null;
+    routerMetadata: OpenRouterRouterMetadata | null;
     usage: OpenRouterCourseExtraction["usage"];
     latencyMilliseconds: number;
   };
@@ -107,6 +125,77 @@ function nonNegativeInteger(value: unknown) {
   return number !== null && Number.isInteger(number) && number >= 0
     ? number
     : null;
+}
+
+function boundedMetadataText(value: unknown, maximumLength = 500) {
+  if (typeof value !== "string") return null;
+  const text = value.replace(/\s+/gu, " ").trim();
+  return text ? text.slice(0, maximumLength) : null;
+}
+
+function routerMetadata(value: unknown): OpenRouterRouterMetadata | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return null;
+  }
+  const metadata = value as Record<string, unknown>;
+  const endpoints =
+    typeof metadata.endpoints === "object" &&
+    metadata.endpoints !== null &&
+    !Array.isArray(metadata.endpoints)
+      ? (metadata.endpoints as Record<string, unknown>)
+      : null;
+  const available = Array.isArray(endpoints?.available)
+    ? endpoints.available.slice(0, 32)
+    : [];
+  const selectedProvider = available.find(
+    (endpoint) =>
+      typeof endpoint === "object" &&
+      endpoint !== null &&
+      !Array.isArray(endpoint) &&
+      (endpoint as Record<string, unknown>).selected === true,
+  );
+  const selectedProviderName =
+    boundedMetadataText(metadata.selectedProvider, 120) ??
+    (typeof selectedProvider === "object" && selectedProvider !== null
+      ? boundedMetadataText(
+          (selectedProvider as Record<string, unknown>).provider,
+          120,
+        )
+      : null);
+  const attempts = Array.isArray(metadata.attempts)
+    ? metadata.attempts.slice(0, 16).flatMap((attempt) => {
+        if (
+          typeof attempt !== "object" ||
+          attempt === null ||
+          Array.isArray(attempt)
+        ) {
+          return [];
+        }
+        const record = attempt as Record<string, unknown>;
+        return [
+          {
+            provider: boundedMetadataText(record.provider, 120),
+            model: boundedMetadataText(record.model, 200),
+            status: nonNegativeInteger(record.status),
+          },
+        ];
+      })
+    : [];
+  return {
+    requested: boundedMetadataText(metadata.requested, 200),
+    strategy: boundedMetadataText(metadata.strategy, 80),
+    region: boundedMetadataText(metadata.region, 80),
+    summary: boundedMetadataText(metadata.summary),
+    attempt: nonNegativeInteger(metadata.attempt),
+    isByok:
+      typeof metadata.is_byok === "boolean"
+        ? metadata.is_byok
+        : typeof metadata.isByok === "boolean"
+          ? metadata.isByok
+          : null,
+    selectedProvider: selectedProviderName,
+    attempts,
+  };
 }
 
 export function configuredOpenRouterModels(
@@ -248,6 +337,7 @@ export function restoreOpenRouterCourseExtraction(
       : null;
   const rawResponseText =
     typeof audit.rawResponseText === "string" ? audit.rawResponseText : null;
+  const restoredRouterMetadata = routerMetadata(audit.routerMetadata);
   const latencyMilliseconds = auditNullableNumber(
     audit.latencyMilliseconds,
     "latency",
@@ -267,6 +357,7 @@ export function restoreOpenRouterCourseExtraction(
     parsed: structured.parsed,
     responseError: responseError ?? structured.responseError,
     latencyMilliseconds,
+    routerMetadata: restoredRouterMetadata,
     usage: {
       inputTokens: auditNullableNumber(usage.inputTokens, "input tokens"),
       outputTokens: auditNullableNumber(usage.outputTokens, "output tokens"),
@@ -284,6 +375,7 @@ export function restoreOpenRouterCourseExtraction(
     responseForAudit: {
       ...(audit as OpenRouterCourseExtraction["responseForAudit"]),
       rawResponseText,
+      routerMetadata: restoredRouterMetadata,
     },
   };
 }
@@ -438,6 +530,9 @@ export async function extractCourseWithOpenRouter({
     0,
     Math.round(performance.now() - startedAt),
   );
+  const parsedRouterMetadata = routerMetadata(
+    parsedResponse.openrouter_metadata,
+  );
 
   return {
     generationId,
@@ -448,6 +543,7 @@ export async function extractCourseWithOpenRouter({
     parsed: structured.parsed,
     responseError,
     latencyMilliseconds,
+    routerMetadata: parsedRouterMetadata,
     usage: resultUsage,
     responseForAudit: {
       id: generationId,
@@ -457,6 +553,7 @@ export async function extractCourseWithOpenRouter({
       content,
       responseError,
       rawResponseText: responseWasJson ? null : responseText.slice(0, 16_000),
+      routerMetadata: parsedRouterMetadata,
       usage: resultUsage,
       latencyMilliseconds,
     },

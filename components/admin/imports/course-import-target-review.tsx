@@ -469,7 +469,7 @@ export function CourseImportTargetReview({
       }
       admin
       breadcrumbSegmentLabels={{
-        [detail.run.id]: `${detail.run.academicYear} course run`,
+        [detail.run.id]: `Run #${detail.run.runNumber}`,
         targets: null,
       }}
       currentBreadcrumbLabel={detail.target.courseCode}
@@ -482,6 +482,7 @@ export function CourseImportTargetReview({
           <span className="font-mono text-lg font-semibold text-zinc-950">
             {detail.target.courseCode}
           </span>
+          <Badge tone="neutral">Run #{detail.run.runNumber}</Badge>
           <Badge tone="neutral">{detail.run.academicYear}</Badge>
           <Badge tone={statusTone(detail.target.processingStatus)}>
             {readable(detail.target.processingStatus)}
@@ -545,7 +546,7 @@ export function CourseImportTargetReview({
               <TabsTrigger value="changes">Review</TabsTrigger>
               <TabsTrigger value="source">Source and artefacts</TabsTrigger>
               <TabsTrigger value="database">Database rows</TabsTrigger>
-              <TabsTrigger value="preview">Student preview</TabsTrigger>
+              <TabsTrigger value="preview">Course preview</TabsTrigger>
             </TabsList>
           </div>
 
@@ -632,9 +633,9 @@ export function CourseImportTargetReview({
               <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
                 <Alert className="m-4" tone="neutral">
                   <AlertDescription>
-                    This is the full student course view using the candidate
-                    data. Planning actions are disabled and nothing is published
-                    from this tab.
+                    This is the full student-facing course view using the
+                    candidate data. Planning actions are disabled and nothing is
+                    published from this tab.
                   </AlertDescription>
                 </Alert>
                 <Tabs className="gap-0" defaultValue="overview">

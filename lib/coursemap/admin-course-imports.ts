@@ -74,6 +74,7 @@ export type CourseDirectoryPage = {
 
 export type CourseImportRunSummary = {
   id: string;
+  runNumber: number;
   academicYear: number;
   status: string;
   requestedModel: string;
@@ -168,6 +169,7 @@ export type CourseImportReviewItem = {
 export type CourseImportTargetDetail = {
   run: {
     id: string;
+    runNumber: number;
     academicYear: number;
     status: string;
     requestedModel: string;
@@ -444,6 +446,7 @@ function runSummary(
 ): CourseImportRunSummary {
   return {
     id: run.id,
+    runNumber: run.run_number,
     academicYear,
     status: run.status,
     requestedModel: run.requested_model,
@@ -825,7 +828,7 @@ export async function loadCourseImportTargetDetail({
   ] = await Promise.all([
     supabase
       .from("course_import_runs")
-      .select("id,status,requested_model")
+      .select("id,run_number,status,requested_model")
       .eq("id", runId)
       .single(),
     supabase
@@ -979,6 +982,7 @@ export async function loadCourseImportTargetDetail({
   return {
     run: {
       id: runResult.data!.id,
+      runNumber: runResult.data!.run_number,
       academicYear: yearResult.data!.year,
       status: runResult.data!.status,
       requestedModel: runResult.data!.requested_model,

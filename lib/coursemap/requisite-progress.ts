@@ -105,22 +105,24 @@ async function loadEnrolledProgrammeCodes(
 
   const { data: planStructures, error: planStructuresError } = await supabase
     .from("plan_structures")
-    .select("structure_version_id")
+    .select("structure_year_id")
     .eq("plan_id", plan.id)
     .eq("role", "programme");
   if (planStructuresError) return [];
-  const versionIds = (planStructures ?? []).map(
-    (row) => row.structure_version_id,
+  const structureYearIds = (planStructures ?? []).map(
+    (row) => row.structure_year_id,
   );
-  if (versionIds.length === 0) return [];
+  if (structureYearIds.length === 0) return [];
 
-  const { data: versions, error: versionsError } = await supabase
-    .from("academic_structure_versions")
+  const { data: structureYears, error: structureYearsError } = await supabase
+    .from("academic_structure_years")
     .select("structure_id")
-    .in("id", versionIds);
-  if (versionsError) return [];
+    .in("id", structureYearIds);
+  if (structureYearsError) return [];
   const structureIds = [
-    ...new Set((versions ?? []).map((version) => version.structure_id)),
+    ...new Set(
+      (structureYears ?? []).map((structureYear) => structureYear.structure_id),
+    ),
   ];
   if (structureIds.length === 0) return [];
 

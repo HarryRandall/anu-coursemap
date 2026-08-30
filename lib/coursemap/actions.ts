@@ -42,7 +42,7 @@ export async function saveProfileAndPlan(
       {
         p_display_name: profile.name,
         p_student_number: profile.studentId,
-        p_catalogue_year: profile.catalogueYear,
+        p_academic_year: profile.catalogueYear,
         p_commencement_year: profile.commencementYear,
         p_study_load:
           profile.studyLoad === "Part time" ? "part_time" : "full_time",

@@ -34,8 +34,8 @@ export type Course = {
 export type Degree = {
   code: string;
   name: string;
-  units: number;
-  duration: number;
+  units: number | null;
+  duration: number | null;
   college: string;
   description: string;
 };
@@ -43,7 +43,7 @@ export type Degree = {
 export type Major = {
   code: string;
   name: string;
-  units: number;
+  units: number | null;
   colour: string;
   description: string;
   courseCodes: string[];

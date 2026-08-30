@@ -25,9 +25,7 @@ select extensions.ok(
   and not exists (
     select 1 from public.plans
   )
-  and not exists (
-    select 1 from public.academic_structure_versions
-  )
+  and to_regclass('public.academic_structure_versions') is null
   and not exists (
     select 1
     from public.course_snapshots
@@ -474,7 +472,7 @@ select extensions.ok(
 
 insert into public.plans (
   owner_id,
-  catalogue_year_id,
+  academic_year_id,
   name,
   is_primary,
   commencement_year,
@@ -482,7 +480,7 @@ insert into public.plans (
 )
 values (
   '93000000-0000-4000-8000-000000000001',
-  (select id from public.catalogue_years where year = 2025),
+  (select id from public.academic_years where year = 2025),
   'Clean cutover plan',
   true,
   2025,

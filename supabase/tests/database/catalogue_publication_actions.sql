@@ -2,23 +2,23 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(4);
+select extensions.plan(5);
 
 select extensions.ok(
   has_function_privilege(
     'authenticated',
-    'public.publish_catalogue_structure_version(text,smallint)',
+    'public.publish_academic_structure_snapshot(bigint,bigint)',
     'execute'
   )
   and not has_function_privilege(
     'anon',
-    'public.publish_catalogue_structure_version(text,smallint)',
+    'public.publish_academic_structure_snapshot(bigint,bigint)',
     'execute'
   )
   and to_regprocedure(
-    'public.publish_catalogue_course_version(text,smallint)'
+    'public.publish_catalogue_structure_version(text,smallint)'
   ) is null,
-  'programme publication remains while legacy course publication is removed'
+  'only the snapshot-native academic structure publication action remains'
 );
 
 insert into auth.users (
@@ -26,131 +26,147 @@ insert into auth.users (
   created_at, updated_at
 ) values (
   '00000000-0000-0000-0000-000000000000',
-  '80000000-0000-4000-8000-000000000001',
-  'authenticated', 'authenticated', 'publisher@example.test',
-  '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
-  now(), now()
+  '96000000-0000-4000-8000-000000000001',
+  'authenticated',
+  'authenticated',
+  'structure-publisher@example.test',
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{}'::jsonb,
+  now(),
+  now()
 );
 
-insert into public.catalogue_sources (name, kind, base_url)
-values (
-  'Programme publication test source',
-  'programme_publication_test',
-  'https://programme-publication.example.test'
-);
-
-insert into public.catalogue_source_documents (
-  source_id,
-  catalogue_year_id,
-  entity_kind,
-  external_key,
-  canonical_url,
-  content_sha256
-)
-select
-  sources.id,
-  years.id,
-  'structure',
-  'PBLS-TEST',
-  'https://programme-publication.example.test/PBLS-TEST',
-  repeat('2', 64)
-from public.catalogue_sources as sources
-join public.catalogue_years as years on years.year = 2026
-where sources.kind = 'programme_publication_test';
+update private.user_roles
+set role_id = (select id from private.app_roles where key = 'admin')
+where user_id = '96000000-0000-4000-8000-000000000001';
 
 insert into public.academic_structures (code, kind)
-values ('PBLS-TEST', 'degree');
+values ('PBLS-TEST', 'programme');
 
-insert into public.academic_structure_versions (
-  structure_id,
-  catalogue_year_id,
-  name,
-  units,
-  description,
-  publication_status,
-  source_document_id
-)
-select
-  structures.id,
-  years.id,
-  'Publication test degree',
-  24,
-  'A rolled-back programme publication fixture.',
-  'draft',
-  documents.id
+insert into public.academic_structure_years (structure_id, academic_year_id)
+select structures.id, years.id
 from public.academic_structures as structures
-join public.catalogue_years as years on years.year = 2026
-join public.catalogue_source_documents as documents
-  on documents.catalogue_year_id = years.id
- and documents.external_key = 'PBLS-TEST'
+join public.academic_years as years on years.year = 2026
 where structures.code = 'PBLS-TEST';
 
-insert into public.requirement_groups (
-  structure_version_id,
-  catalogue_year_id,
-  code,
+insert into public.academic_structure_snapshots (
+  structure_year_id,
+  academic_year_id,
+  origin,
+  schema_version,
+  semantic_hash,
   name,
-  source_text,
-  operator,
-  position,
-  source_document_id
+  confirmation_status
 )
 select
-  versions.id,
-  versions.catalogue_year_id,
-  'ROOT',
-  'Root',
-  'Complete the programme requirements.',
-  'all_of',
-  0,
-  versions.source_document_id
-from public.academic_structure_versions as versions
+  structure_years.id,
+  structure_years.academic_year_id,
+  'manual',
+  'academic-structure-snapshot.test',
+  hashes.semantic_hash,
+  hashes.name,
+  hashes.confirmation_status
+from public.academic_structure_years as structure_years
 join public.academic_structures as structures
-  on structures.id = versions.structure_id
+  on structures.id = structure_years.structure_id
+cross join (values
+  (repeat('a', 64), 'Publishable draft'::text, 'not_required'::text),
+  (repeat('b', 64), 'Blocked draft', 'required')
+) as hashes(semantic_hash, name, confirmation_status)
 where structures.code = 'PBLS-TEST';
+
+update public.academic_structure_years as structure_years
+set draft_snapshot_id = snapshots.id
+from public.academic_structure_snapshots as snapshots
+where snapshots.structure_year_id = structure_years.id
+  and snapshots.name = 'Blocked draft';
 
 select set_config(
   'request.jwt.claim.sub',
-  '80000000-0000-4000-8000-000000000001',
+  '96000000-0000-4000-8000-000000000001',
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
 set local role authenticated;
 
 select extensions.throws_ok(
-  $$select public.publish_catalogue_structure_version('PBLS-TEST', 2026::smallint)$$,
-  '42501',
-  'Catalogue publishing permission is required.',
-  'a standard user cannot publish a programme'
+  format(
+    'select public.publish_academic_structure_snapshot(%s, %s)',
+    (
+      select structure_years.id
+      from public.academic_structure_years as structure_years
+      join public.academic_structures as structures
+        on structures.id = structure_years.structure_id
+      where structures.code = 'PBLS-TEST'
+    ),
+    (
+      select id from public.academic_structure_snapshots
+      where name = 'Blocked draft'
+    )
+  ),
+  '55000',
+  'Resolve blocking review items before publication.',
+  'a draft requiring confirmation cannot be published'
 );
 
 reset role;
 
-update private.user_roles
-set role_id = (select id from private.app_roles where key = 'admin')
-where user_id = '80000000-0000-4000-8000-000000000001';
+update public.academic_structure_years as structure_years
+set draft_snapshot_id = snapshots.id
+from public.academic_structure_snapshots as snapshots
+where snapshots.structure_year_id = structure_years.id
+  and snapshots.name = 'Publishable draft';
 
 set local role authenticated;
 
 select extensions.lives_ok(
-  $$select public.publish_catalogue_structure_version('PBLS-TEST', 2026::smallint)$$,
-  'an administrator can still publish an imported programme'
+  format(
+    'select public.publish_academic_structure_snapshot(%s, %s)',
+    (
+      select structure_years.id
+      from public.academic_structure_years as structure_years
+      join public.academic_structures as structures
+        on structures.id = structure_years.structure_id
+      where structures.code = 'PBLS-TEST'
+    ),
+    (
+      select id from public.academic_structure_snapshots
+      where name = 'Publishable draft'
+    )
+  ),
+  'an administrator can publish the exact current draft'
 );
-
-reset role;
 
 select extensions.ok(
   exists (
     select 1
-    from public.academic_structure_versions as versions
-    join public.academic_structures as structures
-      on structures.id = versions.structure_id
-    where structures.code = 'PBLS-TEST'
-      and versions.publication_status = 'published'
+    from public.academic_structure_years as structure_years
+    join public.academic_structure_snapshots as snapshots
+      on snapshots.id = structure_years.published_snapshot_id
+    where snapshots.name = 'Publishable draft'
+      and structure_years.draft_snapshot_id = snapshots.id
   ),
-  'published programmes remain available through the shared schema'
+  'publication moves only the published pointer to the reviewed snapshot'
 );
 
-select * from extensions.finish();
+select extensions.throws_ok(
+  format(
+    'select public.publish_academic_structure_snapshot(%s, %s)',
+    (
+      select structure_years.id
+      from public.academic_structure_years as structure_years
+      join public.academic_structures as structures
+        on structures.id = structure_years.structure_id
+      where structures.code = 'PBLS-TEST'
+    ),
+    (
+      select id from public.academic_structure_snapshots
+      where name = 'Blocked draft'
+    )
+  ),
+  '55000',
+  'Publish the exact current draft.',
+  'publication rejects a stale snapshot identifier'
+);
 
 rollback;

@@ -76,13 +76,14 @@ export function CourseImportRunDetailView({
   const active = run.status === "queued" || run.status === "running";
 
   return (
-    <AppShell admin currentBreadcrumbLabel={`${run.academicYear} course run`}>
+    <AppShell admin currentBreadcrumbLabel={`Run #${run.runNumber}`}>
       <CourseImportAutoRefresh active={active} />
       <div className="mx-auto w-full max-w-7xl space-y-5 pb-10">
         <h1 className="sr-only">{run.academicYear} course import run</h1>
 
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
+            <Badge tone="neutral">Run #{run.runNumber}</Badge>
             <Badge tone={statusTone(run.status)}>{readable(run.status)}</Badge>
             <span className="text-sm font-medium text-zinc-800">
               {run.academicYear} course import

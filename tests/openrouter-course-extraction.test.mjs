@@ -86,6 +86,40 @@ test("sends one schema-guided, low-cost extraction and strips model reasoning fr
           prompt_tokens_details: { cached_tokens: 20 },
           completion_tokens_details: { reasoning_tokens: 4 },
         },
+        openrouter_metadata: {
+          requested: DEFAULT_OPENROUTER_MODEL,
+          strategy: "direct",
+          region: "syd",
+          summary: "available=2, selected=Google",
+          attempt: 2,
+          is_byok: false,
+          endpoints: {
+            available: [
+              {
+                provider: "Alternative provider",
+                model: DEFAULT_OPENROUTER_MODEL,
+                selected: false,
+              },
+              {
+                provider: "Google",
+                model: DEFAULT_OPENROUTER_MODEL,
+                selected: true,
+              },
+            ],
+          },
+          attempts: [
+            {
+              provider: "Alternative provider",
+              model: DEFAULT_OPENROUTER_MODEL,
+              status: 503,
+            },
+            {
+              provider: "Google",
+              model: DEFAULT_OPENROUTER_MODEL,
+              status: 200,
+            },
+          ],
+        },
       });
     },
   });
@@ -117,6 +151,27 @@ test("sends one schema-guided, low-cost extraction and strips model reasoning fr
     reasoningTokens: 4,
     costUsd: 0.00012,
   });
+  assert.deepEqual(result.routerMetadata, {
+    requested: DEFAULT_OPENROUTER_MODEL,
+    strategy: "direct",
+    region: "syd",
+    summary: "available=2, selected=Google",
+    attempt: 2,
+    isByok: false,
+    selectedProvider: "Google",
+    attempts: [
+      {
+        provider: "Alternative provider",
+        model: DEFAULT_OPENROUTER_MODEL,
+        status: 503,
+      },
+      {
+        provider: "Google",
+        model: DEFAULT_OPENROUTER_MODEL,
+        status: 200,
+      },
+    ],
+  });
   assert.equal("reasoning" in result.responseForAudit, false);
   assert.equal(
     JSON.stringify(result.responseForAudit).includes("hidden"),
@@ -130,6 +185,7 @@ test("sends one schema-guided, low-cost extraction and strips model reasoning fr
   assert.deepEqual(restored.parsed, { code: "COMP1100" });
   assert.deepEqual(restored.usage, result.usage);
   assert.equal(restored.generationId, "generation-1");
+  assert.deepEqual(restored.routerMetadata, result.routerMetadata);
 });
 
 test("never starts an extraction without the dedicated key", async () => {

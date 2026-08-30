@@ -7,7 +7,7 @@ export const courseReviewTabs = [
   { value: "course", label: "Course data", importOnly: false },
   { value: "source", label: "Source", importOnly: false },
   { value: "requisites", label: "Requisites", importOnly: false },
-  { value: "student", label: "Student preview", importOnly: false },
+  { value: "student", label: "Course preview", importOnly: false },
 ] as const;
 
 export type CourseReviewTab = (typeof courseReviewTabs)[number]["value"];

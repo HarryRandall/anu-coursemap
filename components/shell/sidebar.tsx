@@ -106,6 +106,11 @@ const adminNav: NavSection[] = [
     label: "Imports",
     items: [
       { href: "/admin/imports/runs", label: "Course runs", icon: History },
+      {
+        href: "/admin/imports/structures/runs",
+        label: "Structure runs",
+        icon: History,
+      },
     ],
   },
   {

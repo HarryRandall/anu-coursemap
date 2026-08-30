@@ -85,6 +85,11 @@ export async function canWriteCourses() {
   return currentUserHasPermission("courses.write");
 }
 
+/** Check the permission required to edit and publish academic structures. */
+export async function canWriteCatalogue() {
+  return currentUserHasPermission("catalogue.write");
+}
+
 /** Check the narrower permission required to manage Room Finder data. */
 export async function canManageRooms() {
   if (isDemoMode()) return true;

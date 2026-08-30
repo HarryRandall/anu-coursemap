@@ -79,9 +79,10 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
     () => ({ ...catalogue, terms: timelineTerms }),
     [catalogue, timelineTerms],
   );
+  const unitTarget = degree?.units ?? null;
   const progress = degreeUnitProgress(
     state.attempts,
-    degree?.units ?? 0,
+    unitTarget ?? 0,
     planningCatalogue,
   );
   const planned = useMemo(
@@ -185,10 +186,14 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
                 Degree progress
               </CardTitle>
               <p className="mt-1 text-2xl font-bold tracking-tight text-zinc-950">
-                {progress.percent}% complete
+                {unitTarget === null
+                  ? "Unit target not recorded"
+                  : `${progress.percent}% complete`}
               </p>
               <CardDescription className="mt-1 text-sm">
-                {progress.completed} of {progress.total} units completed
+                {unitTarget === null
+                  ? `${progress.completed} completed and ${progress.planned} planned units are mapped, but the published programme has no total unit target.`
+                  : `${progress.completed} of ${progress.total} units completed`}
               </CardDescription>
             </div>
             <CardAction>
@@ -198,7 +203,14 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
             </CardAction>
           </CardHeader>
           <CardContent className="sm:px-6 sm:pb-6">
-            <DegreeProgressBar progress={progress} compact />
+            {unitTarget === null ? (
+              <p className="rounded-lg bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-950 ring-1 ring-amber-200 ring-inset">
+                An administrator needs to publish the programme unit total
+                before Coursemap can calculate a completion percentage.
+              </p>
+            ) : (
+              <DegreeProgressBar progress={progress} compact />
+            )}
             {!catalogue.programmeRequirementsImported && (
               <p className="mt-4 text-xs leading-5 text-zinc-500">
                 Programme rule coverage will appear once the official source is
@@ -210,11 +222,15 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatTile
-            description={`${progress.completed} completed · ${progress.planned} planned · ${progress.total} units total`}
+            description={
+              unitTarget === null
+                ? `${progress.completed} completed · ${progress.planned} planned · total not recorded`
+                : `${progress.completed} completed · ${progress.planned} planned · ${progress.total} units total`
+            }
             icon={<GraduationCap aria-hidden="true" />}
             label="Degree progress"
-            unit="%"
-            value={progress.percent}
+            unit={unitTarget === null ? undefined : "%"}
+            value={unitTarget === null ? "Not recorded" : progress.percent}
           />
           <StatTile
             description="Only published course years are shown."
@@ -238,10 +254,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)]">
-          <UnitsTrendChart
-            degreeUnits={progress.total}
-            points={cumulativeUnits}
-          />
+          <UnitsTrendChart degreeUnits={unitTarget} points={cumulativeUnits} />
           <MonthCalendar events={calendarEvents} />
         </div>
 

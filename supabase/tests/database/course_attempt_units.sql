@@ -64,10 +64,10 @@ insert into auth.users (
 );
 
 insert into public.plans (
-  owner_id, catalogue_year_id, name, is_primary, commencement_year, study_load
+  owner_id, academic_year_id, name, is_primary, commencement_year, study_load
 ) values (
   '95000000-0000-4000-8000-000000000001',
-  (select id from public.catalogue_years where year = 2026),
+  (select id from public.academic_years where year = 2026),
   'Attempt unit contract plan',
   true,
   2026,

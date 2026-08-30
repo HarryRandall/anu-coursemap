@@ -326,7 +326,7 @@ export async function loadAdminUserDetail(
     supabase
       .from("plans")
       .select(
-        "id,name,status,catalogue_year_id,commencement_year,study_load,extension_years,created_at,updated_at",
+        "academic_year_id,id,name,status,commencement_year,study_load,extension_years,created_at,updated_at",
       )
       .eq("owner_id", userId)
       .eq("is_primary", true)
@@ -389,13 +389,13 @@ export async function loadAdminUserDetail(
     const [yearResult, structuresResult, itemsResult, attemptsResult] =
       await Promise.all([
         supabase
-          .from("catalogue_years")
+          .from("academic_years")
           .select("year")
-          .eq("id", plan.catalogue_year_id)
+          .eq("id", plan.academic_year_id)
           .maybeSingle(),
         supabase
           .from("plan_structures")
-          .select("role,structure_version_id,position")
+          .select("role,structure_year_id,position")
           .eq("plan_id", plan.id)
           .order("position"),
         supabase
@@ -424,14 +424,11 @@ export async function loadAdminUserDetail(
     }
 
     const structureRows = structuresResult.data ?? [];
-    // The explicit course year and snapshot lineage are introduced by the
-    // clean course cutover migration. Keep the local row contract exact while
-    // generated database types are refreshed alongside that migration.
     const itemRows = (itemsResult.data ?? []) as unknown as AdminPlanItemRow[];
     const attemptRows = (attemptsResult.data ??
       []) as unknown as AdminCourseAttemptRow[];
-    const structureVersionIds = structureRows.map(
-      (structure) => structure.structure_version_id,
+    const structureYearIds = structureRows.map(
+      (structure) => structure.structure_year_id,
     );
     const courseIds = [
       ...new Set([
@@ -449,16 +446,16 @@ export async function loadAdminUserDetail(
     ];
 
     const [
-      structureVersionsResult,
+      structureYearsResult,
       courseIdentitiesResult,
       courseYearsResult,
       periodsResult,
     ] = await Promise.all([
-      structureVersionIds.length
+      structureYearIds.length
         ? supabase
-            .from("academic_structure_versions")
-            .select("id,structure_id,name,units")
-            .in("id", structureVersionIds)
+            .from("academic_structure_years")
+            .select("id,published_snapshot_id,structure_id")
+            .in("id", structureYearIds)
         : Promise.resolve({ data: [], error: null }),
       courseIds.length
         ? supabase.from("courses").select("id,code").in("id", courseIds)
@@ -479,7 +476,7 @@ export async function loadAdminUserDetail(
     ]);
 
     const relatedError =
-      structureVersionsResult.error ??
+      structureYearsResult.error ??
       courseIdentitiesResult.error ??
       courseYearsResult.error ??
       periodsResult.error;
@@ -487,9 +484,9 @@ export async function loadAdminUserDetail(
       throw new Error("Coursemap could not load that user's study details.");
     }
 
-    const structureVersions = structureVersionsResult.data ?? [];
-    const structureIdentityIds = structureVersions.map(
-      (version) => version.structure_id,
+    const structureYears = structureYearsResult.data ?? [];
+    const structureIdentityIds = structureYears.map(
+      (structureYear) => structureYear.structure_id,
     );
     const structureIdentitiesResult = structureIdentityIds.length
       ? await supabase
@@ -501,13 +498,33 @@ export async function loadAdminUserDetail(
       throw new Error("Coursemap could not load that user's programme.");
     }
 
-    const structureVersionById = new Map(
-      structureVersions.map((version) => [version.id, version]),
+    const structureYearById = new Map(
+      structureYears.map((structureYear) => [structureYear.id, structureYear]),
     );
     const structureCodeById = new Map(
       (structureIdentitiesResult.data ?? []).map((identity) => [
         identity.id,
         identity.code,
+      ]),
+    );
+    const structureSnapshotIds = structureYears.flatMap((structureYear) =>
+      structureYear.published_snapshot_id === null
+        ? []
+        : [structureYear.published_snapshot_id],
+    );
+    const structureSnapshotsResult = structureSnapshotIds.length
+      ? await supabase
+          .from("academic_structure_snapshots")
+          .select("id,name,units")
+          .in("id", structureSnapshotIds)
+      : { data: [], error: null };
+    if (structureSnapshotsResult.error) {
+      throw new Error("Coursemap could not load that user's programme.");
+    }
+    const structureSnapshotById = new Map(
+      (structureSnapshotsResult.data ?? []).map((snapshot) => [
+        snapshot.id,
+        snapshot,
       ]),
     );
     const courseCodeById = new Map(
@@ -626,19 +643,22 @@ export async function loadAdminUserDetail(
         updatedAt: plan.updated_at,
       },
       structures: structureRows.flatMap((structure) => {
-        const version = structureVersionById.get(
-          structure.structure_version_id,
+        const structureYear = structureYearById.get(
+          structure.structure_year_id,
         );
-        const code = version
-          ? structureCodeById.get(version.structure_id)
+        const snapshot = structureYear?.published_snapshot_id
+          ? structureSnapshotById.get(structureYear.published_snapshot_id)
           : null;
-        return version && code
+        const code = structureYear
+          ? structureCodeById.get(structureYear.structure_id)
+          : null;
+        return snapshot && code
           ? [
               {
                 role: structure.role,
                 code,
-                name: version.name,
-                units: Number(version.units),
+                name: snapshot.name,
+                units: snapshot.units === null ? 0 : Number(snapshot.units),
               },
             ]
           : [];

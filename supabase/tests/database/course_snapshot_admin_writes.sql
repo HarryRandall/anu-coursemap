@@ -354,7 +354,7 @@ join public.course_rules as rules
 join public.courses as required on required.code = 'REQS1000';
 
 insert into public.academic_structures (code, kind)
-values ('SNAP-PROG', 'degree');
+values ('SNAP-PROG', 'programme');
 
 insert into public.course_rules (
   course_snapshot_id, academic_year_id, course_source_page_id,
@@ -996,7 +996,7 @@ select extensions.ok(
 
 insert into public.plans (
   owner_id,
-  catalogue_year_id,
+  academic_year_id,
   name,
   is_primary,
   status,
@@ -1005,15 +1005,14 @@ insert into public.plans (
 )
 select
   '93000000-0000-4000-8000-000000000001',
-  catalogue_years.id,
+  academic_years.id,
   'Archive protection plan',
   true,
   'active',
   2028,
   'full_time'
-from public.catalogue_years as catalogue_years
-order by catalogue_years.year desc
-limit 1;
+from public.academic_years as academic_years
+where academic_years.year = 2028;
 
 create temporary table archive_plan_item_fixture as
 select public.add_current_user_plan_item(

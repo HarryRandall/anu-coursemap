@@ -29,11 +29,11 @@ set role_id = (select id from private.app_roles where key = 'admin')
 where user_id = '94000000-0000-4000-8000-000000000001';
 
 insert into public.plans (
-  owner_id, catalogue_year_id, name, is_primary, commencement_year, study_load
+  owner_id, academic_year_id, name, is_primary, commencement_year, study_load
 )
 values (
   '94000000-0000-4000-8000-000000000001',
-  (select id from public.catalogue_years where year = 2026),
+  (select id from public.academic_years where year = 2026),
   'Planner hardening plan',
   true,
   2026,

@@ -150,7 +150,7 @@ reset role;
 
 select extensions.ok(
   (select count(*) from public.plans) = 0
-  and (select count(*) from public.academic_structure_versions) = 0,
+  and (select count(*) from public.academic_structure_years) = 0,
   'the minimal preview does not recreate disposable plans or programme data'
 );
 

@@ -57,9 +57,6 @@ select extensions.results_eq(
   'new Auth users receive profiles from metadata or their email fallback'
 );
 
-insert into public.catalogue_years (year, status, published_at)
-values (2199, 'published', now());
-
 select set_config(
   'request.jwt.claims',
   '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","email":"rls-owner-one@example.test"}',
@@ -78,7 +75,7 @@ select extensions.lives_ok(
     insert into public.plans (
       id,
       owner_id,
-      catalogue_year_id,
+      academic_year_id,
       name,
       is_primary,
       commencement_year,
@@ -87,10 +84,10 @@ select extensions.lives_ok(
     values (
       '20000000-0000-4000-8000-000000000001',
       '10000000-0000-4000-8000-000000000001',
-      (select id from public.catalogue_years where year = 2199),
+      (select id from public.academic_years where year = 2030),
       'Owner one plan',
       true,
-      2199,
+      2030,
       'full_time'
     )
   $$,
@@ -161,7 +158,7 @@ select extensions.throws_ok(
     insert into public.plans (
       id,
       owner_id,
-      catalogue_year_id,
+      academic_year_id,
       name,
       commencement_year,
       study_load
@@ -169,9 +166,9 @@ select extensions.throws_ok(
     values (
       '20000000-0000-4000-8000-000000000002',
       '10000000-0000-4000-8000-000000000002',
-      (select id from public.catalogue_years where year = 2199),
+      (select id from public.academic_years where year = 2030),
       'Foreign owner plan',
-      2199,
+      2030,
       'part_time'
     )
   $$,

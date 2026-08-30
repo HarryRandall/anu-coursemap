@@ -1,13 +1,21 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { GraduationCap, LogOut, Save, UserRound } from "lucide-react";
+import {
+  GraduationCap,
+  LogOut,
+  Save,
+  TriangleAlert,
+  UserRound,
+} from "lucide-react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import type { OnboardingCatalogue } from "@/lib/coursemap/onboarding-catalogue";
+import { nominalProgrammeDuration } from "@/lib/coursemap/plan-timeline";
 
 export function ProfileEditor({
   catalogue,
@@ -39,12 +47,20 @@ export function ProfileEditor({
     [catalogue.majors, degree?.majorCodes, draft.catalogueYear],
   );
   const catalogueYears = catalogue.catalogueYears.map((item) => item.year);
+  const planningDuration = nominalProgrammeDuration(
+    degree
+      ? { duration: degree.durationYears, units: degree.units }
+      : undefined,
+  );
   const commencementYears = useMemo(() => {
-    const duration = Math.max(1, Math.ceil(degree?.durationYears ?? 1));
+    if (planningDuration === null) return [];
     const selectedYear =
       draft.catalogueYear || catalogueYears[0] || new Date().getFullYear();
-    return Array.from({ length: duration }, (_, index) => selectedYear - index);
-  }, [catalogueYears, degree?.durationYears, draft.catalogueYear]);
+    return Array.from(
+      { length: planningDuration },
+      (_, index) => selectedYear - index,
+    );
+  }, [catalogueYears, draft.catalogueYear, planningDuration]);
 
   useEffect(() => {
     if (!ready) return;
@@ -56,6 +72,13 @@ export function ProfileEditor({
     if (!draft.name.trim() || !draft.degreeCode) {
       notify(
         "Add your name and select a published degree before saving",
+        "warning",
+      );
+      return;
+    }
+    if (planningDuration === null) {
+      notify(
+        "This programme does not have duration or unit information recorded yet",
         "warning",
       );
       return;
@@ -196,6 +219,7 @@ export function ProfileEditor({
             <Field label="When did you start this degree?">
               <Select
                 aria-label="Commencement year"
+                disabled={planningDuration === null}
                 onChange={(value) =>
                   setDraft({ ...draft, commencementYear: value })
                 }
@@ -206,10 +230,25 @@ export function ProfileEditor({
                 value={draft.commencementYear}
               />
             </Field>
+            {degree?.durationYears === null || degree?.units === null ? (
+              <Alert className="sm:col-span-2" tone="warning">
+                <TriangleAlert aria-hidden="true" />
+                <AlertDescription>
+                  {planningDuration === null
+                    ? "Programme duration and unit total are not recorded. An administrator must publish at least one before this plan can be saved."
+                    : degree.durationYears === null
+                      ? `Programme duration is not recorded. Coursemap is using the published ${degree.units} unit total to size the planning timeline.`
+                      : "Programme unit total is not recorded. The timeline can use its published duration, but unit progress will remain unavailable."}
+                </AlertDescription>
+              </Alert>
+            ) : null}
           </div>
         </Card>
 
-        <Button disabled={saving || !ready} type="submit">
+        <Button
+          disabled={saving || !ready || planningDuration === null}
+          type="submit"
+        >
           <Save size={16} /> {saving ? "Saving…" : "Save details"}
         </Button>
       </form>

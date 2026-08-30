@@ -1,10 +1,16 @@
 "use client";
 
-import { Check, CheckCircle2, CircleAlert, ExternalLink } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  CircleAlert,
+  ExternalLink,
+  Pencil,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { publishStructureVersion } from "@/lib/coursemap/catalogue-publication-actions";
+import { publishStructureSnapshot } from "@/lib/coursemap/catalogue-publication-actions";
 import type {
   AdminStructureReviewCondition,
   AdminStructureReviewGroup,
@@ -15,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { AcademicStructureManualSnapshotEditor } from "@/components/admin/academic-structures/manual-snapshot-editor";
 
 function formatDate(value: string | null) {
   if (!value) return "Not recorded";
@@ -42,6 +49,9 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
 }
 
 function conditionText(condition: AdminStructureReviewCondition) {
+  if (condition.optionCodes.length > 1) {
+    return `${condition.kind === "structure_list" ? "Choose a structure from" : "Choose courses from"}: ${condition.optionCodes.join(", ")}`;
+  }
   if (condition.courseCode) {
     return (
       <>
@@ -118,14 +128,17 @@ function GroupCard({ group }: { group: AdminStructureReviewGroup }) {
 }
 
 export function ProgrammeReview({
+  canEdit,
   canPublish,
   record,
 }: {
+  canEdit: boolean;
   canPublish: boolean;
   record: AdminStructureReviewRecord;
 }) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState<{
     text: string;
     tone: "success" | "danger";
@@ -136,10 +149,34 @@ export function ProgrammeReview({
   const isDraft = record.publicationStatus === "draft";
   const needsReview = record.reviewState !== "verified";
 
+  if (editing) {
+    return (
+      <AppShell admin currentBreadcrumbLabel={record.name}>
+        <div className="mx-auto w-full max-w-7xl min-w-0 pb-10">
+          <AcademicStructureManualSnapshotEditor
+            onCancel={() => setEditing(false)}
+            onSaved={() => {
+              setEditing(false);
+              setMessage({
+                text: "A new manual draft was saved. It has not been published.",
+                tone: "success",
+              });
+            }}
+            record={record}
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
   async function publish() {
     setPublishing(true);
     setMessage(null);
-    const result = await publishStructureVersion(record.code, record.year);
+    const result = await publishStructureSnapshot(
+      record.structureYearId,
+      record.id,
+      record.code,
+    );
     setPublishing(false);
     setMessage({
       text: result.message,
@@ -176,21 +213,30 @@ export function ProgrammeReview({
     >
       <AppShell
         actions={
-          isDraft && canPublish ? (
-            <Button
-              disabled={needsReview || publishing}
-              onClick={publish}
-              size="sm"
-              title={
-                needsReview
-                  ? "Verify the imported requirements before publishing."
-                  : undefined
-              }
-              variant="primary"
-            >
-              <Check aria-hidden="true" size={15} />
-              {publishing ? "Publishing..." : "Publish"}
-            </Button>
+          canEdit || (isDraft && canPublish) ? (
+            <div className="flex items-center gap-2">
+              {canEdit ? (
+                <Button onClick={() => setEditing(true)} size="sm">
+                  <Pencil aria-hidden="true" size={15} /> Edit draft
+                </Button>
+              ) : null}
+              {isDraft && canPublish ? (
+                <Button
+                  disabled={needsReview || publishing}
+                  onClick={publish}
+                  size="sm"
+                  title={
+                    needsReview
+                      ? "Verify the imported requirements before publishing."
+                      : undefined
+                  }
+                  variant="primary"
+                >
+                  <Check aria-hidden="true" size={15} />
+                  {publishing ? "Publishing..." : "Publish"}
+                </Button>
+              ) : null}
+            </div>
           ) : null
         }
         admin
@@ -247,7 +293,12 @@ export function ProgrammeReview({
                 <dl>
                   <Row label="Name" value={record.name} />
                   <Row label="Code" value={record.code} />
-                  <Row label="Units" value={`${record.units} units`} />
+                  <Row
+                    label="Units"
+                    value={
+                      record.units === null ? null : `${record.units} units`
+                    }
+                  />
                   <Row label="Description" value={record.description} />
                 </dl>
               </div>
