@@ -18,12 +18,8 @@ const databaseRowTablePath = new URL(
   "../components/admin/imports/import-database-row-table.tsx",
   import.meta.url,
 );
-const runListPath = new URL(
-  "../components/admin/imports/academic-structure-import-runs.tsx",
-  import.meta.url,
-);
-const runDetailPath = new URL(
-  "../components/admin/imports/academic-structure-import-run-detail.tsx",
+const importsListPath = new URL(
+  "../components/admin/imports/imports-list.tsx",
   import.meta.url,
 );
 const programmeReviewPath = new URL(
@@ -105,16 +101,15 @@ test("shows complete candidate relational areas and concrete database tables", a
   assert.match(tableSource, /whitespace-nowrap/);
 });
 
-test("uses numeric run numbers as visible identifiers", async () => {
-  const [listSource, detailSource] = await Promise.all([
-    readFile(runListPath, "utf8"),
-    readFile(runDetailPath, "utf8"),
+test("lists structure imports without exposing the batching run", async () => {
+  const [listSource, targetSource] = await Promise.all([
+    readFile(importsListPath, "utf8"),
+    readFile(targetReviewPath, "utf8"),
   ]);
-  assert.match(listSource, /#\{run\.runNumber\}/);
-  assert.match(listSource, /run \$\{run\.runNumber\}/);
-  assert.match(detailSource, /Run #\$\{run\.runNumber\}/);
+  assert.match(listSource, /\$\{importsPath\}\/\$\{record\.id\}/);
+  assert.doesNotMatch(listSource, /runNumber/);
   assert.doesNotMatch(listSource, />\{run\.id\}</);
-  assert.doesNotMatch(detailSource, />\{run\.id\}</);
+  assert.match(targetSource, /Run #\{detail\.run\.runNumber\}/);
 });
 
 test("renders JSON artefacts and database projections with the light viewer", async () => {

@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(7);
+select extensions.plan(8);
 
 select extensions.ok(
   exists (
@@ -161,6 +161,79 @@ select extensions.is(
   ),
   'failed',
   'the fixture run reached its terminal state'
+);
+
+insert into public.academic_structure_import_runs (
+  id,
+  source_id,
+  academic_year_id,
+  structure_kind,
+  requested_model,
+  parser_version,
+  prompt_version,
+  schema_version,
+  target_count,
+  queued_count
+)
+select
+  '33333333-3333-4333-8333-333333333333'::uuid,
+  sources.id,
+  years.id,
+  'programme',
+  'test/model',
+  'test-parser.v1',
+  'test-prompt.v1',
+  'test-schema.v1',
+  1,
+  1
+from public.academic_structure_sources as sources
+cross join public.academic_years as years
+where sources.kind = 'anu_programs_and_courses'
+  and years.year = 2026;
+
+insert into public.academic_structure_import_targets (
+  id,
+  run_id,
+  academic_year_id,
+  directory_entry_id,
+  position,
+  structure_kind,
+  structure_code,
+  requested_model
+)
+select
+  '44444444-4444-4444-8444-444444444444'::uuid,
+  '33333333-3333-4333-8333-333333333333'::uuid,
+  entries.academic_year_id,
+  entries.id,
+  0,
+  'programme',
+  entries.code,
+  'test/model'
+from public.academic_structure_directory_entries as entries
+where entries.code = 'LIFECYCLE-TEST';
+
+update public.academic_structure_import_targets
+set processing_status = 'failed',
+    review_status = 'not_required',
+    error_code = 'LATER_TEST_FAILURE',
+    error_summary = 'Later test failure',
+    created_at = clock_timestamp() + interval '1 second',
+    finished_at = statement_timestamp()
+where id = '44444444-4444-4444-8444-444444444444'::uuid;
+
+select extensions.is(
+  (
+    select id
+    from public.academic_structure_directory_latest_import_targets
+    where directory_entry_id = (
+      select id
+      from public.academic_structure_directory_entries
+      where code = 'LIFECYCLE-TEST'
+    )
+  ),
+  '44444444-4444-4444-8444-444444444444'::uuid,
+  'the directory latest-target view selects the later failed target'
 );
 
 select extensions.throws_ok(

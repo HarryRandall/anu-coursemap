@@ -60,6 +60,10 @@
   --animate-modal-out: modal-out 120ms ease-in;
   --animate-drop-slot-in: drop-slot-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
   --animate-spin-slow: spin 900ms linear infinite;
+  --animate-count-pop: count-pop 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-limit-nudge: limit-nudge 420ms ease-out;
+  --animate-limit-flash: limit-flash 900ms ease-out;
+  --animate-limit-ring: limit-ring 900ms ease-out;
 }
 
 @keyframes modal-in {
@@ -155,6 +159,58 @@
     transform: rotate(360deg);
   }
 }
+/* A refused action pushes back instead of announcing itself: the control
+   rocks against the limit and the count reddens, which stays local to the
+   thing the reader just clicked. */
+@keyframes limit-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-5px);
+  }
+  35% {
+    transform: translateX(5px);
+  }
+  55% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+@keyframes limit-ring {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes limit-flash {
+  0%,
+  55% {
+    color: var(--color-rose-600);
+  }
+  100% {
+    color: var(--color-zinc-500);
+  }
+}
+/* A short swell when a running count grows, so the change is felt as well
+   as read. */
+@keyframes count-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
 
 @keyframes find-background-in {
   from {
@@ -221,8 +277,10 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    /* No `scrollbar-gutter: stable` here. It reserved a bar's width on every
+       page, including ones that never scroll, on top of what the bar itself
+       already took. */
     overflow-y: auto;
-    scrollbar-gutter: stable;
   }
 
   body {
@@ -267,22 +325,28 @@
     outline-offset: 2px;
   }
 
-  /* Refined scrollbars */
-  * {
+  /* Refined scrollbars — for panes inside the page, never the document one.
+     Both engines drop their overlay scrollbar for any scroller an author
+     styles, and the classic bar that replaces it permanently takes its width
+     out of the layout. Style the root and every page loses that strip down
+     its right edge; leave it alone and macOS floats the bar over the content
+     the way it does on any other site. `html` and `body` are both excluded
+     because the viewport's bar can be steered by either. */
+  *:not(html, body) {
     scrollbar-width: thin;
     scrollbar-color: var(--color-zinc-300) transparent;
   }
-  *::-webkit-scrollbar {
+  *:not(html, body)::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
-  *::-webkit-scrollbar-thumb {
+  *:not(html, body)::-webkit-scrollbar-thumb {
     background: var(--color-zinc-300);
     border: 3px solid transparent;
     border-radius: 999px;
     background-clip: content-box;
   }
-  *::-webkit-scrollbar-thumb:hover {
+  *:not(html, body)::-webkit-scrollbar-thumb:hover {
     background: var(--color-zinc-400);
     background-clip: content-box;
   }

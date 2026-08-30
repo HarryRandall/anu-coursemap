@@ -11,7 +11,7 @@ const publicationActionsPath = new URL(
   import.meta.url,
 );
 const targetPagePath = new URL(
-  "../app/admin/imports/structures/runs/[runId]/targets/[targetId]/page.tsx",
+  "../components/admin/academic-structures/structure-imports-page.tsx",
   import.meta.url,
 );
 const targetReviewPath = new URL(

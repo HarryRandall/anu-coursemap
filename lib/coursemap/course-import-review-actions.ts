@@ -68,10 +68,8 @@ async function decide(
           });
     if (error) throw error;
 
-    revalidatePath(`/admin/imports/runs/${reviewed.runId}`);
-    revalidatePath(
-      `/admin/imports/runs/${reviewed.runId}/targets/${reviewed.targetId}`,
-    );
+    revalidatePath("/admin/courses/imports");
+    revalidatePath(`/admin/courses/imports/${reviewed.targetId}`);
     revalidatePath("/admin/courses");
     return {
       ok: true,
@@ -111,8 +109,7 @@ export async function recoverStalledCourseImportRun(
     );
     if (error) throw error;
     const result = data?.[0];
-    revalidatePath(`/admin/imports/runs/${runId}`);
-    revalidatePath("/admin/imports/runs");
+    revalidatePath("/admin/courses/imports");
     revalidatePath("/admin/courses");
     return {
       ok: true,

@@ -148,7 +148,7 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
               {entries.map(({ attempt, course, term }) => (
                 <button
                   key={attempt.id}
-                  className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors outline-none hover:bg-zinc-50 focus-visible:bg-brand-50 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset motion-reduce:transition-none"
+                  className="flex w-full cursor-pointer items-center gap-3 px-5 py-3 text-left transition-colors outline-none hover:bg-zinc-50 focus-visible:bg-brand-50 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset motion-reduce:transition-none"
                   onClick={() => setSelectedAttempt(attempt.id)}
                   type="button"
                 >

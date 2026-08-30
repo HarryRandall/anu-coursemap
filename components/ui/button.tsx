@@ -8,7 +8,7 @@ export type ButtonVariant =
 export type ButtonSize = "sm" | "md" | "lg" | "icon-sm" | "icon";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-md border border-transparent text-sm font-medium transition-colors outline-none active:translate-y-px disabled:pointer-events-none disabled:opacity-50 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 motion-reduce:transition-none motion-reduce:active:translate-y-0 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "inline-flex shrink-0 cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-md border border-transparent text-sm font-medium transition-colors outline-none active:translate-y-px disabled:pointer-events-none disabled:opacity-50 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 motion-reduce:transition-none motion-reduce:active:translate-y-0 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {

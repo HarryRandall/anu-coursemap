@@ -75,10 +75,10 @@ async function candidateStudentPreview(
 export default async function CourseImportTargetPage({
   params,
 }: {
-  params: Promise<{ runId: string; targetId: string }>;
+  params: Promise<{ targetId: string }>;
 }) {
-  const { runId, targetId } = await params;
-  const detail = await loadCourseImportTargetDetail({ runId, targetId });
+  const { targetId } = await params;
+  const detail = await loadCourseImportTargetDetail({ targetId });
   if (!detail) notFound();
   const previewCourse = await candidateStudentPreview(detail);
   return (

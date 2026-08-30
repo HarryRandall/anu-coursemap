@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Award,
   BookOpen,
   CalendarDays,
   ChevronRight,
@@ -11,7 +12,6 @@ import {
   Compass,
   GitCompareArrows,
   GraduationCap,
-  History,
   House,
   Import,
   KeyRound,
@@ -22,6 +22,8 @@ import {
   RefreshCw,
   Shield,
   Table,
+  Tag,
+  Target,
   UserRound,
   Users,
   type LucideIcon,
@@ -57,9 +59,6 @@ const labels: Record<string, string> = {
   users: "Users",
   roles: "Roles",
   imports: "Imports",
-  structures: "Structures",
-  runs: "Runs",
-  targets: "Targets",
   sync: "Sync",
   changes: "Changes",
 };
@@ -77,15 +76,13 @@ const icons: Record<string, LucideIcon> = {
   dashboard: House,
   help: CircleHelp,
   imports: Import,
-  structures: GraduationCap,
-  runs: History,
   "key-dates": CalendarDays,
   plan: Table,
   profile: UserRound,
   programmes: GraduationCap,
-  majors: GraduationCap,
-  minors: GraduationCap,
-  specialisations: GraduationCap,
+  majors: Award,
+  minors: Tag,
+  specialisations: Target,
   requirements: ListChecks,
   roadmap: Compass,
   roles: KeyRound,
@@ -99,7 +96,8 @@ const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}[A-Z]?$/iu;
 
 /**
  * Only course codes are shouted. Upper-casing every unmapped segment turned
- * ordinary path parts into headlines -- /admin/imports/runs read as "RUNS".
+ * ordinary path parts into headlines -- /admin/courses/imports read as
+ * "IMPORTS".
  */
 function fallbackLabel(segment: string) {
   const value = decodeURIComponent(segment);

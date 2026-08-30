@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { canManageCourseImports, canWriteCatalogue } from "@/lib/auth/viewer";
 import type { CoursemapActionResult } from "@/lib/coursemap/actions";
-import { allAdminAcademicStructureCollectionPaths } from "@/lib/coursemap/academic-structure-routes";
+import {
+  allAdminAcademicStructureCollectionPaths,
+  allAdminAcademicStructureImportPaths,
+} from "@/lib/coursemap/academic-structure-routes";
 import { createClient } from "@/lib/supabase/server";
 
 type ReviewDecisionInput = {
@@ -66,10 +69,10 @@ function publicationErrorMessage(error: unknown) {
   return "Coursemap could not publish this academic structure.";
 }
 
-function revalidateImport(runId: string, targetId: string) {
-  revalidatePath("/admin/imports/structures/runs");
-  revalidatePath(`/admin/imports/structures/runs/${runId}`);
-  revalidatePath(`/admin/imports/structures/runs/${runId}/targets/${targetId}`);
+function revalidateImport(targetId: string) {
+  for (const path of allAdminAcademicStructureImportPaths(targetId)) {
+    revalidatePath(path);
+  }
   for (const path of allAdminAcademicStructureCollectionPaths()) {
     revalidatePath(path);
   }
@@ -98,7 +101,7 @@ async function decide(
       },
     );
     if (error) throw error;
-    revalidateImport(reviewed.runId, reviewed.targetId);
+    revalidateImport(reviewed.targetId);
     return {
       ok: true,
       message:
@@ -153,7 +156,7 @@ export async function publishAcademicStructureDraft(
       },
     );
     if (error) throw error;
-    revalidateImport(input.runId, input.targetId);
+    revalidateImport(input.targetId);
     return {
       ok: true,
       message: "The current draft is now published.",

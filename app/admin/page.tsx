@@ -4,7 +4,10 @@ import {
   GraduationCap,
   UsersRound,
 } from "lucide-react";
+import { ImportModelCard } from "@/components/admin/import-model-card";
+import { loadImportModelSetting } from "@/lib/admin/settings";
 import { loadAdminUserSummary } from "@/lib/admin/users";
+import { canManageCourseImports } from "@/lib/auth/viewer";
 import { loadAdminCatalogueSummary } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/components/shell";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -12,9 +15,11 @@ import { StatTile } from "@/components/ui/stat-tile";
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
-  const [summary, users] = await Promise.all([
+  const [summary, users, importModel, canManageImports] = await Promise.all([
     loadAdminCatalogueSummary(),
     loadAdminUserSummary(),
+    loadImportModelSetting(),
+    canManageCourseImports(),
   ]);
 
   return (
@@ -55,6 +60,14 @@ export default async function AdminOverviewPage() {
             value={users.users}
           />
         </div>
+
+        <ImportModelCard
+          canManage={canManageImports}
+          configured={importModel.configured}
+          model={importModel.model}
+          options={importModel.options}
+          updatedAt={importModel.updatedAt}
+        />
       </div>
     </AppShell>
   );

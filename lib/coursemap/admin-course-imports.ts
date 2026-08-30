@@ -2,6 +2,15 @@ import type { Database, Json } from "@/types/database";
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import {
+  DEFAULT_IMPORT_LIST_SORT,
+  importSortOrder,
+  importStatusFilter,
+  MAX_SEARCH_ENTRY_IDS,
+  safeImportSearch,
+  type ImportListSort,
+  type ImportListStatus,
+} from "@/lib/coursemap/import-list-query";
 import { loadCourseSnapshotProjection } from "@/lib/coursemap/admin-course-year";
 import { COURSE_SNAPSHOT_RELATIONAL_QUERY_SHAPE } from "@/lib/coursemap/course-import-query-shape";
 
@@ -21,6 +30,9 @@ export type CourseDirectoryStatus =
   | "unchanged"
   | "failed";
 
+export type CourseDirectorySort =
+  "code-asc" | "code-desc" | "title-asc" | "title-desc" | "status";
+
 export type AcademicYearOption = {
   id: number | null;
   year: number;
@@ -33,6 +45,8 @@ export type AcademicYearOption = {
 
 export type CourseDirectoryRecord = {
   id: number;
+  /** The academic year this directory entry belongs to. */
+  year: number;
   code: string;
   title: string;
   units: number | null;
@@ -59,7 +73,13 @@ export type CourseDirectoryRecord = {
 };
 
 export type CourseDirectoryPage = {
+  /**
+   * The year the year-scoped controls act on. When allYears is true this is
+   * only the fallback for a refresh or an import, not what the table shows.
+   */
   year: AcademicYearOption;
+  /** Every year is listed at once, so per-year actions are unavailable. */
+  allYears: boolean;
   records: CourseDirectoryRecord[];
   page: number;
   pageSize: number;
@@ -72,70 +92,24 @@ export type CourseDirectoryPage = {
   } | null;
 };
 
-export type CourseImportRunSummary = {
-  id: string;
-  runNumber: number;
-  academicYear: number;
-  status: string;
-  requestedModel: string;
-  targetCount: number;
-  processedCount: number;
-  readyForReviewCount: number;
-  unchangedCount: number;
-  failedCount: number;
-  extractionCount: number;
-  inputTokens: number;
-  outputTokens: number;
-  actualCostUsd: number;
-  createdAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  errorSummary: string | null;
-  courseCodes: string[];
-};
-
-export type CourseImportRunPage = {
-  records: CourseImportRunSummary[];
-  page: number;
-  pageSize: number;
-  total: number;
-};
-
-export type CourseImportRunTarget = {
+export type CourseImportSummary = {
   id: string;
   courseCode: string;
-  position: number;
+  courseTitle: string;
+  academicYear: number;
   processingStatus: string;
   reviewStatus: string;
   changeKind: string | null;
-  attemptCount: number;
-  errorCode: string | null;
   errorSummary: string | null;
   createdAt: string;
-  startedAt: string | null;
   finishedAt: string | null;
-  extraction: {
-    requestedModel: string;
-    resolvedModel: string | null;
-    validationStatus: string;
-    inputTokens: number;
-    cachedInputTokens: number;
-    outputTokens: number;
-    reasoningTokens: number;
-    costUsd: number;
-    costSource: string;
-    latencyMs: number | null;
-  } | null;
 };
 
-export type CourseImportRunDetail = {
-  run: CourseImportRunSummary & {
-    parserVersion: string;
-    promptVersion: string;
-    schemaVersion: string;
-    heartbeatAt: string | null;
-  };
-  targets: CourseImportRunTarget[];
+export type CourseImportPage = {
+  records: CourseImportSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
 };
 
 export type CourseImportArtifact = {
@@ -215,8 +189,6 @@ export type CourseImportTargetDetail = {
 
 type ImportTargetRow =
   Database["public"]["Tables"]["course_import_targets"]["Row"];
-type ImportRunRow = Database["public"]["Tables"]["course_import_runs"]["Row"];
-type ExtractionRow = Database["public"]["Tables"]["course_extractions"]["Row"];
 type AdminDirectoryEntryRow =
   Database["public"]["Views"]["course_directory_admin_entries"]["Row"];
 
@@ -305,26 +277,39 @@ export async function loadCourseDirectoryPage({
   year,
   page,
   query,
+  sort = "code-asc",
   status = "all",
+  statusNegated = false,
   pageSize = 50,
   academicYearOptions,
 }: {
-  year: number;
+  year: number | "all";
   page?: number;
   query?: string;
+  sort?: CourseDirectorySort;
   status?: CourseDirectoryStatus;
+  /** Invert the status filter so the page reads "status is not <status>". */
+  statusNegated?: boolean;
   pageSize?: number;
   academicYearOptions?: Promise<AcademicYearOption[]>;
 }): Promise<CourseDirectoryPage> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(10, Math.floor(pageSize)));
   const years = await (academicYearOptions ?? loadAcademicYearOptions());
-  const selectedYear =
-    years.find((option) => option.year === year) ?? years[0]!;
+  const allYears = year === "all";
+  const currentCalendarYear = new Date().getFullYear();
+  // Year-scoped actions still need a concrete year while every year is
+  // listed, so this falls back to the current one rather than going null.
+  const selectedYear = allYears
+    ? (years.find((option) => option.year === currentCalendarYear) ??
+      years.at(-1) ??
+      years[0]!)
+    : (years.find((option) => option.year === year) ?? years[0]!);
 
   if (isDemoMode() || selectedYear.id === null) {
     return {
       year: selectedYear,
+      allYears,
       records: [],
       page: currentPage,
       pageSize: currentPageSize,
@@ -342,34 +327,73 @@ export async function loadCourseDirectoryPage({
     .limit(1)
     .maybeSingle();
 
+  const yearById = new Map(
+    years.flatMap((option) =>
+      option.id === null ? [] : [[option.id, option.year] as const],
+    ),
+  );
   let entriesQuery = supabase
     .from("course_directory_admin_entries")
     .select("*", { count: "exact" })
-    .eq("academic_year_id", selectedYear.id)
     .eq("is_current", true);
+  if (!allYears) {
+    entriesQuery = entriesQuery.eq("academic_year_id", selectedYear.id);
+  }
   const search = safeSearch(query);
   if (search) {
     entriesQuery = entriesQuery.or(
       `code.ilike.*${search}*,title.ilike.*${search}*`,
     );
   }
-  if (status === "directory") {
-    entriesQuery = entriesQuery
-      .is("latest_target_id", null)
-      .is("course_year_id", null);
-  } else if (status === "draft") {
-    entriesQuery = entriesQuery.not("draft_snapshot_id", "is", null);
-  } else if (status === "published") {
-    entriesQuery = entriesQuery.not("published_snapshot_id", "is", null);
-  } else if (status === "needs-review") {
-    entriesQuery = entriesQuery.eq("latest_review_status", "pending");
-  } else if (status !== "all") {
-    entriesQuery = entriesQuery.eq("latest_processing_status", status);
+  if (status !== "all") {
+    // A negated filter has to keep rows whose column is null: "is not draft"
+    // includes every entry that was never imported, not just the imported
+    // ones that failed to produce a draft.
+    if (status === "directory") {
+      entriesQuery = statusNegated
+        ? entriesQuery.or(
+            "latest_target_id.not.is.null,course_year_id.not.is.null",
+          )
+        : entriesQuery.is("latest_target_id", null).is("course_year_id", null);
+    } else if (status === "draft") {
+      entriesQuery = statusNegated
+        ? entriesQuery.is("draft_snapshot_id", null)
+        : entriesQuery.not("draft_snapshot_id", "is", null);
+    } else if (status === "published") {
+      entriesQuery = statusNegated
+        ? entriesQuery.is("published_snapshot_id", null)
+        : entriesQuery.not("published_snapshot_id", "is", null);
+    } else if (status === "needs-review") {
+      entriesQuery = statusNegated
+        ? entriesQuery.or(
+            "latest_review_status.is.null,latest_review_status.neq.pending",
+          )
+        : entriesQuery.eq("latest_review_status", "pending");
+    } else {
+      entriesQuery = statusNegated
+        ? entriesQuery.or(
+            `latest_processing_status.is.null,latest_processing_status.neq.${status}`,
+          )
+        : entriesQuery.eq("latest_processing_status", status);
+    }
   }
 
   const start = (currentPage - 1) * currentPageSize;
+  const orderField = sort.startsWith("title")
+    ? "title"
+    : sort === "status"
+      ? "latest_processing_status"
+      : "code";
+  const ascending = !sort.endsWith("desc");
+  // Listing every year interleaves duplicate codes, so the year breaks the
+  // tie and keeps each code's rows together and newest-first.
+  const orderedEntriesQuery = allYears
+    ? entriesQuery
+        .order(orderField, { ascending })
+        .order("academic_year_id", { ascending: false })
+    : entriesQuery.order(orderField, { ascending });
   const [entriesResult, activeRunResult] = await Promise.all([
-    entriesQuery.order("code").range(start, start + currentPageSize - 1),
+    orderedEntriesQuery.range(start, start + currentPageSize - 1),
     activeRunPromise,
   ]);
   if (entriesResult.error) throw entriesResult.error;
@@ -393,6 +417,7 @@ export async function loadCourseDirectoryPage({
 
   return {
     year: selectedYear,
+    allYears,
     page: currentPage,
     pageSize: currentPageSize,
     total: entriesResult.count ?? 0,
@@ -417,6 +442,10 @@ export async function loadCourseDirectoryPage({
         firstSeenAt: entry.first_seen_at,
         lastSeenAt: entry.last_seen_at,
         isCurrent: entry.is_current,
+        year:
+          entry.academic_year_id === null
+            ? selectedYear.year
+            : (yearById.get(entry.academic_year_id) ?? selectedYear.year),
         courseId: entry.course_id,
         coursePublicId:
           entry.course_id === null
@@ -441,41 +470,25 @@ export async function loadCourseDirectoryPage({
   };
 }
 
-function runSummary(
-  run: ImportRunRow,
-  academicYear: number,
-  courseCodes: string[],
-): CourseImportRunSummary {
-  return {
-    id: run.id,
-    runNumber: run.run_number,
-    academicYear,
-    status: run.status,
-    requestedModel: run.requested_model,
-    targetCount: run.target_count,
-    processedCount: run.processed_count,
-    readyForReviewCount: run.ready_for_review_count,
-    unchangedCount: run.unchanged_count,
-    failedCount: run.failed_count,
-    extractionCount: run.extraction_count,
-    inputTokens: run.input_tokens,
-    outputTokens: run.output_tokens,
-    actualCostUsd: run.actual_cost_usd,
-    createdAt: run.created_at,
-    startedAt: run.started_at,
-    completedAt: run.completed_at,
-    errorSummary: run.error_summary,
-    courseCodes,
-  };
-}
-
-export async function loadCourseImportRunPage({
+/**
+ * Imports are listed one course at a time. The run that batched them is an
+ * implementation detail of the worker, not something an editor navigates.
+ */
+export async function loadCourseImportPage({
   page,
   pageSize = 25,
+  query,
+  sort = DEFAULT_IMPORT_LIST_SORT,
+  status = "all",
+  statusNegated = false,
 }: {
   page?: number;
   pageSize?: number;
-} = {}): Promise<CourseImportRunPage> {
+  query?: string;
+  sort?: ImportListSort;
+  status?: ImportListStatus;
+  statusNegated?: boolean;
+} = {}): Promise<CourseImportPage> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(10, Math.floor(pageSize)));
   if (isDemoMode()) {
@@ -489,14 +502,50 @@ export async function loadCourseImportRunPage({
 
   const supabase = await createClient();
   const start = (currentPage - 1) * currentPageSize;
-  const { data, count, error } = await supabase
-    .from("course_import_runs")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
+  const search = safeImportSearch(query);
+
+  // Titles live on the directory entry, so a search resolves to entry ids
+  // first and the target list is narrowed to them.
+  let entryIds: number[] | null = null;
+  if (search) {
+    const { data: matches, error: matchError } = await supabase
+      .from("course_directory_entries")
+      .select("id")
+      .or(`code.ilike.*${search}*,title.ilike.*${search}*`)
+      .limit(MAX_SEARCH_ENTRY_IDS);
+    if (matchError) throw matchError;
+    entryIds = (matches ?? []).map((row) => row.id);
+    if (entryIds.length === 0) {
+      return {
+        records: [],
+        page: currentPage,
+        pageSize: currentPageSize,
+        total: 0,
+      };
+    }
+  }
+
+  let targetsQuery = supabase
+    .from("course_import_targets")
+    .select("*", { count: "exact" });
+  if (entryIds) targetsQuery = targetsQuery.in("directory_entry_id", entryIds);
+  const statusFilter = importStatusFilter("course", status);
+  if (statusFilter) {
+    targetsQuery = statusNegated
+      ? targetsQuery.not(
+          statusFilter.column,
+          "in",
+          `(${statusFilter.values.join(",")})`,
+        )
+      : targetsQuery.in(statusFilter.column, statusFilter.values);
+  }
+  const order = importSortOrder(sort, "course_code");
+  const { data, count, error } = await targetsQuery
+    .order(order.column, { ascending: order.ascending })
     .range(start, start + currentPageSize - 1);
   if (error) throw error;
-  const runs = (data ?? []) as ImportRunRow[];
-  if (runs.length === 0) {
+  const targets = (data ?? []) as ImportTargetRow[];
+  if (targets.length === 0) {
     return {
       records: [],
       page: currentPage,
@@ -505,136 +554,43 @@ export async function loadCourseImportRunPage({
     };
   }
 
-  const [yearsResult, targetsResult] = await Promise.all([
+  const [yearsResult, entriesResult] = await Promise.all([
     supabase
       .from("academic_years")
       .select("id,year")
-      .in("id", [...new Set(runs.map((run) => run.academic_year_id))]),
+      .in("id", [...new Set(targets.map((target) => target.academic_year_id))]),
     supabase
-      .from("course_import_targets")
-      .select("run_id,course_code,position")
-      .in(
-        "run_id",
-        runs.map((run) => run.id),
-      )
-      .order("position"),
+      .from("course_directory_entries")
+      .select("id,title")
+      .in("id", [
+        ...new Set(targets.map((target) => target.directory_entry_id)),
+      ]),
   ]);
   if (yearsResult.error) throw yearsResult.error;
-  if (targetsResult.error) throw targetsResult.error;
+  if (entriesResult.error) throw entriesResult.error;
   const yearById = new Map(
     (yearsResult.data ?? []).map((row) => [row.id, row.year]),
   );
-  const codesByRun = new Map<string, string[]>();
-  for (const target of targetsResult.data ?? []) {
-    const codes = codesByRun.get(target.run_id) ?? [];
-    codes.push(target.course_code);
-    codesByRun.set(target.run_id, codes);
-  }
+  const titleById = new Map(
+    (entriesResult.data ?? []).map((row) => [row.id, row.title]),
+  );
 
   return {
-    records: runs.map((run) =>
-      runSummary(
-        run,
-        yearById.get(run.academic_year_id) ?? 0,
-        codesByRun.get(run.id) ?? [],
-      ),
-    ),
+    records: targets.map((target) => ({
+      id: target.id,
+      courseCode: target.course_code,
+      courseTitle: titleById.get(target.directory_entry_id) ?? "",
+      academicYear: yearById.get(target.academic_year_id) ?? 0,
+      processingStatus: target.processing_status,
+      reviewStatus: target.review_status,
+      changeKind: target.change_kind,
+      errorSummary: target.error_summary,
+      createdAt: target.created_at,
+      finishedAt: target.finished_at,
+    })),
     page: currentPage,
     pageSize: currentPageSize,
     total: count ?? 0,
-  };
-}
-
-export async function loadCourseImportRunDetail(
-  runId: string,
-): Promise<CourseImportRunDetail | null> {
-  if (isDemoMode()) return null;
-  const supabase = await createClient();
-  const { data: runData, error: runError } = await supabase
-    .from("course_import_runs")
-    .select("*")
-    .eq("id", runId)
-    .maybeSingle();
-  if (runError) throw runError;
-  if (!runData) return null;
-  const run = runData as ImportRunRow;
-
-  const [yearResult, targetsResult] = await Promise.all([
-    supabase
-      .from("academic_years")
-      .select("year")
-      .eq("id", run.academic_year_id)
-      .single(),
-    supabase
-      .from("course_import_targets")
-      .select("*")
-      .eq("run_id", run.id)
-      .order("position"),
-  ]);
-  if (yearResult.error) throw yearResult.error;
-  if (targetsResult.error) throw targetsResult.error;
-  const targets = (targetsResult.data ?? []) as ImportTargetRow[];
-  const { data: extractionData, error: extractionError } = targets.length
-    ? await supabase
-        .from("course_extractions")
-        .select("*")
-        .in(
-          "target_id",
-          targets.map((target) => target.id),
-        )
-        .order("extraction_number", { ascending: false })
-    : { data: [], error: null };
-  if (extractionError) throw extractionError;
-  const extractionByTarget = new Map<string, ExtractionRow>();
-  for (const extraction of (extractionData ?? []) as ExtractionRow[]) {
-    if (!extractionByTarget.has(extraction.target_id)) {
-      extractionByTarget.set(extraction.target_id, extraction);
-    }
-  }
-
-  return {
-    run: {
-      ...runSummary(
-        run,
-        yearResult.data.year,
-        targets.map((target) => target.course_code),
-      ),
-      parserVersion: run.parser_version,
-      promptVersion: run.prompt_version,
-      schemaVersion: run.schema_version,
-      heartbeatAt: run.heartbeat_at,
-    },
-    targets: targets.map((target) => {
-      const extraction = extractionByTarget.get(target.id) ?? null;
-      return {
-        id: target.id,
-        courseCode: target.course_code,
-        position: target.position,
-        processingStatus: target.processing_status,
-        reviewStatus: target.review_status,
-        changeKind: target.change_kind,
-        attemptCount: target.attempt_count,
-        errorCode: target.error_code,
-        errorSummary: target.error_summary,
-        createdAt: target.created_at,
-        startedAt: target.claimed_at,
-        finishedAt: target.finished_at,
-        extraction: extraction
-          ? {
-              requestedModel: extraction.requested_model,
-              resolvedModel: extraction.resolved_model,
-              validationStatus: extraction.validation_status,
-              inputTokens: extraction.input_tokens,
-              cachedInputTokens: extraction.cached_input_tokens,
-              outputTokens: extraction.output_tokens,
-              reasoningTokens: extraction.reasoning_tokens,
-              costUsd: extraction.cost_usd,
-              costSource: extraction.cost_source,
-              latencyMs: extraction.latency_ms,
-            }
-          : null,
-      };
-    }),
   };
 }
 
@@ -801,11 +757,10 @@ async function snapshotRelationalData(
   };
 }
 
+/** Target ids are unique, so the review page addresses one without its run. */
 export async function loadCourseImportTargetDetail({
-  runId,
   targetId,
 }: {
-  runId: string;
   targetId: string;
 }): Promise<CourseImportTargetDetail | null> {
   if (isDemoMode()) return null;
@@ -814,11 +769,11 @@ export async function loadCourseImportTargetDetail({
     .from("course_import_targets")
     .select("*")
     .eq("id", targetId)
-    .eq("run_id", runId)
     .maybeSingle();
   if (targetError) throw targetError;
   if (!targetData) return null;
   const target = targetData as ImportTargetRow;
+  const runId = target.run_id;
 
   const [
     runResult,

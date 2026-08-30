@@ -41,7 +41,7 @@ function pageWindow(page: number, pageCount: number): Array<number | "gap"> {
 }
 
 const stepClasses =
-  "grid size-8 place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none";
+  "grid size-8 cursor-pointer place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none";
 
 export function Pagination({
   pathname,
@@ -74,10 +74,22 @@ export function Pagination({
       aria-label={`${itemName} pagination`}
       className="flex flex-wrap items-center justify-between gap-3"
     >
-      <p className="text-xs text-zinc-500 tabular-nums">
-        {total === 0
-          ? `No ${itemName}`
-          : `Viewing ${start.toLocaleString("en-AU")}–${end.toLocaleString("en-AU")} of ${total.toLocaleString("en-AU")} ${itemName}`}
+      <p className="text-xs font-medium text-zinc-600 tabular-nums">
+        {total === 0 ? (
+          <span className="text-zinc-400">No {itemName}</span>
+        ) : pageCount === 1 ? (
+          <>
+            {total.toLocaleString("en-AU")}{" "}
+            <span className="font-normal text-zinc-500">{itemName}</span>
+          </>
+        ) : (
+          <>
+            {start.toLocaleString("en-AU")}–{end.toLocaleString("en-AU")}{" "}
+            <span className="font-normal text-zinc-500">
+              of {total.toLocaleString("en-AU")}
+            </span>
+          </>
+        )}
       </p>
       {showControls ? (
         <div className="ml-auto flex items-center gap-0.5">

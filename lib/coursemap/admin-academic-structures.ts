@@ -25,6 +25,9 @@ export type AcademicStructureDirectoryStatus =
 export type AcademicStructureDirectoryAvailability =
   "all" | "available" | "unavailable";
 
+export type AcademicStructureDirectorySort =
+  "code-asc" | "code-desc" | "title-asc" | "title-desc" | "status";
+
 export type AcademicStructureYearOption = {
   id: number | null;
   year: number;
@@ -39,6 +42,8 @@ export type AcademicStructureYearOption = {
 
 export type AcademicStructureDirectoryRecord = {
   id: number;
+  /** The academic year this directory entry belongs to. */
+  year: number;
   kind: AcademicStructureKind;
   code: string;
   title: string;
@@ -72,7 +77,13 @@ export type AcademicStructureDirectoryRecord = {
 
 export type AcademicStructureDirectoryPage = {
   kind: AcademicStructureKind;
+  /**
+   * The year the year-scoped controls act on. When allYears is true this is
+   * only the fallback for a refresh or an import, not what the table shows.
+   */
   year: AcademicStructureYearOption;
+  /** Every year is listed at once, so per-year actions are unavailable. */
+  allYears: boolean;
   years: AcademicStructureYearOption[];
   records: AcademicStructureDirectoryRecord[];
   page: number;
@@ -90,14 +101,40 @@ export type AcademicStructureDirectoryPage = {
 
 type DirectoryEntryRow =
   Database["public"]["Tables"]["academic_structure_directory_entries"]["Row"];
-type ImportTargetRow =
-  Database["public"]["Tables"]["academic_structure_import_targets"]["Row"];
+type LatestImportTargetRow =
+  Database["public"]["Views"]["academic_structure_directory_latest_import_targets"]["Row"];
 type ImportRunRow =
   Database["public"]["Tables"]["academic_structure_import_runs"]["Row"];
 type AcademicStructureRow =
   Database["public"]["Tables"]["academic_structures"]["Row"];
 type AcademicStructureYearRow =
   Database["public"]["Tables"]["academic_structure_years"]["Row"];
+
+type CompleteLatestImportTargetRow = LatestImportTargetRow & {
+  id: string;
+  run_id: string;
+  directory_entry_id: number;
+  processing_status: string;
+  review_status: string;
+  created_at: string;
+};
+
+function assertCompleteLatestImportTarget(
+  target: LatestImportTargetRow,
+): asserts target is CompleteLatestImportTargetRow {
+  if (
+    target.id === null ||
+    target.run_id === null ||
+    target.directory_entry_id === null ||
+    target.processing_status === null ||
+    target.review_status === null ||
+    target.created_at === null
+  ) {
+    throw new Error(
+      "The academic structure latest-import view returned an incomplete row.",
+    );
+  }
+}
 
 function safePage(value: number | undefined) {
   return Number.isInteger(value) && Number(value) > 0 ? Number(value) : 1;
@@ -213,43 +250,48 @@ export async function loadAcademicStructureYearOptions(
   });
 }
 
-function latestTargetsByDirectoryEntry(targets: ImportTargetRow[]) {
-  const latest = new Map<number, ImportTargetRow>();
-  for (const target of targets) {
-    if (!latest.has(target.directory_entry_id)) {
-      latest.set(target.directory_entry_id, target);
-    }
-  }
-  return latest;
-}
-
 export async function loadAcademicStructureDirectoryPage({
   structureKind,
   year,
   page,
   query,
+  sort,
   status = "all",
+  statusNegated = false,
   availability = "all",
+  availabilityNegated = false,
   pageSize = 50,
 }: {
   structureKind: AcademicStructureKind;
-  year: number;
+  year: number | "all";
   page?: number;
   query?: string;
+  sort?: AcademicStructureDirectorySort;
   status?: AcademicStructureDirectoryStatus;
+  /** Invert the status filter so the page reads "status is not <status>". */
+  statusNegated?: boolean;
   availability?: AcademicStructureDirectoryAvailability;
+  availabilityNegated?: boolean;
   pageSize?: number;
 }): Promise<AcademicStructureDirectoryPage> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(10, Math.floor(pageSize)));
   const years = await loadAcademicStructureYearOptions(structureKind);
-  const selectedYear =
-    years.find((option) => option.year === year) ?? years[0]!;
+  const allYears = year === "all";
+  const currentCalendarYear = new Date().getFullYear();
+  // Year-scoped actions still need a concrete year while every year is
+  // listed, so this falls back to the current one rather than going null.
+  const selectedYear = allYears
+    ? (years.find((option) => option.year === currentCalendarYear) ??
+      years.at(-1) ??
+      years[0]!)
+    : (years.find((option) => option.year === year) ?? years[0]!);
 
   if (isDemoMode() || selectedYear.id === null) {
     return {
       kind: structureKind,
       year: selectedYear,
+      allYears,
       years,
       records: [],
       page: currentPage,
@@ -270,15 +312,21 @@ export async function loadAcademicStructureDirectoryPage({
     .limit(1)
     .maybeSingle();
 
+  const yearById = new Map(
+    years.flatMap((option) =>
+      option.id === null ? [] : [[option.id, option.year] as const],
+    ),
+  );
   let entriesQuery = supabase
     .from("academic_structure_directory_entries")
     .select("*")
-    .eq("academic_year_id", selectedYear.id)
     .eq("structure_kind", structureKind);
-  if (availability === "available") {
-    entriesQuery = entriesQuery.eq("is_available", true);
-  } else if (availability === "unavailable") {
-    entriesQuery = entriesQuery.eq("is_available", false);
+  if (!allYears) {
+    entriesQuery = entriesQuery.eq("academic_year_id", selectedYear.id);
+  }
+  if (availability !== "all") {
+    const wanted = (availability === "available") !== availabilityNegated;
+    entriesQuery = entriesQuery.eq("is_available", wanted);
   }
   const search = safeSearch(query);
   if (search) {
@@ -298,16 +346,19 @@ export async function loadAcademicStructureDirectoryPage({
   const entryIds = entries.map((entry) => entry.id);
   const { data: targetsData, error: targetsError } = entryIds.length
     ? await supabase
-        .from("academic_structure_import_targets")
+        .from("academic_structure_directory_latest_import_targets")
         .select("*")
-        .eq("structure_kind", structureKind)
         .in("directory_entry_id", entryIds)
-        .order("created_at", { ascending: false })
-        .limit(5000)
     : { data: [], error: null };
   if (targetsError) throw targetsError;
-  const targets = (targetsData ?? []) as ImportTargetRow[];
-  const latestTargetByEntryId = latestTargetsByDirectoryEntry(targets);
+  const targets = (targetsData ?? []).map((target) => {
+    const row = target as LatestImportTargetRow;
+    assertCompleteLatestImportTarget(row);
+    return row;
+  });
+  const latestTargetByEntryId = new Map(
+    targets.map((target) => [target.directory_entry_id, target]),
+  );
   const runIds = [...new Set(targets.map((target) => target.run_id))];
   const { data: runsData, error: runsError } = runIds.length
     ? await supabase
@@ -336,16 +387,29 @@ export async function loadAcademicStructureDirectoryPage({
   const structureIds = structures.map((structure) => structure.id);
   const { data: structureYearsData, error: structureYearsError } =
     structureIds.length
-      ? await supabase
-          .from("academic_structure_years")
-          .select("*")
-          .eq("academic_year_id", selectedYear.id)
-          .in("structure_id", structureIds)
+      ? await (allYears
+          ? supabase
+              .from("academic_structure_years")
+              .select("*")
+              .in("structure_id", structureIds)
+          : supabase
+              .from("academic_structure_years")
+              .select("*")
+              .eq("academic_year_id", selectedYear.id)
+              .in("structure_id", structureIds))
       : { data: [], error: null };
   if (structureYearsError) throw structureYearsError;
-  const structureYearByStructureId = new Map(
+  const structureYearKey = (structureId: number, academicYearId: number) =>
+    `${structureId}:${academicYearId}`;
+  const structureYearByKey = new Map(
     ((structureYearsData ?? []) as AcademicStructureYearRow[]).map(
-      (structureYear) => [structureYear.structure_id, structureYear],
+      (structureYear) => [
+        structureYearKey(
+          structureYear.structure_id,
+          structureYear.academic_year_id,
+        ),
+        structureYear,
+      ],
     ),
   );
 
@@ -356,7 +420,9 @@ export async function loadAcademicStructureDirectoryPage({
       : null;
     const structure = structureByCode.get(entry.code) ?? null;
     const structureYear = structure
-      ? (structureYearByStructureId.get(structure.id) ?? null)
+      ? (structureYearByKey.get(
+          structureYearKey(structure.id, entry.academic_year_id),
+        ) ?? null)
       : null;
     const latestImport =
       latestTarget && latestRun
@@ -373,6 +439,7 @@ export async function loadAcademicStructureDirectoryPage({
         : null;
     const record: AcademicStructureDirectoryRecord = {
       id: entry.id,
+      year: yearById.get(entry.academic_year_id) ?? selectedYear.year,
       kind: structureKind,
       code: entry.code,
       title: entry.title,
@@ -400,15 +467,29 @@ export async function loadAcademicStructureDirectoryPage({
   const filteredRecords =
     status === "all"
       ? records
-      : records.filter((record) => record.importStatus === status);
+      : records.filter(
+          (record) => (record.importStatus === status) !== statusNegated,
+        );
+  const sortedRecords = [...filteredRecords].sort((left, right) => {
+    const selectedSort = sort ?? "code-asc";
+    if (selectedSort === "status") {
+      return left.importStatus.localeCompare(right.importStatus);
+    }
+    const field = selectedSort.startsWith("title") ? "title" : "code";
+    const comparison = left[field].localeCompare(right[field], "en-AU", {
+      sensitivity: "base",
+    });
+    return selectedSort.endsWith("desc") ? -comparison : comparison;
+  });
   const start = (currentPage - 1) * currentPageSize;
   const activeRun = activeRunResult.data;
 
   return {
     kind: structureKind,
     year: selectedYear,
+    allYears,
     years,
-    records: filteredRecords.slice(start, start + currentPageSize),
+    records: sortedRecords.slice(start, start + currentPageSize),
     page: currentPage,
     pageSize: currentPageSize,
     total: filteredRecords.length,

@@ -102,8 +102,8 @@ export function ConfirmDialog({
               {title}
             </DialogTitle>
           </div>
-          <DialogDescription className="text-sm leading-5">
-            {description}
+          <DialogDescription asChild>
+            <div className="text-sm leading-5 text-zinc-500">{description}</div>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="border-t-0 bg-white px-5 pt-0 pb-4">

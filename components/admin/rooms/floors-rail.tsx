@@ -144,7 +144,7 @@ export function FloorsPanel({
               >
                 <button
                   aria-current={active ? "true" : undefined}
-                  className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md px-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                  className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md px-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
                   onClick={() => onSelect(level.id)}
                   type="button"
                 >

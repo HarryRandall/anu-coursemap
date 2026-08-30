@@ -162,7 +162,7 @@ export function AdminRecordTable<Row>({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="grid size-7 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-200/70 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                    className="grid size-7 cursor-pointer place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-200/70 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
                     type="button"
                   >
                     <Settings aria-hidden="true" size={15} />

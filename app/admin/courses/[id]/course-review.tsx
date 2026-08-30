@@ -1228,7 +1228,7 @@ export function CourseReview({
             <TabsContent className="mt-0" value="pipeline">
               <CourseImportPipeline
                 extractions={record.importTarget.extractions}
-                reviewHref={`/admin/imports/runs/${record.importTarget.runId}/targets/${record.importTarget.targetId}`}
+                reviewHref={`/admin/courses/imports/${record.importTarget.targetId}`}
                 stages={record.importTarget.stages}
               />
             </TabsContent>
@@ -1454,7 +1454,7 @@ export function CourseReview({
                       <div className="flex flex-wrap gap-2">
                         {record.importTarget ? (
                           <ButtonLink
-                            href={`/admin/imports/runs/${record.importTarget.runId}/targets/${record.importTarget.targetId}`}
+                            href={`/admin/courses/imports/${record.importTarget.targetId}`}
                             size="sm"
                           >
                             <FileCode2 aria-hidden="true" size={15} /> Import

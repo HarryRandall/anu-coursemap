@@ -168,7 +168,7 @@ test("loader reads only the new structure directory and snapshot-native tables",
     "academic_years",
     "academic_structure_directory_statuses",
     "academic_structure_directory_entries",
-    "academic_structure_import_targets",
+    "academic_structure_directory_latest_import_targets",
     "academic_structure_import_runs",
     "academic_structures",
     "academic_structure_years",
@@ -178,6 +178,8 @@ test("loader reads only the new structure directory and snapshot-native tables",
   assert.doesNotMatch(source, /from\("catalogue_/u);
   assert.doesNotMatch(source, /from\("academic_structure_versions"\)/u);
   assert.match(source, /runNumber: latestRun\.run_number/u);
+  assert.match(source, /academic_structure_directory_latest_import_targets/u);
+  assert.doesNotMatch(source, /limit\(5000\)/u);
   assert.match(source, /ACADEMIC_STRUCTURE_IMPORT_YEARS/u);
 });
 
@@ -272,17 +274,34 @@ test("each structure kind has separate collection and detail routes", async () =
   assert.match(component, /\/api\/admin\/academic-structure-imports/u);
   assert.match(component, /structureKind: data\.kind/u);
   assert.match(component, /structureCodes: selected/u);
-  assert.match(component, /requestedModel: model/u);
+  assert.match(component, /requestedModel,/u);
   assert.match(component, /current\.length >= 10/u);
+  // Starting an import lands on the kind's own import list; the run that
+  // batched it is no longer addressable.
+  assert.match(component, /router\.push\(importsPath\)/u);
+  assert.match(component, /adminAcademicStructureImportsPath\(data\.kind\)/u);
+  assert.doesNotMatch(component, /\/admin\/imports\/(?:runs|structures)/u);
+  assert.match(component, /record\.latestImport\.runNumber/u);
+  assert.match(component, /<ConfirmDialog/u);
   assert.match(
     component,
-    /\/admin\/imports\/structures\/runs\/\$\{payload\.runId\}/u,
+    /Nothing is imported and no drafts or published content change/u,
   );
-  assert.match(component, /Run \{record\.latestImport\.runNumber\}/u);
+  assert.match(component, /<DirectorySelectionBar/u);
+  assert.match(
+    component,
+    /onImport=\{\(model\) => void startImport\(model\)\}/u,
+  );
+  assert.match(component, /<SortMenu/u);
+  assert.match(component, /chooseSort/u);
+  assert.match(component, /<TableHead>Workflow<\/TableHead>/u);
+  assert.match(component, /\bDraft\s*<\/ButtonLink>/u);
+  assert.match(component, /\bPublished\s*<\/ButtonLink>/u);
+  assert.doesNotMatch(component, /<TableHead>Availability<\/TableHead>/u);
+  assert.doesNotMatch(component, /<Download/u);
   assert.match(component, /<FilterBar/u);
   assert.match(
     component,
     /\{ label: "Draft changes", value: "draft-changes" \}/u,
   );
-  assert.match(component, /\? "Newer draft"/u);
 });

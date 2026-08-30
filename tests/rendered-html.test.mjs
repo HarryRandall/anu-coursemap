@@ -92,7 +92,7 @@ test("keeps the public entry, catalogue and authentication routes accessible", a
   assert.match(homeHtml, />Prerequisites<\/button>/i);
   assert.match(homeHtml, /Start with a course, then build the rest/i);
   assert.match(homeHtml, /Explore courses/i);
-  assert.match(coursesHtml, /Viewing .* of .* course/i);
+  assert.match(coursesHtml, /[\d,]+<!-- --> <span[^>]*>courses<\/span>/i);
   assert.match(coursesHtml, /Computing Project/i);
   assert.doesNotMatch(
     coursesHtml,
@@ -436,10 +436,10 @@ test("routes course imports through the directory and durable run workspace", as
     fetch(`${origin}/admin/imports/changes/1`, { redirect: "manual" }),
   ]);
 
-  // The bare section path opens the durable course run history. Retired course
-  // import entry points and programme importing remain absent in Phase 1.
-  assert.ok([307, 308].includes(importsResponse.status));
-  assert.equal(importsResponse.headers.get("location"), "/admin/imports/runs");
+  // Imports now live under the object they belong to, so the former shared
+  // section path is gone. Retired course import entry points and programme
+  // importing remain absent in Phase 1.
+  assert.equal(importsResponse.status, 404);
   assert.equal(directoryResponse.status, 200);
   assert.equal(programmesResponse.status, 404);
   assert.equal(programmeDirectoryApiResponse.status, 404);
@@ -456,12 +456,14 @@ test("routes course imports through the directory and durable run workspace", as
   }
 
   const directoryHtml = await directoryResponse.text();
-  assert.match(directoryHtml, /Refresh directory/i);
-  assert.match(directoryHtml, /Search all courses by code or title/i);
-  assert.match(directoryHtml, /Import selected/i);
+  assert.match(directoryHtml, /Refresh the course directory/i);
+  assert.match(directoryHtml, /Search courses by code or title/i);
+  assert.doesNotMatch(directoryHtml, /Import selected/i);
   assert.match(directoryHtml, /No directory courses/i);
-  assert.match(directoryHtml, /Detailed imports are disabled/i);
-  assert.match(directoryHtml, /Import runs/i);
+  // Deployment state no longer renders as a full-width banner; it surfaces on
+  // the import control in the selection bar instead.
+  assert.doesNotMatch(directoryHtml, /Detailed imports are disabled/i);
+  assert.match(directoryHtml, /href="\/admin\/courses\/imports"/i);
   assert.doesNotMatch(directoryHtml, /Find a course/i);
 
   // The directory does not restore the wizard chrome from the retired import
@@ -477,7 +479,10 @@ test("removes the routes the imports split replaced", async () => {
       "/admin/imports/new",
       "/admin/imports/activity",
       "/admin/imports/history",
+      "/admin/imports/runs",
       "/admin/imports/runs/demo-run-1",
+      "/admin/imports/structures/runs",
+      "/admin/imports/structures/runs/demo-run-1",
     ].map((path) => fetch(`${origin}${path}`, { redirect: "manual" })),
   );
 

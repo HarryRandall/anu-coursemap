@@ -3,12 +3,19 @@ import "server-only";
 import type { Database } from "@/types/database";
 import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import {
+  DEFAULT_IMPORT_LIST_SORT,
+  importSortOrder,
+  importStatusFilter,
+  MAX_SEARCH_ENTRY_IDS,
+  safeImportSearch,
+  type ImportListSort,
+  type ImportListStatus,
+} from "@/lib/coursemap/import-list-query";
 
 export type AcademicStructureImportKind =
   "programme" | "major" | "minor" | "specialisation";
 
-type RunRow =
-  Database["public"]["Tables"]["academic_structure_import_runs"]["Row"];
 type TargetRow =
   Database["public"]["Tables"]["academic_structure_import_targets"]["Row"];
 type ExtractionRow =
@@ -19,72 +26,26 @@ type StructureYearRow =
   Database["public"]["Tables"]["academic_structure_years"]["Row"];
 type StructureRow = Database["public"]["Tables"]["academic_structures"]["Row"];
 
-export type AcademicStructureImportRunSummary = {
+export type AcademicStructureImportSummary = {
   id: string;
-  runNumber: number;
-  academicYear: number;
+  structureCode: string;
+  structureTitle: string;
   structureKind: AcademicStructureImportKind;
-  status: string;
-  requestedModel: string;
-  targetCount: number;
-  processedCount: number;
-  readyForReviewCount: number;
-  acceptedCount: number;
-  rejectedCount: number;
-  failedCount: number;
-  extractionCount: number;
-  inputTokens: number;
-  outputTokens: number;
-  costUsd: number;
-  createdAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  errorSummary: string | null;
-  structureCodes: string[];
-};
-
-export type AcademicStructureImportRunPage = {
-  records: AcademicStructureImportRunSummary[];
-  page: number;
-  pageSize: number;
-  total: number;
-};
-
-export type AcademicStructureImportRunTarget = {
-  id: string;
-  code: string;
-  title: string | null;
-  position: number;
+  academicYear: number;
   processingStatus: string;
   reviewStatus: string;
   changeKind: string | null;
-  attemptCount: number;
-  errorCode: string | null;
   errorSummary: string | null;
   createdAt: string;
   startedAt: string | null;
   finishedAt: string | null;
-  extraction: {
-    requestedModel: string;
-    resolvedModel: string | null;
-    validationStatus: string;
-    inputTokens: number;
-    cachedInputTokens: number;
-    outputTokens: number;
-    reasoningTokens: number;
-    costUsd: number;
-    latencyMilliseconds: number | null;
-  } | null;
 };
 
-export type AcademicStructureImportRunDetail = {
-  run: AcademicStructureImportRunSummary & {
-    parserVersion: string;
-    promptVersion: string;
-    schemaVersion: string;
-    heartbeatAt: string | null;
-  };
-  targets: AcademicStructureImportRunTarget[];
+export type AcademicStructureImportPage = {
+  records: AcademicStructureImportSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
 };
 
 export type AcademicStructureImportArtifact = {
@@ -188,72 +149,27 @@ function safePage(value: number | undefined) {
   return Number.isInteger(value) && Number(value) > 0 ? Number(value) : 1;
 }
 
-function numberOrZero(value: number | null | undefined) {
-  return value ?? 0;
-}
-
-function processedCount(run: RunRow) {
-  return run.succeeded_count + run.failed_count + run.cancelled_count;
-}
-
-function latestExtractionByTarget(extractions: ExtractionRow[]) {
-  const byTarget = new Map<string, ExtractionRow>();
-  for (const extraction of extractions) {
-    const current = byTarget.get(extraction.target_id);
-    if (!current || extraction.extraction_number > current.extraction_number) {
-      byTarget.set(extraction.target_id, extraction);
-    }
-  }
-  return byTarget;
-}
-
-function summariseRun({
-  run,
-  academicYear,
-  targets,
-  extractionCount,
-}: {
-  run: RunRow;
-  academicYear: number;
-  targets: TargetRow[];
-  extractionCount: number;
-}): AcademicStructureImportRunSummary {
-  return {
-    id: run.id,
-    runNumber: run.run_number,
-    academicYear,
-    structureKind: run.structure_kind as AcademicStructureImportKind,
-    status: run.status,
-    requestedModel: run.requested_model,
-    targetCount: run.target_count,
-    processedCount: processedCount(run),
-    readyForReviewCount: targets.filter((target) =>
-      ["needs_review", "unchanged"].includes(target.review_status),
-    ).length,
-    acceptedCount: run.accepted_count,
-    rejectedCount: run.rejected_count,
-    failedCount: run.failed_count,
-    extractionCount,
-    inputTokens: run.input_tokens,
-    outputTokens: run.output_tokens,
-    costUsd: Number(run.cost_usd),
-    createdAt: run.created_at,
-    startedAt: run.started_at,
-    completedAt: run.completed_at,
-    errorSummary: run.error_summary,
-    structureCodes: targets
-      .sort((left, right) => left.position - right.position)
-      .map((target) => target.structure_code),
-  };
-}
-
-export async function loadAcademicStructureImportRunPage({
+/**
+ * Each kind lists its own imports. The run that batched them is an
+ * implementation detail of the worker, not something an editor navigates.
+ */
+export async function loadAcademicStructureImportPage({
+  structureKind,
   page: requestedPage,
   pageSize = 20,
+  query,
+  sort = DEFAULT_IMPORT_LIST_SORT,
+  status = "all",
+  statusNegated = false,
 }: {
+  structureKind: AcademicStructureImportKind;
   page?: number;
   pageSize?: number;
-} = {}): Promise<AcademicStructureImportRunPage> {
+  query?: string;
+  sort?: ImportListSort;
+  status?: ImportListStatus;
+  statusNegated?: boolean;
+}): Promise<AcademicStructureImportPage> {
   const page = safePage(requestedPage);
   const safePageSize = Math.min(Math.max(Math.trunc(pageSize), 1), 50);
   if (isDemoMode()) {
@@ -262,179 +178,88 @@ export async function loadAcademicStructureImportRunPage({
 
   const supabase = await createClient();
   const from = (page - 1) * safePageSize;
-  const { data, count, error } = await supabase
-    .from("academic_structure_import_runs")
+  const search = safeImportSearch(query);
+
+  // Titles live on the directory entry, so a search resolves to entry ids
+  // first and the target list is narrowed to them.
+  let entryIds: number[] | null = null;
+  if (search) {
+    const { data: matches, error: matchError } = await supabase
+      .from("academic_structure_directory_entries")
+      .select("id")
+      .or(`code.ilike.*${search}*,title.ilike.*${search}*`)
+      .limit(MAX_SEARCH_ENTRY_IDS);
+    if (matchError) throw matchError;
+    entryIds = (matches ?? []).map((row) => row.id);
+    if (entryIds.length === 0) {
+      return { records: [], page, pageSize: safePageSize, total: 0 };
+    }
+  }
+
+  let targetsQuery = supabase
+    .from("academic_structure_import_targets")
     .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
+    .eq("structure_kind", structureKind);
+  if (entryIds) targetsQuery = targetsQuery.in("directory_entry_id", entryIds);
+  const statusFilter = importStatusFilter("structure", status);
+  if (statusFilter) {
+    targetsQuery = statusNegated
+      ? targetsQuery.not(
+          statusFilter.column,
+          "in",
+          `(${statusFilter.values.join(",")})`,
+        )
+      : targetsQuery.in(statusFilter.column, statusFilter.values);
+  }
+  const order = importSortOrder(sort, "structure_code");
+  const { data, count, error } = await targetsQuery
+    .order(order.column, { ascending: order.ascending })
     .range(from, from + safePageSize - 1);
   if (error) throw error;
-  const runs = (data ?? []) as RunRow[];
-  if (runs.length === 0) {
-    return {
-      records: [],
-      page,
-      pageSize: safePageSize,
-      total: count ?? 0,
-    };
+  const targets = (data ?? []) as TargetRow[];
+  if (targets.length === 0) {
+    return { records: [], page, pageSize: safePageSize, total: count ?? 0 };
   }
 
-  const runIds = runs.map((run) => run.id);
-  const yearIds = [...new Set(runs.map((run) => run.academic_year_id))];
-  const [yearsResult, targetsResult] = await Promise.all([
-    supabase.from("academic_years").select("id,year").in("id", yearIds),
+  const [yearsResult, entriesResult] = await Promise.all([
     supabase
-      .from("academic_structure_import_targets")
-      .select("*")
-      .in("run_id", runIds)
-      .order("position"),
+      .from("academic_years")
+      .select("id,year")
+      .in("id", [...new Set(targets.map((target) => target.academic_year_id))]),
+    supabase
+      .from("academic_structure_directory_entries")
+      .select("id,title")
+      .in("id", [
+        ...new Set(targets.map((target) => target.directory_entry_id)),
+      ]),
   ]);
   if (yearsResult.error) throw yearsResult.error;
-  if (targetsResult.error) throw targetsResult.error;
-  const targets = (targetsResult.data ?? []) as TargetRow[];
-  const targetIds = targets.map((target) => target.id);
-  const extractionsResult = targetIds.length
-    ? await supabase
-        .from("academic_structure_extractions")
-        .select("target_id")
-        .in("target_id", targetIds)
-    : { data: [], error: null };
-  if (extractionsResult.error) throw extractionsResult.error;
-
+  if (entriesResult.error) throw entriesResult.error;
   const yearById = new Map(
-    (yearsResult.data ?? []).map((year) => [year.id, year.year]),
+    (yearsResult.data ?? []).map((row) => [row.id, row.year]),
   );
-  const targetsByRun = new Map<string, TargetRow[]>();
-  for (const target of targets) {
-    targetsByRun.set(target.run_id, [
-      ...(targetsByRun.get(target.run_id) ?? []),
-      target,
-    ]);
-  }
-  const extractionCountByTarget = new Map<string, number>();
-  for (const extraction of extractionsResult.data ?? []) {
-    extractionCountByTarget.set(
-      extraction.target_id,
-      (extractionCountByTarget.get(extraction.target_id) ?? 0) + 1,
-    );
-  }
+  const titleById = new Map(
+    (entriesResult.data ?? []).map((row) => [row.id, row.title]),
+  );
 
   return {
-    records: runs.map((run) => {
-      const runTargets = targetsByRun.get(run.id) ?? [];
-      return summariseRun({
-        run,
-        academicYear: yearById.get(run.academic_year_id) ?? 0,
-        targets: runTargets,
-        extractionCount: runTargets.reduce(
-          (sum, target) => sum + (extractionCountByTarget.get(target.id) ?? 0),
-          0,
-        ),
-      });
-    }),
+    records: targets.map((target) => ({
+      id: target.id,
+      structureCode: target.structure_code,
+      structureTitle: titleById.get(target.directory_entry_id) ?? "",
+      structureKind: target.structure_kind as AcademicStructureImportKind,
+      academicYear: yearById.get(target.academic_year_id) ?? 0,
+      processingStatus: target.processing_status,
+      reviewStatus: target.review_status,
+      changeKind: target.change_kind,
+      errorSummary: target.error_summary,
+      createdAt: target.created_at,
+      startedAt: target.started_at,
+      finishedAt: target.finished_at,
+    })),
     page,
     pageSize: safePageSize,
     total: count ?? 0,
-  };
-}
-
-export async function loadAcademicStructureImportRunDetail(
-  runId: string,
-): Promise<AcademicStructureImportRunDetail | null> {
-  if (isDemoMode()) return null;
-  const supabase = await createClient();
-  const { data: runData, error: runError } = await supabase
-    .from("academic_structure_import_runs")
-    .select("*")
-    .eq("id", runId)
-    .maybeSingle();
-  if (runError) throw runError;
-  if (!runData) return null;
-  const run = runData as RunRow;
-
-  const [yearResult, targetsResult] = await Promise.all([
-    supabase
-      .from("academic_years")
-      .select("year")
-      .eq("id", run.academic_year_id)
-      .single(),
-    supabase
-      .from("academic_structure_import_targets")
-      .select("*")
-      .eq("run_id", run.id)
-      .order("position"),
-  ]);
-  if (yearResult.error) throw yearResult.error;
-  if (targetsResult.error) throw targetsResult.error;
-  const targets = (targetsResult.data ?? []) as TargetRow[];
-  const targetIds = targets.map((target) => target.id);
-  const directoryIds = targets.map((target) => target.directory_entry_id);
-  const [extractionsResult, directoryResult] = await Promise.all([
-    targetIds.length
-      ? supabase
-          .from("academic_structure_extractions")
-          .select("*")
-          .in("target_id", targetIds)
-          .order("extraction_number", { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
-    directoryIds.length
-      ? supabase
-          .from("academic_structure_directory_entries")
-          .select("id,title")
-          .in("id", directoryIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-  if (extractionsResult.error) throw extractionsResult.error;
-  if (directoryResult.error) throw directoryResult.error;
-  const extractions = (extractionsResult.data ?? []) as ExtractionRow[];
-  const extractionByTarget = latestExtractionByTarget(extractions);
-  const titleByDirectoryId = new Map(
-    (directoryResult.data ?? []).map((entry) => [entry.id, entry.title]),
-  );
-
-  return {
-    run: {
-      ...summariseRun({
-        run,
-        academicYear: yearResult.data.year,
-        targets,
-        extractionCount: extractions.length,
-      }),
-      parserVersion: run.parser_version,
-      promptVersion: run.prompt_version,
-      schemaVersion: run.schema_version,
-      heartbeatAt: run.heartbeat_at,
-    },
-    targets: targets.map((target) => {
-      const extraction = extractionByTarget.get(target.id) ?? null;
-      return {
-        id: target.id,
-        code: target.structure_code,
-        title: titleByDirectoryId.get(target.directory_entry_id) ?? null,
-        position: target.position,
-        processingStatus: target.processing_status,
-        reviewStatus: target.review_status,
-        changeKind: target.change_kind,
-        attemptCount: target.attempt_count,
-        errorCode: target.error_code,
-        errorSummary: target.error_summary,
-        createdAt: target.created_at,
-        startedAt: target.started_at,
-        finishedAt: target.finished_at,
-        extraction: extraction
-          ? {
-              requestedModel: extraction.requested_model,
-              resolvedModel: extraction.resolved_model,
-              validationStatus: extraction.validation_status,
-              inputTokens: numberOrZero(extraction.input_tokens),
-              cachedInputTokens: numberOrZero(extraction.cached_input_tokens),
-              outputTokens: numberOrZero(extraction.output_tokens),
-              reasoningTokens: numberOrZero(extraction.reasoning_tokens),
-              costUsd: numberOrZero(extraction.cost_usd),
-              latencyMilliseconds: extraction.latency_milliseconds,
-            }
-          : null,
-      };
-    }),
   };
 }
 
@@ -557,11 +382,15 @@ async function loadSnapshotRelationalData({
   };
 }
 
+/**
+ * Target ids are unique, so the review page addresses one without its run. The
+ * kind is still checked so a major's import cannot be opened under /minors.
+ */
 export async function loadAcademicStructureImportTargetDetail({
-  runId,
+  structureKind,
   targetId,
 }: {
-  runId: string;
+  structureKind: AcademicStructureImportKind;
   targetId: string;
 }): Promise<AcademicStructureImportTargetDetail | null> {
   if (isDemoMode()) return null;
@@ -570,11 +399,12 @@ export async function loadAcademicStructureImportTargetDetail({
     .from("academic_structure_import_targets")
     .select("*")
     .eq("id", targetId)
-    .eq("run_id", runId)
+    .eq("structure_kind", structureKind)
     .maybeSingle();
   if (targetError) throw targetError;
   if (!targetData) return null;
   const target = targetData as TargetRow;
+  const runId = target.run_id;
 
   const [
     runResult,

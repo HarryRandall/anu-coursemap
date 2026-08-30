@@ -70,3 +70,30 @@ export function legacyAdminAcademicStructureCollectionRedirect(
 export function allAdminAcademicStructureCollectionPaths() {
   return Object.values(ADMIN_COLLECTION_PATHS);
 }
+
+/** Imports live under the directory of the kind they belong to. */
+export function adminAcademicStructureImportsPath(kind: AcademicStructureKind) {
+  return `${adminAcademicStructureCollectionPath(kind)}/imports`;
+}
+
+export function adminAcademicStructureImportPath({
+  kind,
+  targetId,
+}: {
+  kind: AcademicStructureKind;
+  targetId: string;
+}) {
+  return `${adminAcademicStructureImportsPath(kind)}/${targetId}`;
+}
+
+/**
+ * A review decision knows its target but not its kind, so revalidation covers
+ * every kind's import routes. Each is a cheap tag invalidation.
+ */
+export function allAdminAcademicStructureImportPaths(targetId?: string) {
+  return Object.values(ADMIN_COLLECTION_PATHS).flatMap((base) =>
+    targetId === undefined
+      ? [`${base}/imports`]
+      : [`${base}/imports`, `${base}/imports/${targetId}`],
+  );
+}
