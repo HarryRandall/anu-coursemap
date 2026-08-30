@@ -986,7 +986,9 @@ async function academicYearRecord(
   return data;
 }
 
-export async function loadAcademicYearOptions(): Promise<AcademicYearOption[]> {
+async function loadAcademicYearOptionsUncached(): Promise<
+  AcademicYearOption[]
+> {
   if (isDemoMode()) {
     const courses = await demoCourses();
     return [...new Set(courses.map((course) => course.year))]
@@ -1013,6 +1015,19 @@ export async function loadAcademicYearOptions(): Promise<AcademicYearOption[]> {
       return { year: year.year, hasPublishedCourses: (count ?? 0) > 0 };
     }),
   );
+}
+
+export async function loadAcademicYearOptions(): Promise<AcademicYearOption[]> {
+  if (isDemoMode()) return loadAcademicYearOptionsUncached();
+
+  return unstable_cache(
+    loadAcademicYearOptionsUncached,
+    ["published-academic-year-options"],
+    {
+      revalidate: 300,
+      tags: ["published-course-years"],
+    },
+  )();
 }
 
 function firstFilterValue(value?: string) {
@@ -1338,7 +1353,7 @@ async function loadListRelationships(
   });
 }
 
-export async function loadPublishedCoursePage({
+async function loadPublishedCoursePageUncached({
   academicYear,
   filters = {},
   page = 1,
@@ -1424,6 +1439,49 @@ export async function loadPublishedCoursePage({
     year,
   );
   return { courses, page: safePage, pageSize: safePageSize, total: count ?? 0 };
+}
+
+export async function loadPublishedCoursePage(args: {
+  academicYear: number;
+  filters?: PublishedCourseFilters;
+  page?: number;
+  pageSize?: number;
+}): Promise<PublishedCoursePage> {
+  if (isDemoMode()) return loadPublishedCoursePageUncached(args);
+
+  const safePage = Math.max(1, Math.floor(args.page ?? 1));
+  const safePageSize = Math.min(
+    100,
+    Math.max(1, Math.floor(args.pageSize ?? 24)),
+  );
+  const query = firstFilterValue(args.filters?.query);
+  const subject = firstFilterValue(args.filters?.subject).toUpperCase();
+  const level = Number(firstFilterValue(args.filters?.level));
+  const session = firstFilterValue(args.filters?.session);
+
+  return unstable_cache(
+    () =>
+      loadPublishedCoursePageUncached({
+        academicYear: args.academicYear,
+        filters: { query, subject, level: String(level), session },
+        page: safePage,
+        pageSize: safePageSize,
+      }),
+    [
+      "published-course-page",
+      String(args.academicYear),
+      String(safePage),
+      String(safePageSize),
+      query,
+      subject,
+      String(level),
+      session,
+    ],
+    {
+      revalidate: 300,
+      tags: ["published-course-page", `published-courses:${args.academicYear}`],
+    },
+  )();
 }
 
 export async function loadPublishedCoursesByCodes(

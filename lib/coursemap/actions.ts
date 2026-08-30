@@ -14,6 +14,19 @@ export type CoursemapActionResult = {
   unitsEarned?: number;
 };
 
+const STUDENT_NUMBER_PATTERN = /^u\d{7}$/;
+
+function normaliseStudentNumber(value: string) {
+  const studentNumber = value.trim().toLowerCase();
+  if (!studentNumber) return "";
+  if (!STUDENT_NUMBER_PATTERN.test(studentNumber)) {
+    throw new Error(
+      "Enter a student number in the format u1234567, or leave it blank.",
+    );
+  }
+  return studentNumber;
+}
+
 function termParts(termId: string) {
   if (termId === "unscheduled") {
     return { year: undefined, period: undefined };
@@ -25,10 +38,13 @@ function termParts(termId: string) {
 }
 
 function failure(error: unknown): CoursemapActionResult {
-  const message =
+  const rawMessage =
     error && typeof error === "object" && "message" in error
       ? String(error.message)
       : "Coursemap could not save that change.";
+  const message = rawMessage.includes("profiles_student_number_format_check")
+    ? "Enter a student number in the format u1234567, or leave it blank."
+    : rawMessage;
   return { ok: false, message };
 }
 
@@ -36,12 +52,13 @@ export async function saveProfileAndPlan(
   profile: Profile,
 ): Promise<CoursemapActionResult> {
   try {
+    const studentNumber = normaliseStudentNumber(profile.studentId);
     const supabase = await createClient();
     const { data, error } = await supabase.rpc(
       "save_current_user_primary_plan",
       {
         p_display_name: profile.name,
-        p_student_number: profile.studentId,
+        p_student_number: studentNumber,
         p_academic_year: profile.catalogueYear,
         p_commencement_year: profile.commencementYear,
         p_study_load:
