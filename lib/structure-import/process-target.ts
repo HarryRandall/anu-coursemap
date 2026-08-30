@@ -456,6 +456,15 @@ function mergeAcademicStructureExtractions({
           candidate.message === item.message,
       ) === index,
   );
+  const introduction = deterministic.introduction ?? model.introduction;
+  const descriptionCandidate = deterministic.description ?? model.description;
+  const description =
+    introduction &&
+    descriptionCandidate?.localeCompare(introduction, undefined, {
+      sensitivity: "accent",
+    }) === 0
+      ? null
+      : descriptionCandidate;
   const merged: AcademicStructureExtraction = {
     ...model,
     kind: deterministic.kind,
@@ -464,8 +473,8 @@ function mergeAcademicStructureExtractions({
     title: deterministic.title,
     acronym: deterministic.acronym ?? model.acronym,
     shortName: deterministic.shortName ?? model.shortName,
-    introduction: deterministic.introduction ?? model.introduction,
-    description: deterministic.description ?? model.description,
+    introduction,
+    description,
     totalUnits: deterministic.totalUnits ?? model.totalUnits,
     durationYears: deterministic.durationYears ?? model.durationYears,
     academicCareer: deterministic.academicCareer ?? model.academicCareer,

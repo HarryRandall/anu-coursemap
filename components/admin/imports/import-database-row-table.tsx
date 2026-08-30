@@ -18,15 +18,22 @@ function DatabaseCellValue({ value }: { value: unknown }) {
     return <span className="font-mono text-zinc-400">null</span>;
   }
   if (typeof value === "object") {
+    const serialised = JSON.stringify(value);
     return (
-      <pre className="max-h-56 max-w-96 min-w-48 overflow-auto font-mono text-xs leading-5 break-words whitespace-pre-wrap text-zinc-700">
-        {JSON.stringify(value, null, 2)}
+      <pre
+        className="block h-8 max-w-[28rem] min-w-48 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap text-zinc-700"
+        title={serialised}
+      >
+        {serialised}
       </pre>
     );
   }
   if (typeof value === "string") {
     return value.length ? (
-      <span className="block max-h-56 max-w-96 min-w-32 overflow-auto text-xs leading-5 break-words whitespace-pre-wrap">
+      <span
+        className="block h-8 max-w-[28rem] min-w-32 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 text-xs leading-6 whitespace-nowrap"
+        title={value}
+      >
         {value}
       </span>
     ) : (
@@ -34,7 +41,9 @@ function DatabaseCellValue({ value }: { value: unknown }) {
     );
   }
   return (
-    <span className="font-mono text-xs whitespace-nowrap">{String(value)}</span>
+    <span className="block h-8 max-w-[28rem] [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap">
+      {String(value)}
+    </span>
   );
 }
 
@@ -55,7 +64,7 @@ export function ImportDatabaseRowTable({
           <TableRow className="hover:bg-transparent">
             {table.columns.map((column) => (
               <TableHead
-                className="font-mono tracking-normal normal-case"
+                className="max-w-[28rem] font-mono tracking-normal normal-case"
                 key={column}
               >
                 {column}
@@ -65,9 +74,12 @@ export function ImportDatabaseRowTable({
         </TableHeader>
         <TableBody>
           {table.rows.map((row, rowIndex) => (
-            <TableRow key={rowIndex}>
+            <TableRow className="h-12" key={rowIndex}>
               {table.columns.map((column) => (
-                <TableCell className="align-top" key={column}>
+                <TableCell
+                  className="h-12 max-w-[28rem] overflow-hidden py-0 align-middle"
+                  key={column}
+                >
                   <DatabaseCellValue value={row[column]} />
                 </TableCell>
               ))}

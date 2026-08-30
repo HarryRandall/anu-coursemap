@@ -333,6 +333,26 @@ test("deterministically extracts metadata, sections, outcomes and relationships"
   );
 });
 
+test("does not store the visible introduction twice when ANU repeats it as metadata", () => {
+  const duplicateDescriptionHtml = fixtureHtml.replace(
+    "&lt;p&gt;Fallback description.&lt;/p&gt;",
+    "&lt;p&gt;A broad, source-backed computing programme.&lt;/p&gt;",
+  );
+  const duplicateDescription = extractDeterministicAcademicStructure({
+    html: duplicateDescriptionHtml,
+    kind: "programme",
+    code: "BCOMP",
+    year: 2026,
+    sourceUrl,
+  });
+
+  assert.equal(
+    duplicateDescription.introduction,
+    "A broad, source-backed computing programme.",
+  );
+  assert.equal(duplicateDescription.description, null);
+});
+
 test("keeps absent and ambiguous snapshot metadata nullable", () => {
   const extraction = extractDeterministicAcademicStructure({
     html: nullableFixtureHtml,
@@ -714,7 +734,7 @@ test("provides a strict OpenRouter prompt and recursive JSON schema", () => {
   const systemPrompt = buildAcademicStructureExtractionSystemPrompt();
   assert.equal(
     ACADEMIC_STRUCTURE_IMPORT_PARSER_VERSION,
-    "coursemap-academic-structure-parser.v3",
+    "coursemap-academic-structure-parser.v4",
   );
   assert.equal(
     ACADEMIC_STRUCTURE_IMPORT_PROMPT_VERSION,

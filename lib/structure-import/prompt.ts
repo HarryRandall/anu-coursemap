@@ -5,7 +5,7 @@ import {
 } from "./contract.ts";
 
 export const ACADEMIC_STRUCTURE_IMPORT_PARSER_VERSION =
-  "coursemap-academic-structure-parser.v3";
+  "coursemap-academic-structure-parser.v4";
 export const ACADEMIC_STRUCTURE_IMPORT_PROMPT_VERSION =
   "coursemap-academic-structure-prompt.v3";
 export const ACADEMIC_STRUCTURE_SNAPSHOT_SCHEMA_VERSION =

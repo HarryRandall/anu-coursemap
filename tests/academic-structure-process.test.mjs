@@ -295,6 +295,22 @@ test("uses modelled snapshot fields only when deterministic extraction has no va
   );
 });
 
+test("does not persist a model description that repeats the introduction", () => {
+  const deterministic = extraction({ description: null });
+  const model = extraction({
+    introduction: null,
+    description: "Study computing at ANU.",
+  });
+  const merged =
+    academicStructureImportTargetInternals.mergeAcademicStructureExtractions({
+      deterministic,
+      model,
+    });
+
+  assert.equal(merged.introduction, "Study computing at ANU.");
+  assert.equal(merged.description, null);
+});
+
 test("keeps modelled fees when deterministic extraction cannot classify them", () => {
   const deterministic = extraction();
   const model = extraction({
