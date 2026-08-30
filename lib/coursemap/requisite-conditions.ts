@@ -1,7 +1,7 @@
 import {
   parseRequisiteSummary,
   type RequisiteExpression,
-} from "@/lib/coursemap/requisite-summary";
+} from "./requisite-summary.ts";
 
 export const REVIEWED_OPERATORS = ["all_of", "any_of", "at_least"] as const;
 

@@ -4,6 +4,7 @@ import {
   type CourseRule,
 } from "./contract.ts";
 import { stableFingerprint } from "./canonical.ts";
+import { extractAnuCourseCodes } from "./course-codes.ts";
 
 type RuleKind =
   | "prerequisite"
@@ -323,6 +324,20 @@ function addRuleReference(
   });
 }
 
+function addLexicalRuleReferences(
+  accumulator: RuleProjectionAccumulator,
+  ruleKey: RuleKind,
+  sourceTexts: readonly (string | null | undefined)[],
+) {
+  for (const sourceText of sourceTexts) {
+    if (!sourceText) continue;
+    const normalisedSourceText = cleanText(sourceText);
+    for (const courseCode of extractAnuCourseCodes(normalisedSourceText)) {
+      addRuleReference(accumulator, ruleKey, courseCode, normalisedSourceText);
+    }
+  }
+}
+
 function addAtomicRule(
   rule: CourseRule,
   context: {
@@ -555,12 +570,17 @@ function addStructuredRule({
   if (!rule && !sourceText && extraText.length === 0) return;
 
   const generatedText = rule ? describeRule(rule) : extraText.join("; ");
+  const savedSourceText = sourceText ?? generatedText;
   accumulator.rules.push({
     key: ruleKey,
     ruleKind: ruleKey,
     hardness: "hard",
-    sourceText: sourceText ?? generatedText,
+    sourceText: savedSourceText,
   });
+  addLexicalRuleReferences(accumulator, ruleKey, [
+    savedSourceText,
+    ...extraText,
+  ]);
   const rootKey = `${ruleKey}:group:root`;
   const rootOperator = rule?.op === "one_of" ? "any_of" : "all_of";
   accumulator.ruleGroups.push({
@@ -658,6 +678,7 @@ function addIncompatibilityRule(
       rawText ??
       `Incompatible with ${[...hardCodes, ...advisoryCodes].join(", ")}`,
   });
+  addLexicalRuleReferences(accumulator, ruleKey, [rawText]);
   const rootKey = `${ruleKey}:group:root`;
   accumulator.ruleGroups.push({
     key: rootKey,
@@ -735,6 +756,9 @@ function projectRules(extraction: CourseExtraction): RuleProjectionAccumulator {
     sourceText: nullableText(extraction.requisites.corequisiteText),
   });
   addIncompatibilityRule(extraction, accumulator);
+  accumulator.ruleCourseReferences = accumulator.ruleCourseReferences.filter(
+    ({ referencedCourseCode }) => referencedCourseCode !== extraction.code,
+  );
   accumulator.ruleCourseReferences.sort(
     (left, right) =>
       left.ruleKey.localeCompare(right.ruleKey) ||

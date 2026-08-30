@@ -8,6 +8,9 @@ import type { Database } from "@/types/database";
 
 type SnapshotRow = Database["public"]["Tables"]["course_snapshots"]["Row"];
 type SourcePageRow = Database["public"]["Tables"]["course_source_pages"]["Row"];
+type ImportStageRow =
+  Database["public"]["Tables"]["course_import_stages"]["Row"];
+type ExtractionRow = Database["public"]["Tables"]["course_extractions"]["Row"];
 type FieldEvidenceRow =
   Database["public"]["Tables"]["course_snapshot_field_evidence"]["Row"];
 type RuleGroupRow = Database["public"]["Tables"]["course_rule_groups"]["Row"];
@@ -53,7 +56,12 @@ export type AdminCourseYearRecord = {
   currentSnapshotId: number | null;
   draftSnapshotId: number | null;
   evidence: FieldEvidenceRow[];
-  importTarget: { runId: string; targetId: string } | null;
+  importTarget: {
+    extractions: ExtractionRow[];
+    runId: string;
+    stages: ImportStageRow[];
+    targetId: string;
+  } | null;
   lifecycleStatus: string;
   projection: CourseSnapshotProjectionData | null;
   publicId: string;
@@ -807,24 +815,48 @@ export async function loadAdminCourseYear(
 
   let importTarget: AdminCourseYearRecord["importTarget"] = null;
   let artifacts: CourseImportArtifact[] = [];
-  if (includeImportArtifacts && snapshot?.source_page_id) {
+  if (includeImportArtifacts && ancestrySnapshotIds.length > 0) {
     const { data: target, error: targetError } = await supabase
       .from("course_import_targets")
       .select("id,run_id")
       .eq("course_year_id", selectedYear.courseYearId)
-      .eq("source_page_id", snapshot.source_page_id)
+      .in("candidate_snapshot_id", ancestrySnapshotIds)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
     if (targetError) throw targetError;
     if (target) {
-      importTarget = { runId: target.run_id, targetId: target.id };
-      const { data: artifactRows, error: artifactsError } = await supabase
-        .from("course_import_artifacts")
-        .select("*")
-        .eq("target_id", target.id)
-        .order("attempt_number", { ascending: false });
-      if (artifactsError) throw artifactsError;
+      const [artifactsResult, stagesResult, extractionsResult] =
+        await Promise.all([
+          supabase
+            .from("course_import_artifacts")
+            .select("*")
+            .eq("target_id", target.id)
+            .order("attempt_number", { ascending: false }),
+          supabase
+            .from("course_import_stages")
+            .select("*")
+            .eq("target_id", target.id)
+            .order("position"),
+          supabase
+            .from("course_extractions")
+            .select("*")
+            .eq("target_id", target.id)
+            .order("extraction_number", { ascending: false }),
+        ]);
+      const importDetailError = [
+        artifactsResult,
+        stagesResult,
+        extractionsResult,
+      ].find((result) => result.error)?.error;
+      if (importDetailError) throw importDetailError;
+      importTarget = {
+        extractions: extractionsResult.data ?? [],
+        runId: target.run_id,
+        stages: stagesResult.data ?? [],
+        targetId: target.id,
+      };
+      const artifactRows = artifactsResult.data;
       artifacts = (artifactRows ?? []).map((artifact) => ({
         id: artifact.id,
         kind: artifact.artifact_kind,

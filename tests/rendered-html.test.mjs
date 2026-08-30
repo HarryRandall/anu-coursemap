@@ -485,6 +485,61 @@ test("removes the routes the imports split replaced", async () => {
   }
 });
 
+test("keeps the course review workspace focused on import evidence", async () => {
+  const [review, tabs, pipeline, loader, targetReview, adminPreview] =
+    await Promise.all([
+      readFile(
+        new URL("../app/admin/courses/[id]/course-review.tsx", import.meta.url),
+        "utf8",
+      ),
+      readFile(
+        new URL(
+          "../components/admin/imports/course-review-tabs.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+      readFile(
+        new URL(
+          "../components/admin/imports/course-import-pipeline.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+      readFile(
+        new URL("../lib/coursemap/admin-course-year.ts", import.meta.url),
+        "utf8",
+      ),
+      readFile(
+        new URL(
+          "../components/admin/imports/course-import-target-review.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+      readFile(
+        new URL("../lib/coursemap/admin-course-preview.ts", import.meta.url),
+        "utf8",
+      ),
+    ]);
+
+  assert.match(review, /record\.importTarget \? "pipeline" : "course"/);
+  assert.match(review, /<CourseImportPipeline/);
+  assert.match(review, /value="requisites"/);
+  assert.match(review, /COURSE_REVIEW_CONFIRMATION_NOTE/);
+  assert.doesNotMatch(review, /Confirmation note|setConfirmationNote/);
+  assert.match(tabs, /value: "pipeline", label: "Pipeline"/);
+  assert.match(tabs, /value: "course", label: "Course data"/);
+  assert.doesNotMatch(tabs, /value: "changes"|value: "parsed"/);
+  assert.match(pipeline, /Full import review/);
+  assert.match(pipeline, /Import pipeline stages/);
+  assert.match(loader, /from\("course_import_stages"\)/);
+  assert.match(loader, /from\("course_extractions"\)/);
+  assert.match(loader, /\.in\("candidate_snapshot_id", ancestrySnapshotIds\)/);
+  assert.match(targetReview, /<CourseImportPipeline/);
+  assert.match(adminPreview, /prerequisiteCodesFromSnapshotProjection/);
+});
+
 test("removes the disposable starter and keeps product metadata", async () => {
   const [
     planPage,
@@ -598,6 +653,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(courseDetailClient, /completedCodes/);
   assert.match(courseDetailClient, /plannedCodes/);
   assert.match(courseDetailView, /prerequisiteEdges/);
+  assert.match(courseDetailView, /hasPrerequisiteWording/);
   assert.match(courseDetailView, /CourseReferenceText/);
   assert.match(courseDetailView, /Student experience and self-review/);
   assert.match(courseDetailView, /Learning outcomes/);
@@ -616,6 +672,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(prereqGraph, /ring-rose-200/);
   assert.doesNotMatch(prereqGraph, /bg-rose-50\/40/);
   assert.match(prereqGraph, /No prerequisite listed/);
+  assert.match(prereqGraph, /No mapped course references yet/);
   assert.match(prereqGraph, /No imported unlocks yet/);
   assert.match(prereqGraph, /Not imported yet/);
   assert.match(prereqGraph, /prefetch=\{false\}/);
@@ -674,6 +731,7 @@ test("removes the disposable starter and keeps product metadata", async () => {
   assert.match(publishedCourses, /await import\("@\/lib\/catalogue"\)/);
   assert.doesNotMatch(publishedCourses, /from "@\/lib\/catalogue"/);
   assert.match(publishedCourses, /published_course_detail/);
+  assert.match(publishedCourses, /resolvePrerequisiteFallbackDetails/);
   assert.match(publishedCourses, /p_academic_year: academicYear/);
   assert.match(publishedCourses, /published-course:\$\{academicYear\}/);
   assert.doesNotMatch(publishedCourses, /course_versions/);
