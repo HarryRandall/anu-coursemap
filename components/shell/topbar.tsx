@@ -8,10 +8,12 @@ import { IconButton } from "@/components/ui/button";
 export function Topbar({
   actions,
   currentBreadcrumbLabel,
+  breadcrumbSegmentLabels,
   onOpenNav,
 }: {
   actions?: ReactNode;
   currentBreadcrumbLabel?: string;
+  breadcrumbSegmentLabels?: Record<string, string | null>;
   onOpenNav: () => void;
 }) {
   return (
@@ -26,7 +28,10 @@ export function Topbar({
         >
           <Menu size={20} aria-hidden="true" />
         </IconButton>
-        <Breadcrumbs currentLabel={currentBreadcrumbLabel} />
+        <Breadcrumbs
+          currentLabel={currentBreadcrumbLabel}
+          segmentLabels={breadcrumbSegmentLabels}
+        />
       </div>
 
       {actions && (

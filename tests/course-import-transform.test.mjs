@@ -197,6 +197,13 @@ test("deterministically extracts every rich course section and excludes future c
     deterministic.requisites.prerequisiteText.includes("COMP1100"),
     true,
   );
+  assert.deepEqual(deterministic.requisites.prerequisiteRule, {
+    op: "one_of",
+    rules: [
+      { op: "completed", courseCode: "COMP1100" },
+      { op: "completed", courseCode: "COMP1130" },
+    ],
+  });
   assert.deepEqual(deterministic.requisites.incompatibilityCourseCodes, [
     "COMP6240",
   ]);
@@ -332,6 +339,47 @@ test("keeps unpunctuated ANU prerequisite codes out of incompatibilities", () =>
   assert.deepEqual(extraction.requisites.incompatibilityCourseCodes, [
     "COMP6240",
   ]);
+});
+
+test("maps corequisite course wording to completed-or-concurrent rules", () => {
+  const extraction = extractDeterministicCourse({
+    html: html.replace(
+      "COMP1130. You are not able",
+      "COMP1130. Co-requisite: COMP2100 or COMP2110. You are not able",
+    ),
+    courseCode: "COMP2400",
+    year: 2026,
+    sourceUrl,
+  });
+
+  assert.deepEqual(extraction.requisites.corequisiteRule, {
+    op: "one_of",
+    rules: [
+      { op: "completed_or_concurrent", courseCode: "COMP2100" },
+      { op: "completed_or_concurrent", courseCode: "COMP2110" },
+    ],
+  });
+});
+
+test("preserves and flags prerequisite wording that cannot be parsed safely", () => {
+  const extraction = extractDeterministicCourse({
+    html: html.replace(
+      "COMP1100 or\n      COMP1130.",
+      "COMP1100 or COMP1130 and MATH1013.",
+    ),
+    courseCode: "COMP2400",
+    year: 2026,
+    sourceUrl,
+  });
+
+  assert.equal(extraction.requisites.prerequisiteRule, null);
+  assert.match(extraction.requisites.prerequisiteText, /MATH1013/u);
+  assert.ok(
+    extraction.reviewItems.some(
+      ({ fieldKey, kind }) =>
+        fieldKey === "requisites.prerequisiteRule" && kind === "ambiguous",
+    ),
+  );
 });
 
 test("does not read the Lo in Log books as a learning-outcome marker", () => {

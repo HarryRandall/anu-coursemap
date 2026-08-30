@@ -46,6 +46,7 @@ const {
   automaticExpressionFromSource,
   applyCourseMatch,
   conditionSourceText,
+  conditionSummary,
   courseMatch,
   createConditionNode,
   createEmptyTree,
@@ -319,6 +320,76 @@ test("rejects an out-of-range GPA and accepts a 7-point value", () => {
       },
     },
   );
+});
+
+test("does not turn a cleared WAM into a zero requirement", () => {
+  assert.deepEqual(
+    validateReviewedTree({
+      id: "root",
+      operator: "all_of",
+      children: [{ type: "condition", id: "wam", kind: "wam", wam: null }],
+    }),
+    { message: "Condition 1: WAM must be between 0 and 100." },
+  );
+});
+
+test("describes completed-or-concurrent course requirements accurately", () => {
+  assert.equal(
+    conditionSummary({
+      kind: "course",
+      courseCode: "COMP1100",
+      courseRequirementMode: "completed_or_concurrent",
+    }),
+    "Completed or concurrently enrolled in COMP1100",
+  );
+});
+
+test("validates every advanced snapshot-native condition without flattening", () => {
+  const result = validateReviewedTree({
+    id: "root",
+    operator: "all_of",
+    children: [
+      {
+        type: "condition",
+        id: "course-set",
+        kind: "course_set_units",
+        units: 6,
+        courseCodes: ["COMP1100", "COMP1110"],
+      },
+      {
+        type: "condition",
+        id: "standing",
+        kind: "year_standing",
+        minimumYear: 2,
+      },
+      { type: "condition", id: "wam", kind: "wam", wam: 65 },
+    ],
+  });
+
+  assert.deepEqual(result, {
+    tree: {
+      type: "group",
+      id: "root",
+      operator: "all_of",
+      minimumCount: null,
+      children: [
+        {
+          type: "condition",
+          id: "course-set",
+          kind: "course_set_units",
+          units: 6,
+          courseCodes: ["COMP1100", "COMP1110"],
+        },
+        {
+          type: "condition",
+          id: "standing",
+          kind: "year_standing",
+          minimumYear: 2,
+        },
+        { type: "condition", id: "wam", kind: "wam", wam: 65 },
+      ],
+    },
+  });
 });
 
 test("requires at least N to stay within the child count", () => {

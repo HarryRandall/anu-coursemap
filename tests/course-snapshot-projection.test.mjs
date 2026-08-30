@@ -4,7 +4,10 @@ import test from "node:test";
 import { extractDeterministicCourse } from "../lib/course-import/deterministic.ts";
 import { projectCourseSnapshot } from "../lib/course-import/project-snapshot.ts";
 import { parseCourseSnapshotProjection } from "../lib/course-import/snapshot-projection-contract.ts";
-import { compareCourseSnapshotProjections } from "../lib/coursemap/course-snapshot-diff.ts";
+import {
+  compactCourseSnapshotChanges,
+  compareCourseSnapshotProjections,
+} from "../lib/coursemap/course-snapshot-diff.ts";
 import { COURSE_SNAPSHOT_RELATIONAL_QUERY_SHAPE } from "../lib/coursemap/course-import-query-shape.ts";
 
 const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2400";
@@ -85,6 +88,33 @@ test("projects every rich field into natural-key relational rows", () => {
     { assessmentPosition: 2, learningOutcomePosition: 2 },
   ]);
   assert.match(projection.projectionSha256, /^[0-9a-f]{64}$/);
+});
+
+test("projects deterministic prerequisite choices into graph references", () => {
+  const projection = projectCourseSnapshot(extraction);
+  const prerequisiteRoot = projection.ruleGroups.find(
+    ({ key }) => key === "prerequisite:group:root",
+  );
+
+  assert.equal(prerequisiteRoot.operator, "any_of");
+  assert.deepEqual(
+    projection.ruleConditions
+      .filter(({ ruleKey }) => ruleKey === "prerequisite")
+      .map(({ conditionKind, requiredCourseCode }) => ({
+        conditionKind,
+        requiredCourseCode,
+      })),
+    [
+      { conditionKind: "course", requiredCourseCode: "COMP1100" },
+      { conditionKind: "course", requiredCourseCode: "COMP1130" },
+    ],
+  );
+  assert.deepEqual(
+    projection.ruleCourseReferences
+      .filter(({ ruleKey }) => ruleKey === "prerequisite")
+      .map(({ referencedCourseCode }) => referencedCourseCode),
+    ["COMP1100", "COMP1130"],
+  );
 });
 
 test("projection hash is stable and excludes extraction and source metadata", () => {
@@ -371,5 +401,59 @@ test("shows every populated candidate field as added for a first import", () => 
     compareCourseSnapshotProjections(candidate, structuredClone(candidate))
       .length,
     0,
+  );
+});
+
+test("compacts relational rows while keeping snapshot fields precise", () => {
+  const previous = projectCourseSnapshot(extraction);
+  delete previous.projectionSha256;
+  const candidate = structuredClone(previous);
+  candidate.snapshot.title = "A clearer course title";
+  candidate.fees = [];
+  candidate.courseOffering = {
+    deliveryMode: "Online",
+    location: "Remote",
+  };
+  candidate.ruleConditions[0].minimumUnits = 48;
+  candidate.ruleConditions[0].sourceText = "Complete 48 units.";
+
+  const compact = compactCourseSnapshotChanges(
+    compareCourseSnapshotProjections(previous, candidate),
+    previous,
+    candidate,
+  );
+  const byPath = new Map(compact.map((change) => [change.fieldPath, change]));
+
+  assert.deepEqual(byPath.get("snapshot.title"), {
+    fieldPath: "snapshot.title",
+    kind: "changed",
+    before: previous.snapshot.title,
+    after: "A clearer course title",
+  });
+  assert.deepEqual(byPath.get("fees[0]"), {
+    fieldPath: "fees[0]",
+    kind: "removed",
+    before: previous.fees[0],
+    after: undefined,
+  });
+  assert.deepEqual(byPath.get("courseOffering"), {
+    fieldPath: "courseOffering",
+    kind: "changed",
+    before: previous.courseOffering,
+    after: candidate.courseOffering,
+  });
+  assert.deepEqual(byPath.get("ruleConditions[0]"), {
+    fieldPath: "ruleConditions[0]",
+    kind: "changed",
+    before: previous.ruleConditions[0],
+    after: candidate.ruleConditions[0],
+  });
+  assert.equal(
+    compact.some(({ fieldPath }) => fieldPath === "fees[0].amount"),
+    false,
+  );
+  assert.equal(
+    compact.some(({ fieldPath }) => fieldPath.includes("minimumUnits")),
+    false,
   );
 });

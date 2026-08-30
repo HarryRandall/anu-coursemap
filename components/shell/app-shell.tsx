@@ -12,6 +12,8 @@ export type AppShellProps = {
   tabs?: ReactNode;
   /** Replaces the final generated breadcrumb label when the route needs richer context. */
   currentBreadcrumbLabel?: string;
+  /** Relabels generated path segments, or hides them when their value is null. */
+  breadcrumbSegmentLabels?: Record<string, string | null>;
   admin?: boolean;
   /** Removes the default page padding + max width (used by the plan board). */
   fullBleed?: boolean;
@@ -22,6 +24,7 @@ export function AppShell({
   actions,
   tabs,
   currentBreadcrumbLabel,
+  breadcrumbSegmentLabels,
   admin = false,
   fullBleed = false,
 }: AppShellProps) {
@@ -38,6 +41,7 @@ export function AppShell({
       <div className="min-w-0 lg:pl-64">
         <Topbar
           actions={actions}
+          breadcrumbSegmentLabels={breadcrumbSegmentLabels}
           currentBreadcrumbLabel={currentBreadcrumbLabel}
           onOpenNav={() => setMobileOpen(true)}
         />

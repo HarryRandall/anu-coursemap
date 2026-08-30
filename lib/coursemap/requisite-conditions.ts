@@ -14,7 +14,10 @@ export const REVIEWED_CONDITION_KINDS = [
   "units_total",
   "subject_units",
   "level_units",
+  "course_set_units",
+  "year_standing",
   "gpa",
+  "wam",
   "permission",
   "other",
 ] as const;
@@ -29,9 +32,12 @@ export type ReviewedConditionInput = {
   courseRequirementMode?: "completed" | "completed_or_concurrent" | null;
   structureCode?: string | null;
   units?: number | null;
+  courseCodes?: string[] | null;
   subjectCode?: string | null;
   level?: number | null;
+  minimumYear?: number | null;
   gpa?: number | null;
+  wam?: number | null;
   mark?: number | null;
   freeText?: string | null;
 };
@@ -90,6 +96,9 @@ export type StoredRuleCondition = {
   subjectCode: string | null;
   level: number | null;
   gpa: number | null;
+  minimumYear?: number | null;
+  wam?: number | null;
+  courseCodes?: string[] | null;
   mark: number | null;
   freeText: string | null;
   sourceText: string | null;
@@ -489,8 +498,22 @@ function storedConditionToView(
             subjectCode: condition.subjectCode,
           }
         : null;
+    case "course_set_units":
+      return condition.units != null && condition.courseCodes?.length
+        ? {
+            kind: "course_set_units",
+            units: condition.units,
+            courseCodes: condition.courseCodes,
+          }
+        : null;
+    case "year_standing":
+      return condition.minimumYear != null
+        ? { kind: "year_standing", minimumYear: condition.minimumYear }
+        : null;
     case "gpa":
       return condition.gpa != null ? { kind: "gpa", gpa: condition.gpa } : null;
+    case "wam":
+      return condition.wam != null ? { kind: "wam", wam: condition.wam } : null;
     case "permission":
       return condition.freeText
         ? { kind: "permission", freeText: condition.freeText }
@@ -679,12 +702,54 @@ function normaliseCondition(
         },
       };
     }
+    case "course_set_units": {
+      const units = Number(condition.units);
+      const codes = (condition.courseCodes ?? []).map((code) =>
+        code.trim().toUpperCase(),
+      );
+      if (!Number.isFinite(units) || units <= 0) {
+        return { message: "Units must be greater than zero." };
+      }
+      if (
+        codes.length === 0 ||
+        codes.some((code) => !COURSE_CODE_PATTERN.test(code))
+      ) {
+        return { message: "Choose at least one valid course code." };
+      }
+      if (new Set(codes).size !== codes.length) {
+        return { message: "Each course in the set must be unique." };
+      }
+      return {
+        condition: { kind: "course_set_units", units, courseCodes: codes },
+      };
+    }
+    case "year_standing": {
+      const minimumYear = Number(condition.minimumYear);
+      if (
+        !Number.isInteger(minimumYear) ||
+        minimumYear < 1 ||
+        minimumYear > 10
+      ) {
+        return { message: "Year standing must be between 1 and 10." };
+      }
+      return { condition: { kind: "year_standing", minimumYear } };
+    }
     case "gpa": {
       const gpa = Number(condition.gpa);
       if (!Number.isFinite(gpa) || gpa < 0 || gpa > 7) {
         return { message: "GPA must be between 0 and 7." };
       }
       return { condition: { kind: "gpa", gpa } };
+    }
+    case "wam": {
+      if (condition.wam === null || condition.wam === undefined) {
+        return { message: "WAM must be between 0 and 100." };
+      }
+      const wam = Number(condition.wam);
+      if (!Number.isFinite(wam) || wam < 0 || wam > 100) {
+        return { message: "WAM must be between 0 and 100." };
+      }
+      return { condition: { kind: "wam", wam } };
     }
     case "permission": {
       const freeText = (condition.freeText ?? "").trim();
@@ -829,8 +894,14 @@ export function conditionSourceText(condition: ReviewedConditionView) {
       return `${condition.units} units at ${condition.level}-level${
         condition.subjectCode ? ` in ${condition.subjectCode}` : ""
       }`;
+    case "course_set_units":
+      return `${condition.units} units from ${(condition.courseCodes ?? []).join(", ")}`;
+    case "year_standing":
+      return `At least year ${condition.minimumYear} standing`;
     case "gpa":
       return `GPA of at least ${condition.gpa}`;
+    case "wam":
+      return `WAM of at least ${condition.wam}`;
     case "permission":
     case "other":
       return condition.freeText ?? "";
@@ -846,7 +917,10 @@ export const CONDITION_KIND_LABELS: Record<ReviewedConditionKind, string> = {
   units_total: "Units of study",
   subject_units: "Units in a subject",
   level_units: "Units at a level",
+  course_set_units: "Units from courses",
+  year_standing: "Year standing",
   gpa: "Grade average",
+  wam: "WAM",
   permission: "Permission",
   other: "Other wording",
 };
@@ -858,7 +932,10 @@ export const CONDITION_FAMILY_KINDS = [
   "units_total",
   "subject_units",
   "level_units",
+  "course_set_units",
+  "year_standing",
   "gpa",
+  "wam",
   "permission",
   "other",
 ] as const;
@@ -929,8 +1006,14 @@ export function isConditionComplete(condition: ReviewedConditionView) {
       return condition.units != null && Boolean(condition.subjectCode);
     case "level_units":
       return condition.units != null && condition.level != null;
+    case "course_set_units":
+      return condition.units != null && Boolean(condition.courseCodes?.length);
+    case "year_standing":
+      return condition.minimumYear != null;
     case "gpa":
       return condition.gpa != null;
+    case "wam":
+      return condition.wam != null;
     case "permission":
     case "other":
       return Boolean(condition.freeText?.trim());
@@ -947,6 +1030,9 @@ export function conditionSummary(condition: ReviewedConditionView) {
   switch (condition.kind) {
     case "course": {
       if (!condition.courseCode) return "Choose a course";
+      if (condition.courseRequirementMode === "completed_or_concurrent") {
+        return `Completed or concurrently enrolled in ${condition.courseCode}`;
+      }
       return condition.mark != null
         ? `Completed ${condition.courseCode} with a mark of ${condition.mark}`
         : `Completed ${condition.courseCode}`;
@@ -975,10 +1061,22 @@ export function conditionSummary(condition: ReviewedConditionView) {
             condition.subjectCode ? ` in ${condition.subjectCode}` : ""
           }`
         : "Set the units and level";
+    case "course_set_units":
+      return condition.units != null && condition.courseCodes?.length
+        ? `Completed ${condition.units} units from ${condition.courseCodes.join(", ")}`
+        : "Set the units and courses";
+    case "year_standing":
+      return condition.minimumYear != null
+        ? `At least year ${condition.minimumYear} standing`
+        : "Set the minimum year standing";
     case "gpa":
       return condition.gpa != null
         ? `Grade average of at least ${condition.gpa}`
         : "Set the grade average";
+    case "wam":
+      return condition.wam != null
+        ? `WAM of at least ${condition.wam}`
+        : "Set the minimum WAM";
     case "permission":
       return condition.freeText?.trim() || "Describe the permission needed";
     case "other":

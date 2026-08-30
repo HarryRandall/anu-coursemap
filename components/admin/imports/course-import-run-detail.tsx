@@ -84,9 +84,11 @@ export function CourseImportRunDetailView({
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <Badge tone={statusTone(run.status)}>{readable(run.status)}</Badge>
-            <span className="font-mono text-xs text-zinc-500">{run.id}</span>
+            <span className="text-sm font-medium text-zinc-800">
+              {run.academicYear} course import
+            </span>
             <time className="text-xs text-zinc-500" dateTime={run.createdAt}>
-              {dateFormatter.format(new Date(run.createdAt))}
+              Started {dateFormatter.format(new Date(run.createdAt))}
             </time>
           </div>
           {active ? <CourseImportRunRecovery runId={run.id} /> : null}
@@ -160,7 +162,7 @@ export function CourseImportRunDetailView({
 
         <DataTableShell>
           <Table className="min-w-[980px]">
-            <TableCaption>Course targets in this import run</TableCaption>
+            <TableCaption>Courses in this import run</TableCaption>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>Course</TableHead>
@@ -237,7 +239,7 @@ export function CourseImportRunDetailView({
                   </TableCell>
                   <TableCell className="text-right">
                     <Link
-                      aria-label={`Open ${target.courseCode} import target`}
+                      aria-label={`Open ${target.courseCode} import details`}
                       className="inline-grid size-8 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
                       href={`/admin/imports/runs/${run.id}/targets/${target.id}`}
                     >

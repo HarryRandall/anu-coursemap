@@ -19,7 +19,7 @@ const UUID_PATTERN =
 
 function normaliseInput(input: ReviewDecisionInput) {
   if (!UUID_PATTERN.test(input.runId) || !UUID_PATTERN.test(input.targetId)) {
-    throw new TypeError("Choose a valid course import target.");
+    throw new TypeError("Choose a valid course import.");
   }
   const note = input.resolutionNote?.trim() || null;
   if (note && note.length > 2_000) {
@@ -35,7 +35,7 @@ function errorMessage(error: unknown) {
       return "This course changed after the import began. Refresh and review the current draft before deciding.";
     }
     if (/not awaiting review/i.test(message)) {
-      return "This import target is no longer awaiting a review decision.";
+      return "This course import is no longer awaiting a review decision.";
     }
   }
   return "Coursemap could not save the review decision.";
@@ -118,8 +118,8 @@ export async function recoverStalledCourseImportRun(
       ok: true,
       message:
         result && result.newly_failed_target_count > 0
-          ? `${result.newly_failed_target_count} stalled target${result.newly_failed_target_count === 1 ? " was" : "s were"} marked failed.`
-          : "No expired or stale queued targets were found.",
+          ? `${result.newly_failed_target_count} stalled course${result.newly_failed_target_count === 1 ? " was" : "s were"} marked failed.`
+          : "No expired or stale queued courses were found.",
     };
   } catch {
     return {
