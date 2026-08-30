@@ -151,7 +151,10 @@ export function ProfileEditor({
                 value={draft.name}
               />
             </Field>
-            <Field hint="Optional" label="Student number">
+            <Field
+              hint="Optional. Use the format u1234567."
+              label="Student number"
+            >
               <Input
                 onChange={(event) =>
                   setDraft({ ...draft, studentId: event.target.value })

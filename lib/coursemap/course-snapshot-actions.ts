@@ -129,6 +129,7 @@ function revalidateCourse({
   revalidatePath(`/courses/${code}`);
   revalidatePath("/plan");
   revalidateTag("published-course-detail", "max");
+  revalidateTag("published-course-years", "max");
   revalidateTag(`published-course:${year}:${code}`, "max");
   revalidateTag(`published-courses:${year}`, "max");
 }

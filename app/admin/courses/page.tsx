@@ -52,9 +52,16 @@ export default async function AdminCoursesPage({
   const query = (first(params.q) ?? "").trim();
   const page = Number(first(params.page));
 
+  const academicYearOptions = loadAcademicYearOptions();
   const [data, years, canImport] = await Promise.all([
-    loadCourseDirectoryPage({ year, page, query, status }),
-    loadAcademicYearOptions(),
+    loadCourseDirectoryPage({
+      year,
+      page,
+      query,
+      status,
+      academicYearOptions,
+    }),
+    academicYearOptions,
     canManageCourseImports(),
   ]);
 

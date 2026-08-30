@@ -307,16 +307,18 @@ export async function loadCourseDirectoryPage({
   query,
   status = "all",
   pageSize = 50,
+  academicYearOptions,
 }: {
   year: number;
   page?: number;
   query?: string;
   status?: CourseDirectoryStatus;
   pageSize?: number;
+  academicYearOptions?: Promise<AcademicYearOption[]>;
 }): Promise<CourseDirectoryPage> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(10, Math.floor(pageSize)));
-  const years = await loadAcademicYearOptions();
+  const years = await (academicYearOptions ?? loadAcademicYearOptions());
   const selectedYear =
     years.find((option) => option.year === year) ?? years[0]!;
 

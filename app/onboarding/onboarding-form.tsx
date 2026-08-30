@@ -38,6 +38,8 @@ const steps = [
 
 type StepId = (typeof steps)[number]["id"];
 
+const STUDENT_NUMBER_PATTERN = /^u\d{7}$/;
+
 function yearsOfStudy(degree: ProgrammeOption | undefined) {
   const duration = nominalProgrammeDuration(
     degree
@@ -121,6 +123,16 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
   const goForward = () => {
     if (stepId === "about" && !name.trim()) {
       setMessage("Add your name so your plan has an owner.");
+      return;
+    }
+    if (
+      stepId === "about" &&
+      studentNumber.trim() &&
+      !STUDENT_NUMBER_PATTERN.test(studentNumber.trim().toLowerCase())
+    ) {
+      setMessage(
+        "Enter a student number in the format u1234567, or leave it blank.",
+      );
       return;
     }
     if (stepId === "degree" && !degree) {
@@ -258,7 +270,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     />
                   </Field>
                   <Field
-                    hint="Optional. Shown on your plan exports."
+                    hint="Optional. Use the format u1234567."
                     label="Student number"
                   >
                     <Input
