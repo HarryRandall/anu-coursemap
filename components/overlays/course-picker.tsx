@@ -526,7 +526,7 @@ function CoursePreview({
               ref={backButtonRef}
               type="button"
               onClick={onBack}
-              className="mb-2 -ml-2 inline-flex min-h-11 items-center gap-1.5 px-2 text-xs font-semibold text-zinc-500 hover:text-zinc-900 md:hidden"
+              className="mb-2 -ml-2 inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-2 text-xs font-semibold text-zinc-500 hover:text-zinc-900 md:hidden"
             >
               <ArrowLeft size={14} aria-hidden="true" /> Back to results
             </button>

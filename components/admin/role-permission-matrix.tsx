@@ -36,7 +36,7 @@ function RoleHeading({ role }: { role: AdminRole }) {
         <Popover>
           <PopoverTrigger asChild>
             <button
-              className="grid size-4 place-items-center rounded-full text-zinc-400 transition-colors hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+              className="grid size-4 cursor-pointer place-items-center rounded-full text-zinc-400 transition-colors hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
               type="button"
             >
               <Info aria-hidden="true" size={12} />

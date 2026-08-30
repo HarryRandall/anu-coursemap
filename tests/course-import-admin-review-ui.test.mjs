@@ -18,12 +18,8 @@ const databaseRowTablePath = new URL(
   "../components/admin/imports/import-database-row-table.tsx",
   import.meta.url,
 );
-const runListPath = new URL(
-  "../components/admin/imports/course-import-runs.tsx",
-  import.meta.url,
-);
-const runDetailPath = new URL(
-  "../components/admin/imports/course-import-run-detail.tsx",
+const importsListPath = new URL(
+  "../components/admin/imports/imports-list.tsx",
   import.meta.url,
 );
 const adminCoursePagePath = new URL(
@@ -34,6 +30,78 @@ const adminCoursePreviewPath = new URL(
   "../lib/coursemap/admin-course-preview.ts",
   import.meta.url,
 );
+const adminCourseListPath = new URL(
+  "../app/admin/courses/course-list.tsx",
+  import.meta.url,
+);
+const directorySelectionBarPath = new URL(
+  "../components/admin/directory-selection-bar.tsx",
+  import.meta.url,
+);
+const yearPickerPath = new URL(
+  "../components/ui/year-picker.tsx",
+  import.meta.url,
+);
+const filterBarPath = new URL(
+  "../components/ui/filter-bar.tsx",
+  import.meta.url,
+);
+const sortMenuPath = new URL("../components/ui/sort-menu.tsx", import.meta.url);
+
+test("uses the shared directory management pattern on the course list", async () => {
+  const source = await readFile(adminCourseListPath, "utf8");
+  assert.match(source, /<ConfirmDialog/u);
+  assert.match(
+    source,
+    /Nothing is imported and no drafts or published content change/u,
+  );
+  assert.match(source, /<SortMenu/u);
+  assert.match(source, /<WorkflowStatus/u);
+  assert.match(source, /<DirectorySelectionBar/u);
+  assert.match(source, /onImport=\{\(model\) => void startImport\(model\)\}/u);
+  assert.match(source, /requestedModel,/u);
+  assert.match(source, /coursePublicId.*data\.year\.year/u);
+  assert.match(source, /href=.*\/courses\/.*record\.code/u);
+  assert.doesNotMatch(source, /<TableHead>Directory<\/TableHead>/u);
+  assert.doesNotMatch(source, /Import selected<\/Button>/u);
+});
+
+test("waits for a saved import model before queueing with that model", async () => {
+  const source = await readFile(directorySelectionBarPath, "utf8");
+  assert.match(
+    source,
+    /disabled=\{disabledReason !== null \|\| savingModel \|\| submitting\}/u,
+  );
+  assert.match(source, /onClick=\{\(\) => onImport\(model\)\}/u);
+});
+
+test("keeps the compact year picker inline and puts All last", async () => {
+  const [courseSource, pickerSource] = await Promise.all([
+    readFile(adminCourseListPath, "utf8"),
+    readFile(yearPickerPath, "utf8"),
+  ]);
+  assert.match(
+    courseSource,
+    /className="flex items-center justify-between gap-3"/u,
+  );
+  assert.match(pickerSource, /allLabel = "All"/u);
+  assert.match(
+    pickerSource,
+    /ordered\.map[\s\S]*\{allowAll \? \([\s\S]*\{allLabel\}/u,
+  );
+});
+
+test("gives Radix popovers a concrete trigger inside tooltips", async () => {
+  const sources = await Promise.all([
+    readFile(filterBarPath, "utf8"),
+    readFile(sortMenuPath, "utf8"),
+    readFile(directorySelectionBarPath, "utf8"),
+  ]);
+  for (const source of sources) {
+    assert.match(source, /<Tooltip[\s\S]*<PopoverTrigger asChild>/u);
+    assert.doesNotMatch(source, /<PopoverTrigger asChild>\s*<Tooltip/u);
+  }
+});
 
 test("makes the pipeline the first and default course import review tab", async () => {
   const source = await readFile(targetReviewPath, "utf8");
@@ -111,18 +179,16 @@ test("uses light JSON artefacts and table-shaped database projections", async ()
   assert.doesNotMatch(artifactSource, /bg-black|bg-zinc-950/);
 });
 
-test("uses numeric run labels while keeping UUIDs in internal routes", async () => {
-  const [listSource, detailSource, targetSource] = await Promise.all([
-    readFile(runListPath, "utf8"),
-    readFile(runDetailPath, "utf8"),
+test("addresses imports by target id and keeps the run out of the URL", async () => {
+  const [listSource, targetSource] = await Promise.all([
+    readFile(importsListPath, "utf8"),
     readFile(targetReviewPath, "utf8"),
   ]);
-  assert.match(listSource, /#\{run\.runNumber\}/);
-  assert.match(listSource, /run \$\{run\.runNumber\}/);
-  assert.match(detailSource, /Run #\$\{run\.runNumber\}/);
-  assert.match(targetSource, /Run #\$\{detail\.run\.runNumber\}/);
-  assert.match(listSource, /runs\/\$\{run\.id\}/);
-  assert.match(detailSource, /runs\/\$\{run\.id\}\/targets\/\$\{target\.id\}/);
+  assert.match(listSource, /\$\{importsPath\}\/\$\{record\.id\}/);
+  assert.doesNotMatch(listSource, /\/runs\//);
+  assert.doesNotMatch(listSource, /runNumber/);
+  // The run still names itself on the review page, it just never routes.
+  assert.match(targetSource, /Run #\{detail\.run\.runNumber\}/);
 });
 
 test("keeps the requisite editor and complete student-preview chain", async () => {

@@ -26,7 +26,7 @@ export function RadioGroupItem({
     <RadioGroupPrimitive.Item
       data-slot="radio-group-item"
       className={cn(
-        "grid size-5 shrink-0 place-items-center rounded-full border border-zinc-300 bg-white text-brand-600 shadow-xs transition-colors outline-none hover:border-brand-300 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-brand-600 motion-reduce:transition-none",
+        "grid size-5 shrink-0 cursor-pointer place-items-center rounded-full border border-zinc-300 bg-white text-brand-600 shadow-xs transition-colors outline-none hover:border-brand-300 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-brand-600 motion-reduce:transition-none",
         className,
       )}
       {...props}
@@ -49,7 +49,7 @@ export function RadioCard({
     <RadioGroupPrimitive.Item
       data-slot="radio-card"
       className={cn(
-        "group/radio-card relative min-h-24 w-full rounded-xl border border-zinc-200 bg-white p-4 pr-12 text-left shadow-xs transition-colors outline-none hover:border-zinc-300 hover:bg-zinc-50 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-brand-500 data-[state=checked]:bg-brand-50/60 data-[state=checked]:shadow-none motion-reduce:transition-none",
+        "group/radio-card relative min-h-24 w-full cursor-pointer rounded-xl border border-zinc-200 bg-white p-4 pr-12 text-left shadow-xs transition-colors outline-none hover:border-zinc-300 hover:bg-zinc-50 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-brand-500 data-[state=checked]:bg-brand-50/60 data-[state=checked]:shadow-none motion-reduce:transition-none",
         className,
       )}
       {...props}

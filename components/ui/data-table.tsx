@@ -33,7 +33,11 @@ export function DataTableShell({
           // rounded-[inherit] keeps the scroll container's painted backgrounds
           // inside the shell's corners rather than squaring them off.
           "relative isolate min-h-0 overflow-x-auto overscroll-x-contain rounded-[inherit]",
-          viewport && "md:flex md:flex-1 md:overflow-auto",
+          // Owns the vertical scroll on wide screens, so the document itself
+          // never scrolls. The toolbar and the sticky column headers stay put
+          // however far down the list you are, and the only scrollbar is this
+          // one — inside the card, where styling it costs no page width.
+          viewport && "md:flex-1 md:overflow-y-auto md:overscroll-y-contain",
         )}
       >
         {children}
@@ -100,7 +104,9 @@ export function TableRow({
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b border-zinc-100 transition-colors hover:bg-zinc-50/70 motion-reduce:transition-none",
+        // A fixed row height keeps the table scannable: rows stay uniform
+        // whether or not a cell carries a second line of detail.
+        "h-16 border-b border-zinc-100 transition-colors hover:bg-zinc-50/70 motion-reduce:transition-none",
         className,
       )}
       {...rest}

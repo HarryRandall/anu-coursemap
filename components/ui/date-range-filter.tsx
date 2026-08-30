@@ -140,7 +140,7 @@ export function DateRangeFilter({
           <div className="flex shrink-0 flex-col gap-0.5 border-t border-zinc-200 p-2 sm:border-t-0 sm:border-l">
             {presets.map((preset) => (
               <button
-                className="rounded-md px-3 py-1.5 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                className="cursor-pointer rounded-md px-3 py-1.5 text-left text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
                 key={preset.days}
                 onClick={() => applyPreset(preset.days)}
                 type="button"
@@ -150,7 +150,7 @@ export function DateRangeFilter({
             ))}
             {selected?.from ? (
               <button
-                className="mt-1 rounded-md border-t border-zinc-100 px-3 py-1.5 text-left text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                className="mt-1 cursor-pointer rounded-md border-t border-zinc-100 px-3 py-1.5 text-left text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
                 onClick={() => {
                   if (state) {
                     setDraft(undefined);

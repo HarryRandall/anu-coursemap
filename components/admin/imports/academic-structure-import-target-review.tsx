@@ -917,11 +917,6 @@ export function AcademicStructureImportTargetReview({
         ) : undefined
       }
       admin
-      breadcrumbSegmentLabels={{
-        structures: "Structures",
-        [detail.run.id]: `Run #${detail.run.runNumber}`,
-        targets: null,
-      }}
       currentBreadcrumbLabel={detail.target.code}
     >
       <CourseImportAutoRefresh active={active} />

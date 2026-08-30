@@ -268,7 +268,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={showFind}
-        className="mt-5 flex h-10 w-full items-center gap-2 rounded-lg bg-white px-3 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition-colors ring-inset hover:text-zinc-800 hover:ring-zinc-300"
+        className="mt-5 flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg bg-white px-3 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition-colors ring-inset hover:text-zinc-800 hover:ring-zinc-300"
       >
         <Search size={16} strokeWidth={1.8} aria-hidden="true" />
         <span className="flex-1 text-left text-[13px]">Find</span>

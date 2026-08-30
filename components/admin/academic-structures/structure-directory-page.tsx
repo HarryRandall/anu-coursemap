@@ -1,10 +1,12 @@
 import { StructureDirectoryList } from "@/components/admin/academic-structures/structure-directory-list";
+import { loadImportModelSetting } from "@/lib/admin/settings";
+import { negatableParam } from "@/lib/filter-params";
 import { canManageCatalogueImports } from "@/lib/auth/viewer";
-import { configuredOpenRouterModels } from "@/lib/course-import/openrouter";
 import {
   ACADEMIC_STRUCTURE_IMPORT_YEARS,
   loadAcademicStructureDirectoryPage,
   type AcademicStructureDirectoryAvailability,
+  type AcademicStructureDirectorySort,
   type AcademicStructureDirectoryStatus,
 } from "@/lib/coursemap/admin-academic-structures";
 import type { AcademicStructureKind } from "@/lib/structure-import/contract";
@@ -29,10 +31,19 @@ const availabilities: AcademicStructureDirectoryAvailability[] = [
   "unavailable",
 ];
 
+const sorts: AcademicStructureDirectorySort[] = [
+  "code-asc",
+  "code-desc",
+  "title-asc",
+  "title-desc",
+  "status",
+];
+
 export type AcademicStructureDirectorySearchParams = {
   availability?: string | string[];
   page?: string | string[];
   q?: string | string[];
+  sort?: string | string[];
   status?: string | string[];
   year?: string | string[];
 };
@@ -49,38 +60,53 @@ export async function AcademicStructureDirectoryPage({
   searchParams: Promise<AcademicStructureDirectorySearchParams>;
 }) {
   const params = await searchParams;
-  const requestedYear = Number(first(params.year));
+  const rawYear = first(params.year);
+  const requestedYear = Number(rawYear);
   const currentCalendarYear = new Date().getFullYear();
-  const year = ACADEMIC_STRUCTURE_IMPORT_YEARS.includes(requestedYear)
-    ? requestedYear
-    : ACADEMIC_STRUCTURE_IMPORT_YEARS.includes(currentCalendarYear)
-      ? currentCalendarYear
-      : ACADEMIC_STRUCTURE_IMPORT_YEARS.at(-1)!;
-  const requestedStatus = first(params.status) ?? "all";
+  const year: number | "all" =
+    rawYear === "all"
+      ? "all"
+      : ACADEMIC_STRUCTURE_IMPORT_YEARS.includes(requestedYear)
+        ? requestedYear
+        : ACADEMIC_STRUCTURE_IMPORT_YEARS.includes(currentCalendarYear)
+          ? currentCalendarYear
+          : ACADEMIC_STRUCTURE_IMPORT_YEARS.at(-1)!;
+  const requestedStatus = negatableParam(params.status, "all");
   const status = statuses.includes(
-    requestedStatus as AcademicStructureDirectoryStatus,
+    requestedStatus.value as AcademicStructureDirectoryStatus,
   )
-    ? (requestedStatus as AcademicStructureDirectoryStatus)
+    ? (requestedStatus.value as AcademicStructureDirectoryStatus)
     : "all";
-  const requestedAvailability = first(params.availability) ?? "all";
+  const statusNegated = status === "all" ? false : requestedStatus.negated;
+  const requestedAvailability = negatableParam(params.availability, "all");
   const availability = availabilities.includes(
-    requestedAvailability as AcademicStructureDirectoryAvailability,
+    requestedAvailability.value as AcademicStructureDirectoryAvailability,
   )
-    ? (requestedAvailability as AcademicStructureDirectoryAvailability)
+    ? (requestedAvailability.value as AcademicStructureDirectoryAvailability)
     : "all";
+  const availabilityNegated =
+    availability === "all" ? false : requestedAvailability.negated;
   const query = (first(params.q) ?? "").trim();
+  const requestedSort = first(params.sort) ?? "code-asc";
+  const sort = sorts.includes(requestedSort as AcademicStructureDirectorySort)
+    ? (requestedSort as AcademicStructureDirectorySort)
+    : "code-asc";
   const page = Number(first(params.page));
 
-  const [data, canImport] = await Promise.all([
+  const [data, canImport, importModel] = await Promise.all([
     loadAcademicStructureDirectoryPage({
       structureKind: kind,
       year,
       page,
       query,
+      sort,
       status,
+      statusNegated,
       availability,
+      availabilityNegated,
     }),
     canManageCatalogueImports(),
+    loadImportModelSetting(),
   ]);
 
   return (
@@ -88,13 +114,23 @@ export async function AcademicStructureDirectoryPage({
       key={`${kind}-${year}`}
       canImport={canImport}
       data={data}
-      modelOptions={configuredOpenRouterModels()}
+      importModel={importModel.model}
+      modelOptions={importModel.options}
       queueEnabled={academicStructureImportQueuesEnabled()}
       searchParams={{
         year: String(year),
         ...(query ? { q: query } : {}),
-        ...(status === "all" ? {} : { status }),
-        ...(availability === "all" ? {} : { availability }),
+        ...(sort === "code-asc" ? {} : { sort }),
+        ...(status === "all"
+          ? {}
+          : { status: statusNegated ? `!${status}` : status }),
+        ...(availability === "all"
+          ? {}
+          : {
+              availability: availabilityNegated
+                ? `!${availability}`
+                : availability,
+            }),
       }}
     />
   );

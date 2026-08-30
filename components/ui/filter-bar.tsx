@@ -2,17 +2,12 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Check, ChevronLeft, ListFilter, Search, X } from "lucide-react";
+import { ChevronDown, Funnel, ListFilter, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import { Input } from "@/components/ui/field";
+import { encodeNegatableValue, parseNegatableValue } from "@/lib/filter-params";
+import { OptionMenu } from "@/components/ui/option-menu";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   Popover,
   PopoverContent,
@@ -24,6 +19,11 @@ export type FilterConfig = {
   label: string;
   /** Label for the unset option. Defaults to "All <label>". */
   allLabel?: string;
+  /**
+   * Offer "is not" as well as "is". Only set this where the reader of the
+   * parameter understands the leading "!", or the view silently empties.
+   */
+  negatable?: boolean;
   options: Array<{ value: string; label: string }>;
 };
 
@@ -34,11 +34,15 @@ type ControlledFilterState = {
   onFilterChange: (key: string, value: string) => void;
 };
 
+type ChipPart = "operator" | "value";
+
 /**
  * Search plus filtering, bound to the URL so a narrowed view can be shared.
  * The filter menu drills from field to value in one popover, and a filter
  * only becomes a chip once it has a value, so nothing half-set is left on
- * screen.
+ * screen. Each chip stays editable in place: its condition and its value are
+ * both menus, which keeps a correction one click away rather than a delete
+ * and a re-add.
  */
 export function FilterBar({
   searchPlaceholder,
@@ -57,6 +61,10 @@ export function FilterBar({
   const [isPending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   const [field, setField] = useState<FilterConfig | null>(null);
+  const [openChip, setOpenChip] = useState<{
+    key: string;
+    part: ChipPart;
+  } | null>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const paramsRef = useRef(searchParams.toString());
   const query = state?.query ?? localQuery;
@@ -99,16 +107,34 @@ export function FilterBar({
     paramsRef.current = searchParams.toString();
   }, [searchParams]);
 
+  const rawValue = (filter: FilterConfig) =>
+    state?.values[filter.key] ?? searchParams.get(filter.key) ?? "";
+
   const active = filters.flatMap((filter) => {
-    const value = state?.values[filter.key] ?? searchParams.get(filter.key);
-    if (!value) return [];
+    const raw = rawValue(filter);
+    if (!raw) return [];
+    const { value, negated } = parseNegatableValue(raw);
     const option = filter.options.find((item) => item.value === value);
-    return [{ filter, label: option?.label ?? value, value }];
+    return [{ filter, label: option?.label ?? value, value, negated }];
   });
 
   function openMenu(open: boolean) {
     setMenuOpen(open);
     if (!open) setField(null);
+  }
+
+  function clearFilters() {
+    if (state) {
+      filters.forEach((filter) => state.onFilterChange(filter.key, ""));
+      return;
+    }
+    replaceParams((params) => {
+      filters.forEach((filter) => params.delete(filter.key));
+    });
+  }
+
+  function chipOpen(key: string, part: ChipPart) {
+    return openChip?.key === key && openChip.part === part;
   }
 
   return (
@@ -140,103 +166,86 @@ export function FilterBar({
         </label>
         {filters.length > 0 ? (
           <Popover onOpenChange={openMenu} open={menuOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                className="h-10 shrink-0 px-3.5"
-                size="md"
-                variant="secondary"
-              >
-                <ListFilter size={16} aria-hidden="true" />
-                Filter
-                {active.length > 0 ? (
-                  <span className="grid min-w-5 place-items-center rounded-full bg-zinc-900 px-1.5 py-0.5 text-[10px] font-semibold text-white tabular-nums">
-                    {active.length}
-                  </span>
-                ) : null}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-60 p-0">
-              {field ? (
-                <Command label={field.label}>
-                  <div className="flex items-center gap-1 border-b border-zinc-100 px-1.5 py-1.5">
-                    <button
-                      className="grid size-6 place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                      onClick={() => setField(null)}
-                      type="button"
-                    >
-                      <ChevronLeft aria-hidden="true" size={14} />
-                      <span className="sr-only">Back to all filters</span>
-                    </button>
-                    <span className="text-xs font-medium text-zinc-700">
-                      {field.label}
-                    </span>
-                  </div>
-                  <CommandInput
-                    placeholder={`Search ${field.label.toLowerCase()}...`}
+            <Tooltip
+              content={
+                active.length > 0
+                  ? `${active.length} filter${active.length === 1 ? "" : "s"} applied`
+                  : "Filter"
+              }
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  aria-label={
+                    active.length > 0
+                      ? `Filter (${active.length} active)`
+                      : "Filter"
+                  }
+                  aria-pressed={active.length > 0}
+                  className="size-10 shrink-0"
+                  size="icon"
+                  variant={active.length > 0 ? "subtle" : "secondary"}
+                >
+                  {/* A solid funnel reads as "filtering" at a glance; the
+                    outline is the resting state. */}
+                  <Funnel
+                    aria-hidden="true"
+                    fill={active.length > 0 ? "currentColor" : "none"}
+                    size={16}
                   />
-                  <CommandList className="max-h-64">
-                    <CommandEmpty>No values match.</CommandEmpty>
-                    <CommandGroup>
-                      {[
-                        {
-                          value: "",
-                          label:
-                            field.allLabel ??
-                            `All ${field.label.toLowerCase()}`,
-                        },
-                        ...field.options,
-                      ].map((option) => {
-                        const selected =
-                          (state?.values[field.key] ??
-                            searchParams.get(field.key) ??
-                            "") === option.value;
-                        return (
-                          <CommandItem
-                            key={option.value || "__all"}
-                            onSelect={() => {
-                              update(field.key, option.value);
-                              openMenu(false);
-                            }}
-                            value={option.label}
-                          >
-                            <Check
-                              aria-hidden="true"
-                              className={
-                                selected ? "text-zinc-900" : "text-transparent"
-                              }
-                              size={14}
-                            />
-                            {option.label}
-                          </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
+                </Button>
+              </PopoverTrigger>
+            </Tooltip>
+            <PopoverContent align="end" className="w-56 p-1.5">
+              {field ? (
+                <OptionMenu
+                  emptyLabel="No values match."
+                  items={[
+                    {
+                      value: "",
+                      label:
+                        field.allLabel ?? `All ${field.label.toLowerCase()}`,
+                    },
+                    ...field.options,
+                  ]}
+                  onSelect={(option) => {
+                    update(field.key, option);
+                    openMenu(false);
+                  }}
+                  searchPlaceholder={`Search ${field.label.toLowerCase()}...`}
+                  value={parseNegatableValue(rawValue(field)).value}
+                />
               ) : (
-                <Command label="Choose a filter">
-                  <CommandInput placeholder="Filter..." />
-                  <CommandList className="max-h-64">
-                    <CommandEmpty>No filters match.</CommandEmpty>
-                    <CommandGroup>
-                      {filters.map((filter) => (
-                        <CommandItem
-                          key={filter.key}
-                          onSelect={() => setField(filter)}
-                          value={filter.label}
-                        >
-                          <ListFilter
-                            aria-hidden="true"
-                            className="text-zinc-400"
-                            size={14}
-                          />
-                          {filter.label}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
+                <OptionMenu
+                  emptyLabel="No filters match."
+                  items={filters.map((filter) => ({
+                    value: filter.key,
+                    label: filter.label,
+                    icon: <ListFilter aria-hidden="true" size={14} />,
+                  }))}
+                  onSelect={(key) =>
+                    setField(
+                      filters.find((filter) => filter.key === key) ?? null,
+                    )
+                  }
+                  searchPlaceholder="Search filters..."
+                  value={null}
+                />
               )}
+              {active.length > 0 && !field ? (
+                <div className="mt-1.5 border-t border-zinc-100 pt-1.5">
+                  <button
+                    className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-2.5 text-left text-sm text-zinc-600 transition-colors outline-none hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400"
+                    onClick={() => {
+                      clearFilters();
+                      openMenu(false);
+                    }}
+                    type="button"
+                  >
+                    <X aria-hidden="true" size={14} />
+                    Clear {active.length > 1 ? "all filters" : "filter"}
+                  </button>
+                </div>
+              ) : null}
             </PopoverContent>
           </Popover>
         ) : null}
@@ -244,42 +253,115 @@ export function FilterBar({
 
       {active.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">
-          {active.map(({ filter, label }) => (
+          {active.map(({ filter, label, value, negated }) => (
             <span
-              className="inline-flex items-center overflow-hidden rounded-md border border-zinc-200 bg-white text-xs shadow-xs"
+              className="inline-flex h-8 items-center overflow-hidden rounded-lg border border-zinc-200 bg-white text-xs shadow-xs"
               key={filter.key}
             >
-              <span className="py-1.5 pr-1.5 pl-2.5 text-zinc-500">
+              <span className="px-2.5 font-medium text-zinc-500">
                 {filter.label}
               </span>
-              <span className="py-1.5 font-medium text-zinc-900">{label}</span>
+              <span aria-hidden="true" className="h-full w-px bg-zinc-200" />
+
+              {filter.negatable ? (
+                <Popover
+                  onOpenChange={(open) =>
+                    setOpenChip(
+                      open ? { key: filter.key, part: "operator" } : null,
+                    )
+                  }
+                  open={chipOpen(filter.key, "operator")}
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      aria-label={`Change the ${filter.label} condition`}
+                      className="inline-flex h-full cursor-pointer items-center gap-1 px-2 text-zinc-600 transition-colors outline-none hover:bg-zinc-50 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 data-[state=open]:bg-zinc-100"
+                      type="button"
+                    >
+                      {negated ? "is not" : "is"}
+                      <ChevronDown
+                        aria-hidden="true"
+                        className="text-zinc-400"
+                        size={12}
+                      />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-36 p-1.5">
+                    <OptionMenu
+                      items={[
+                        { value: "is", label: "is" },
+                        { value: "not", label: "is not" },
+                      ]}
+                      onSelect={(operator) => {
+                        setOpenChip(null);
+                        update(
+                          filter.key,
+                          encodeNegatableValue(value, operator === "not"),
+                        );
+                      }}
+                      value={negated ? "not" : "is"}
+                    />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <span className="px-2 text-zinc-500">is</span>
+              )}
+
+              <span aria-hidden="true" className="h-full w-px bg-zinc-200" />
+
+              <Popover
+                onOpenChange={(open) =>
+                  setOpenChip(open ? { key: filter.key, part: "value" } : null)
+                }
+                open={chipOpen(filter.key, "value")}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    aria-label={`Change the ${filter.label} value`}
+                    className="inline-flex h-full cursor-pointer items-center gap-1 px-2 font-medium text-zinc-900 transition-colors outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400 data-[state=open]:bg-zinc-100"
+                    type="button"
+                  >
+                    {label}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="text-zinc-400"
+                      size={12}
+                    />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-56 p-1.5">
+                  <OptionMenu
+                    emptyLabel="No values match."
+                    items={filter.options}
+                    onSelect={(option) => {
+                      setOpenChip(null);
+                      update(filter.key, encodeNegatableValue(option, negated));
+                    }}
+                    searchPlaceholder={`Search ${filter.label.toLowerCase()}...`}
+                    value={value}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              <span aria-hidden="true" className="h-full w-px bg-zinc-200" />
               <button
                 aria-label={`Remove the ${filter.label} filter`}
-                className="ml-1.5 grid h-full place-items-center border-l border-zinc-200 px-1.5 py-1.5 text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                className="inline-grid h-full cursor-pointer place-items-center px-1.5 text-zinc-400 transition-colors outline-none hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400"
                 onClick={() => update(filter.key, "")}
                 type="button"
               >
-                <X aria-hidden="true" size={12} />
+                <X aria-hidden="true" size={13} />
               </button>
             </span>
           ))}
-          {active.length > 1 ? (
-            <button
-              className="rounded-md px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-              onClick={() =>
-                state
-                  ? filters.forEach((filter) =>
-                      state.onFilterChange(filter.key, ""),
-                    )
-                  : replaceParams((params) => {
-                      filters.forEach((filter) => params.delete(filter.key));
-                    })
-              }
-              type="button"
-            >
-              Clear all
-            </button>
-          ) : null}
+          <button
+            className="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none"
+            onClick={clearFilters}
+            type="button"
+          >
+            <X aria-hidden="true" size={12} />
+            Clear {active.length > 1 ? "all" : "filter"}
+          </button>
         </div>
       ) : null}
     </div>

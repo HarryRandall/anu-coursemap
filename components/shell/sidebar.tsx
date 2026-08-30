@@ -4,13 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useEffect } from "react";
 import {
+  Award,
   BookOpen,
   CalendarDays,
   CalendarRange,
   GraduationCap,
-  History,
   House,
-  Import,
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
@@ -20,7 +19,8 @@ import {
   MapPinned,
   Route,
   Shield,
-  Table2,
+  Tag,
+  Target,
   UserRound,
   UsersRound,
   X,
@@ -93,32 +93,20 @@ const adminNav: NavSection[] = [
   {
     label: "Academic data",
     items: [
-      { href: "/admin/courses", label: "Courses", icon: Table2 },
+      { href: "/admin/courses", label: "Courses", icon: BookOpen },
       { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
-      { href: "/admin/majors", label: "Majors", icon: GraduationCap },
-      { href: "/admin/minors", label: "Minors", icon: GraduationCap },
+      { href: "/admin/majors", label: "Majors", icon: Award },
+      { href: "/admin/minors", label: "Minors", icon: Tag },
       {
         href: "/admin/specialisations",
         label: "Specialisations",
-        icon: GraduationCap,
+        icon: Target,
       },
     ],
   },
   {
     label: "Campus",
     items: [{ href: "/admin/rooms", label: "Indoor maps", icon: MapPinned }],
-  },
-  {
-    icon: Import,
-    label: "Imports",
-    items: [
-      { href: "/admin/imports/runs", label: "Course runs", icon: History },
-      {
-        href: "/admin/imports/structures/runs",
-        label: "Structure runs",
-        icon: History,
-      },
-    ],
   },
   {
     label: "Access",

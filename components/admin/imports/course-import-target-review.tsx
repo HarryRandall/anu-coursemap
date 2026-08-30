@@ -468,10 +468,6 @@ export function CourseImportTargetReview({
         ) : undefined
       }
       admin
-      breadcrumbSegmentLabels={{
-        [detail.run.id]: `Run #${detail.run.runNumber}`,
-        targets: null,
-      }}
       currentBreadcrumbLabel={detail.target.courseCode}
     >
       <CourseImportAutoRefresh active={active} />

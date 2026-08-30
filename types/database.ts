@@ -275,6 +275,13 @@ export type Database = {
             foreignKeyName: "academic_structure_extractions_target_id_fkey"
             columns: ["target_id"]
             isOneToOne: false
+            referencedRelation: "academic_structure_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_structure_extractions_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
             referencedRelation: "academic_structure_import_targets"
             referencedColumns: ["id"]
           },
@@ -379,6 +386,13 @@ export type Database = {
             columns: ["stage_id"]
             isOneToOne: false
             referencedRelation: "academic_structure_import_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_structure_import_artifacts_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "academic_structure_directory_latest_import_targets"
             referencedColumns: ["id"]
           },
           {
@@ -542,6 +556,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "academic_structure_import_stages_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "academic_structure_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "academic_structure_import_stages_target_id_fkey"
             columns: ["target_id"]
@@ -1008,6 +1029,13 @@ export type Database = {
             foreignKeyName: "academic_structure_review_items_target_id_fkey"
             columns: ["target_id"]
             isOneToOne: false
+            referencedRelation: "academic_structure_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_structure_review_items_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
             referencedRelation: "academic_structure_import_targets"
             referencedColumns: ["id"]
           },
@@ -1249,6 +1277,13 @@ export type Database = {
           units?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "academic_structure_snapshots_import_target_fkey"
+            columns: ["import_target_id"]
+            isOneToOne: false
+            referencedRelation: "academic_structure_directory_latest_import_targets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "academic_structure_snapshots_import_target_fkey"
             columns: ["import_target_id"]
@@ -1576,6 +1611,27 @@ export type Database = {
           source_availability?: string
           updated_at?: string
           year?: number
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -4712,6 +4768,42 @@ export type Database = {
       }
     }
     Views: {
+      academic_structure_directory_latest_import_targets: {
+        Row: {
+          academic_year_id: number | null
+          change_kind: string | null
+          created_at: string | null
+          directory_entry_id: number | null
+          error_summary: string | null
+          id: string | null
+          processing_status: string | null
+          review_status: string | null
+          run_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_structure_import_targets_academic_year_id_fkey"
+            columns: ["academic_year_id"]
+            isOneToOne: false
+            referencedRelation: "academic_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_structure_import_targets_directory_entry_id_fkey"
+            columns: ["directory_entry_id"]
+            isOneToOne: false
+            referencedRelation: "academic_structure_directory_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_structure_import_targets_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "academic_structure_import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_permissions: {
         Row: {
           permission_category: string | null

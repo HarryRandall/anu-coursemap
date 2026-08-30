@@ -464,7 +464,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               type="button"
               onClick={() => requestAddCourse(term)}
               aria-label={`Add a course to ${term.name} ${term.year}`}
-              className="grid size-8 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="grid size-8 cursor-pointer place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
             >
               <Plus size={14} />
             </button>
@@ -511,7 +511,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   aria-describedby={
                     note ? `course-issue-${entry.attempt.id}` : undefined
                   }
-                  className="min-w-0 py-2 pr-2 text-left"
+                  className="min-w-0 cursor-pointer py-2 pr-2 text-left"
                 >
                   <span className="flex items-center gap-2.5">
                     <StatusMark status={entry.status} />
@@ -557,7 +557,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   ? "Add an unscheduled course"
                   : `Add course in empty slot ${entries.length + index + 1} of ${STANDARD_COURSE_SLOTS} for ${term.name} ${term.year}`
               }
-              className="group flex min-h-[52px] items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-600"
+              className="group flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-600"
             >
               <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-zinc-200 bg-white transition group-hover:border-zinc-300">
                 <Plus size={10} />

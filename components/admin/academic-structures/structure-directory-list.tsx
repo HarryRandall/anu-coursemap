@@ -3,22 +3,22 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowUpRight,
-  CheckCircle2,
-  Download,
   ExternalLink,
+  Eye,
   History,
   LoaderCircle,
   RefreshCw,
-  XCircle,
+  TriangleAlert,
 } from "lucide-react";
 import { readImportStream } from "@/components/admin/imports/import-stream";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DirectorySelectionBar } from "@/components/admin/directory-selection-bar";
 import {
   DataTableEmpty,
   DataTableShell,
@@ -32,15 +32,20 @@ import {
 } from "@/components/ui/data-table";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
-import { Select } from "@/components/ui/select";
+import { SortMenu, type SortOption } from "@/components/ui/sort-menu";
+import { Tooltip } from "@/components/ui/tooltip";
+import { YearPicker, type YearSelection } from "@/components/ui/year-picker";
 import type {
   AcademicStructureDirectoryPage,
   AcademicStructureDirectoryRecord,
-  AcademicStructureYearOption,
+  AcademicStructureDirectorySort,
 } from "@/lib/coursemap/admin-academic-structures";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   adminAcademicStructureCollectionPath,
   adminAcademicStructureDetailPath,
+  adminAcademicStructureImportPath,
+  adminAcademicStructureImportsPath,
 } from "@/lib/coursemap/academic-structure-routes";
 import type { AcademicStructureKind } from "@/lib/structure-import/contract";
 import type { Tone } from "@/lib/ui";
@@ -63,20 +68,13 @@ const KIND_DETAILS = {
   { label: string; singular: string; plural: string }
 >;
 
-const dateFormatter = new Intl.DateTimeFormat("en-AU", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "Australia/Sydney",
-});
-
-function availabilityTone(
-  value: AcademicStructureYearOption["sourceAvailability"],
-): Tone {
-  if (value === "available") return "success";
-  if (value === "unavailable") return "danger";
-  return "neutral";
-}
+const SORT_OPTIONS: SortOption<AcademicStructureDirectorySort>[] = [
+  { label: "Code, A to Z", value: "code-asc" },
+  { descending: true, label: "Code, Z to A", value: "code-desc" },
+  { label: "Name, A to Z", value: "title-asc" },
+  { descending: true, label: "Name, Z to A", value: "title-desc" },
+  { label: "Workflow status", value: "status" },
+];
 
 function statusTone(
   status: AcademicStructureDirectoryRecord["importStatus"],
@@ -94,19 +92,6 @@ function statusLabel(status: AcademicStructureDirectoryRecord["importStatus"]) {
   if (status === "directory") return "Not imported";
   if (status === "draft-changes") return "Draft changes";
   return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function reviewLabel(status: string) {
-  if (status === "needs_review") return "Needs review";
-  if (status === "not_required") return "Not required";
-  return status.replaceAll("_", " ");
-}
-
-function reviewTone(status: string): Tone {
-  if (status === "needs_review" || status === "pending") return "warning";
-  if (status === "accepted" || status === "unchanged") return "success";
-  if (status === "rejected") return "danger";
-  return "neutral";
 }
 
 type DirectoryRefreshResult = {
@@ -179,45 +164,69 @@ function structureDetails(record: AcademicStructureDirectoryRecord) {
   return record.units === null ? "-" : `${record.units} units`;
 }
 
-function ReviewStatus({
+function WorkflowStatus({
   record,
 }: {
   record: AcademicStructureDirectoryRecord;
 }) {
-  const status = record.latestImport?.reviewStatus;
-  if (!status || status === "not_required") {
-    return <span className="text-xs text-zinc-400">None</span>;
-  }
-  return <Badge tone={reviewTone(status)}>{reviewLabel(status)}</Badge>;
+  const details = [
+    record.draftSnapshotId !== null ? "Draft" : null,
+    record.publishedSnapshotId !== null ? "Published" : null,
+    !record.isAvailable ? "No longer listed" : null,
+  ].filter((value): value is string => value !== null);
+
+  return (
+    <div className="min-w-32 space-y-1">
+      <Badge tone={statusTone(record.importStatus)}>
+        {statusLabel(record.importStatus)}
+      </Badge>
+      {details.length > 0 || record.latestImport ? (
+        <span className="block text-xs text-zinc-500">
+          {details.join(" · ")}
+          {record.latestImport ? (
+            <>
+              {details.length > 0 ? " · " : null}Run{" "}
+              {record.latestImport.runNumber}
+            </>
+          ) : null}
+        </span>
+      ) : null}
+    </div>
+  );
 }
 
 export function StructureDirectoryList({
   canImport,
   data,
+  importModel,
   modelOptions,
   queueEnabled,
   searchParams,
 }: {
   canImport: boolean;
   data: AcademicStructureDirectoryPage;
+  importModel: string;
   modelOptions: string[];
   queueEnabled: boolean;
   searchParams: Record<string, string | undefined>;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
-  const [model, setModel] = useState(modelOptions[0] ?? "");
+  // Bumping this replays the selection bar's "already full" rebuff, which
+  // keeps the refusal on the control instead of in a toast.
+  const [limitSignal, setLimitSignal] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshDialogOpen, setRefreshDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [notice, setNotice] = useState<{
-    tone: "success" | "danger" | "warning";
-    text: string;
-  } | null>(null);
   const labels = KIND_DETAILS[data.kind];
   const collectionPath = adminAcademicStructureCollectionPath(data.kind);
+  const importsPath = adminAcademicStructureImportsPath(data.kind);
 
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const eligibleRecords = data.records.filter((record) => record.isAvailable);
+  const currentSort =
+    (searchParams.sort as AcademicStructureDirectorySort | undefined) ??
+    "code-asc";
   const allPageSelected =
     eligibleRecords.length > 0 &&
     eligibleRecords.every((record) => selectedSet.has(record.code));
@@ -225,20 +234,30 @@ export function StructureDirectoryList({
     selectedSet.has(record.code),
   );
 
-  function chooseYear(year: number) {
+  function chooseYear(year: YearSelection) {
     router.replace(`${collectionPath}?year=${year}`);
   }
 
+  function chooseSort(value: AcademicStructureDirectorySort) {
+    const params = new URLSearchParams();
+    for (const [key, parameter] of Object.entries(searchParams)) {
+      if (parameter) params.set(key, parameter);
+    }
+    if (value === "code-asc") params.delete("sort");
+    else params.set("sort", value);
+    params.delete("page");
+    const query = params.toString();
+    router.replace(query ? `${collectionPath}?${query}` : collectionPath, {
+      scroll: false,
+    });
+  }
+
   function toggleStructure(code: string, checked: boolean) {
-    setNotice(null);
     setSelected((current) => {
       if (!checked) return current.filter((value) => value !== code);
       if (current.includes(code)) return current;
       if (current.length >= 10) {
-        setNotice({
-          tone: "warning",
-          text: `A testing run can contain no more than 10 ${labels.plural}.`,
-        });
+        setLimitSignal((signal) => signal + 1);
         return current;
       }
       return [...current, code];
@@ -246,7 +265,6 @@ export function StructureDirectoryList({
   }
 
   function togglePage(checked: boolean) {
-    setNotice(null);
     const pageCodes = new Set(eligibleRecords.map((record) => record.code));
     if (!checked) {
       setSelected((current) => current.filter((code) => !pageCodes.has(code)));
@@ -261,16 +279,12 @@ export function StructureDirectoryList({
       ].slice(0, 10),
     );
     if (eligibleRecords.length + selected.length > 10) {
-      setNotice({
-        tone: "warning",
-        text: `Selected the first available ${labels.plural} up to the 10-item testing limit.`,
-      });
+      setLimitSignal((signal) => signal + 1);
     }
   }
 
   async function refreshDirectory() {
     setRefreshing(true);
-    setNotice(null);
     try {
       const response = await fetch("/api/admin/academic-structure-directory", {
         method: "POST",
@@ -294,23 +308,35 @@ export function StructureDirectoryList({
       }
       const completed: DirectoryRefreshResult = result;
       if (completed.status === "failed") {
-        setNotice({
-          tone: completed.counts.checked === 0 ? "warning" : "danger",
-          text:
-            completed.counts.checked === 0
-              ? `ANU returned no usable ${labels.singular} directory data for ${data.year.year}. Existing entries were preserved.`
-              : `The ${data.year.year} ${labels.singular} directory found ${completed.errorCount || completed.counts.failed} error${(completed.errorCount || completed.counts.failed) === 1 ? "" : "s"}. Usable rows were saved and missing existing entries were preserved.`,
-        });
+        const failureCount = completed.errorCount || completed.counts.failed;
+        if (completed.counts.checked === 0) {
+          toast.warning(
+            `ANU returned no usable ${labels.singular} directory data.`,
+            {
+              description: `Existing ${data.year.year} entries were preserved.`,
+            },
+          );
+        } else {
+          toast.error(
+            `The ${data.year.year} ${labels.singular} directory found ${failureCount} error${failureCount === 1 ? "" : "s"}.`,
+            {
+              description:
+                "Usable rows were saved and missing existing entries were preserved.",
+            },
+          );
+        }
       } else if (completed.warningCount > 0) {
-        setNotice({
-          tone: "warning",
-          text: `${data.year.year} ${labels.singular} directory refreshed with ${completed.warningCount} warning${completed.warningCount === 1 ? "" : "s"}. ${completed.receivedItemCount.toLocaleString("en-AU")} rows produced ${completed.uniqueItemCount.toLocaleString("en-AU")} unique entries.`,
-        });
+        toast.warning(
+          `${data.year.year} ${labels.singular} directory refreshed with ${completed.warningCount} warning${completed.warningCount === 1 ? "" : "s"}.`,
+          {
+            description: `${completed.receivedItemCount.toLocaleString("en-AU")} rows produced ${completed.uniqueItemCount.toLocaleString("en-AU")} unique entries.`,
+          },
+        );
       } else {
-        setNotice({
-          tone: "success",
-          text: `${data.year.year} ${labels.singular} directory refreshed with ${completed.uniqueItemCount.toLocaleString("en-AU")} entries. No detailed records were imported.`,
-        });
+        toast.success(
+          `${data.year.year} ${labels.singular} directory refreshed with ${completed.uniqueItemCount.toLocaleString("en-AU")} entries.`,
+          { description: "No detailed records were imported." },
+        );
       }
     } catch (error) {
       router.refresh();
@@ -320,20 +346,26 @@ export function StructureDirectoryList({
           : `The ${labels.singular} directory could not be refreshed.`;
       const unavailable =
         /(?:HTTP\s+(?:404|410)|no .*directory|no .*data)/iu.test(message);
-      setNotice({
-        tone: unavailable ? "warning" : "danger",
-        text: unavailable
-          ? `ANU has no ${labels.singular} directory data for ${data.year.year}. Existing entries were preserved.`
-          : message,
-      });
+      if (unavailable) {
+        toast.warning(
+          `ANU has no ${labels.singular} directory data for ${data.year.year}.`,
+          { description: "Existing entries were preserved." },
+        );
+      } else {
+        toast.error(
+          `The ${labels.singular} directory could not be refreshed.`,
+          {
+            description: message,
+          },
+        );
+      }
     } finally {
       setRefreshing(false);
     }
   }
 
-  async function startImport() {
+  async function startImport(requestedModel: string) {
     setSubmitting(true);
-    setNotice(null);
     try {
       const response = await fetch("/api/admin/academic-structure-imports", {
         method: "POST",
@@ -342,7 +374,7 @@ export function StructureDirectoryList({
           academicYear: data.year.year,
           structureKind: data.kind,
           structureCodes: selected,
-          requestedModel: model,
+          requestedModel,
         }),
       });
       const payload = (await response.json().catch(() => null)) as {
@@ -352,7 +384,7 @@ export function StructureDirectoryList({
       } | null;
       if (!response.ok) {
         if (payload?.runId) {
-          router.push(`/admin/imports/structures/runs/${payload.runId}`);
+          router.push(importsPath);
           return;
         }
         throw new Error(
@@ -363,14 +395,10 @@ export function StructureDirectoryList({
       if (!payload?.runId || typeof payload.runNumber !== "number") {
         throw new Error("The import run number was not returned.");
       }
-      router.push(`/admin/imports/structures/runs/${payload.runId}`);
+      router.push(importsPath);
     } catch (error) {
-      setNotice({
-        tone: "danger",
-        text:
-          error instanceof Error
-            ? error.message
-            : `The ${labels.singular} import could not be queued.`,
+      toast.error(`The ${labels.singular} import could not be queued.`, {
+        description: error instanceof Error ? error.message : undefined,
       });
     } finally {
       setSubmitting(false);
@@ -389,189 +417,138 @@ export function StructureDirectoryList({
             ? `ANU has no ${labels.singular} directory data for this academic year.`
             : selected.length === 0
               ? `Select at least one ${labels.singular}.`
-              : !model
-                ? "No OpenRouter model is configured."
+              : !importModel
+                ? "No import model is configured in the admin dashboard."
                 : null;
 
   return (
-    <AppShell admin>
-      <div className="mx-auto w-full max-w-7xl space-y-4 pb-10">
+    <AppShell admin fill>
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4">
         <h1 className="sr-only">{labels.label}</h1>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="w-32">
-              <Select
-                aria-label="Academic year"
-                onChange={chooseYear}
-                options={data.years.map((year) => ({
-                  label: String(year.year),
-                  value: year.year,
-                }))}
-                value={data.year.year}
-              />
-            </div>
-            <Badge tone={availabilityTone(data.year.sourceAvailability)}>
-              {data.year.sourceAvailability === "available"
-                ? "Directory available"
-                : data.year.sourceAvailability === "unavailable"
-                  ? "No ANU data"
-                  : "Availability unknown"}
-            </Badge>
-            {data.year.uniqueCount !== null ? (
-              <span className="text-xs text-zinc-500 tabular-nums">
-                {data.year.uniqueCount.toLocaleString("en-AU")} entries
-                {data.year.receivedCount !== null &&
-                data.year.receivedCount !== data.year.uniqueCount
-                  ? ` from ${data.year.receivedCount.toLocaleString("en-AU")} rows`
-                  : ""}
+            <ButtonLink href={importsPath} size="md">
+              <History aria-hidden="true" size={15} />
+              Imports
+            </ButtonLink>
+            {data.year.sourceAvailability === "unavailable" ? (
+              <span
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"
+                title={
+                  data.year.availabilityNote ??
+                  `ANU lists no ${labels.singular} directory for ${data.year.year}.`
+                }
+              >
+                <TriangleAlert aria-hidden="true" size={14} />
+                No ANU data
               </span>
             ) : null}
-            {data.year.directoryRefreshedAt ? (
-              <span className="text-xs text-zinc-500">
-                Refreshed{" "}
-                {dateFormatter.format(new Date(data.year.directoryRefreshedAt))}
-              </span>
+            {data.activeRun ? (
+              <Link
+                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-900 hover:bg-brand-100"
+                href={importsPath}
+              >
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="animate-spin motion-reduce:animate-none"
+                  size={13}
+                />
+                Run {data.activeRun.runNumber} {data.activeRun.status} ·{" "}
+                {data.activeRun.processedCount}/{data.activeRun.targetCount}
+              </Link>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
-            <ButtonLink href="/admin/imports/structures/runs" size="md">
-              <History aria-hidden="true" size={15} />
-              Import runs
-            </ButtonLink>
+          <YearPicker
+            allowAll
+            onChange={chooseYear}
+            value={data.allYears ? "all" : data.year.year}
+            years={data.years.map((year) => year.year)}
+          />
+        </div>
+
+        <ConfirmDialog
+          confirmLabel="Refresh directory"
+          description={`Pulls the current list of ${labels.singular} codes and titles from ANU for ${data.year.year}. Nothing is imported and no drafts or published content change.`}
+          onConfirm={refreshDirectory}
+          onOpenChange={setRefreshDialogOpen}
+          open={refreshDialogOpen}
+          title={`Refresh ${data.year.year} ${labels.singular} directory?`}
+        />
+
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <FilterBar
+              filters={[
+                {
+                  key: "status",
+                  label: "Status",
+                  allLabel: `All ${labels.plural}`,
+                  negatable: true,
+                  options: [
+                    { label: "Not imported", value: "directory" },
+                    { label: "Queued", value: "queued" },
+                    { label: "Processing", value: "processing" },
+                    { label: "Needs review", value: "needs-review" },
+                    { label: "Draft", value: "draft" },
+                    { label: "Draft changes", value: "draft-changes" },
+                    { label: "Published", value: "published" },
+                    { label: "Unchanged", value: "unchanged" },
+                    { label: "Failed", value: "failed" },
+                  ],
+                },
+                {
+                  key: "availability",
+                  label: "Availability",
+                  allLabel: "All directory entries",
+                  negatable: true,
+                  options: [
+                    { label: "Available at ANU", value: "available" },
+                    { label: "No longer listed", value: "unavailable" },
+                  ],
+                },
+              ]}
+              searchPlaceholder={`Search ${labels.plural} by code or title`}
+            />
+          </div>
+          <SortMenu
+            defaultValue="code-asc"
+            onChange={chooseSort}
+            options={SORT_OPTIONS}
+            value={currentSort}
+          />
+          <Tooltip
+            content={
+              data.allYears
+                ? "Choose a single year to refresh its directory"
+                : refreshing
+                  ? "Refreshing..."
+                  : `Refresh the ${labels.singular} directory`
+            }
+          >
             <Button
-              disabled={!canImport || refreshing}
-              onClick={() => void refreshDirectory()}
-              size="md"
-              title="Fetch code and title rows only"
+              aria-label={`Refresh the ${labels.singular} directory`}
+              className="size-10 shrink-0"
+              disabled={!canImport || refreshing || data.allYears}
+              onClick={() => setRefreshDialogOpen(true)}
+              size="icon"
             >
               <RefreshCw
                 aria-hidden="true"
                 className={
                   refreshing ? "animate-spin motion-reduce:animate-none" : ""
                 }
-                size={15}
+                size={16}
               />
-              {refreshing ? "Refreshing..." : "Refresh directory"}
             </Button>
-          </div>
-        </div>
-
-        {data.year.availabilityNote ? (
-          <Alert
-            tone={
-              data.year.sourceAvailability === "unavailable"
-                ? "warning"
-                : "neutral"
-            }
-          >
-            <AlertDescription>{data.year.availabilityNote}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        {!queueEnabled ? (
-          <Alert tone="warning">
-            <AlertDescription>
-              Detailed imports are disabled until
-              COURSEMAP_QUEUE_IMPORTS_ENABLED is configured.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        {data.activeRun ? (
-          <Alert tone="brand">
-            <LoaderCircle
-              aria-hidden="true"
-              className="animate-spin motion-reduce:animate-none"
-            />
-            <AlertDescription>
-              <Link
-                className="font-medium underline underline-offset-2"
-                href={`/admin/imports/structures/runs/${data.activeRun.id}`}
-              >
-                Run {data.activeRun.runNumber}
-              </Link>{" "}
-              is {data.activeRun.status} for{" "}
-              {KIND_DETAILS[data.activeRun.structureKind].plural} (
-              {data.activeRun.processedCount} of {data.activeRun.targetCount}{" "}
-              processed).
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        {notice ? (
-          <Alert role="status" tone={notice.tone}>
-            <AlertDescription>{notice.text}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        <FilterBar
-          filters={[
-            {
-              key: "status",
-              label: "Status",
-              allLabel: `All ${labels.plural}`,
-              options: [
-                { label: "Not imported", value: "directory" },
-                { label: "Queued", value: "queued" },
-                { label: "Processing", value: "processing" },
-                { label: "Needs review", value: "needs-review" },
-                { label: "Draft", value: "draft" },
-                { label: "Draft changes", value: "draft-changes" },
-                { label: "Published", value: "published" },
-                { label: "Unchanged", value: "unchanged" },
-                { label: "Failed", value: "failed" },
-              ],
-            },
-            {
-              key: "availability",
-              label: "Availability",
-              allLabel: "All directory entries",
-              options: [
-                { label: "Available at ANU", value: "available" },
-                { label: "No longer listed", value: "unavailable" },
-              ],
-            },
-          ]}
-          searchPlaceholder={`Search all ${labels.plural} by code or title`}
-        />
-
-        <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-zinc-600">
-            <span className="font-medium text-zinc-950 tabular-nums">
-              {selected.length}
-            </span>{" "}
-            of 10 selected
-          </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="min-w-0 sm:w-72">
-              <Select
-                aria-label="OpenRouter model"
-                disabled={!canImport || modelOptions.length === 0}
-                onChange={setModel}
-                options={modelOptions.map((value) => ({
-                  label: value,
-                  value,
-                }))}
-                placeholder="No model configured"
-                value={model}
-              />
-            </div>
-            <Button
-              disabled={importDisabledReason !== null || submitting}
-              onClick={() => void startImport()}
-              title={importDisabledReason ?? `Queue selected ${labels.plural}`}
-              variant="primary"
-            >
-              <Download aria-hidden="true" size={15} />
-              {submitting ? "Starting..." : "Import selected"}
-            </Button>
-          </div>
+          </Tooltip>
         </div>
 
         <DataTableShell
+          viewport
           footer={
             <Pagination
+              alwaysShowControls
               itemName={labels.plural}
               page={data.page}
               pageSize={data.pageSize}
@@ -591,54 +568,59 @@ export function StructureDirectoryList({
               title={`No directory ${labels.plural}`}
             />
           ) : (
-            <Table className="min-w-[1040px]">
+            <Table className="min-w-[820px]">
               <TableCaption>
                 {labels.label} directory and import status
               </TableCaption>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-12">
-                    <Checkbox
-                      aria-label={`Select available ${labels.plural} on this page`}
-                      checked={
-                        allPageSelected
-                          ? true
-                          : somePageSelected
-                            ? "indeterminate"
-                            : false
-                      }
-                      disabled={eligibleRecords.length === 0}
-                      onCheckedChange={(checked) =>
-                        togglePage(checked === true)
-                      }
-                    />
-                  </TableHead>
+                  {data.allYears ? null : (
+                    <TableHead className="w-12">
+                      <Checkbox
+                        aria-label={`Select available ${labels.plural} on this page`}
+                        checked={
+                          allPageSelected
+                            ? true
+                            : somePageSelected
+                              ? "indeterminate"
+                              : false
+                        }
+                        disabled={eligibleRecords.length === 0}
+                        onCheckedChange={(checked) =>
+                          togglePage(checked === true)
+                        }
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>{labels.singular}</TableHead>
-                  <TableHead>Availability</TableHead>
-                  <TableHead>Import</TableHead>
-                  <TableHead>Draft</TableHead>
-                  <TableHead>Published</TableHead>
-                  <TableHead>Review</TableHead>
-                  <TableHead>Career</TableHead>
+                  {data.allYears ? <TableHead>Year</TableHead> : null}
+                  <TableHead>Workflow</TableHead>
                   <TableHead>Details</TableHead>
-                  <TableHead className="w-12">
-                    <span className="sr-only">Open</span>
-                  </TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.records.map((record) => (
-                  <TableRow key={record.id}>
-                    <TableCell>
-                      <Checkbox
-                        aria-label={`Select ${record.code}`}
-                        checked={selectedSet.has(record.code)}
-                        disabled={!record.isAvailable}
-                        onCheckedChange={(checked) =>
-                          toggleStructure(record.code, checked === true)
-                        }
-                      />
-                    </TableCell>
+                  <TableRow
+                    className={
+                      selectedSet.has(record.code)
+                        ? "bg-brand-50/50"
+                        : undefined
+                    }
+                    key={record.id}
+                  >
+                    {data.allYears ? null : (
+                      <TableCell>
+                        <Checkbox
+                          aria-label={`Select ${record.code}`}
+                          checked={selectedSet.has(record.code)}
+                          disabled={!record.isAvailable}
+                          onCheckedChange={(checked) =>
+                            toggleStructure(record.code, checked === true)
+                          }
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <span className="block font-medium text-zinc-950">
                         {record.title}
@@ -647,100 +629,82 @@ export function StructureDirectoryList({
                         {record.code}
                       </span>
                     </TableCell>
+                    {data.allYears ? (
+                      <TableCell className="text-sm text-zinc-600 tabular-nums">
+                        {record.year}
+                      </TableCell>
+                    ) : null}
                     <TableCell>
-                      {record.isAvailable ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600">
-                          <CheckCircle2
-                            aria-hidden="true"
-                            className="text-emerald-600"
-                            size={14}
-                          />
-                          Available
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600">
-                          <XCircle
-                            aria-hidden="true"
-                            className="text-zinc-400"
-                            size={14}
-                          />
-                          No longer listed
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge tone={statusTone(record.importStatus)}>
-                        {statusLabel(record.importStatus)}
-                      </Badge>
-                      {record.latestImport ? (
-                        <Link
-                          className="mt-1 block text-xs text-zinc-500 underline-offset-2 hover:text-zinc-900 hover:underline"
-                          href={`/admin/imports/structures/runs/${record.latestImport.runId}/targets/${record.latestImport.targetId}`}
-                        >
-                          Run {record.latestImport.runNumber}
-                        </Link>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      {record.draftSnapshotId ? (
-                        <Badge tone="brand">
-                          {record.publishedSnapshotId !== null &&
-                          record.draftSnapshotId !== record.publishedSnapshotId
-                            ? "Newer draft"
-                            : "Draft"}
-                        </Badge>
-                      ) : (
-                        <span className="text-xs text-zinc-400">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {record.publishedSnapshotId ? (
-                        <Badge tone="success">Published</Badge>
-                      ) : (
-                        <span className="text-xs text-zinc-400">None</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <ReviewStatus record={record} />
+                      <WorkflowStatus record={record} />
                     </TableCell>
                     <TableCell className="text-xs text-zinc-600">
-                      {record.academicCareer ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-xs text-zinc-600 tabular-nums">
-                      {structureDetails(record)}
+                      {[record.academicCareer, structureDetails(record)]
+                        .filter((value) => value !== "-" && value !== null)
+                        .join(" · ") || "-"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {shouldOpenLatestImport(record) && record.latestImport ? (
-                        <Link
-                          aria-label={`Open ${record.code} import details for run ${record.latestImport.runNumber}`}
-                          className="inline-grid size-10 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                          href={`/admin/imports/structures/runs/${record.latestImport.runId}/targets/${record.latestImport.targetId}`}
-                        >
-                          <ArrowUpRight aria-hidden="true" size={15} />
-                        </Link>
-                      ) : record.structurePublicId && record.structureYearId ? (
-                        <Link
-                          aria-label={`Open ${record.code} ${data.year.year} workspace`}
-                          className="inline-grid size-10 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                          href={adminAcademicStructureDetailPath({
-                            kind: record.kind,
-                            publicId: record.structurePublicId,
-                            year: data.year.year,
-                          })}
-                        >
-                          <ArrowUpRight aria-hidden="true" size={15} />
-                        </Link>
-                      ) : (
-                        <a
-                          aria-label={`Open ${record.code} at ANU`}
-                          className="inline-grid size-10 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                          href={record.sourceUrl}
-                          rel="noreferrer"
-                          target="_blank"
-                        >
-                          <ExternalLink aria-hidden="true" size={15} />
-                        </a>
-                      )}
+                      <div className="flex justify-end gap-1.5">
+                        {record.draftSnapshotId !== null &&
+                        record.structurePublicId &&
+                        record.structureYearId ? (
+                          <ButtonLink
+                            href={adminAcademicStructureDetailPath({
+                              kind: record.kind,
+                              publicId: record.structurePublicId,
+                              year: data.year.year,
+                            })}
+                            size="sm"
+                            title={`View ${record.code} draft`}
+                          >
+                            <Eye aria-hidden="true" size={14} />
+                            Draft
+                          </ButtonLink>
+                        ) : null}
+                        {record.publishedSnapshotId !== null ? (
+                          <ButtonLink
+                            href={record.sourceUrl}
+                            rel="noreferrer"
+                            size="sm"
+                            target="_blank"
+                            title={`View ${record.code} published source`}
+                          >
+                            <ExternalLink aria-hidden="true" size={14} />
+                            Published
+                          </ButtonLink>
+                        ) : null}
+                        {shouldOpenLatestImport(record) &&
+                        record.latestImport ? (
+                          <Tooltip
+                            content={`Review import run ${record.latestImport.runNumber}`}
+                          >
+                            <ButtonLink
+                              aria-label={`Review ${record.code} import run ${record.latestImport.runNumber}`}
+                              href={adminAcademicStructureImportPath({
+                                kind: data.kind,
+                                targetId: record.latestImport.targetId,
+                              })}
+                              size="icon-sm"
+                            >
+                              <ArrowUpRight aria-hidden="true" size={15} />
+                            </ButtonLink>
+                          </Tooltip>
+                        ) : null}
+                        {record.draftSnapshotId === null &&
+                        record.publishedSnapshotId === null &&
+                        !shouldOpenLatestImport(record) ? (
+                          <Tooltip content="Open ANU source">
+                            <a
+                              aria-label={`Open ${record.code} at ANU`}
+                              className="inline-grid size-8 cursor-pointer place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                              href={record.sourceUrl}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              <ExternalLink aria-hidden="true" size={15} />
+                            </a>
+                          </Tooltip>
+                        ) : null}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -748,6 +712,18 @@ export function StructureDirectoryList({
             </Table>
           )}
         </DataTableShell>
+
+        <DirectorySelectionBar
+          canManageModel={canImport}
+          disabledReason={importDisabledReason}
+          importModel={importModel}
+          limitSignal={limitSignal}
+          modelOptions={modelOptions}
+          onClear={() => setSelected([])}
+          onImport={(model) => void startImport(model)}
+          selected={selected.length}
+          submitting={submitting}
+        />
       </div>
     </AppShell>
   );
