@@ -37,7 +37,7 @@ export function PopoverContent({
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          "z-[120] w-80 rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-950 shadow-lg outline-none data-[state=closed]:animate-fade-out data-[state=open]:animate-modal-in motion-reduce:animate-none",
+          "z-[120] w-80 rounded-xl border border-border bg-card p-4 text-sm text-foreground shadow-lg outline-none data-[state=closed]:animate-fade-out data-[state=open]:animate-modal-in motion-reduce:animate-none",
           className,
         )}
         onPointerDownOutside={(event) => {

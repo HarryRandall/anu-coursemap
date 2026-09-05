@@ -166,12 +166,12 @@ export function ImportsList({
                 {data.records.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell>
-                      <span className="font-mono text-xs font-semibold text-zinc-950">
+                      <span className="font-mono text-xs font-semibold text-foreground">
                         {record.code}
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="block max-w-80 truncate text-xs text-zinc-800">
+                      <span className="block max-w-80 truncate text-xs text-foreground/90">
                         {record.title}
                       </span>
                     </TableCell>
@@ -188,16 +188,16 @@ export function ImportsList({
                         {readable(record.reviewStatus)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-zinc-600">
+                    <TableCell className="text-xs text-muted-foreground">
                       {record.changeKind ? (
                         readable(record.changeKind)
                       ) : (
-                        <span className="text-zinc-400">None</span>
+                        <span className="text-muted-foreground/80">None</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <time
-                        className="text-xs text-zinc-600 tabular-nums"
+                        className="text-xs text-muted-foreground tabular-nums"
                         dateTime={record.createdAt}
                       >
                         {dateFormatter.format(new Date(record.createdAt))}
@@ -206,7 +206,7 @@ export function ImportsList({
                     <TableCell className="text-right">
                       <Link
                         aria-label={`Open the ${record.code} import`}
-                        className="inline-grid size-8 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                        className="inline-grid size-8 place-items-center rounded-md text-muted-foreground/80 hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         href={`${importsPath}/${record.id}`}
                       >
                         <ArrowUpRight aria-hidden="true" size={15} />

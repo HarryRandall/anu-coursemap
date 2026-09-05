@@ -489,7 +489,7 @@ export function IndoorMapSurface({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-md border border-zinc-200 bg-zinc-100",
+        "relative overflow-hidden rounded-md border border-border bg-muted",
         className,
       )}
     >
@@ -506,7 +506,7 @@ export function IndoorMapSurface({
         tabIndex={0}
       />
       {failed ? (
-        <p className="absolute inset-x-3 top-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <p className="absolute inset-x-3 top-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300">
           The map could not be loaded, so this building cannot be edited right
           now.
         </p>

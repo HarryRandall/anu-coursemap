@@ -24,7 +24,7 @@ export function DropdownMenuContent({
         sideOffset={sideOffset}
         collisionPadding={8}
         className={cn(
-          "z-[120] min-w-48 overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 text-zinc-950 shadow-lg ring-1 ring-zinc-950/[0.03] data-[state=closed]:animate-fade-out data-[state=open]:animate-modal-in motion-reduce:animate-none",
+          "z-[120] min-w-48 overflow-hidden rounded-lg border border-border bg-popover p-1 text-foreground shadow-lg ring-1 ring-zinc-950/[0.03] data-[state=closed]:animate-fade-out data-[state=open]:animate-modal-in motion-reduce:animate-none",
           className,
         )}
         {...props}
@@ -43,7 +43,7 @@ export function DropdownMenuItem({
       data-slot="dropdown-menu-item"
       data-inset={inset}
       className={cn(
-        "relative flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm text-zinc-700 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-zinc-100 data-[highlighted]:text-zinc-950 [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-zinc-400 data-[highlighted]:[&>svg]:text-zinc-600",
+        "relative flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-2.5 py-2 text-sm text-foreground/80 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-accent data-[highlighted]:text-foreground [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground/80 data-[highlighted]:[&>svg]:text-muted-foreground",
         className,
       )}
       {...props}
@@ -62,7 +62,7 @@ export function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       checked={checked}
       className={cn(
-        "group/checkbox relative flex min-h-9 cursor-default items-center rounded-md py-1.5 pr-3 pl-9 text-sm font-medium text-zinc-800 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-zinc-100 data-[highlighted]:text-zinc-950",
+        "group/checkbox relative flex min-h-9 cursor-default items-center rounded-md py-1.5 pr-3 pl-9 text-sm font-medium text-foreground/90 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-accent data-[highlighted]:text-foreground",
         className,
       )}
       {...props}
@@ -70,10 +70,8 @@ export function DropdownMenuCheckboxItem({
       <span
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute left-2.5 grid size-4 place-items-center rounded-full border text-white transition-colors",
-          checked
-            ? "border-zinc-900 bg-zinc-900"
-            : "border-zinc-300 bg-transparent",
+          "pointer-events-none absolute left-2.5 grid size-4 place-items-center rounded-full border text-primary-foreground transition-colors",
+          checked ? "border-primary bg-primary" : "border-input bg-transparent",
         )}
       >
         <DropdownMenuPrimitive.ItemIndicator>
@@ -94,13 +92,13 @@ export function DropdownMenuRadioItem({
     <DropdownMenuPrimitive.RadioItem
       data-slot="dropdown-menu-radio-item"
       className={cn(
-        "relative flex min-h-10 cursor-pointer items-center rounded-md py-2 pr-8 pl-2.5 text-sm text-zinc-700 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-zinc-100 data-[highlighted]:text-zinc-950 data-[state=checked]:font-medium data-[state=checked]:text-zinc-950",
+        "relative flex min-h-10 cursor-pointer items-center rounded-md py-2 pr-8 pl-2.5 text-sm text-foreground/80 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-accent data-[highlighted]:text-foreground data-[state=checked]:font-medium data-[state=checked]:text-foreground",
         className,
       )}
       {...props}
     >
       {children}
-      <span className="pointer-events-none absolute right-2 grid size-4 place-items-center text-brand-600">
+      <span className="pointer-events-none absolute right-2 grid size-4 place-items-center text-primary">
         <DropdownMenuPrimitive.ItemIndicator>
           <Check size={14} strokeWidth={2.5} aria-hidden="true" />
         </DropdownMenuPrimitive.ItemIndicator>
@@ -119,7 +117,7 @@ export function DropdownMenuLabel({
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(
-        "px-2 pt-1.5 pb-1 text-[11px] font-medium tracking-wide text-zinc-400 uppercase data-[inset=true]:pl-8",
+        "px-2 pt-1.5 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground/80 uppercase data-[inset=true]:pl-8",
         className,
       )}
       {...props}
@@ -134,7 +132,7 @@ export function DropdownMenuSeparator({
   return (
     <DropdownMenuPrimitive.Separator
       data-slot="dropdown-menu-separator"
-      className={cn("-mx-1 my-1 h-px bg-zinc-100", className)}
+      className={cn("-mx-1 my-1 h-px bg-muted", className)}
       {...props}
     />
   );
@@ -148,7 +146,7 @@ export function DropdownMenuShortcut({
     <span
       data-slot="dropdown-menu-shortcut"
       className={cn(
-        "ml-auto text-[10px] tracking-widest text-zinc-400",
+        "ml-auto text-[10px] tracking-widest text-muted-foreground/80",
         className,
       )}
       {...props}
@@ -169,7 +167,7 @@ export function DropdownMenuSubTrigger({
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex min-h-8 cursor-default items-center rounded-md px-2.5 py-1.5 text-sm outline-none select-none data-[highlighted]:bg-zinc-100 data-[inset=true]:pl-8 data-[state=open]:bg-zinc-100",
+        "flex min-h-8 cursor-default items-center rounded-md px-2.5 py-1.5 text-sm outline-none select-none data-[highlighted]:bg-accent data-[inset=true]:pl-8 data-[state=open]:bg-accent",
         className,
       )}
       {...props}
@@ -188,7 +186,7 @@ export function DropdownMenuSubContent({
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
       className={cn(
-        "z-[120] min-w-40 overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 shadow-md",
+        "z-[120] min-w-40 overflow-hidden rounded-lg border border-border bg-popover p-1 shadow-md",
         className,
       )}
       {...props}

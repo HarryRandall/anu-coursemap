@@ -54,16 +54,16 @@ export const KIND_OPTIONS = CONDITION_FAMILY_KINDS.map((kind) => ({
 }));
 
 const inlineControl =
-  "!h-9 min-h-9 w-auto min-w-[7.5rem] rounded-md px-2.5 text-xs font-medium text-zinc-700 shadow-none";
+  "!h-9 min-h-9 w-auto min-w-[7.5rem] rounded-md px-2.5 text-xs font-medium text-foreground/80 shadow-none";
 
 const stackedFamilyControl =
-  "!h-10 min-h-10 w-full min-w-0 !rounded-none !border-transparent bg-transparent px-3 text-[13px] font-medium text-zinc-700 shadow-none max-md:!h-11 max-md:min-h-11";
+  "!h-10 min-h-10 w-full min-w-0 !rounded-none !border-transparent bg-transparent px-3 text-[13px] font-medium text-foreground/80 shadow-none max-md:!h-11 max-md:min-h-11";
 
 const stackedMatchControl =
-  "!h-10 min-h-10 w-full min-w-0 !rounded-none !border-transparent bg-transparent px-2.5 text-xs font-medium text-zinc-600 shadow-none max-md:!h-11 max-md:min-h-11";
+  "!h-10 min-h-10 w-full min-w-0 !rounded-none !border-transparent bg-transparent px-2.5 text-xs font-medium text-muted-foreground shadow-none max-md:!h-11 max-md:min-h-11";
 
 const stackedValueCell =
-  "flex min-h-10 min-w-0 flex-wrap items-center gap-1 px-2 py-1 text-xs text-zinc-600 max-md:min-h-11 [&_[data-slot=input]]:!h-8 [&_[data-slot=input]]:max-w-full [&_[data-slot=input]]:!border-transparent [&_[data-slot=input]]:bg-transparent [&_[data-slot=input]]:text-xs [&_[data-slot=input]]:font-medium [&_[data-slot=input]]:text-zinc-700 [&_[data-slot=input]]:shadow-none [&_[data-slot=search-picker-trigger]]:!h-8 [&_[data-slot=search-picker-trigger]]:max-w-full [&_[data-slot=search-picker-trigger]]:!border-transparent [&_[data-slot=search-picker-trigger]]:bg-transparent [&_[data-slot=search-picker-trigger]]:text-xs [&_[data-slot=search-picker-trigger]]:text-zinc-700 [&_[data-slot=search-picker-trigger]]:shadow-none max-md:[&_[data-slot=search-picker-trigger]]:!h-10 max-md:[&_[data-slot=search-picker-trigger]]:!w-full max-md:[&_[data-slot=search-picker-trigger]]:!min-w-0 [&_[data-slot=select-trigger]]:!h-8 [&_[data-slot=select-trigger]]:max-w-full [&_[data-slot=select-trigger]]:!border-transparent [&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]]:text-xs [&_[data-slot=select-trigger]]:font-medium [&_[data-slot=select-trigger]]:text-zinc-700 [&_[data-slot=select-trigger]]:shadow-none [&_[data-slot=textarea]]:!border-transparent [&_[data-slot=textarea]]:bg-transparent [&_[data-slot=textarea]]:text-xs [&_[data-slot=textarea]]:text-zinc-700 [&_[data-slot=textarea]]:shadow-none";
+  "flex min-h-10 min-w-0 flex-wrap items-center gap-1 px-2 py-1 text-xs text-muted-foreground max-md:min-h-11 [&_[data-slot=input]]:!h-8 [&_[data-slot=input]]:max-w-full [&_[data-slot=input]]:!border-transparent [&_[data-slot=input]]:bg-transparent [&_[data-slot=input]]:text-xs [&_[data-slot=input]]:font-medium [&_[data-slot=input]]:text-foreground/80 [&_[data-slot=input]]:shadow-none [&_[data-slot=search-picker-trigger]]:!h-8 [&_[data-slot=search-picker-trigger]]:max-w-full [&_[data-slot=search-picker-trigger]]:!border-transparent [&_[data-slot=search-picker-trigger]]:bg-transparent [&_[data-slot=search-picker-trigger]]:text-xs [&_[data-slot=search-picker-trigger]]:text-foreground/80 [&_[data-slot=search-picker-trigger]]:shadow-none max-md:[&_[data-slot=search-picker-trigger]]:!h-10 max-md:[&_[data-slot=search-picker-trigger]]:!w-full max-md:[&_[data-slot=search-picker-trigger]]:!min-w-0 [&_[data-slot=select-trigger]]:!h-8 [&_[data-slot=select-trigger]]:max-w-full [&_[data-slot=select-trigger]]:!border-transparent [&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]]:text-xs [&_[data-slot=select-trigger]]:font-medium [&_[data-slot=select-trigger]]:text-foreground/80 [&_[data-slot=select-trigger]]:shadow-none [&_[data-slot=textarea]]:!border-transparent [&_[data-slot=textarea]]:bg-transparent [&_[data-slot=textarea]]:text-xs [&_[data-slot=textarea]]:text-foreground/80 [&_[data-slot=textarea]]:shadow-none";
 
 const COURSE_MATCH_OPTIONS: Array<{
   value: CourseMatch;
@@ -173,23 +173,23 @@ function SearchPicker({
         >
           {value ? (
             <span className="flex min-w-0 items-baseline gap-2">
-              <span className="shrink-0 font-mono text-xs font-semibold text-zinc-700">
+              <span className="shrink-0 font-mono text-xs font-semibold text-foreground/80">
                 {value}
               </span>
               {valueTitle ? (
-                <span className="min-w-0 truncate text-[11px] font-normal text-zinc-500">
+                <span className="min-w-0 truncate text-[11px] font-normal text-muted-foreground">
                   {valueTitle}
                 </span>
               ) : null}
             </span>
           ) : (
-            <span className="truncate text-zinc-400">
+            <span className="truncate text-muted-foreground/80">
               Choose {label.toLowerCase()}
             </span>
           )}
           <ChevronDown
             aria-hidden="true"
-            className="ml-auto shrink-0 text-zinc-400"
+            className="ml-auto shrink-0 text-muted-foreground/80"
             size={15}
           />
         </button>
@@ -209,7 +209,7 @@ function SearchPicker({
           />
           <CommandList className="max-h-56 p-1">
             {term.length < 2 && !value ? (
-              <p className="px-2.5 py-2.5 text-xs text-zinc-500">
+              <p className="px-2.5 py-2.5 text-xs text-muted-foreground">
                 Type a code or title.
               </p>
             ) : null}
@@ -228,11 +228,11 @@ function SearchPicker({
                   value={`${result.code} ${result.title ?? ""}`}
                 >
                   <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                    <span className="shrink-0 font-mono text-xs font-semibold text-zinc-800">
+                    <span className="shrink-0 font-mono text-xs font-semibold text-foreground/90">
                       {result.code}
                     </span>
                     {result.title ? (
-                      <span className="min-w-0 truncate text-[11px] text-zinc-500">
+                      <span className="min-w-0 truncate text-[11px] text-muted-foreground">
                         {result.title}
                       </span>
                     ) : null}
@@ -240,7 +240,7 @@ function SearchPicker({
                   {result.code === value ? (
                     <Check
                       aria-hidden="true"
-                      className="size-4 shrink-0 text-brand-600"
+                      className="size-4 shrink-0 text-primary"
                     />
                   ) : null}
                 </CommandItem>
@@ -292,7 +292,10 @@ function UnitsInput({
         type="number"
         value={condition.units ?? ""}
       />
-      <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+      <span
+        data-slot="condition-grammar"
+        className="text-xs text-muted-foreground"
+      >
         units
       </span>
     </span>
@@ -356,7 +359,10 @@ function CourseMarkInput({
         type="number"
         value={condition.mark}
       />
-      <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+      <span
+        data-slot="condition-grammar"
+        className="text-xs text-muted-foreground"
+      >
         %
       </span>
     </span>
@@ -432,7 +438,10 @@ function InlineValueFields({
     return (
       <>
         <UnitsInput condition={condition} onChange={onChange} />
-        <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+        <span
+          data-slot="condition-grammar"
+          className="text-xs text-muted-foreground"
+        >
           in
         </span>
         <Input
@@ -461,7 +470,10 @@ function InlineValueFields({
     return (
       <>
         <UnitsInput condition={condition} onChange={onChange} />
-        <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+        <span
+          data-slot="condition-grammar"
+          className="text-xs text-muted-foreground"
+        >
           at
         </span>
         <Select
@@ -476,7 +488,10 @@ function InlineValueFields({
           value={level}
           {...bindOpen("level")}
         />
-        <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+        <span
+          data-slot="condition-grammar"
+          className="text-xs text-muted-foreground"
+        >
           in
         </span>
         <Input
@@ -503,7 +518,10 @@ function InlineValueFields({
     return (
       <>
         <UnitsInput condition={condition} onChange={onChange} />
-        <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+        <span
+          data-slot="condition-grammar"
+          className="text-xs text-muted-foreground"
+        >
           from
         </span>
         <CourseCodesInput condition={condition} onChange={onChange} />
@@ -531,7 +549,10 @@ function InlineValueFields({
           type="number"
           value={condition.minimumYear ?? ""}
         />
-        <span data-slot="condition-grammar" className="text-xs text-zinc-500">
+        <span
+          data-slot="condition-grammar"
+          className="text-xs text-muted-foreground"
+        >
           year
         </span>
       </span>
@@ -672,7 +693,7 @@ export function ConditionInlineEditor({
       <span
         aria-label={`Requirement: ${middle[0]?.label ?? "At least"}`}
         className={cn(
-          "inline-flex h-9 min-h-9 min-w-[7.5rem] items-center rounded-md px-2.5 text-xs font-medium text-zinc-600",
+          "inline-flex h-9 min-h-9 min-w-[7.5rem] items-center rounded-md px-2.5 text-xs font-medium text-muted-foreground",
           layout === "stacked" &&
             "h-10 min-h-10 w-full min-w-0 !rounded-none px-2.5 max-md:h-11 max-md:min-h-11",
         )}
@@ -697,11 +718,11 @@ export function ConditionInlineEditor({
     return (
       <span
         className={cn(
-          "grid w-full min-w-0 overflow-hidden rounded-xl border bg-white shadow-xs",
+          "grid w-full min-w-0 overflow-hidden rounded-xl border bg-card shadow-xs",
           className,
         )}
       >
-        <span className="flex min-w-0 items-center border-b border-zinc-200">
+        <span className="flex min-w-0 items-center border-b border-border">
           {familyControl}
         </span>
         {family === "course" ? (
@@ -716,7 +737,7 @@ export function ConditionInlineEditor({
             <span
               className={cn(
                 stackedValueCell,
-                "border-b border-zinc-200 md:border-r md:border-b-0",
+                "border-b border-border md:border-r md:border-b-0",
               )}
               data-slot="condition-value"
             >
@@ -726,7 +747,7 @@ export function ConditionInlineEditor({
               className={cn(
                 "flex min-w-0 items-center",
                 markControl &&
-                  "border-b border-zinc-200 md:border-r md:border-b-0",
+                  "border-b border-border md:border-r md:border-b-0",
               )}
             >
               {matchControl}
@@ -740,7 +761,7 @@ export function ConditionInlineEditor({
             <span
               className={cn(
                 stackedValueCell,
-                "border-b border-zinc-200 md:border-r md:border-b-0",
+                "border-b border-border md:border-r md:border-b-0",
               )}
               data-slot="condition-value"
             >
@@ -750,7 +771,7 @@ export function ConditionInlineEditor({
           </span>
         ) : (
           <span className="grid min-w-0 md:grid-cols-[minmax(8rem,0.65fr)_minmax(10rem,1.35fr)]">
-            <span className="flex min-w-0 items-center border-b border-zinc-200 md:border-r md:border-b-0">
+            <span className="flex min-w-0 items-center border-b border-border md:border-r md:border-b-0">
               {matchControl}
             </span>
             <span className={stackedValueCell} data-slot="condition-value">

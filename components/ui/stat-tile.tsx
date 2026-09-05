@@ -38,12 +38,12 @@ export function StatTile({
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-1 text-[11px] font-medium text-zinc-500">
+          <div className="mb-1 text-[11px] font-medium text-muted-foreground">
             {label}
           </div>
         </div>
         {icon ? (
-          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-brand-100 bg-brand-50 text-brand-700 [&>svg]:size-4">
+          <span className="grid size-8 shrink-0 place-items-center rounded-md border border-primary/20 bg-primary/10 text-primary [&>svg]:size-4">
             {icon}
           </span>
         ) : null}
@@ -53,13 +53,13 @@ export function StatTile({
           <div className="text-2xl font-semibold tracking-tight tabular-nums">
             {value}
             {unit ? (
-              <span className="ml-1 text-sm font-normal text-zinc-500">
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
                 {unit}
               </span>
             ) : null}
           </div>
           {description ? (
-            <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
               {description}
             </p>
           ) : null}
@@ -74,15 +74,15 @@ export function StatTile({
         ) : null}
       </div>
       {action ? (
-        <div className="mt-auto border-t border-zinc-100 pt-3">{action}</div>
+        <div className="mt-auto border-t border-border/60 pt-3">{action}</div>
       ) : null}
     </>
   );
 
   const classes = cn(
-    "flex h-full flex-col rounded-lg border border-zinc-200/80 bg-white px-3.5 py-3 text-zinc-950 shadow-xs",
+    "flex h-full flex-col rounded-lg border border-border/80 bg-card px-3.5 py-3 text-foreground shadow-xs",
     href &&
-      "transition hover:border-zinc-300 hover:bg-zinc-50/80 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 focus-visible:outline-none",
+      "transition hover:border-input hover:bg-accent/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none",
     className,
   );
 

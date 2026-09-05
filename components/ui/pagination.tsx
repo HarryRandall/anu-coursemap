@@ -41,7 +41,7 @@ function pageWindow(page: number, pageCount: number): Array<number | "gap"> {
 }
 
 const stepClasses =
-  "grid size-8 cursor-pointer place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none";
+  "grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
 export function Pagination({
   pathname,
@@ -74,18 +74,20 @@ export function Pagination({
       aria-label={`${itemName} pagination`}
       className="flex flex-wrap items-center justify-between gap-3"
     >
-      <p className="text-xs font-medium text-zinc-600 tabular-nums">
+      <p className="text-xs font-medium text-muted-foreground tabular-nums">
         {total === 0 ? (
-          <span className="text-zinc-400">No {itemName}</span>
+          <span className="text-muted-foreground/80">No {itemName}</span>
         ) : pageCount === 1 ? (
           <>
             {total.toLocaleString("en-AU")}{" "}
-            <span className="font-normal text-zinc-500">{itemName}</span>
+            <span className="font-normal text-muted-foreground">
+              {itemName}
+            </span>
           </>
         ) : (
           <>
             {start.toLocaleString("en-AU")}–{end.toLocaleString("en-AU")}{" "}
-            <span className="font-normal text-zinc-500">
+            <span className="font-normal text-muted-foreground">
               of {total.toLocaleString("en-AU")}
             </span>
           </>
@@ -101,7 +103,10 @@ export function Pagination({
           ) : (
             <span
               aria-disabled="true"
-              className={cn(stepClasses, "pointer-events-none text-zinc-300")}
+              className={cn(
+                stepClasses,
+                "pointer-events-none text-muted-foreground/60",
+              )}
             >
               <ChevronLeft aria-hidden="true" size={16} />
               <span className="sr-only">Previous page unavailable</span>
@@ -113,7 +118,7 @@ export function Pagination({
               entry === "gap" ? (
                 <span
                   aria-hidden="true"
-                  className="grid size-8 place-items-center text-xs text-zinc-400"
+                  className="grid size-8 place-items-center text-xs text-muted-foreground/80"
                   key={`gap-${index}`}
                 >
                   &hellip;
@@ -121,14 +126,14 @@ export function Pagination({
               ) : entry === safePage ? (
                 <span
                   aria-current="page"
-                  className="grid size-8 place-items-center rounded-md bg-zinc-900 text-xs font-semibold text-white tabular-nums"
+                  className="grid size-8 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground tabular-nums"
                   key={entry}
                 >
                   {entry}
                 </span>
               ) : (
                 <Link
-                  className="grid size-8 place-items-center rounded-md text-xs font-medium text-zinc-600 tabular-nums transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                  className="grid size-8 place-items-center rounded-md text-xs font-medium text-muted-foreground tabular-nums transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                   href={href(entry)}
                   key={entry}
                 >
@@ -140,7 +145,7 @@ export function Pagination({
           ) : (
             <span
               aria-current="page"
-              className="grid size-8 place-items-center rounded-md bg-zinc-900 text-xs font-semibold text-white tabular-nums"
+              className="grid size-8 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground tabular-nums"
             >
               1
             </span>
@@ -154,7 +159,10 @@ export function Pagination({
           ) : (
             <span
               aria-disabled="true"
-              className={cn(stepClasses, "pointer-events-none text-zinc-300")}
+              className={cn(
+                stepClasses,
+                "pointer-events-none text-muted-foreground/60",
+              )}
             >
               <ChevronRight aria-hidden="true" size={16} />
               <span className="sr-only">Next page unavailable</span>

@@ -10,40 +10,43 @@ export const accent: Record<
   { token: string; bar: string; dot: string; ring: string }
 > = {
   blue: {
-    token: "bg-sky-50 text-sky-700",
+    token: "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300",
     bar: "bg-sky-500",
     dot: "bg-sky-500",
-    ring: "ring-sky-200",
+    ring: "ring-sky-200 dark:ring-sky-900",
   },
   violet: {
-    token: "bg-brand-50 text-brand-700",
-    bar: "bg-brand-500",
-    dot: "bg-brand-500",
-    ring: "ring-brand-200",
+    token:
+      "bg-violet-50 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300",
+    bar: "bg-violet-500",
+    dot: "bg-violet-500",
+    ring: "ring-violet-200 dark:ring-violet-900",
   },
   mint: {
-    token: "bg-emerald-50 text-emerald-700",
+    token:
+      "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300",
     bar: "bg-emerald-500",
     dot: "bg-emerald-500",
-    ring: "ring-emerald-200",
+    ring: "ring-emerald-200 dark:ring-emerald-900",
   },
   amber: {
-    token: "bg-amber-50 text-amber-700",
+    token:
+      "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300",
     bar: "bg-amber-500",
     dot: "bg-amber-500",
-    ring: "ring-amber-200",
+    ring: "ring-amber-200 dark:ring-amber-900",
   },
   rose: {
-    token: "bg-rose-50 text-rose-700",
+    token: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300",
     bar: "bg-rose-500",
     dot: "bg-rose-500",
-    ring: "ring-rose-200",
+    ring: "ring-rose-200 dark:ring-rose-900",
   },
   cyan: {
-    token: "bg-cyan-50 text-cyan-700",
+    token: "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300",
     bar: "bg-cyan-500",
     dot: "bg-cyan-500",
-    ring: "ring-cyan-200",
+    ring: "ring-cyan-200 dark:ring-cyan-900",
   },
 };
 
@@ -52,12 +55,15 @@ export type Tone =
   "neutral" | "brand" | "success" | "warning" | "danger" | "info";
 
 export const toneClasses: Record<Tone, string> = {
-  neutral: "border-zinc-200 bg-zinc-50 text-zinc-600",
-  brand: "border-brand-200 bg-brand-50 text-brand-700",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  warning: "border-amber-200 bg-amber-50 text-amber-700",
-  danger: "border-rose-200 bg-rose-50 text-rose-700",
-  info: "border-sky-200 bg-sky-50 text-sky-700",
+  neutral: "border-border bg-muted/50 text-muted-foreground",
+  brand: "border-primary/25 bg-primary/10 text-primary",
+  success:
+    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300",
+  warning:
+    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-300",
+  danger:
+    "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300",
+  info: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/60 dark:text-sky-300",
 };
 
 /** Map an effective plan status to a tone + label. */

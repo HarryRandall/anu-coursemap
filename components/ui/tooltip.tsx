@@ -100,7 +100,7 @@ export function Tooltip({
         ? createPortal(
             <span
               className={cn(
-                "pointer-events-none fixed z-[200] -translate-x-1/2 animate-fade-in rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium whitespace-nowrap text-white shadow-lg motion-reduce:animate-none",
+                "pointer-events-none fixed z-[200] -translate-x-1/2 animate-fade-in rounded-md bg-invert px-2 py-1 text-xs font-medium whitespace-nowrap text-invert-foreground shadow-lg motion-reduce:animate-none",
                 side === "top" ? "-translate-y-full" : "",
               )}
               role="tooltip"

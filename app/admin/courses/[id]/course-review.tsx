@@ -410,7 +410,7 @@ function Panel({ children, label }: { children: ReactNode; label: string }) {
   return (
     <section
       aria-label={label}
-      className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
+      className="overflow-hidden rounded-xl border border-border bg-card"
     >
       {children}
     </section>
@@ -419,11 +419,11 @@ function Panel({ children, label }: { children: ReactNode; label: string }) {
 
 function FieldValue({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="grid gap-1 border-b border-zinc-100 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
-      <dt className="text-sm font-medium text-zinc-500">{label}</dt>
-      <dd className="min-w-0 text-sm leading-6 text-zinc-900">
+    <div className="grid gap-1 border-b border-border/60 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
+      <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm leading-6 text-foreground">
         {value === null || value === undefined || value === "" ? (
-          <span className="text-zinc-400">Not provided</span>
+          <span className="text-muted-foreground/80">Not provided</span>
         ) : (
           value
         )}
@@ -478,7 +478,7 @@ function SnapshotFieldsEditor({
   return (
     <form className="space-y-6 p-5 sm:p-6" onSubmit={onSubmit}>
       <div>
-        <h2 className="text-sm font-semibold text-zinc-950">Identity</h2>
+        <h2 className="text-sm font-semibold text-foreground">Identity</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field className="sm:col-span-2" label="Course title">
             <Input
@@ -537,8 +537,8 @@ function SnapshotFieldsEditor({
         </div>
       </div>
 
-      <div className="border-t border-zinc-100 pt-6">
-        <h2 className="text-sm font-semibold text-zinc-950">
+      <div className="border-t border-border/60 pt-6">
+        <h2 className="text-sm font-semibold text-foreground">
           Units and availability
         </h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -630,8 +630,8 @@ function SnapshotFieldsEditor({
         </div>
       </div>
 
-      <div className="border-t border-zinc-100 pt-6">
-        <h2 className="text-sm font-semibold text-zinc-950">
+      <div className="border-t border-border/60 pt-6">
+        <h2 className="text-sm font-semibold text-foreground">
           Teaching information
         </h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -675,13 +675,13 @@ function SnapshotFieldsEditor({
         </div>
       </div>
 
-      <div className="border-t border-zinc-100 pt-6">
+      <div className="border-t border-border/60 pt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-950">
+            <h2 className="text-sm font-semibold text-foreground">
               Advanced collections
             </h2>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-zinc-500">
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
               This complete relational projection contains unit options, fees,
               areas, attributes, related courses, offerings and sessions,
               outcomes, assessments and rule trees. Keys and links are checked
@@ -711,13 +711,13 @@ function SnapshotFieldsEditor({
             {collectionSummary(advancedCollections(preview)).map(
               ([label, count]) => (
                 <div
-                  className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2"
+                  className="rounded-lg border border-border bg-muted/50 px-3 py-2"
                   key={label}
                 >
-                  <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                  <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                     {label}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-zinc-950 tabular-nums">
+                  <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">
                     {count}
                   </p>
                 </div>
@@ -727,7 +727,7 @@ function SnapshotFieldsEditor({
         ) : null}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
+      <div className="flex justify-end gap-2 border-t border-border/60 pt-4">
         <Button onClick={onCancel}>Cancel</Button>
         <Button
           disabled={saving || Boolean(error)}
@@ -779,11 +779,11 @@ function RequisitePanel({
         />
       ) : rules.length ? (
         <>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-border/60">
             {rules.map((rule) => (
               <div className="px-5 py-5 sm:px-6" key={rule.key}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-sm font-semibold text-zinc-950">
+                  <h2 className="text-sm font-semibold text-foreground">
                     {readable(rule.ruleKind)}
                   </h2>
                   <Badge
@@ -792,15 +792,15 @@ function RequisitePanel({
                     {readable(rule.hardness)}
                   </Badge>
                 </div>
-                <p className="mt-3 border-l-2 border-zinc-300 pl-4 text-sm leading-7 whitespace-pre-wrap text-zinc-700">
+                <p className="mt-3 border-l-2 border-input pl-4 text-sm leading-7 whitespace-pre-wrap text-foreground/80">
                   {rule.sourceText}
                 </p>
               </div>
             ))}
           </div>
           <CourseSnapshotRuleViewer kind={kind} projection={projection} />
-          <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3 sm:px-6">
-            <p className="text-xs text-zinc-500">
+          <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
+            <p className="text-xs text-muted-foreground">
               Edit the source wording and complete relational tree together.
             </p>
             <Button disabled={!canEdit} onClick={onEdit} size="sm">
@@ -810,7 +810,7 @@ function RequisitePanel({
         </>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-7 sm:px-6">
-          <p className="text-sm text-zinc-500">{empty}</p>
+          <p className="text-sm text-muted-foreground">{empty}</p>
           <Button disabled={!canEdit} onClick={onEdit} size="sm">
             <Pencil aria-hidden="true" size={14} /> Add rule tree
           </Button>
@@ -1237,17 +1237,17 @@ export function CourseReview({
           <TabsContent className="mt-0" value="course">
             <div className="space-y-4">
               <Panel label="Published comparison">
-                <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
-                  <h2 className="text-sm font-semibold text-zinc-950">
+                <div className="border-b border-border px-5 py-4 sm:px-6">
+                  <h2 className="text-sm font-semibold text-foreground">
                     Published comparison
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     A short summary of the current snapshot compared with the
                     student-facing version. Field evidence appears below when
                     the import recorded it.
                   </p>
                 </div>
-                <div className="grid grid-cols-2 border-b border-zinc-200 sm:grid-cols-4">
+                <div className="grid grid-cols-2 border-b border-border sm:grid-cols-4">
                   {[
                     ["Course year", String(record.year)],
                     [
@@ -1265,36 +1265,39 @@ export function CourseReview({
                     ["Differences", String(changes.length)],
                   ].map(([label, value], index) => (
                     <div
-                      className={`px-4 py-4 sm:px-6 ${index ? "border-l border-zinc-200" : ""}`}
+                      className={`px-4 py-4 sm:px-6 ${index ? "border-l border-border" : ""}`}
                       key={label}
                     >
-                      <p className="text-xs font-medium text-zinc-500">
+                      <p className="text-xs font-medium text-muted-foreground">
                         {label}
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-zinc-950">
+                      <p className="mt-1 text-sm font-semibold text-foreground">
                         {value}
                       </p>
                     </div>
                   ))}
                 </div>
-                <div className="divide-y divide-zinc-100 px-5 sm:px-6">
+                <div className="divide-y divide-border/60 px-5 sm:px-6">
                   {changes.length ? (
                     changes.map((change) => (
-                      <div className="py-3 text-sm text-zinc-700" key={change}>
-                        <span className="inline-flex rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">
+                      <div
+                        className="py-3 text-sm text-foreground/80"
+                        key={change}
+                      >
+                        <span className="inline-flex rounded-md bg-muted px-2 py-1 text-xs font-medium text-foreground/80">
                           {change}
                         </span>
                       </div>
                     ))
                   ) : (
-                    <p className="py-7 text-sm text-zinc-500">
+                    <p className="py-7 text-sm text-muted-foreground">
                       The draft matches the currently published projection.
                     </p>
                   )}
                 </div>
                 {record.evidence.length ? (
-                  <details className="border-t border-zinc-200">
-                    <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 sm:px-6">
+                  <details className="border-t border-border">
+                    <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-foreground/80 hover:bg-accent/50 sm:px-6">
                       Field evidence ({record.evidence.length})
                     </summary>
                     <JsonCode
@@ -1305,11 +1308,11 @@ export function CourseReview({
                 ) : null}
               </Panel>
               <Panel label="Course fields">
-                <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
-                  <h2 className="text-sm font-semibold text-zinc-950">
+                <div className="border-b border-border px-5 py-4 sm:px-6">
+                  <h2 className="text-sm font-semibold text-foreground">
                     Course fields
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     Review the saved values or create a manual draft from the
                     complete relational course record.
                   </p>
@@ -1387,7 +1390,7 @@ export function CourseReview({
                         />
                       </dl>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3 sm:px-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
                       <div className="flex flex-wrap gap-2">
                         {collectionSummary(advancedCollections(projection)).map(
                           ([label, count]) => (
@@ -1408,7 +1411,7 @@ export function CourseReview({
                     </div>
                   </>
                 ) : (
-                  <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                  <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
                     This course year does not have a draft or published
                     snapshot.
                   </p>
@@ -1416,15 +1419,15 @@ export function CourseReview({
               </Panel>
               <Panel label="Relational projection">
                 <details>
-                  <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-zinc-950 marker:content-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none sm:px-6">
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-foreground marker:content-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:px-6">
                     <FileCode2
                       aria-hidden="true"
-                      className="text-zinc-400"
+                      className="text-muted-foreground/80"
                       size={17}
                     />
                     Relational projection
                   </summary>
-                  <p className="border-t border-zinc-100 px-5 py-3 text-xs leading-5 text-zinc-500 sm:px-6">
+                  <p className="border-t border-border/60 px-5 py-3 text-xs leading-5 text-muted-foreground sm:px-6">
                     Assembled from the saved snapshot and child rows. This is an
                     inspection view, not a stored import JSON blob.
                   </p>
@@ -1442,12 +1445,12 @@ export function CourseReview({
               <Panel label="Source">
                 {record.sourcePage ? (
                   <>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
                       <div>
-                        <h2 className="text-base font-semibold text-zinc-950">
+                        <h2 className="text-base font-semibold text-foreground">
                           ANU source page
                         </h2>
-                        <p className="mt-1 text-sm text-zinc-500">
+                        <p className="mt-1 text-sm text-muted-foreground">
                           Manual snapshots keep this immutable source reference.
                         </p>
                       </div>
@@ -1504,7 +1507,7 @@ export function CourseReview({
                     </div>
                   </>
                 ) : (
-                  <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                  <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
                     No immutable source page is attached to this snapshot.
                   </p>
                 )}
@@ -1575,7 +1578,7 @@ export function CourseReview({
           <TabsContent className="mt-0" value="student">
             {previewCourse ? (
               <Tabs className="gap-0" defaultValue="overview">
-                <div className="border-b border-zinc-200">
+                <div className="border-b border-border">
                   <CourseDetailTabsList />
                 </div>
                 <div className="pt-6">
@@ -1591,7 +1594,7 @@ export function CourseReview({
               </Tabs>
             ) : (
               <Panel label="Course preview">
-                <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
                   A snapshot is required before the course preview is available.
                 </p>
               </Panel>

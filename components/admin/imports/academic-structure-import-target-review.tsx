@@ -76,7 +76,7 @@ function statusTone(status: string): Tone {
 
 function displayValue(value: unknown): ReactNode {
   if (value === null || value === undefined || value === "") {
-    return <span className="text-zinc-400">Not recorded</span>;
+    return <span className="text-muted-foreground/80">Not recorded</span>;
   }
   if (typeof value === "boolean") return value ? "Yes" : "No";
   return String(value);
@@ -94,8 +94,8 @@ function formatFee(amount: number | null, currency: string | null) {
 function MetadataItem({ label, value }: { label: string; value: unknown }) {
   return (
     <div>
-      <dt className="text-zinc-500">{label}</dt>
-      <dd className="mt-1 text-zinc-800">{displayValue(value)}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-foreground/90">{displayValue(value)}</dd>
     </div>
   );
 }
@@ -209,7 +209,7 @@ function RequirementTree({
           : `Complete at least ${group.minimum_count ?? "the stated number"}`;
 
     return (
-      <Card className="border-zinc-200 shadow-none">
+      <Card className="border-border shadow-none">
         <CardHeader
           action={<Badge tone="neutral">{operator}</Badge>}
           description={group.description ?? undefined}
@@ -221,14 +221,14 @@ function RequirementTree({
             const units = conditionUnits(condition);
             return (
               <div
-                className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-3"
+                className="rounded-lg border border-border bg-muted/30 p-3"
                 key={condition.id}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone="brand">
                     {readable(condition.condition_kind)}
                   </Badge>
-                  <p className="text-xs font-medium text-zinc-900">
+                  <p className="text-xs font-medium text-foreground">
                     {conditionSummary(condition)}
                   </p>
                   {condition.minimum_courses ? (
@@ -250,11 +250,11 @@ function RequirementTree({
                     ))}
                   </div>
                 ) : null}
-                <details className="mt-2 text-xs text-zinc-500">
-                  <summary className="min-h-8 cursor-pointer py-1 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="min-h-8 cursor-pointer py-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                     Source wording
                   </summary>
-                  <blockquote className="border-l-2 border-zinc-300 pl-3 leading-5 whitespace-pre-wrap">
+                  <blockquote className="border-l-2 border-input pl-3 leading-5 whitespace-pre-wrap">
                     {condition.source_text}
                   </blockquote>
                   <p className="mt-1 font-mono text-[10px]">
@@ -387,24 +387,30 @@ function CandidatePreview({
           </dl>
           {snapshot.introduction ? (
             <div>
-              <p className="text-xs font-medium text-zinc-500">Introduction</p>
-              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-zinc-700">
+              <p className="text-xs font-medium text-muted-foreground">
+                Introduction
+              </p>
+              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-foreground/80">
                 {snapshot.introduction}
               </p>
             </div>
           ) : null}
           {snapshot.description ? (
             <div>
-              <p className="text-xs font-medium text-zinc-500">Description</p>
-              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-zinc-700">
+              <p className="text-xs font-medium text-muted-foreground">
+                Description
+              </p>
+              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-foreground/80">
                 {snapshot.description}
               </p>
             </div>
           ) : null}
           {snapshot.contact_text ? (
             <div>
-              <p className="text-xs font-medium text-zinc-500">Contact</p>
-              <p className="mt-1 text-sm whitespace-pre-wrap text-zinc-700">
+              <p className="text-xs font-medium text-muted-foreground">
+                Contact
+              </p>
+              <p className="mt-1 text-sm whitespace-pre-wrap text-foreground/80">
                 {snapshot.contact_text}
               </p>
             </div>
@@ -422,8 +428,10 @@ function CandidatePreview({
             <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
               {fields.map((item) => (
                 <div key={item.id}>
-                  <dt className="text-zinc-500">{item.label}</dt>
-                  <dd className="mt-1 text-zinc-800">{item.field_value}</dd>
+                  <dt className="text-muted-foreground">{item.label}</dt>
+                  <dd className="mt-1 text-foreground/90">
+                    {item.field_value}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -434,7 +442,7 @@ function CandidatePreview({
       {sections.length ? (
         <section className="space-y-3" aria-labelledby="candidate-sections">
           <h2
-            className="text-sm font-semibold text-zinc-950"
+            className="text-sm font-semibold text-foreground"
             id="candidate-sections"
           >
             Page sections
@@ -448,7 +456,7 @@ function CandidatePreview({
                 title={section.heading}
               />
               <CardContent>
-                <pre className="overflow-auto text-sm leading-6 whitespace-pre-wrap text-zinc-700">
+                <pre className="overflow-auto text-sm leading-6 whitespace-pre-wrap text-foreground/80">
                   {section.markdown}
                 </pre>
               </CardContent>
@@ -461,7 +469,7 @@ function CandidatePreview({
         <Card>
           <CardHeader title="Learning outcomes" />
           <CardContent>
-            <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-zinc-700">
+            <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-foreground/80">
               {outcomes.map((outcome) => (
                 <li key={outcome.id}>{outcome.outcome_text}</li>
               ))}
@@ -472,7 +480,7 @@ function CandidatePreview({
 
       <section className="space-y-3" aria-labelledby="candidate-requirements">
         <h2
-          className="text-sm font-semibold text-zinc-950"
+          className="text-sm font-semibold text-foreground"
           id="candidate-requirements"
         >
           Requirements
@@ -481,7 +489,10 @@ function CandidatePreview({
       </section>
 
       <section className="space-y-3" aria-labelledby="candidate-fees">
-        <h2 className="text-sm font-semibold text-zinc-950" id="candidate-fees">
+        <h2
+          className="text-sm font-semibold text-foreground"
+          id="candidate-fees"
+        >
           Fees
         </h2>
         {fees.length ? (
@@ -510,7 +521,7 @@ function CandidatePreview({
                       {formatFee(fee.amount, fee.currency)}
                     </TableCell>
                     <TableCell>{readable(fee.basis)}</TableCell>
-                    <TableCell className="max-w-72 text-xs text-zinc-600">
+                    <TableCell className="max-w-72 text-xs text-muted-foreground">
                       {fee.source_label ?? fee.source_text}
                     </TableCell>
                   </TableRow>
@@ -530,7 +541,7 @@ function CandidatePreview({
 
       <section className="space-y-3" aria-labelledby="candidate-relationships">
         <h2
-          className="text-sm font-semibold text-zinc-950"
+          className="text-sm font-semibold text-foreground"
           id="candidate-relationships"
         >
           Relationships
@@ -575,16 +586,16 @@ function CandidatePreview({
       </section>
 
       {evidence.length ? (
-        <details className="group rounded-xl border border-zinc-200 bg-white shadow-xs">
-          <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-zinc-950 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+        <details className="group rounded-xl border border-border bg-card shadow-xs">
+          <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             Evidence and confidence
             <Badge tone="neutral">{evidence.length} records</Badge>
           </summary>
-          <div className="divide-y divide-zinc-100 border-t border-zinc-100">
+          <div className="divide-y divide-border/60 border-t border-border/60">
             {evidence.map((item) => (
               <div className="p-4 text-xs" key={item.id}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono font-medium text-zinc-800">
+                  <span className="font-mono font-medium text-foreground/90">
                     {item.field_key}
                   </span>
                   <Badge tone="neutral">{item.method}</Badge>
@@ -592,7 +603,7 @@ function CandidatePreview({
                     {Math.round(item.confidence * 100)}%
                   </Badge>
                 </div>
-                <blockquote className="mt-2 border-l-2 border-zinc-300 pl-3 leading-5 text-zinc-600">
+                <blockquote className="mt-2 border-l-2 border-input pl-3 leading-5 text-muted-foreground">
                   {item.evidence_excerpt}
                 </blockquote>
               </div>
@@ -672,17 +683,17 @@ function ReviewItems({
             description="A compact comparison of the main snapshot fields. Full relational data is in Candidate and Database rows."
             title="Changed snapshot fields"
           />
-          <div className="divide-y divide-zinc-100 border-t border-zinc-100">
+          <div className="divide-y divide-border/60 border-t border-border/60">
             {snapshotFields.map(([label, before, after]) => (
               <div
                 className="grid gap-2 px-5 py-3 text-xs sm:grid-cols-[10rem_1fr_1fr]"
                 key={String(label)}
               >
-                <span className="font-medium text-zinc-800">{label}</span>
-                <span className="text-zinc-500">
+                <span className="font-medium text-foreground/90">{label}</span>
+                <span className="text-muted-foreground">
                   Before: {displayValue(before)}
                 </span>
-                <span className="text-zinc-800">
+                <span className="text-foreground/90">
                   Candidate: {displayValue(after)}
                 </span>
               </div>
@@ -694,7 +705,7 @@ function ReviewItems({
       <section className="space-y-3" aria-labelledby="review-items-title">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2
-            className="text-sm font-semibold text-zinc-950"
+            className="text-sm font-semibold text-foreground"
             id="review-items-title"
           >
             Review items
@@ -717,18 +728,18 @@ function ReviewItems({
             />
           </DataTableShell>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
             {items.map((item) => (
               <details
-                className="group border-b border-zinc-100 last:border-b-0"
+                className="group border-b border-border/60 last:border-b-0"
                 key={item.id}
               >
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                   <span className="min-w-0">
-                    <span className="block truncate text-xs font-medium text-zinc-900">
+                    <span className="block truncate text-xs font-medium text-foreground">
                       {item.message}
                     </span>
-                    <span className="mt-0.5 block font-mono text-[10px] text-zinc-500">
+                    <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
                       {item.field_key === "$" ? "Whole import" : item.field_key}
                     </span>
                   </span>
@@ -741,16 +752,16 @@ function ReviewItems({
                     </Badge>
                   </span>
                 </summary>
-                <div className="border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs leading-5 text-zinc-600">
+                <div className="border-t border-border/60 bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground">
                   <p>Kind: {readable(item.item_kind)}</p>
                   {item.source_text ? (
-                    <blockquote className="mt-2 border-l-2 border-zinc-300 pl-3 whitespace-pre-wrap">
+                    <blockquote className="mt-2 border-l-2 border-input pl-3 whitespace-pre-wrap">
                       {item.source_text}
                     </blockquote>
                   ) : null}
                   {item.resolution_note ? (
                     <p className="mt-2">
-                      <span className="font-medium text-zinc-800">
+                      <span className="font-medium text-foreground/90">
                         Resolution:
                       </span>{" "}
                       {item.resolution_note}
@@ -924,11 +935,13 @@ export function AcademicStructureImportTargetReview({
         <h1 className="sr-only">Review {detail.target.code} import</h1>
 
         <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-lg font-semibold text-zinc-950">
+          <span className="font-mono text-lg font-semibold text-foreground">
             {detail.target.code}
           </span>
           {detail.target.title ? (
-            <span className="text-sm text-zinc-600">{detail.target.title}</span>
+            <span className="text-sm text-muted-foreground">
+              {detail.target.title}
+            </span>
           ) : null}
           <Badge tone="neutral">{detail.run.academicYear}</Badge>
           <Badge tone="neutral">Run #{detail.run.runNumber}</Badge>
@@ -1001,12 +1014,12 @@ export function AcademicStructureImportTargetReview({
           <TabsContent value="source">
             <div className="space-y-4">
               {detail.sourcePage ? (
-                <dl className="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                <dl className="grid gap-3 rounded-xl border border-border bg-card p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <dt className="text-zinc-500">ANU page</dt>
+                    <dt className="text-muted-foreground">ANU page</dt>
                     <dd className="mt-1 break-all">
                       <a
-                        className="text-brand-700 underline underline-offset-2"
+                        className="text-primary underline underline-offset-2"
                         href={detail.sourcePage.canonical_url}
                         rel="noreferrer"
                         target="_blank"
@@ -1026,9 +1039,9 @@ export function AcademicStructureImportTargetReview({
                     value={detail.sourcePage.http_status}
                   />
                   <div>
-                    <dt className="text-zinc-500">Source hash</dt>
+                    <dt className="text-muted-foreground">Source hash</dt>
                     <dd
-                      className="mt-1 truncate font-mono text-zinc-800"
+                      className="mt-1 truncate font-mono text-foreground/90"
                       title={detail.sourcePage.content_sha256}
                     >
                       {detail.sourcePage.content_sha256}
@@ -1044,7 +1057,7 @@ export function AcademicStructureImportTargetReview({
           <TabsContent value="database">
             {detail.candidateSnapshot ? (
               <div className="space-y-3">
-                <p className="text-xs leading-5 text-zinc-600">
+                <p className="text-xs leading-5 text-muted-foreground">
                   These are the exact candidate and review rows saved in
                   Postgres, grouped by their real destination table names.
                 </p>

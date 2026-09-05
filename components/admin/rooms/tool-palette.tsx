@@ -149,7 +149,7 @@ export function ToolPalette({
       {groups.map((group, index) => (
         <div className="flex items-center gap-1" key={group[0].tool}>
           {index > 0 ? (
-            <span aria-hidden="true" className="mx-1 h-5 w-px bg-zinc-200" />
+            <span aria-hidden="true" className="mx-1 h-5 w-px bg-accent" />
           ) : null}
           {group.map((definition) => (
             <Fragment key={definition.tool}>

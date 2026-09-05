@@ -29,14 +29,14 @@ import { RolePermissionToggle } from "./role-permission-toggle";
 function RoleHeading({ role }: { role: AdminRole }) {
   return (
     <span className="inline-flex items-center gap-1">
-      <span className="text-[11px] font-semibold tracking-[0.08em] text-zinc-600 uppercase">
+      <span className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">
         {role.name}
       </span>
       {role.description ? (
         <Popover>
           <PopoverTrigger asChild>
             <button
-              className="grid size-4 cursor-pointer place-items-center rounded-full text-zinc-400 transition-colors hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+              className="grid size-4 cursor-pointer place-items-center rounded-full text-muted-foreground/80 transition-colors hover:text-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               type="button"
             >
               <Info aria-hidden="true" size={12} />
@@ -44,7 +44,7 @@ function RoleHeading({ role }: { role: AdminRole }) {
             </button>
           </PopoverTrigger>
           <PopoverContent align="center" className="w-64">
-            <p className="text-xs leading-5 font-normal tracking-normal text-zinc-600 normal-case">
+            <p className="text-xs leading-5 font-normal tracking-normal text-muted-foreground normal-case">
               {role.description}
             </p>
           </PopoverContent>
@@ -116,10 +116,10 @@ export function RolePermissionMatrix({
         {groupedPermissions.length > 0 ? (
           groupedPermissions.map(([category, categoryPermissions]) => (
             <TableBody key={category}>
-              <TableRow className="bg-zinc-50/70 hover:bg-zinc-50/70">
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
                 <TableHead
                   scope="rowgroup"
-                  className="h-9 py-1.5 text-left text-[10px] font-semibold tracking-[0.08em] whitespace-normal text-zinc-500 uppercase"
+                  className="h-9 py-1.5 text-left text-[10px] font-semibold tracking-[0.08em] whitespace-normal text-muted-foreground uppercase"
                 >
                   {permissionArea(category)}
                 </TableHead>
@@ -136,13 +136,13 @@ export function RolePermissionMatrix({
                 <TableRow key={permission.id} className="group">
                   <TableHead
                     scope="row"
-                    className="sticky left-0 z-10 h-auto bg-white py-3 text-left font-normal tracking-normal whitespace-normal normal-case group-hover:bg-zinc-50"
+                    className="sticky left-0 z-10 h-auto bg-card py-3 text-left font-normal tracking-normal whitespace-normal normal-case group-hover:bg-accent/50"
                   >
                     <div className="max-w-lg min-w-0 py-0.5">
-                      <span className="text-[13px] font-medium text-zinc-900">
+                      <span className="text-[13px] font-medium text-foreground">
                         {permission.name}
                       </span>
-                      <p className="mt-0.5 text-[11px] leading-4 text-zinc-500">
+                      <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
                         {permission.description}
                       </p>
                     </div>

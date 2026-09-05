@@ -23,28 +23,29 @@ export function Calendar({
         months: "flex flex-col gap-4 sm:flex-row",
         month: "space-y-3",
         month_caption: "flex h-8 items-center justify-center",
-        caption_label: "text-sm font-semibold text-zinc-950",
+        caption_label: "text-sm font-semibold text-foreground",
         nav: "absolute inset-x-3 top-3 flex items-center justify-between",
         button_previous:
-          "grid size-7 place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-30",
+          "grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30",
         button_next:
-          "grid size-7 place-items-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-30",
+          "grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30",
         month_grid: "w-full border-collapse",
         weekdays: "flex",
-        weekday: "w-8 text-[11px] font-medium text-zinc-400",
+        weekday: "w-8 text-[11px] font-medium text-muted-foreground/80",
         week: "mt-1 flex",
         day: "relative size-8 p-0 text-center text-[13px] focus-within:relative focus-within:z-20",
         day_button:
-          "grid size-8 place-items-center rounded-md font-medium text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none",
+          "grid size-8 place-items-center rounded-md font-medium text-foreground/80 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         selected:
-          "[&>button]:bg-brand-600 [&>button]:text-white [&>button]:hover:bg-brand-700",
-        range_start: "rounded-l-md bg-brand-50",
-        range_end: "rounded-r-md bg-brand-50",
+          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary/90",
+        range_start: "rounded-l-md bg-primary/10",
+        range_end: "rounded-r-md bg-primary/10",
         range_middle:
-          "bg-brand-50 [&>button]:bg-transparent [&>button]:text-brand-900 [&>button]:hover:bg-brand-100",
-        today: "[&>button]:font-bold [&>button]:text-brand-700",
-        outside: "[&>button]:text-zinc-300",
-        disabled: "[&>button]:pointer-events-none [&>button]:text-zinc-300",
+          "bg-primary/10 [&>button]:bg-transparent [&>button]:text-primary [&>button]:hover:bg-primary/15",
+        today: "[&>button]:font-bold [&>button]:text-primary",
+        outside: "[&>button]:text-muted-foreground/60",
+        disabled:
+          "[&>button]:pointer-events-none [&>button]:text-muted-foreground/60",
         hidden: "invisible",
         ...classNames,
       }}

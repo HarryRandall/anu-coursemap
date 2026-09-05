@@ -33,12 +33,15 @@ export function EmailSupportDialog({
 
   return (
     <Modal onClose={onClose} labelledBy={titleId} className="max-w-lg">
-      <div className="flex items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4">
+      <div className="flex items-start justify-between gap-3 border-b border-border/60 px-5 py-4">
         <div>
-          <h2 id={titleId} className="text-[15px] font-semibold text-zinc-900">
+          <h2
+            id={titleId}
+            className="text-[15px] font-semibold text-foreground"
+          >
             Email support
           </h2>
-          <p id={noticeId} className="mt-0.5 text-xs text-zinc-500">
+          <p id={noticeId} className="mt-0.5 text-xs text-muted-foreground">
             Sending from Coursemap is coming soon. You can still draft a message
             so we know what to collect.
           </p>

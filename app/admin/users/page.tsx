@@ -26,8 +26,8 @@ function Notice({
           <span
             className={
               warning
-                ? "grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700"
-                : "grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"
+                ? "grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                : "grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"
             }
           >
             {warning ? (

@@ -66,10 +66,10 @@ export function ArticleToc({ items }: { items: ArticleTocItem[] }) {
 
   return (
     <nav aria-label="On this page">
-      <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+      <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         On this page
       </p>
-      <ul className="mt-3 border-l border-zinc-200">
+      <ul className="mt-3 border-l border-border">
         {items.map((item) => {
           const active = item.id === activeId;
           return (
@@ -81,8 +81,8 @@ export function ArticleToc({ items }: { items: ArticleTocItem[] }) {
                 className={cn(
                   "-ml-px block border-l-2 py-1.5 pr-2 pl-4 text-[13px] leading-snug transition-colors",
                   active
-                    ? "border-brand-600 font-semibold text-brand-700"
-                    : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800",
+                    ? "border-primary font-semibold text-primary"
+                    : "border-transparent text-muted-foreground hover:border-input hover:text-foreground/90",
                 )}
               >
                 {item.label}

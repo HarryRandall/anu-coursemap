@@ -131,11 +131,11 @@ export function ProfileEditor({
 
         <Card className="overflow-hidden">
           <CardHeader
-            className="border-b border-zinc-100"
+            className="border-b border-border/60"
             icon={
               <UserRound
                 size={18}
-                className="text-brand-600"
+                className="text-primary"
                 aria-hidden="true"
               />
             }
@@ -183,11 +183,11 @@ export function ProfileEditor({
 
         <Card className="overflow-hidden">
           <CardHeader
-            className="border-b border-zinc-100"
+            className="border-b border-border/60"
             icon={
               <GraduationCap
                 size={18}
-                className="text-brand-600"
+                className="text-primary"
                 aria-hidden="true"
               />
             }

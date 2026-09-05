@@ -177,37 +177,39 @@ function ReviewItems({ detail }: { detail: CourseImportTargetDetail }) {
           <CardContent className="space-y-3">
             {item.sourceExcerpt ? (
               <div>
-                <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                   Source evidence
                 </p>
-                <blockquote className="mt-1 border-l-2 border-zinc-300 pl-3 text-xs leading-5 whitespace-pre-wrap text-zinc-600">
+                <blockquote className="mt-1 border-l-2 border-input pl-3 text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
                   {item.sourceExcerpt}
                 </blockquote>
               </div>
             ) : null}
             {item.oldValue !== null || item.newValue !== null ? (
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
-                  <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                <div className="min-w-0 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                  <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                     Saved value
                   </p>
-                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-zinc-700">
+                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
                     {comparisonValue(item.oldValue)}
                   </pre>
                 </div>
-                <div className="min-w-0 rounded-lg border border-brand-200 bg-brand-50/50 px-3 py-2">
-                  <p className="text-[10px] font-medium tracking-wide text-brand-600 uppercase">
+                <div className="min-w-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
+                  <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
                     Imported value
                   </p>
-                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-zinc-800">
+                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-foreground/90">
                     {comparisonValue(item.newValue)}
                   </pre>
                 </div>
               </div>
             ) : null}
             {item.resolutionNote ? (
-              <p className="text-xs leading-5 text-zinc-600">
-                <span className="font-medium text-zinc-800">Resolution:</span>{" "}
+              <p className="text-xs leading-5 text-muted-foreground">
+                <span className="font-medium text-foreground/90">
+                  Resolution:
+                </span>{" "}
                 {item.resolutionNote}
               </p>
             ) : null}
@@ -245,12 +247,12 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
       <section className="space-y-3" aria-labelledby="review-checks-title">
         <div>
           <h2
-            className="text-sm font-semibold text-zinc-950"
+            className="text-sm font-semibold text-foreground"
             id="review-checks-title"
           >
             Checks requiring confirmation
           </h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             These are extraction warnings or safety checks, not additional
             course fields. Blocking checks must be considered before accepting
             the candidate as a draft.
@@ -263,12 +265,12 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2
-              className="text-sm font-semibold text-zinc-950"
+              className="text-sm font-semibold text-foreground"
               id="snapshot-changes-title"
             >
               Course differences
             </h2>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Imported values compared with {previousLabel.toLowerCase()}.
             </p>
           </div>
@@ -296,11 +298,11 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
           <div className="space-y-3">
             {groupedChanges.map(([section, sectionChanges], sectionIndex) => (
               <details
-                className="group overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-xs"
+                className="group overflow-hidden rounded-xl border border-border bg-card shadow-xs"
                 key={section}
                 open={sectionIndex === 0}
               >
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-zinc-950 marker:content-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-foreground marker:content-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                   <span>{section}</span>
                   <span className="flex items-center gap-2">
                     <Badge tone="neutral">
@@ -309,20 +311,20 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
                     </Badge>
                     <span
                       aria-hidden="true"
-                      className="text-zinc-400 transition-transform group-open:rotate-90"
+                      className="text-muted-foreground/80 transition-transform group-open:rotate-90"
                     >
                       ›
                     </span>
                   </span>
                 </summary>
-                <div className="divide-y divide-zinc-100 border-t border-zinc-100">
+                <div className="divide-y divide-border/60 border-t border-border/60">
                   {sectionChanges.map((change) => (
                     <div
                       className="space-y-3 p-4 sm:p-5"
                       key={change.fieldPath}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-zinc-900">
+                        <p className="text-xs font-medium text-foreground">
                           {fieldLabel(change.fieldPath)}
                         </p>
                         <Badge
@@ -338,19 +340,19 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
                         </Badge>
                       </div>
                       <div className="grid gap-3 md:grid-cols-2">
-                        <div className="min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
-                          <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                        <div className="min-w-0 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                          <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                             {previousLabel}
                           </p>
-                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-zinc-700">
+                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
                             {comparisonValue(change.before)}
                           </pre>
                         </div>
-                        <div className="min-w-0 rounded-lg border border-brand-200 bg-brand-50/50 px-3 py-2">
-                          <p className="text-[10px] font-medium tracking-wide text-brand-600 uppercase">
+                        <div className="min-w-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
+                          <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
                             Imported candidate
                           </p>
-                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-zinc-800">
+                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-foreground/90">
                             {comparisonValue(change.after)}
                           </pre>
                         </div>
@@ -475,7 +477,7 @@ export function CourseImportTargetReview({
         <h1 className="sr-only">Review {detail.target.courseCode} import</h1>
 
         <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-lg font-semibold text-zinc-950">
+          <span className="font-mono text-lg font-semibold text-foreground">
             {detail.target.courseCode}
           </span>
           <Badge tone="neutral">Run #{detail.run.runNumber}</Badge>
@@ -558,12 +560,12 @@ export function CourseImportTargetReview({
           <TabsContent value="source">
             <div className="space-y-4">
               {detail.sourcePage ? (
-                <dl className="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                <dl className="grid gap-3 rounded-xl border border-border bg-card p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <dt className="text-zinc-500">ANU page</dt>
+                    <dt className="text-muted-foreground">ANU page</dt>
                     <dd className="mt-1 break-all">
                       <a
-                        className="text-brand-700 underline underline-offset-2"
+                        className="text-primary underline underline-offset-2"
                         href={detail.sourcePage.canonical_url}
                         rel="noreferrer"
                         target="_blank"
@@ -573,7 +575,7 @@ export function CourseImportTargetReview({
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Fetched</dt>
+                    <dt className="text-muted-foreground">Fetched</dt>
                     <dd className="mt-1 tabular-nums">
                       {dateFormatter.format(
                         new Date(detail.sourcePage.fetched_at),
@@ -581,13 +583,13 @@ export function CourseImportTargetReview({
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">HTTP status</dt>
+                    <dt className="text-muted-foreground">HTTP status</dt>
                     <dd className="mt-1 tabular-nums">
                       {detail.sourcePage.http_status ?? "Not recorded"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-500">Source hash</dt>
+                    <dt className="text-muted-foreground">Source hash</dt>
                     <dd
                       className="mt-1 truncate font-mono"
                       title={detail.sourcePage.content_sha256}
@@ -603,7 +605,7 @@ export function CourseImportTargetReview({
           <TabsContent value="database">
             {detail.candidateSnapshot ? (
               <div className="space-y-3">
-                <p className="text-xs leading-5 text-zinc-600">
+                <p className="text-xs leading-5 text-muted-foreground">
                   These are the exact candidate rows saved in Postgres. Empty
                   tables are shown so missing relationships are easy to spot.
                 </p>
@@ -626,7 +628,7 @@ export function CourseImportTargetReview({
           </TabsContent>
           <TabsContent value="preview">
             {previewCourse ? (
-              <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
                 <Alert className="m-4" tone="neutral">
                   <AlertDescription>
                     This is the full student-facing course view using the
@@ -635,7 +637,7 @@ export function CourseImportTargetReview({
                   </AlertDescription>
                 </Alert>
                 <Tabs className="gap-0" defaultValue="overview">
-                  <div className="border-y border-zinc-200 px-4 sm:px-5">
+                  <div className="border-y border-border px-4 sm:px-5">
                     <CourseDetailTabsList />
                   </div>
                   <div className="p-4 sm:p-6">

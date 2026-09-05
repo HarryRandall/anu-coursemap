@@ -169,7 +169,7 @@ function WorkflowStatus({ record }: { record: CourseDirectoryRecord }) {
     <div className="min-w-36 space-y-1">
       <Badge tone={workflowTone(status)}>{workflowLabel(status)}</Badge>
       {details.length > 0 || record.latestImport ? (
-        <span className="block text-xs text-zinc-500">
+        <span className="block text-xs text-muted-foreground">
           {details.join(" · ")}
           {record.latestImport ? (
             <>
@@ -402,7 +402,7 @@ export function AdminCourseDirectory({
             </ButtonLink>
             {data.year.sourceAvailability === "unavailable" ? (
               <span
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300"
                 title={
                   data.year.availabilityNote ??
                   `ANU lists no course directory for ${data.year.year}.`
@@ -414,7 +414,7 @@ export function AdminCourseDirectory({
             ) : null}
             {data.activeRun ? (
               <Link
-                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-900 hover:bg-brand-100"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15"
                 href="/admin/courses/imports"
               >
                 <LoaderCircle
@@ -557,9 +557,7 @@ export function AdminCourseDirectory({
                 {data.records.map((record) => (
                   <TableRow
                     className={
-                      selectedSet.has(record.code)
-                        ? "bg-brand-50/50"
-                        : undefined
+                      selectedSet.has(record.code) ? "bg-primary/5" : undefined
                     }
                     key={record.id}
                   >
@@ -575,22 +573,22 @@ export function AdminCourseDirectory({
                       </TableCell>
                     )}
                     <TableCell>
-                      <span className="block font-medium text-zinc-950">
+                      <span className="block font-medium text-foreground">
                         {record.title}
                       </span>
-                      <span className="mt-0.5 block font-mono text-xs text-zinc-500">
+                      <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
                         {record.code}
                       </span>
                     </TableCell>
                     {data.allYears ? (
-                      <TableCell className="text-sm text-zinc-600 tabular-nums">
+                      <TableCell className="text-sm text-muted-foreground tabular-nums">
                         {record.year}
                       </TableCell>
                     ) : null}
                     <TableCell>
                       <WorkflowStatus record={record} />
                     </TableCell>
-                    <TableCell className="text-xs text-zinc-600">
+                    <TableCell className="text-xs text-muted-foreground">
                       {[
                         record.academicCareer,
                         record.session,

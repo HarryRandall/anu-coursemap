@@ -60,19 +60,21 @@ export function Select<T extends string | number>({
         data-slot="select-trigger"
         aria-label={ariaLabel}
         className={cn(
-          "flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-zinc-200 bg-white px-3 text-left text-sm text-zinc-950 shadow-xs transition-colors outline-none hover:border-zinc-300 hover:bg-zinc-50 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:opacity-60 data-[placeholder]:text-zinc-400 data-[state=open]:border-brand-500 data-[state=open]:ring-3 data-[state=open]:ring-brand-500/20",
+          "flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-border bg-popover px-3 text-left text-sm text-foreground shadow-xs transition-colors outline-none hover:border-input hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:bg-accent/50 disabled:opacity-60 data-[placeholder]:text-muted-foreground/80 data-[state=open]:border-primary data-[state=open]:ring-3 data-[state=open]:ring-ring/20",
           className,
         )}
         onPointerDown={(event) => event.stopPropagation()}
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
           {selected?.icon ? (
-            <span className="shrink-0 text-zinc-500">{selected.icon}</span>
+            <span className="shrink-0 text-muted-foreground">
+              {selected.icon}
+            </span>
           ) : null}
           <span
             className={cn(
               "min-w-0 truncate",
-              selected ? "text-zinc-950" : "text-zinc-400",
+              selected ? "text-foreground" : "text-muted-foreground/80",
             )}
           >
             {selected?.label ?? placeholder}
@@ -82,7 +84,7 @@ export function Select<T extends string | number>({
           <ChevronDown
             size={15}
             aria-hidden="true"
-            className="shrink-0 text-zinc-400"
+            className="shrink-0 text-muted-foreground/80"
           />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
@@ -94,7 +96,7 @@ export function Select<T extends string | number>({
           sideOffset={5}
           collisionPadding={8}
           className={cn(
-            "z-[120] max-h-[min(18rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border border-zinc-200 bg-white text-zinc-950 shadow-lg ring-1 ring-zinc-950/[0.03] data-[state=closed]:animate-fade-out data-[state=open]:animate-modal-in motion-reduce:animate-none",
+            "z-[120] max-h-[min(18rem,var(--radix-select-content-available-height))] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border border-border bg-popover text-foreground shadow-lg ring-1 ring-zinc-950/[0.03] data-[state=closed]:animate-fade-out data-[state=open]:animate-modal-in motion-reduce:animate-none",
             menuClassName,
           )}
           onPointerDownOutside={() => {
@@ -106,7 +108,7 @@ export function Select<T extends string | number>({
             closedByPointer.current = false;
           }}
         >
-          <SelectPrimitive.ScrollUpButton className="flex h-7 cursor-default items-center justify-center bg-white text-zinc-500">
+          <SelectPrimitive.ScrollUpButton className="flex h-7 cursor-default items-center justify-center bg-card text-muted-foreground">
             <ChevronUp size={14} aria-hidden="true" />
           </SelectPrimitive.ScrollUpButton>
           <SelectPrimitive.Viewport className="p-1">
@@ -114,21 +116,23 @@ export function Select<T extends string | number>({
               <SelectPrimitive.Item
                 key={optionValue(option.value)}
                 value={optionValue(option.value)}
-                className="relative flex min-h-9 cursor-pointer items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-sm text-zinc-700 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-zinc-100 data-[highlighted]:text-zinc-950 data-[state=checked]:font-medium data-[state=checked]:text-zinc-950"
+                className="relative flex min-h-9 cursor-pointer items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-sm text-foreground/80 outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-40 data-[highlighted]:bg-accent data-[highlighted]:text-foreground data-[state=checked]:font-medium data-[state=checked]:text-foreground"
               >
                 {option.icon ? (
-                  <span className="shrink-0 text-zinc-500">{option.icon}</span>
+                  <span className="shrink-0 text-muted-foreground">
+                    {option.icon}
+                  </span>
                 ) : null}
                 <SelectPrimitive.ItemText>
                   {option.label}
                 </SelectPrimitive.ItemText>
-                <SelectPrimitive.ItemIndicator className="absolute right-2 inline-grid size-4 place-items-center text-brand-600">
+                <SelectPrimitive.ItemIndicator className="absolute right-2 inline-grid size-4 place-items-center text-primary">
                   <Check size={14} strokeWidth={2.5} aria-hidden="true" />
                 </SelectPrimitive.ItemIndicator>
               </SelectPrimitive.Item>
             ))}
           </SelectPrimitive.Viewport>
-          <SelectPrimitive.ScrollDownButton className="flex h-7 cursor-default items-center justify-center bg-white text-zinc-500">
+          <SelectPrimitive.ScrollDownButton className="flex h-7 cursor-default items-center justify-center bg-card text-muted-foreground">
             <ChevronDown size={14} aria-hidden="true" />
           </SelectPrimitive.ScrollDownButton>
         </SelectPrimitive.Content>

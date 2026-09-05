@@ -13,11 +13,11 @@ export function Toaster(props: ToasterProps) {
         duration: 3600,
         classNames: {
           toast:
-            "!rounded-lg !border-zinc-200 !bg-white !text-zinc-950 !shadow-lg",
+            "!rounded-lg !border-border !bg-card !text-foreground !shadow-lg",
           title: "!text-sm !font-medium",
-          description: "!text-xs !text-zinc-500",
+          description: "!text-xs !text-muted-foreground",
           closeButton:
-            "!border-zinc-200 !bg-white !text-zinc-500 hover:!bg-zinc-50 hover:!text-zinc-900",
+            "!border-border !bg-card !text-muted-foreground hover:!bg-muted/50 hover:!text-foreground",
         },
       }}
       {...props}

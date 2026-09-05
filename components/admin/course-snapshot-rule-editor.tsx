@@ -32,7 +32,7 @@ const RequisiteRuleGraph = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="grid h-[30rem] place-items-center rounded-lg border border-zinc-200 bg-zinc-50 text-sm text-zinc-500">
+      <div className="grid h-[30rem] place-items-center rounded-lg border border-border bg-muted/50 text-sm text-muted-foreground">
         Loading the diagram...
       </div>
     ),
@@ -374,7 +374,7 @@ export function CourseSnapshotRuleEditor({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
-      <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
+      <div className="flex justify-end gap-2 border-t border-border/60 pt-4">
         <Button disabled={saving} onClick={onCancel}>
           Cancel
         </Button>

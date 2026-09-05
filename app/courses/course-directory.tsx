@@ -26,7 +26,7 @@ function sessionLabels(sessions: string[]) {
 }
 
 const chipClasses =
-  "rounded-md bg-zinc-50 px-1.5 py-0.5 text-[11px] font-medium text-zinc-600 ring-1 ring-zinc-200 ring-inset";
+  "rounded-md bg-muted/50 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border ring-inset";
 
 export function CourseDirectory({
   academicYear,
@@ -102,7 +102,7 @@ export function CourseDirectory({
                 <TableCell className="p-0">
                   <Link
                     href={href}
-                    className="flex items-center gap-3 rounded-sm px-4 py-3 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none focus-visible:ring-inset"
+                    className="flex items-center gap-3 rounded-sm px-4 py-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
                   >
                     <span className="shrink-0">
                       <CourseToken
@@ -114,10 +114,10 @@ export function CourseDirectory({
                       />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] font-medium text-zinc-950 group-hover:text-brand-700">
+                      <span className="block truncate text-[13px] font-medium text-foreground group-hover:text-primary">
                         {course.name}
                       </span>
-                      <span className="mt-0.5 block truncate font-mono text-[11px] text-zinc-500">
+                      <span className="mt-0.5 block truncate font-mono text-[11px] text-muted-foreground">
                         {course.code}
                         {course.publicationStatus === "draft"
                           ? " · Review needed"
@@ -128,10 +128,10 @@ export function CourseDirectory({
                 </TableCell>
                 <TableCell>
                   <div className="flex min-h-10 flex-col justify-center">
-                    <span className="truncate text-[13px] text-zinc-700">
+                    <span className="truncate text-[13px] text-foreground/80">
                       {course.subject}
                     </span>
-                    <span className="mt-0.5 truncate text-[11px] text-zinc-500">
+                    <span className="mt-0.5 truncate text-[11px] text-muted-foreground">
                       Level {course.level / 1000}
                     </span>
                   </div>
@@ -139,7 +139,9 @@ export function CourseDirectory({
                 <TableCell>
                   <div className="flex min-h-10 flex-wrap items-center gap-1">
                     {course.prerequisiteCodes.length === 0 ? (
-                      <span className="text-[13px] text-zinc-400">None</span>
+                      <span className="text-[13px] text-muted-foreground/80">
+                        None
+                      </span>
                     ) : (
                       course.prerequisiteCodes.map((prerequisite) =>
                         course.availableCourseCodes.includes(prerequisite) ? (
@@ -149,7 +151,7 @@ export function CourseDirectory({
                             aria-label={`View prerequisite ${prerequisite}`}
                             className={cn(
                               chipClasses,
-                              "font-mono transition-colors hover:bg-white hover:text-brand-700 hover:ring-brand-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-400 motion-reduce:transition-none",
+                              "font-mono transition-colors hover:bg-card hover:text-primary hover:ring-primary/25 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring motion-reduce:transition-none",
                             )}
                           >
                             {prerequisite}
@@ -170,7 +172,7 @@ export function CourseDirectory({
                 <TableCell>
                   <div className="flex min-h-10 flex-wrap items-center gap-1">
                     {course.sessions.length === 0 ? (
-                      <span className="text-[13px] text-zinc-400">
+                      <span className="text-[13px] text-muted-foreground/80">
                         Not listed
                       </span>
                     ) : (

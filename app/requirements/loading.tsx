@@ -15,11 +15,11 @@ export default function RequirementsLoading() {
           <Skeleton className="h-2.5 w-full rounded-full" />
         </Card>
         <Card>
-          <div className="space-y-2 border-b border-zinc-100 px-5 py-4">
+          <div className="space-y-2 border-b border-border/60 px-5 py-4">
             <Skeleton className="h-3.5 w-36" />
             <Skeleton className="h-3 w-56 max-w-full" />
           </div>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-border/60">
             {Array.from({ length: 4 }, (_, row) => (
               <div key={row} className="flex items-center gap-3 px-5 py-3">
                 <Skeleton className="size-8 shrink-0 rounded-lg" />

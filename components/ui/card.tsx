@@ -10,7 +10,7 @@ export function Card({
     <section
       data-slot="card"
       className={cn(
-        "rounded-xl border border-zinc-200/80 bg-white text-zinc-950 shadow-xs",
+        "rounded-xl border border-border/80 bg-card text-foreground shadow-xs",
         className,
       )}
       {...rest}
@@ -69,7 +69,7 @@ export function CardTitle({
     <h2
       data-slot="card-title"
       className={cn(
-        "text-sm font-semibold tracking-tight text-zinc-950",
+        "text-sm font-semibold tracking-tight text-foreground",
         className,
       )}
       {...rest}
@@ -84,7 +84,10 @@ export function CardDescription({
   return (
     <p
       data-slot="card-description"
-      className={cn("mt-0.5 text-xs leading-relaxed text-zinc-500", className)}
+      className={cn(
+        "mt-0.5 text-xs leading-relaxed text-muted-foreground",
+        className,
+      )}
       {...rest}
     />
   );
@@ -124,7 +127,7 @@ export function CardFooter({
     <div
       data-slot="card-footer"
       className={cn(
-        "flex items-center justify-between gap-3 border-t border-zinc-100 px-5 py-3.5",
+        "flex items-center justify-between gap-3 border-t border-border/60 px-5 py-3.5",
         className,
       )}
       {...rest}

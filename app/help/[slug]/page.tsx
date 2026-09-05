@@ -52,10 +52,10 @@ export default async function HelpArticlePage({
                   id={helpSectionId(section.heading)}
                   className="scroll-mt-24"
                 >
-                  <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
+                  <h2 className="text-xl font-semibold tracking-tight text-foreground">
                     {section.heading}
                   </h2>
-                  <p className="mt-3 max-w-prose text-base leading-7 text-zinc-600">
+                  <p className="mt-3 max-w-prose text-base leading-7 text-muted-foreground">
                     {section.body}
                   </p>
                 </section>
@@ -72,17 +72,17 @@ export default async function HelpArticlePage({
           {(previous || next) && (
             <nav
               aria-label="More help guides"
-              className="mt-14 grid gap-4 border-t border-zinc-200 pt-8 sm:grid-cols-2 md:hidden"
+              className="mt-14 grid gap-4 border-t border-border pt-8 sm:grid-cols-2 md:hidden"
             >
               {previous && (
                 <Link
                   rel="prev"
                   href={`/help/${previous.slug}`}
-                  className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                  className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                  <Card className="h-full transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                  <Card className="h-full transition group-hover:border-input group-hover:shadow-sm motion-reduce:transition-none">
                     <CardHeader className="h-full flex-col items-start justify-start gap-0">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         <ArrowLeft
                           size={13}
                           aria-hidden="true"
@@ -90,10 +90,10 @@ export default async function HelpArticlePage({
                         />
                         Previous
                       </span>
-                      <h2 className="mt-2 text-sm font-semibold tracking-tight text-zinc-900">
+                      <h2 className="mt-2 text-sm font-semibold tracking-tight text-foreground">
                         {previous.title}
                       </h2>
-                      <span className="mt-1 text-[13px] leading-relaxed text-zinc-500">
+                      <span className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
                         {previous.description}
                       </span>
                     </CardHeader>
@@ -104,11 +104,11 @@ export default async function HelpArticlePage({
                 <Link
                   rel="next"
                   href={`/help/${next.slug}`}
-                  className="group block h-full rounded-xl text-right focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400 sm:col-start-2"
+                  className="group block h-full rounded-xl text-right focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:col-start-2"
                 >
-                  <Card className="h-full transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                  <Card className="h-full transition group-hover:border-input group-hover:shadow-sm motion-reduce:transition-none">
                     <CardHeader className="h-full flex-col items-end justify-start gap-0">
-                      <span className="inline-flex items-center justify-end gap-1.5 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                      <span className="inline-flex items-center justify-end gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         Next
                         <ArrowRight
                           size={13}
@@ -116,10 +116,10 @@ export default async function HelpArticlePage({
                           className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
                         />
                       </span>
-                      <h2 className="mt-2 text-sm font-semibold tracking-tight text-zinc-900">
+                      <h2 className="mt-2 text-sm font-semibold tracking-tight text-foreground">
                         {next.title}
                       </h2>
-                      <span className="mt-1 text-[13px] leading-relaxed text-zinc-500">
+                      <span className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
                         {next.description}
                       </span>
                     </CardHeader>
@@ -136,20 +136,20 @@ export default async function HelpArticlePage({
             {(previous || next) && (
               <nav
                 aria-label="More help guides"
-                className="space-y-3 border-t border-zinc-200 pt-5"
+                className="space-y-3 border-t border-border pt-5"
               >
                 {next && (
                   <Link
                     rel="next"
                     href={`/help/${next.slug}`}
-                    className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                    className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    <Card className="transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                    <Card className="transition group-hover:border-input group-hover:shadow-sm motion-reduce:transition-none">
                       <CardHeader className="flex-col items-start justify-start gap-0 p-4">
-                        <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                           Up next
                         </span>
-                        <h2 className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-zinc-900 transition-colors group-hover:text-brand-700">
+                        <h2 className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-foreground transition-colors group-hover:text-primary">
                           {next.title}
                           <ArrowRight
                             size={13}
@@ -165,14 +165,14 @@ export default async function HelpArticlePage({
                   <Link
                     rel="prev"
                     href={`/help/${previous.slug}`}
-                    className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+                    className="group block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   >
-                    <Card className="transition group-hover:border-zinc-300 group-hover:shadow-sm motion-reduce:transition-none">
+                    <Card className="transition group-hover:border-input group-hover:shadow-sm motion-reduce:transition-none">
                       <CardHeader className="flex-col items-start justify-start gap-0 p-4">
-                        <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                           Previous
                         </span>
-                        <h2 className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-zinc-900 transition-colors group-hover:text-brand-700">
+                        <h2 className="mt-1 flex items-start gap-1.5 text-[13px] leading-snug font-semibold text-foreground transition-colors group-hover:text-primary">
                           <ArrowLeft
                             size={13}
                             aria-hidden="true"

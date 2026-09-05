@@ -2,7 +2,7 @@ import type { ComponentPropsWithRef, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 const controlClasses =
-  "h-9 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-950 shadow-xs outline-none transition-colors placeholder:text-zinc-400 hover:border-zinc-300 focus-visible:border-brand-500 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:opacity-60 aria-invalid:border-rose-500 aria-invalid:ring-rose-500/20";
+  "h-9 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-xs outline-none transition-colors placeholder:text-muted-foreground/80 hover:border-input focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:bg-accent/50 disabled:opacity-60 aria-invalid:border-rose-500 aria-invalid:ring-rose-500/20";
 
 export function Field({
   label,
@@ -47,7 +47,7 @@ export function FieldLabel({
   return (
     <span
       data-slot="field-label"
-      className={cn("text-xs font-medium text-zinc-700", className)}
+      className={cn("text-xs font-medium text-foreground/80", className)}
       {...rest}
     />
   );
@@ -60,7 +60,7 @@ export function FieldDescription({
   return (
     <span
       data-slot="field-description"
-      className={cn("text-xs leading-relaxed text-zinc-500", className)}
+      className={cn("text-xs leading-relaxed text-muted-foreground", className)}
       {...rest}
     />
   );
@@ -74,7 +74,10 @@ export function FieldError({
     <span
       data-slot="field-error"
       role="alert"
-      className={cn("text-xs leading-relaxed text-rose-600", className)}
+      className={cn(
+        "text-xs leading-relaxed text-rose-600 dark:text-rose-400",
+        className,
+      )}
       {...rest}
     />
   );

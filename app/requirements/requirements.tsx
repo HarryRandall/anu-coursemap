@@ -171,20 +171,20 @@ function RequirementConditionView({
   );
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4">
-      <p className="text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">
+    <div className="rounded-lg border border-border bg-card p-4">
+      <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
         ANU source wording
       </p>
-      <blockquote className="mt-1 text-sm leading-6 whitespace-pre-wrap text-zinc-800">
+      <blockquote className="mt-1 text-sm leading-6 whitespace-pre-wrap text-foreground/90">
         {condition.sourceText}
       </blockquote>
 
       {interpretation ? (
-        <div className="mt-3 rounded-md bg-zinc-50 px-3 py-2">
-          <p className="text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">
+        <div className="mt-3 rounded-md bg-muted/50 px-3 py-2">
+          <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
             Structured interpretation
           </p>
-          <p className="mt-0.5 text-xs leading-5 text-zinc-700">
+          <p className="mt-0.5 text-xs leading-5 text-foreground/80">
             {interpretation}
           </p>
         </div>
@@ -201,7 +201,7 @@ function RequirementConditionView({
               selectedStructureCodes.has(option.code);
             return (
               <li
-                className="flex min-w-0 items-center gap-2 rounded-md border border-zinc-100 px-2.5 py-2"
+                className="flex min-w-0 items-center gap-2 rounded-md border border-border/60 px-2.5 py-2"
                 key={`${condition.id}-${option.kind}-${option.code}`}
               >
                 {option.kind === "course" ? (
@@ -216,11 +216,11 @@ function RequirementConditionView({
                   </Badge>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block font-mono text-xs font-semibold text-zinc-900">
+                  <span className="block font-mono text-xs font-semibold text-foreground">
                     {option.code}
                   </span>
                   {course?.name || structureName ? (
-                    <span className="block truncate text-xs text-zinc-500">
+                    <span className="block truncate text-xs text-muted-foreground">
                       {course?.name ?? structureName}
                     </span>
                   ) : null}
@@ -294,17 +294,17 @@ function RequirementGroupView({
     <div
       className={
         depth === 0
-          ? "rounded-lg border border-brand-100 bg-brand-50/40 p-4"
-          : "rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:p-4"
+          ? "rounded-lg border border-primary/20 bg-primary/5 p-4"
+          : "rounded-lg border border-border bg-muted/50 p-3 sm:p-4"
       }
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-zinc-950">
+          <p className="text-sm font-semibold text-foreground">
             {group.title ?? groupInstruction(group)}
           </p>
           {group.description ? (
-            <p className="mt-1 text-xs leading-5 text-zinc-600">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               {group.description}
             </p>
           ) : null}
@@ -327,11 +327,11 @@ function RequirementGroupView({
                   className="mb-3 flex items-center gap-2"
                   aria-hidden="true"
                 >
-                  <span className="h-px flex-1 bg-brand-100" />
-                  <span className="text-[10px] font-semibold tracking-wider text-brand-700 uppercase">
+                  <span className="h-px flex-1 bg-primary/15" />
+                  <span className="text-[10px] font-semibold tracking-wider text-primary uppercase">
                     or
                   </span>
-                  <span className="h-px flex-1 bg-brand-100" />
+                  <span className="h-px flex-1 bg-primary/15" />
                 </div>
               ) : null}
               <RequirementNodeView
@@ -346,11 +346,11 @@ function RequirementGroupView({
         </ol>
       ) : null}
 
-      <details className="mt-3 text-xs text-zinc-600">
-        <summary className="min-h-11 cursor-pointer py-3 font-medium text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+      <details className="mt-3 text-xs text-muted-foreground">
+        <summary className="min-h-11 cursor-pointer py-3 font-medium text-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
           ANU group source wording
         </summary>
-        <p className="border-l-2 border-zinc-200 pl-3 whitespace-pre-wrap">
+        <p className="border-l-2 border-border pl-3 whitespace-pre-wrap">
           {group.sourceText}
         </p>
       </details>
@@ -377,10 +377,10 @@ function StructureRequirementsCard({
   return (
     <Card className="overflow-hidden">
       <CardHeader
-        className="border-b border-zinc-100"
+        className="border-b border-border/60"
         description={`${typeLabel} ${requirements.structureCode}${catalogue.academicYear ? ` · Published ${catalogue.academicYear}` : ""}`}
         icon={
-          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <ListChecks aria-hidden="true" size={17} />
           </span>
         }
@@ -395,7 +395,7 @@ function StructureRequirementsCard({
             selectedStructureCodes={selectedStructureCodes}
           />
         ) : (
-          <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+          <p className="rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
             This published snapshot has no structured requirement tree.
           </p>
         )}
@@ -541,7 +541,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
               <CardHeader className="px-5 pt-5 pb-4">
                 <CardTitle>Overall unit progress</CardTitle>
                 <CardAction>
-                  <strong className="text-2xl tracking-tight text-zinc-950">
+                  <strong className="text-2xl tracking-tight text-foreground">
                     {unitTarget === null
                       ? "Not recorded"
                       : `${progress.percent}%`}
@@ -550,7 +550,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
               </CardHeader>
               <CardContent>
                 {unitTarget === null ? (
-                  <p className="rounded-lg bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-950 ring-1 ring-amber-200 ring-inset">
+                  <p className="rounded-lg bg-amber-50 px-3.5 py-3 text-xs leading-5 text-amber-950 ring-1 ring-amber-200 ring-inset dark:bg-amber-950/60 dark:text-amber-300 dark:ring-amber-900">
                     {progress.completed} completed and {progress.planned}{" "}
                     planned units are mapped. The published programme does not
                     record a total unit target, so Coursemap cannot calculate
@@ -558,13 +558,13 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                   </p>
                 ) : (
                   <>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-muted">
                       <span
-                        className="block h-full bg-brand-700"
+                        className="block h-full bg-primary"
                         style={{ width: `${Math.min(100, progress.percent)}%` }}
                       />
                     </div>
-                    <p className="mt-3 text-xs text-zinc-600">
+                    <p className="mt-3 text-xs text-muted-foreground">
                       {progress.completed} completed units · {progress.planned}{" "}
                       planned units · {progress.remaining} units still to plan
                     </p>
@@ -617,7 +617,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
 
             <Card className="overflow-hidden">
               <CardHeader
-                className="border-b border-zinc-100"
+                className="border-b border-border/60"
                 title="Courses currently in your plan"
                 description="Published course data only."
               />
@@ -634,7 +634,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                   </EmptyHeader>
                 </Empty>
               ) : (
-                <div className="divide-y divide-zinc-100">
+                <div className="divide-y divide-border/60">
                   {courses.map(({ attempt, course }) => (
                     <div
                       key={attempt.id}
@@ -646,10 +646,10 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                         size="sm"
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-zinc-900">
+                        <span className="block truncate text-sm font-semibold text-foreground">
                           {course.code} · {course.name}
                         </span>
-                        <span className="mt-0.5 block text-xs text-zinc-500">
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
                           {unitsForAttempt(attempt, course)} units ·{" "}
                           {attempt.status}
                         </span>
@@ -662,7 +662,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
           </>
         )}
 
-        <p className="flex items-center gap-2 text-xs text-zinc-400">
+        <p className="flex items-center gap-2 text-xs text-muted-foreground/80">
           <BookOpenCheck size={14} /> Always confirm enrolment and graduation
           requirements with ANU.
         </p>

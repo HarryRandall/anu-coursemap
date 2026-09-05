@@ -77,10 +77,10 @@ export function AcademicStructureImportPipeline({
             <TableBody>
               {stages.map((stage) => (
                 <TableRow key={stage.id}>
-                  <TableCell className="text-xs text-zinc-500 tabular-nums">
+                  <TableCell className="text-xs text-muted-foreground tabular-nums">
                     {stage.position + 1}
                   </TableCell>
-                  <TableCell className="text-xs font-medium text-zinc-800">
+                  <TableCell className="text-xs font-medium text-foreground/90">
                     {readable(stage.stage_name)}
                   </TableCell>
                   <TableCell>
@@ -88,13 +88,13 @@ export function AcademicStructureImportPipeline({
                       {readable(stage.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right text-xs text-zinc-600 tabular-nums">
+                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                     {stage.attempt_count}
                   </TableCell>
-                  <TableCell className="text-right text-xs text-zinc-600 tabular-nums">
+                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                     {duration(stage.started_at, stage.completed_at)}
                   </TableCell>
-                  <TableCell className="max-w-72 truncate text-xs text-rose-700">
+                  <TableCell className="max-w-72 truncate text-xs text-rose-700 dark:text-rose-300">
                     {stage.error_summary ?? "None"}
                   </TableCell>
                 </TableRow>
@@ -133,43 +133,43 @@ export function AcademicStructureImportPipeline({
             <CardContent>
               <dl className="grid gap-3 text-xs sm:grid-cols-3 lg:grid-cols-7">
                 <div>
-                  <dt className="text-zinc-500">Requested model</dt>
-                  <dd className="mt-1 font-mono break-all text-zinc-800">
+                  <dt className="text-muted-foreground">Requested model</dt>
+                  <dd className="mt-1 font-mono break-all text-foreground/90">
                     {extraction.requested_model}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-zinc-500">Input</dt>
+                  <dt className="text-muted-foreground">Input</dt>
                   <dd className="mt-1 tabular-nums">
                     {tokens(extraction.input_tokens)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-zinc-500">Cached input</dt>
+                  <dt className="text-muted-foreground">Cached input</dt>
                   <dd className="mt-1 tabular-nums">
                     {tokens(extraction.cached_input_tokens)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-zinc-500">Output</dt>
+                  <dt className="text-muted-foreground">Output</dt>
                   <dd className="mt-1 tabular-nums">
                     {tokens(extraction.output_tokens)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-zinc-500">Reasoning</dt>
+                  <dt className="text-muted-foreground">Reasoning</dt>
                   <dd className="mt-1 tabular-nums">
                     {tokens(extraction.reasoning_tokens)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-zinc-500">Cost</dt>
+                  <dt className="text-muted-foreground">Cost</dt>
                   <dd className="mt-1 tabular-nums">
                     {cost(extraction.cost_usd)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-zinc-500">Latency</dt>
+                  <dt className="text-muted-foreground">Latency</dt>
                   <dd className="mt-1 tabular-nums">
                     {extraction.latency_milliseconds === null
                       ? "Not recorded"
@@ -178,7 +178,7 @@ export function AcademicStructureImportPipeline({
                 </div>
               </dl>
               {extraction.validation_summary ? (
-                <p className="mt-3 text-xs leading-5 text-zinc-600">
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">
                   {extraction.validation_summary}
                 </p>
               ) : null}

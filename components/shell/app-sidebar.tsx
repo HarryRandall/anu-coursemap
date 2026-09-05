@@ -224,7 +224,7 @@ export function AppSidebar({ admin }: { admin: boolean }) {
                     <span className="truncate text-[13px] font-semibold">
                       My degree plan
                     </span>
-                    <span className="text-muted-foreground truncate text-[11px]">
+                    <span className="truncate text-[11px] text-muted-foreground">
                       {state.profile.commencementYear} commencement
                     </span>
                   </span>
@@ -234,11 +234,7 @@ export function AppSidebar({ admin }: { admin: boolean }) {
           </SidebarMenu>
         )}
 
-        {!admin && (
-          <div className="group-data-[collapsible=icon]:hidden">
-            <CourseFind onNavigate={closeMobileNav} />
-          </div>
-        )}
+        <CourseFind admin={admin} onNavigate={closeMobileNav} />
       </SidebarHeader>
 
       <SidebarContent>
@@ -253,10 +249,7 @@ export function AppSidebar({ admin }: { admin: boolean }) {
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    tooltip="Admin console"
-                  >
+                  <SidebarMenuButton asChild tooltip="Admin console">
                     <Link href="/admin/dashboard" onClick={closeMobileNav}>
                       <Shield aria-hidden="true" />
                       <span>Admin console</span>
@@ -295,20 +288,20 @@ export function AppSidebar({ admin }: { admin: boolean }) {
               tooltip={state.profile.name || "Profile"}
             >
               <Link href="/profile" onClick={closeMobileNav}>
-                <span className="bg-primary/10 text-primary grid size-8 shrink-0 place-items-center rounded-full text-[11px] font-bold">
+                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
                   {initials}
                 </span>
                 <span className="grid min-w-0 flex-1 text-left leading-tight">
                   <span className="truncate text-[13px] font-semibold">
                     {state.profile.name || "Set up profile"}
                   </span>
-                  <span className="text-muted-foreground truncate text-[11px]">
+                  <span className="truncate text-[11px] text-muted-foreground">
                     {state.profile.studentId || "Add student ID"}
                   </span>
                 </span>
                 <ChevronsUpDown
                   aria-hidden="true"
-                  className="text-muted-foreground size-3.5"
+                  className="size-3.5 text-muted-foreground"
                 />
               </Link>
             </SidebarMenuButton>

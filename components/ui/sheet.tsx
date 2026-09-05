@@ -40,10 +40,10 @@ export function SheetContent({
       <DialogPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "fixed inset-y-0 z-[100] flex h-dvh w-full max-w-md flex-col bg-white text-sm text-zinc-950 shadow-lg outline-none motion-reduce:animate-none",
+          "fixed inset-y-0 z-[100] flex h-dvh w-full max-w-md flex-col bg-card text-sm text-foreground shadow-lg outline-none motion-reduce:animate-none",
           side === "right"
-            ? "right-0 border-l border-zinc-200 data-[state=closed]:animate-drawer-out-right data-[state=open]:animate-drawer-in-right"
-            : "left-0 border-r border-zinc-200 data-[state=closed]:animate-drawer-out-left data-[state=open]:animate-drawer-in-left",
+            ? "right-0 border-l border-border data-[state=closed]:animate-drawer-out-right data-[state=open]:animate-drawer-in-right"
+            : "left-0 border-r border-border data-[state=closed]:animate-drawer-out-left data-[state=open]:animate-drawer-in-left",
           className,
         )}
         {...props}
@@ -53,7 +53,7 @@ export function SheetContent({
           <DialogPrimitive.Close
             aria-label="Close"
             title="Close"
-            className="absolute top-3 right-3 z-10 inline-grid size-10 place-items-center rounded-md border border-zinc-200 bg-white text-zinc-500 shadow-xs transition-colors hover:bg-zinc-50 hover:text-zinc-900 focus-visible:ring-3 focus-visible:ring-brand-500/20 focus-visible:outline-none"
+            className="absolute top-3 right-3 z-10 inline-grid size-10 place-items-center rounded-md border border-border bg-card text-muted-foreground shadow-xs transition-colors hover:bg-accent/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none"
           >
             <X size={17} aria-hidden="true" />
           </DialogPrimitive.Close>
@@ -78,7 +78,7 @@ export function SheetFooter({ className, ...props }: ComponentProps<"div">) {
     <div
       data-slot="sheet-footer"
       className={cn(
-        "mt-auto flex items-center gap-2 border-t border-zinc-100 p-4",
+        "mt-auto flex items-center gap-2 border-t border-border/60 p-4",
         className,
       )}
       {...props}
@@ -106,7 +106,7 @@ export function SheetDescription({
   return (
     <DialogPrimitive.Description
       data-slot="sheet-description"
-      className={cn("text-sm leading-relaxed text-zinc-500", className)}
+      className={cn("text-sm leading-relaxed text-muted-foreground", className)}
       {...props}
     />
   );

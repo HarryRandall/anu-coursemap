@@ -8,7 +8,7 @@ export function DataList({
   return (
     <ul
       data-slot="data-list"
-      className={cn("divide-y divide-zinc-100", className)}
+      className={cn("divide-y divide-border/60", className)}
       {...rest}
     />
   );
@@ -22,7 +22,7 @@ export function DataListItem({
     <li
       data-slot="data-list-item"
       className={cn(
-        "flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-zinc-50/60 sm:flex-row sm:items-center sm:gap-4",
+        "flex flex-col gap-3 px-4 py-3.5 transition-colors hover:bg-accent/40 sm:flex-row sm:items-center sm:gap-4",
         className,
       )}
       {...rest}
@@ -39,7 +39,7 @@ export function DataListIcon({
       data-slot="data-list-icon"
       aria-hidden="true"
       className={cn(
-        "grid size-9 shrink-0 place-items-center rounded-md border border-zinc-200 bg-zinc-50 text-zinc-600 [&>svg]:size-4",
+        "grid size-9 shrink-0 place-items-center rounded-md border border-border bg-muted/50 text-muted-foreground [&>svg]:size-4",
         className,
       )}
       {...rest}
@@ -81,7 +81,7 @@ export function DataListTitle({
     <h3
       data-slot="data-list-title"
       className={cn(
-        "mt-1 truncate text-sm font-medium text-zinc-950",
+        "mt-1 truncate text-sm font-medium text-foreground",
         className,
       )}
       {...rest}
@@ -96,7 +96,7 @@ export function DataListDescription({
   return (
     <p
       data-slot="data-list-description"
-      className={cn("mt-0.5 truncate text-xs text-zinc-500", className)}
+      className={cn("mt-0.5 truncate text-xs text-muted-foreground", className)}
       {...rest}
     />
   );

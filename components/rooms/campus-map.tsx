@@ -951,7 +951,7 @@ export function CampusMap({
   }
 
   return (
-    <div className="room-map relative h-full min-h-[50dvh] overflow-hidden bg-zinc-100 lg:min-h-0">
+    <div className="room-map relative h-full min-h-[50dvh] overflow-hidden bg-muted lg:min-h-0">
       <div
         ref={containerRef}
         aria-label="Interactive vector map of ANU and central Canberra"
@@ -959,8 +959,8 @@ export function CampusMap({
       />
 
       {campus && !mapReady && !mapFailed ? (
-        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-zinc-100/90 text-sm text-zinc-600">
-          <span className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 shadow-sm">
+        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted/60 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 shadow-sm">
             <LoaderCircle
               aria-hidden="true"
               className="animate-spin"
@@ -972,8 +972,8 @@ export function CampusMap({
       ) : null}
 
       {!campus ? (
-        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-zinc-100 text-sm text-zinc-600">
-          <p className="inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 shadow-sm">
+        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted text-sm text-muted-foreground">
+          <p className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 shadow-sm">
             <MapPinOff aria-hidden="true" size={15} />
             Campus map data is unavailable.
           </p>
@@ -982,7 +982,7 @@ export function CampusMap({
 
       {mapFailed ? (
         <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex justify-center">
-          <p className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 shadow-sm">
+          <p className="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900 shadow-sm dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
             <MapPinOff aria-hidden="true" size={15} />
             The vector map could not be loaded.
           </p>
@@ -1000,7 +1000,7 @@ export function CampusMap({
             <Box aria-hidden="true" size={14} />
             {isPerspective ? "2D view" : "3D view"}
           </Button>
-          <p className="pointer-events-none hidden rounded-full border border-zinc-200 bg-white/90 px-2.5 py-1 text-[11px] font-medium text-zinc-600 shadow-sm backdrop-blur sm:block">
+          <p className="pointer-events-none hidden rounded-full border border-border bg-card/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur sm:block">
             Drag to pan · right-drag to rotate
           </p>
         </div>

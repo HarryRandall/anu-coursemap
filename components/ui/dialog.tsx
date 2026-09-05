@@ -63,7 +63,7 @@ export function DialogContent({
         <DialogPrimitive.Content
           data-slot="dialog-content"
           className={cn(
-            "relative flex max-h-[calc(100dvh-2rem)] w-full animate-modal-in flex-col overflow-hidden rounded-2xl bg-white text-sm text-zinc-900 shadow-lg ring-1 ring-zinc-200 outline-none motion-reduce:animate-none sm:max-h-[calc(100dvh-3rem)]",
+            "relative flex max-h-[calc(100dvh-2rem)] w-full animate-modal-in flex-col overflow-hidden rounded-2xl bg-card text-sm text-foreground shadow-lg ring-1 ring-border outline-none motion-reduce:animate-none sm:max-h-[calc(100dvh-3rem)]",
             className,
           )}
           {...props}
@@ -73,7 +73,7 @@ export function DialogContent({
             <DialogPrimitive.Close
               aria-label="Close"
               title="Close"
-              className="absolute top-3 right-3 z-10 inline-grid size-11 place-items-center rounded-lg bg-white text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition ring-inset hover:bg-zinc-50 hover:text-zinc-800 hover:ring-zinc-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+              className="absolute top-3 right-3 z-10 inline-grid size-11 place-items-center rounded-lg bg-card text-muted-foreground shadow-xs ring-1 ring-border transition ring-inset hover:bg-accent/50 hover:text-foreground/90 hover:ring-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <X size={18} aria-hidden="true" />
             </DialogPrimitive.Close>
@@ -99,7 +99,7 @@ export function DialogFooter({ className, ...props }: ComponentProps<"div">) {
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 bg-zinc-50/70 p-4 sm:flex-row sm:items-center sm:justify-end",
+        "flex shrink-0 flex-col-reverse gap-2 border-t border-border/60 bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-end",
         className,
       )}
       {...props}
@@ -115,7 +115,7 @@ export function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "text-xl leading-tight font-bold tracking-tight text-zinc-950",
+        "text-xl leading-tight font-bold tracking-tight text-foreground",
         className,
       )}
       {...props}
@@ -130,7 +130,7 @@ export function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-sm leading-relaxed text-zinc-500", className)}
+      className={cn("text-sm leading-relaxed text-muted-foreground", className)}
       {...props}
     />
   );

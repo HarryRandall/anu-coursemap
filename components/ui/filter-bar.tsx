@@ -144,7 +144,7 @@ export function FilterBar({
           <span className="sr-only">Search</span>
           <Search
             size={16}
-            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400"
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground/80"
             aria-hidden="true"
           />
           <Input
@@ -232,9 +232,9 @@ export function FilterBar({
                 />
               )}
               {active.length > 0 && !field ? (
-                <div className="mt-1.5 border-t border-zinc-100 pt-1.5">
+                <div className="mt-1.5 border-t border-border/60 pt-1.5">
                   <button
-                    className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-2.5 text-left text-sm text-zinc-600 transition-colors outline-none hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400"
+                    className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-md px-2.5 text-left text-sm text-muted-foreground transition-colors outline-none hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400 dark:hover:bg-rose-950/60 dark:hover:text-rose-300"
                     onClick={() => {
                       clearFilters();
                       openMenu(false);
@@ -255,13 +255,13 @@ export function FilterBar({
         <div className="flex flex-wrap items-center gap-1.5">
           {active.map(({ filter, label, value, negated }) => (
             <span
-              className="inline-flex h-8 items-center overflow-hidden rounded-lg border border-zinc-200 bg-white text-xs shadow-xs"
+              className="inline-flex h-8 items-center overflow-hidden rounded-lg border border-border bg-card text-xs shadow-xs"
               key={filter.key}
             >
-              <span className="px-2.5 font-medium text-zinc-500">
+              <span className="px-2.5 font-medium text-muted-foreground">
                 {filter.label}
               </span>
-              <span aria-hidden="true" className="h-full w-px bg-zinc-200" />
+              <span aria-hidden="true" className="h-full w-px bg-accent" />
 
               {filter.negatable ? (
                 <Popover
@@ -275,13 +275,13 @@ export function FilterBar({
                   <PopoverTrigger asChild>
                     <button
                       aria-label={`Change the ${filter.label} condition`}
-                      className="inline-flex h-full cursor-pointer items-center gap-1 px-2 text-zinc-600 transition-colors outline-none hover:bg-zinc-50 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 data-[state=open]:bg-zinc-100"
+                      className="inline-flex h-full cursor-pointer items-center gap-1 px-2 text-muted-foreground transition-colors outline-none hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent"
                       type="button"
                     >
                       {negated ? "is not" : "is"}
                       <ChevronDown
                         aria-hidden="true"
-                        className="text-zinc-400"
+                        className="text-muted-foreground/80"
                         size={12}
                       />
                     </button>
@@ -304,10 +304,10 @@ export function FilterBar({
                   </PopoverContent>
                 </Popover>
               ) : (
-                <span className="px-2 text-zinc-500">is</span>
+                <span className="px-2 text-muted-foreground">is</span>
               )}
 
-              <span aria-hidden="true" className="h-full w-px bg-zinc-200" />
+              <span aria-hidden="true" className="h-full w-px bg-accent" />
 
               <Popover
                 onOpenChange={(open) =>
@@ -318,13 +318,13 @@ export function FilterBar({
                 <PopoverTrigger asChild>
                   <button
                     aria-label={`Change the ${filter.label} value`}
-                    className="inline-flex h-full cursor-pointer items-center gap-1 px-2 font-medium text-zinc-900 transition-colors outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400 data-[state=open]:bg-zinc-100"
+                    className="inline-flex h-full cursor-pointer items-center gap-1 px-2 font-medium text-foreground transition-colors outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent"
                     type="button"
                   >
                     {label}
                     <ChevronDown
                       aria-hidden="true"
-                      className="text-zinc-400"
+                      className="text-muted-foreground/80"
                       size={12}
                     />
                   </button>
@@ -343,10 +343,10 @@ export function FilterBar({
                 </PopoverContent>
               </Popover>
 
-              <span aria-hidden="true" className="h-full w-px bg-zinc-200" />
+              <span aria-hidden="true" className="h-full w-px bg-accent" />
               <button
                 aria-label={`Remove the ${filter.label} filter`}
-                className="inline-grid h-full cursor-pointer place-items-center px-1.5 text-zinc-400 transition-colors outline-none hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400"
+                className="inline-grid h-full cursor-pointer place-items-center px-1.5 text-muted-foreground/80 transition-colors outline-none hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400 dark:hover:bg-rose-950/60 dark:hover:text-rose-300"
                 onClick={() => update(filter.key, "")}
                 type="button"
               >
@@ -355,7 +355,7 @@ export function FilterBar({
             </span>
           ))}
           <button
-            className="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:outline-none dark:hover:bg-rose-950/60 dark:hover:text-rose-300"
             onClick={clearFilters}
             type="button"
           >

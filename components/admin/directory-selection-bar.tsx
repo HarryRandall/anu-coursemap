@@ -21,8 +21,10 @@ function ModelName({ model }: { model: string }) {
 
   return (
     <span className="min-w-0 truncate tracking-tight">
-      {provider ? <span className="text-zinc-400">{provider}</span> : null}
-      <span className="font-medium text-zinc-800">{name}</span>
+      {provider ? (
+        <span className="text-muted-foreground/80">{provider}</span>
+      ) : null}
+      <span className="font-medium text-foreground/90">{name}</span>
     </span>
   );
 }
@@ -54,7 +56,7 @@ function SelectionQuota({
       className="relative grid size-5 shrink-0 animate-count-pop place-items-center rounded-full motion-reduce:animate-none"
       key={pulse.key}
       style={{
-        background: `conic-gradient(var(--color-brand-600) ${percentage}%, var(--color-zinc-200) ${percentage}% 100%)`,
+        background: `conic-gradient(var(--primary) ${percentage}%, var(--border) ${percentage}% 100%)`,
       }}
     >
       {blockedKey > 0 ? (
@@ -65,7 +67,7 @@ function SelectionQuota({
           key={blockedKey}
         />
       ) : null}
-      <span className="relative size-2.5 rounded-full bg-white" />
+      <span className="relative size-2.5 rounded-full bg-card" />
     </span>
   );
 }
@@ -135,7 +137,7 @@ export function DirectorySelectionBar({
       <div
         aria-live="polite"
         className={cn(
-          "pointer-events-auto flex max-w-full items-center gap-3 rounded-2xl border border-zinc-300/80 bg-white p-2 pl-3.5 shadow-2xl ring-1 shadow-zinc-950/15 ring-zinc-950/5",
+          "pointer-events-auto flex max-w-full items-center gap-3 rounded-2xl border border-input/80 bg-card p-2 pl-3.5 shadow-2xl ring-1 shadow-zinc-950/15 ring-zinc-950/5",
           blocked.key > 0 && "animate-limit-nudge motion-reduce:animate-none",
         )}
         key={blocked.key}
@@ -149,23 +151,23 @@ export function DirectorySelectionBar({
           />
           <span
             className={cn(
-              "text-sm whitespace-nowrap text-zinc-500",
+              "text-sm whitespace-nowrap text-muted-foreground",
               blocked.key > 0 &&
                 "animate-limit-flash motion-reduce:animate-none",
             )}
           >
-            <span className="font-semibold text-zinc-950 tabular-nums">
+            <span className="font-semibold text-foreground tabular-nums">
               {selected}
             </span>{" "}
             of {maximum} selected
           </span>
         </span>
 
-        <span aria-hidden="true" className="h-6 w-px bg-zinc-200" />
+        <span aria-hidden="true" className="h-6 w-px bg-accent" />
 
         {disabledReason ? (
           <span
-            className="max-w-56 truncate px-1 text-xs font-medium text-amber-700"
+            className="max-w-56 truncate px-1 text-xs font-medium text-amber-700 dark:text-amber-300"
             title={disabledReason}
           >
             {disabledReason}
@@ -182,14 +184,14 @@ export function DirectorySelectionBar({
               <PopoverTrigger asChild>
                 <button
                   aria-label={`Import model: ${model}`}
-                  className="hidden h-8 max-w-64 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] transition-colors outline-none hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-brand-400 disabled:opacity-60 data-[state=open]:bg-zinc-100 sm:inline-flex"
+                  className="hidden h-8 max-w-64 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 data-[state=open]:bg-accent sm:inline-flex"
                   disabled={!canManageModel || savingModel}
                   type="button"
                 >
                   <ModelName model={model} />
                   <ChevronDown
                     aria-hidden="true"
-                    className="shrink-0 text-zinc-400"
+                    className="shrink-0 text-muted-foreground/80"
                     size={13}
                   />
                 </button>
@@ -224,7 +226,7 @@ export function DirectorySelectionBar({
         <Tooltip content="Clear the selection">
           <button
             aria-label="Clear the selection"
-            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-zinc-400 transition-colors outline-none hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400"
+            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-muted-foreground/80 transition-colors outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             onClick={onClear}
             type="button"
           >

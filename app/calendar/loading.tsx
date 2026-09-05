@@ -10,14 +10,14 @@ export default function CalendarLoading() {
         <div className="space-y-4">
           {Array.from({ length: 2 }, (_, cardIndex) => (
             <Card key={cardIndex} className="overflow-hidden">
-              <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4">
+              <div className="flex items-center justify-between gap-4 border-b border-border/60 px-5 py-4">
                 <div className="space-y-1.5">
                   <Skeleton className="h-3.5 w-36" />
                   <Skeleton className="h-3 w-48 max-w-full" />
                 </div>
                 <Skeleton className="h-3 w-16" />
               </div>
-              <div className="divide-y divide-zinc-100">
+              <div className="divide-y divide-border/60">
                 {Array.from({ length: 3 }, (_, row) => (
                   <div key={row} className="flex items-center gap-3 px-5 py-3">
                     <Skeleton className="size-8 shrink-0 rounded-lg" />

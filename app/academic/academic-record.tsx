@@ -144,11 +144,11 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
               </EmptyHeader>
             </Empty>
           ) : (
-            <div className="divide-y divide-zinc-100">
+            <div className="divide-y divide-border/60">
               {entries.map(({ attempt, course, term }) => (
                 <button
                   key={attempt.id}
-                  className="flex w-full cursor-pointer items-center gap-3 px-5 py-3 text-left transition-colors outline-none hover:bg-zinc-50 focus-visible:bg-brand-50 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-inset motion-reduce:transition-none"
+                  className="flex w-full cursor-pointer items-center gap-3 px-5 py-3 text-left transition-colors outline-none hover:bg-accent/50 focus-visible:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset motion-reduce:transition-none"
                   onClick={() => setSelectedAttempt(attempt.id)}
                   type="button"
                 >
@@ -158,10 +158,10 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
                     size="sm"
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-zinc-900">
+                    <span className="block truncate text-sm font-semibold text-foreground">
                       {course.code} · {course.name}
                     </span>
-                    <span className="mt-0.5 block text-xs text-zinc-500">
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
                       {term ? `${term.name} ${term.year}` : "Later"}
                     </span>
                   </span>
@@ -177,7 +177,7 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
                     {attempt.status}
                   </Badge>
                   {attempt.mark !== undefined && (
-                    <span className="text-xs font-medium text-zinc-600">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {attempt.mark}
                     </span>
                   )}

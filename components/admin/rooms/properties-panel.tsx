@@ -106,7 +106,7 @@ export function SelectionDetailsSheet({
         </Button>
       </SheetTrigger>
       <SheetContent>
-        <SheetHeader className="border-b border-zinc-200 pr-16">
+        <SheetHeader className="border-b border-border pr-16">
           <SheetTitle>{selectionLabel(document, selection)}</SheetTitle>
           <SheetDescription>
             Update the selected item without covering the floor plan
@@ -136,7 +136,7 @@ function PropertiesBody({
 }) {
   if (!selection) {
     return (
-      <p className="text-xs leading-5 text-zinc-500">
+      <p className="text-xs leading-5 text-muted-foreground">
         Select a room, wall, door, lift or stairs on the plan to edit it.
       </p>
     );
@@ -186,7 +186,7 @@ function PropertiesBody({
         </Field>
         {space.kind === "room" ? (
           <>
-            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-zinc-700">
+            <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-foreground/80">
               <Checkbox
                 checked={space.searchable}
                 onCheckedChange={(checked) =>
@@ -197,14 +197,14 @@ function PropertiesBody({
               />
               Findable in Room Finder search
             </label>
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-              <p className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
+            <div className="rounded-lg border border-border bg-muted/50 p-3">
+              <p className="flex items-center gap-2 text-xs font-semibold text-foreground">
                 <DoorOpen aria-hidden="true" size={15} />
                 {linkedDoors.length === 0
                   ? "No linked door"
                   : `${linkedDoors.length} linked ${linkedDoors.length === 1 ? "door" : "doors"}`}
               </p>
-              <p className="mt-1 text-xs leading-5 text-zinc-500">
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 {linkedDoors.length === 0
                   ? "Use Entrances & routes to place a door on the side people enter from."
                   : "The route can use these doors to enter this room."}
@@ -228,23 +228,23 @@ function PropertiesBody({
     if (wall.id === `wall-outline-${wall.levelId}`) {
       return (
         <>
-          <p className="text-xs font-semibold text-zinc-950">
+          <p className="text-xs font-semibold text-foreground">
             Building outline
           </p>
-          <p className="text-xs leading-5 text-zinc-500">
+          <p className="text-xs leading-5 text-muted-foreground">
             This perimeter follows the selected vector footprint and cannot be
             moved, resized or deleted. Add doors directly on the outline.
           </p>
           <dl className="grid grid-cols-2 gap-2 text-xs">
             <div>
-              <dt className="text-zinc-500">Length</dt>
-              <dd className="font-medium text-zinc-900 tabular-nums">
+              <dt className="text-muted-foreground">Length</dt>
+              <dd className="font-medium text-foreground tabular-nums">
                 {metres(wallLength(wall))} m
               </dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Doors</dt>
-              <dd className="font-medium text-zinc-900 tabular-nums">
+              <dt className="text-muted-foreground">Doors</dt>
+              <dd className="font-medium text-foreground tabular-nums">
                 {wall.openings.length}
               </dd>
             </div>
@@ -281,26 +281,26 @@ function PropertiesBody({
         </Field>
         <dl className="grid grid-cols-2 gap-2 text-xs">
           <div>
-            <dt className="text-zinc-500">Length</dt>
-            <dd className="font-medium text-zinc-900 tabular-nums">
+            <dt className="text-muted-foreground">Length</dt>
+            <dd className="font-medium text-foreground tabular-nums">
               {metres(wallLength(wall))} m
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Corners</dt>
-            <dd className="font-medium text-zinc-900 tabular-nums">
+            <dt className="text-muted-foreground">Corners</dt>
+            <dd className="font-medium text-foreground tabular-nums">
               {wall.points.length}
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Doors</dt>
-            <dd className="font-medium text-zinc-900 tabular-nums">
+            <dt className="text-muted-foreground">Doors</dt>
+            <dd className="font-medium text-foreground tabular-nums">
               {wall.openings.length}
             </dd>
           </div>
           <div>
-            <dt className="text-zinc-500">Shape</dt>
-            <dd className="font-medium text-zinc-900">
+            <dt className="text-muted-foreground">Shape</dt>
+            <dd className="font-medium text-foreground">
               {wall.closed ? "Closed" : "Open run"}
             </dd>
           </div>
@@ -358,7 +358,7 @@ function PropertiesBody({
             value={metres(opening.width)}
           />
         </Field>
-        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-zinc-700">
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-foreground/80">
           <Checkbox
             checked={opening.exterior === true}
             onCheckedChange={(checked) =>
@@ -441,7 +441,7 @@ function PropertiesBody({
           />
         </Field>
         <fieldset>
-          <legend className="text-xs font-medium text-zinc-700">
+          <legend className="text-xs font-medium text-foreground/80">
             Floors served
           </legend>
           <div className="mt-1.5 space-y-0.5">
@@ -450,7 +450,7 @@ function PropertiesBody({
               const isLast = served && connector.levelIds.length === 1;
               return (
                 <label
-                  className="flex min-h-9 cursor-pointer items-center gap-2 text-xs text-zinc-700"
+                  className="flex min-h-9 cursor-pointer items-center gap-2 text-xs text-foreground/80"
                   key={level.id}
                 >
                   <Checkbox
@@ -491,10 +491,10 @@ function PropertiesBody({
     node.kind === "connector";
   return (
     <>
-      <p className="text-xs font-semibold text-zinc-950">
+      <p className="text-xs font-semibold text-foreground">
         {node.kind === "junction" ? "Walking path point" : "Route point"}
       </p>
-      <p className="text-xs leading-5 text-zinc-500">
+      <p className="text-xs leading-5 text-muted-foreground">
         {managed
           ? "This point follows a door, a room or a connector. Edit that instead."
           : "Drag this point on the plan to move it."}

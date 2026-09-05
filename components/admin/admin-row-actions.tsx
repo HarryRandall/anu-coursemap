@@ -47,7 +47,7 @@ export function AdminRowActions({
       <DropdownMenu onOpenChange={setMenuOpen} open={menuOpen}>
         <DropdownMenuTrigger asChild>
           <button
-            className="ml-auto grid size-8 cursor-pointer place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none data-[state=open]:bg-zinc-100 data-[state=open]:text-zinc-900"
+            className="ml-auto grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none data-[state=open]:bg-accent data-[state=open]:text-foreground"
             ref={triggerRef}
             type="button"
           >
@@ -94,7 +94,7 @@ export function AdminRowActions({
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                className="text-rose-600 data-[highlighted]:bg-rose-50 data-[highlighted]:text-rose-700 [&>svg]:text-rose-500"
+                className="text-rose-600 data-[highlighted]:bg-rose-50 data-[highlighted]:text-rose-700 dark:text-rose-300 [&>svg]:text-rose-500"
                 disabled={archived}
                 onSelect={() => {
                   setMenuOpen(false);

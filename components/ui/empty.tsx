@@ -38,9 +38,9 @@ function EmptyMedia({
         "mb-1.5 flex shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg]:shrink-0",
         variant === "default" && "bg-transparent",
         variant === "icon" &&
-          "size-9 rounded-md border border-zinc-200 bg-zinc-50 text-zinc-600 [&_svg:not([class*='size-'])]:size-4",
+          "size-9 rounded-md border border-border bg-muted/50 text-muted-foreground [&_svg:not([class*='size-'])]:size-4",
         variant === "error" &&
-          "size-9 rounded-md border border-rose-200 bg-rose-50 text-rose-600 [&_svg:not([class*='size-'])]:size-4",
+          "size-9 rounded-md border border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -53,7 +53,7 @@ function EmptyTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="empty-title"
       className={cn(
-        "text-sm font-semibold tracking-tight text-zinc-950",
+        "text-sm font-semibold tracking-tight text-foreground",
         className,
       )}
       {...props}
@@ -66,7 +66,7 @@ function EmptyDescription({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="empty-description"
       className={cn(
-        "text-sm leading-relaxed text-zinc-500 [&>a]:text-brand-700 [&>a]:underline [&>a]:underline-offset-4",
+        "text-sm leading-relaxed text-muted-foreground [&>a]:text-primary [&>a]:underline [&>a]:underline-offset-4",
         className,
       )}
       {...props}

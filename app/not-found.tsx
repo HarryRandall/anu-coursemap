@@ -12,7 +12,7 @@ import {
 
 export default function NotFound() {
   return (
-    <main className="grid min-h-dvh place-items-center bg-zinc-50 px-4 py-10">
+    <main className="grid min-h-dvh place-items-center bg-muted/50 px-4 py-10">
       <h1 className="sr-only">Page not found</h1>
       <Card className="w-full max-w-md">
         <Empty className="px-7 py-8">

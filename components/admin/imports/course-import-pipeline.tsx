@@ -58,10 +58,10 @@ export function CourseImportPipeline({
       {reviewHref ? (
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-950">
+            <h2 className="text-sm font-semibold text-foreground">
               Latest import pipeline
             </h2>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Processing stages and model usage for the import behind this
               snapshot.
             </p>
@@ -89,10 +89,10 @@ export function CourseImportPipeline({
             <TableBody>
               {stages.map((stage) => (
                 <TableRow key={stage.id}>
-                  <TableCell className="text-xs text-zinc-500 tabular-nums">
+                  <TableCell className="text-xs text-muted-foreground tabular-nums">
                     {stage.position}
                   </TableCell>
-                  <TableCell className="text-xs font-medium text-zinc-800">
+                  <TableCell className="text-xs font-medium text-foreground/90">
                     {readable(stage.stage_name)}
                   </TableCell>
                   <TableCell>
@@ -100,13 +100,13 @@ export function CourseImportPipeline({
                       {readable(stage.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right text-xs text-zinc-600 tabular-nums">
+                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                     {stage.attempt_count}
                   </TableCell>
-                  <TableCell className="text-right text-xs text-zinc-600 tabular-nums">
+                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                     {duration(stage.started_at, stage.completed_at)}
                   </TableCell>
-                  <TableCell className="max-w-72 truncate text-xs text-rose-700">
+                  <TableCell className="max-w-72 truncate text-xs text-rose-700 dark:text-rose-300">
                     {stage.error_summary ?? "—"}
                   </TableCell>
                 </TableRow>
@@ -137,38 +137,38 @@ export function CourseImportPipeline({
           <CardContent>
             <dl className="grid gap-3 text-xs sm:grid-cols-3 lg:grid-cols-6">
               <div>
-                <dt className="text-zinc-500">Input</dt>
+                <dt className="text-muted-foreground">Input</dt>
                 <dd className="mt-1 tabular-nums">
                   {extraction.input_tokens.toLocaleString("en-AU")}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Cached input</dt>
+                <dt className="text-muted-foreground">Cached input</dt>
                 <dd className="mt-1 tabular-nums">
                   {extraction.cached_input_tokens.toLocaleString("en-AU")}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Output</dt>
+                <dt className="text-muted-foreground">Output</dt>
                 <dd className="mt-1 tabular-nums">
                   {extraction.output_tokens.toLocaleString("en-AU")}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Reasoning</dt>
+                <dt className="text-muted-foreground">Reasoning</dt>
                 <dd className="mt-1 tabular-nums">
                   {extraction.reasoning_tokens.toLocaleString("en-AU")}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Cost</dt>
+                <dt className="text-muted-foreground">Cost</dt>
                 <dd className="mt-1 tabular-nums">
                   ${extraction.cost_usd.toFixed(6)} USD ·{" "}
                   {extraction.cost_source}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-500">Latency</dt>
+                <dt className="text-muted-foreground">Latency</dt>
                 <dd className="mt-1 tabular-nums">
                   {extraction.latency_ms === null
                     ? "—"
@@ -177,12 +177,12 @@ export function CourseImportPipeline({
               </div>
             </dl>
             {extraction.error_summary ? (
-              <p className="mt-3 text-xs text-rose-700">
+              <p className="mt-3 text-xs text-rose-700 dark:text-rose-300">
                 {extraction.error_summary}
               </p>
             ) : null}
             {extraction.reused_from_extraction_id ? (
-              <p className="mt-3 text-xs text-zinc-500">
+              <p className="mt-3 text-xs text-muted-foreground">
                 Reused an identical earlier extraction, so no additional model
                 cost was incurred.
               </p>

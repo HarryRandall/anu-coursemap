@@ -62,14 +62,14 @@ export function TermChooser({
       labelledBy="term-dialog-title"
       className="w-full max-w-md"
     >
-      <header className="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
+      <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
         <div>
-          <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+          <p className="text-[11px] font-bold tracking-wider text-muted-foreground/80 uppercase">
             {course.code}
           </p>
           <h2
             id="term-dialog-title"
-            className="mt-0.5 text-lg font-bold tracking-tight text-zinc-900"
+            className="mt-0.5 text-lg font-bold tracking-tight text-foreground"
           >
             Choose a semester
           </h2>
@@ -126,11 +126,11 @@ export function TermChooser({
                   className="h-auto justify-start rounded-lg px-3 py-3 text-left"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-zinc-900">
+                    <span className="block text-[13px] font-semibold text-foreground">
                       {term.name}
                       {unscheduled ? "" : ` ${term.year}`}
                     </span>
-                    <span className="block text-xs text-zinc-500">
+                    <span className="block text-xs text-muted-foreground">
                       {term.dates}
                     </span>
                   </span>
@@ -141,7 +141,7 @@ export function TermChooser({
                         ? "Offered"
                         : "Not listed"}
                   </Badge>
-                  <ArrowRight size={16} className="text-zinc-300" />
+                  <ArrowRight size={16} className="text-muted-foreground/60" />
                 </Button>
               );
             })

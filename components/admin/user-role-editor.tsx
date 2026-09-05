@@ -80,7 +80,7 @@ export function UserRoleEditor({
           {isPending ? (
             <LoaderCircle
               size={16}
-              className="shrink-0 animate-spin text-zinc-400 motion-reduce:animate-none"
+              className="shrink-0 animate-spin text-muted-foreground/80 motion-reduce:animate-none"
               aria-label="Saving role"
             />
           ) : null}
@@ -101,12 +101,12 @@ export function UserRoleEditor({
         </CardAction>
       </CardHeader>
 
-      <CardContent className="border-t border-zinc-200/80 pt-4">
+      <CardContent className="border-t border-border pt-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+          <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Permissions
           </h3>
-          <span className="text-xs text-zinc-400 tabular-nums">
+          <span className="text-xs text-muted-foreground/80 tabular-nums">
             {effectivePermissions.length}
           </span>
         </div>
@@ -116,16 +116,16 @@ export function UserRoleEditor({
             {effectivePermissions.map((permission) => (
               <li
                 key={permission.id}
-                className="flex min-w-0 gap-2.5 rounded-lg bg-zinc-50/80 px-3 py-2.5 ring-1 ring-zinc-200/70 ring-inset"
+                className="flex min-w-0 gap-2.5 rounded-lg bg-muted/30 px-3 py-2.5 ring-1 ring-border ring-inset"
               >
-                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset">
+                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset dark:bg-emerald-950/60 dark:text-emerald-300 dark:ring-emerald-900">
                   <Check size={12} strokeWidth={2.5} aria-hidden="true" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs font-medium text-zinc-900">
+                  <span className="block text-xs font-medium text-foreground">
                     {permission.name}
                   </span>
-                  <span className="mt-0.5 block text-[11px] leading-4 text-zinc-500">
+                  <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
                     {permission.description}
                   </span>
                 </span>
@@ -133,15 +133,15 @@ export function UserRoleEditor({
             ))}
           </ul>
         ) : (
-          <div className="flex items-center gap-3 rounded-lg bg-zinc-50/80 px-3 py-3 ring-1 ring-zinc-200/70 ring-inset">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-zinc-500 shadow-xs ring-1 ring-zinc-200 ring-inset">
+          <div className="flex items-center gap-3 rounded-lg bg-muted/30 px-3 py-3 ring-1 ring-border ring-inset">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-card text-muted-foreground shadow-xs ring-1 ring-border ring-inset">
               <UserRound size={16} aria-hidden="true" />
             </span>
             <span>
-              <span className="block text-xs font-medium text-zinc-900">
+              <span className="block text-xs font-medium text-foreground">
                 Standard Coursemap access
               </span>
-              <span className="mt-0.5 block text-[11px] text-zinc-500">
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">
                 This account can use the student planning experience.
               </span>
             </span>
@@ -152,7 +152,7 @@ export function UserRoleEditor({
       {isOwnAdmin || isError ? (
         <CardFooter className="flex-col items-start">
           {isOwnAdmin ? (
-            <p className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <ShieldCheck size={13} aria-hidden="true" />
               Another admin must change your role.
             </p>
@@ -162,7 +162,7 @@ export function UserRoleEditor({
             <p
               role="alert"
               aria-live="polite"
-              className="text-xs text-rose-700"
+              className="text-xs text-rose-700 dark:text-rose-300"
             >
               {feedback}
             </p>

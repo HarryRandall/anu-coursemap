@@ -43,15 +43,15 @@ export function OptionMenu<T extends string>({
   return (
     <div className="flex min-w-0 flex-col">
       {searchPlaceholder ? (
-        <div className="flex items-center gap-2 border-b border-zinc-100 px-2 pb-1.5">
+        <div className="flex items-center gap-2 border-b border-border/60 px-2 pb-1.5">
           <Search
             aria-hidden="true"
-            className="shrink-0 text-zinc-400"
+            className="shrink-0 text-muted-foreground/80"
             size={14}
           />
           <input
             autoFocus
-            className="h-8 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-zinc-400"
+            className="h-8 w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground/80"
             onChange={(event) => setQuery(event.target.value)}
             placeholder={searchPlaceholder}
             type="search"
@@ -67,7 +67,9 @@ export function OptionMenu<T extends string>({
         )}
       >
         {visible.length === 0 ? (
-          <p className="px-2.5 py-3 text-sm text-zinc-500">{emptyLabel}</p>
+          <p className="px-2.5 py-3 text-sm text-muted-foreground">
+            {emptyLabel}
+          </p>
         ) : (
           visible.map((item) => {
             const selected = item.value === value;
@@ -75,10 +77,10 @@ export function OptionMenu<T extends string>({
               <button
                 aria-pressed={selected}
                 className={cn(
-                  "flex h-9 w-full shrink-0 cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 text-left text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand-400",
+                  "flex h-9 w-full shrink-0 cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 text-left text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   selected
-                    ? "bg-brand-50 font-medium text-brand-700"
-                    : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950",
+                    ? "bg-primary/10 font-medium text-primary"
+                    : "text-foreground/80 hover:bg-accent hover:text-foreground",
                 )}
                 key={item.value}
                 onClick={() => onSelect(item.value)}
@@ -86,7 +88,9 @@ export function OptionMenu<T extends string>({
               >
                 <span className="flex min-w-0 items-center gap-2">
                   {item.icon ? (
-                    <span className="shrink-0 text-zinc-400">{item.icon}</span>
+                    <span className="shrink-0 text-muted-foreground/80">
+                      {item.icon}
+                    </span>
                   ) : null}
                   <span className="min-w-0 truncate">
                     {item.render ?? item.label}

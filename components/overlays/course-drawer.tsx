@@ -91,23 +91,23 @@ export function CourseDrawer({
 
       <div className="flex-1 overflow-y-auto px-5 pt-5 pb-6">
         <div className="flex min-w-0 items-center gap-2 pr-12">
-          <p className="font-mono text-[11px] font-medium text-zinc-400">
+          <p className="font-mono text-[11px] font-medium text-muted-foreground/80">
             {course.code}
           </p>
           <StatusPill status={status} />
         </div>
         <h2
           id="drawer-title"
-          className="mt-3 text-2xl leading-tight font-bold tracking-tight text-zinc-900"
+          className="mt-3 text-2xl leading-tight font-bold tracking-tight text-foreground"
         >
           {course.name}
         </h2>
 
-        <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">
+        <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
           {course.description}
         </p>
 
-        <div className="mt-4 grid grid-cols-3 divide-x divide-zinc-200 rounded-xl ring-1 ring-zinc-200">
+        <div className="mt-4 grid grid-cols-3 divide-x divide-border rounded-xl ring-1 ring-border">
           {[
             ["Units", String(unitsForAttempt(attempt, course))],
             ["Level", String(course.level)],
@@ -119,17 +119,17 @@ export function CourseDrawer({
             ],
           ].map(([label, value]) => (
             <div key={label} className="min-w-0 px-3 py-2.5">
-              <p className="text-[10px] tracking-wide text-zinc-400 uppercase">
+              <p className="text-[10px] tracking-wide text-muted-foreground/80 uppercase">
                 {label}
               </p>
-              <p className="mt-0.5 truncate text-[13px] font-semibold text-zinc-800">
+              <p className="mt-0.5 truncate text-[13px] font-semibold text-foreground/90">
                 {value}
               </p>
             </div>
           ))}
         </div>
 
-        <div className="mt-3 divide-y divide-zinc-200 rounded-xl ring-1 ring-zinc-200">
+        <div className="mt-3 divide-y divide-border rounded-xl ring-1 ring-border">
           {[
             [<UserRound key="i" size={16} />, "Convener", course.convener],
             [<CalendarDays key="i" size={16} />, "Delivery", course.delivery],
@@ -143,9 +143,11 @@ export function CourseDrawer({
               key={index}
               className="grid grid-cols-[1.25rem_5rem_1fr] items-center gap-2.5 px-3 py-3"
             >
-              <span className="text-zinc-400">{icon}</span>
-              <span className="text-xs text-zinc-400">{label}</span>
-              <span className="text-xs font-medium text-zinc-700">{value}</span>
+              <span className="text-muted-foreground/80">{icon}</span>
+              <span className="text-xs text-muted-foreground/80">{label}</span>
+              <span className="text-xs font-medium text-foreground/80">
+                {value}
+              </span>
             </div>
           ))}
         </div>
@@ -157,14 +159,17 @@ export function CourseDrawer({
           className="mt-3 !h-auto w-full justify-between px-3 py-2.5 text-left"
         >
           <span className="min-w-0 whitespace-normal">
-            <span className="block text-xs font-semibold text-zinc-800">
+            <span className="block text-xs font-semibold text-foreground/90">
               More course information
             </span>
-            <span className="mt-0.5 block text-[11px] leading-relaxed font-normal text-zinc-500">
+            <span className="mt-0.5 block text-[11px] leading-relaxed font-normal text-muted-foreground">
               View assessment, learning outcomes and the complete course record.
             </span>
           </span>
-          <ExternalLink size={14} className="shrink-0 text-zinc-400" />
+          <ExternalLink
+            size={14}
+            className="shrink-0 text-muted-foreground/80"
+          />
         </ButtonLink>
 
         {!recorded && unitRequirement.kind === "unavailable" ? (
@@ -179,7 +184,7 @@ export function CourseDrawer({
         {!recorded &&
         unitSelectionRequired &&
         unitRequirement.kind !== "unavailable" ? (
-          <section className="mt-5 border-t border-zinc-100 pt-5">
+          <section className="mt-5 border-t border-border/60 pt-5">
             <Field
               hint={
                 unitRequirement.kind === "range"
@@ -231,19 +236,19 @@ export function CourseDrawer({
           </section>
         ) : null}
 
-        <section className="mt-5 border-t border-zinc-100 pt-5">
-          <h3 className="text-[13px] font-semibold text-zinc-900">
+        <section className="mt-5 border-t border-border/60 pt-5">
+          <h3 className="text-[13px] font-semibold text-foreground">
             Requisites
           </h3>
 
-          <div className="mt-3 divide-y divide-zinc-100 overflow-hidden rounded-xl ring-1 ring-zinc-200">
+          <div className="mt-3 divide-y divide-border/60 overflow-hidden rounded-xl ring-1 ring-border">
             <div className="flex gap-3 p-3">
               <span
                 className={cn(
                   "grid size-8 shrink-0 place-items-center rounded-lg",
                   prereqsMet
-                    ? "bg-emerald-50 text-emerald-600"
-                    : "bg-rose-50 text-rose-600",
+                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300"
+                    : "bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300",
                 )}
               >
                 {prereqsMet ? (
@@ -253,10 +258,10 @@ export function CourseDrawer({
                 )}
               </span>
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-zinc-800">
+                <p className="text-[13px] font-semibold text-foreground/90">
                   Prerequisite
                 </p>
-                <p className="mt-0.5 text-xs text-zinc-500">
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   {course.prerequisiteText}
                 </p>
                 {course.prerequisiteCodes.length > 0 && (
@@ -267,8 +272,8 @@ export function CourseDrawer({
                         className={cn(
                           "rounded-md px-1.5 py-1 font-mono text-[10px] ring-1 ring-inset",
                           !missing.has(code)
-                            ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-                            : "bg-rose-50 text-rose-700 ring-rose-200",
+                            ? "bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:ring-emerald-900"
+                            : "bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-900",
                         )}
                       >
                         {code}
@@ -278,7 +283,7 @@ export function CourseDrawer({
                 )}
                 {!prereqsMet && (
                   <div className="mt-2 space-y-2">
-                    <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-2.5 py-2 text-rose-700 ring-1 ring-rose-100 ring-inset">
+                    <div className="flex items-center gap-2 rounded-lg bg-rose-50 px-2.5 py-2 text-rose-700 ring-1 ring-rose-100 ring-inset dark:bg-rose-950/60 dark:text-rose-300">
                       <Info size={14} className="shrink-0" />
                       <p className="text-[11px] leading-snug font-medium">
                         {[...missing].join(" + ")} must be completed or planned
@@ -293,14 +298,14 @@ export function CourseDrawer({
 
             {course.incompatibilities.length > 0 && (
               <div className="flex gap-3 p-3">
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-zinc-100 text-zinc-500">
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
                   <X size={17} />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-zinc-800">
+                  <p className="text-[13px] font-semibold text-foreground/90">
                     Incompatible with
                   </p>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {course.incompatibilities.join(", ")}
                   </p>
                 </div>
@@ -308,28 +313,28 @@ export function CourseDrawer({
             )}
 
             {course.permissionText && (
-              <div className="flex gap-3 bg-brand-50/40 p-3">
+              <div className="flex gap-3 bg-primary/5 p-3">
                 <span
                   className={cn(
                     "grid size-8 shrink-0 place-items-center rounded-lg",
                     attempt.permissionApproved
-                      ? "bg-emerald-50 text-emerald-600"
-                      : "bg-brand-100 text-brand-600",
+                      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300"
+                      : "bg-primary/15 text-primary",
                   )}
                 >
                   <ShieldCheck size={17} />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-zinc-800">
+                  <p className="text-[13px] font-semibold text-foreground/90">
                     Permission code
                   </p>
-                  <p className="mt-0.5 text-xs text-zinc-500">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {course.permissionText}
                   </p>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="mt-1 -ml-2 h-7 px-2 text-[11px] text-brand-600 hover:text-brand-700"
+                    className="mt-1 -ml-2 h-7 px-2 text-[11px] text-primary hover:text-primary"
                     onClick={() => {
                       togglePermission(attempt.id);
                       notify(
@@ -350,7 +355,7 @@ export function CourseDrawer({
         </section>
       </div>
 
-      <footer className="border-t border-zinc-100 bg-white px-4 py-3">
+      <footer className="border-t border-border/60 bg-card px-4 py-3">
         <div className="grid grid-cols-3 gap-2">
           <Button
             variant="secondary"
@@ -359,9 +364,9 @@ export function CourseDrawer({
             disabled={recorded || unitSelectionMissing}
             className={cn(
               attempt.status === "completed" &&
-                "!bg-white !text-emerald-700 !ring-emerald-300 hover:!bg-emerald-50 disabled:opacity-100",
+                "!bg-card !text-emerald-700 !ring-emerald-300 hover:!bg-emerald-50 disabled:opacity-100 dark:bg-emerald-950/60 dark:text-emerald-300 dark:ring-emerald-900",
               attempt.status !== "completed" &&
-                "hover:!bg-emerald-50 hover:!text-emerald-700 hover:!ring-emerald-200",
+                "hover:!bg-emerald-50 hover:!text-emerald-700 hover:!ring-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:ring-emerald-900",
             )}
             onClick={async () => {
               const result = await updateAttempt(
@@ -389,7 +394,7 @@ export function CourseDrawer({
             className={cn(
               attempt.status === "failed" && "opacity-100",
               attempt.status !== "failed" &&
-                "hover:!bg-rose-50 hover:!text-rose-700 hover:!ring-rose-200",
+                "hover:!bg-rose-50 hover:!text-rose-700 hover:!ring-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:ring-rose-900",
             )}
             onClick={async () => {
               const result = await updateAttempt(

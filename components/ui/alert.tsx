@@ -7,11 +7,14 @@ const alertVariants = cva(
   {
     variants: {
       tone: {
-        neutral: "border-zinc-200 bg-zinc-50 text-zinc-800",
-        brand: "border-brand-200 bg-brand-50 text-brand-900",
-        success: "border-emerald-200 bg-emerald-50 text-emerald-900",
-        warning: "border-amber-200 bg-amber-50 text-amber-950",
-        danger: "border-rose-200 bg-rose-50 text-rose-900",
+        neutral: "border-border bg-muted/50 text-foreground/90",
+        brand: "border-primary/25 bg-primary/10 text-primary",
+        success:
+          "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-200",
+        warning:
+          "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-200",
+        danger:
+          "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-200",
       },
     },
     defaultVariants: { tone: "neutral" },

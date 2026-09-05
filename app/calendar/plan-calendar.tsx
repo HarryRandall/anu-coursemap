@@ -97,16 +97,16 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
             {groups.map(({ term, courses }) => (
               <Card key={term.id} className="overflow-hidden">
                 <CardHeader
-                  className="items-center border-b border-zinc-100"
+                  className="items-center border-b border-border/60"
                   title={`${term.name} ${term.year}`}
                   description={term.dates}
                   action={
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-muted-foreground">
                       {courses.length} course{courses.length === 1 ? "" : "s"}
                     </span>
                   }
                 />
-                <div className="divide-y divide-zinc-100">
+                <div className="divide-y divide-border/60">
                   {courses.map(({ attempt, course }) => (
                     <div
                       key={attempt.id}
@@ -118,10 +118,10 @@ export function PlanCalendar({ catalogue }: { catalogue: PlanCatalogue }) {
                         size="sm"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-zinc-900">
+                        <p className="truncate text-sm font-semibold text-foreground">
                           {course.code} · {course.name}
                         </p>
-                        <p className="mt-0.5 text-xs text-zinc-500">
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {course.delivery} · {attempt.status}
                         </p>
                       </div>

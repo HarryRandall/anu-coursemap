@@ -75,7 +75,7 @@ function EditorSectionTabs() {
       >
         {EDITOR_SECTIONS.map(({ value, label, icon: Icon }) => (
           <TabsTrigger
-            className="h-12 gap-1.5 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-zinc-500 shadow-none hover:text-zinc-950 data-[state=active]:border-brand-600 data-[state=active]:bg-transparent data-[state=active]:text-zinc-950 data-[state=active]:shadow-none"
+            className="h-12 gap-1.5 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
             key={value}
             value={value}
           >
@@ -108,7 +108,7 @@ function FloorSelect({
 }) {
   return (
     <label className="flex min-w-0 items-center gap-2">
-      <span className="shrink-0 text-xs font-medium text-zinc-600">
+      <span className="shrink-0 text-xs font-medium text-muted-foreground">
         {label}
       </span>
       <Select
@@ -386,7 +386,7 @@ export function IndoorEditor({
     if (!level || !footprint) {
       return (
         <div className="grid min-h-[28rem] flex-1 place-items-center p-6 text-center">
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-muted-foreground">
             Add a floor to start drawing this building.
           </p>
         </div>
@@ -414,7 +414,7 @@ export function IndoorEditor({
         />
         {editable && pointer.boundaryMessage ? (
           <p
-            className="absolute bottom-5 left-5 max-w-sm rounded-lg border border-rose-200 bg-white/95 px-3 py-2 text-xs font-medium text-rose-700 shadow-sm"
+            className="absolute bottom-5 left-5 max-w-sm rounded-lg border border-rose-200 bg-card/80 px-3 py-2 text-xs font-medium text-rose-700 shadow-sm dark:border-rose-900 dark:text-rose-300"
             role="status"
           >
             {pointer.boundaryMessage}
@@ -432,15 +432,15 @@ export function IndoorEditor({
     label: string;
   }) {
     return (
-      <div className="flex flex-col border-b border-zinc-200 bg-white xl:flex-row xl:items-center">
-        <div className="shrink-0 p-2 xl:border-r xl:border-zinc-200">
+      <div className="flex flex-col border-b border-border bg-card xl:flex-row xl:items-center">
+        <div className="shrink-0 p-2 xl:border-r xl:border-border">
           <FloorSelect
             levels={document.levels}
             onChange={selectLevel}
             value={level?.id ?? ""}
           />
         </div>
-        <div className="min-w-0 flex-1 overflow-x-auto border-t border-zinc-100 xl:border-t-0">
+        <div className="min-w-0 flex-1 overflow-x-auto border-t border-border/60 xl:border-t-0">
           <ToolPalette
             disabled={!level}
             label={label}
@@ -453,7 +453,7 @@ export function IndoorEditor({
           />
         </div>
         {state.selection ? (
-          <div className="shrink-0 border-t border-zinc-100 p-2 xl:border-t-0 xl:border-l xl:border-zinc-200">
+          <div className="shrink-0 border-t border-border/60 p-2 xl:border-t-0 xl:border-l xl:border-border">
             {selectionDetails()}
           </div>
         ) : null}
@@ -500,7 +500,7 @@ export function IndoorEditor({
           open={unsavedNavigation.navigationPending}
           title="Leave without saving?"
         />
-        <div className="flex min-h-[calc(100dvh-6.5rem)] flex-col bg-zinc-100 lg:h-[calc(100dvh-6.5rem)] lg:min-h-0">
+        <div className="flex min-h-[calc(100dvh-6.5rem)] flex-col bg-muted lg:h-[calc(100dvh-6.5rem)] lg:min-h-0">
           {notice ? (
             <Alert
               className="mx-3 mt-2 shrink-0"
@@ -526,7 +526,7 @@ export function IndoorEditor({
                     dispatch({ type: "level/update", levelId, patch })
                   }
                 />
-                <section className="flex min-h-0 flex-col bg-zinc-100">
+                <section className="flex min-h-0 flex-col bg-muted">
                   {mapSurface({ perspective: true, editable: false })}
                 </section>
               </div>
@@ -550,7 +550,7 @@ export function IndoorEditor({
                 })}
                 {publishBlocked || roomsWithoutDoors > 0 ? (
                   <div
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+                    className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-300"
                     role="status"
                   >
                     {publishBlocked ? <span>{publishBlocked}</span> : null}
@@ -572,12 +572,12 @@ export function IndoorEditor({
             <TabsContent className="mt-0 h-full" value="preview">
               <section className="flex h-full min-h-0 flex-col">
                 {level ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-white px-3 py-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-3 py-2">
                     <div>
-                      <p className="text-xs font-semibold text-zinc-950">
+                      <p className="text-xs font-semibold text-foreground">
                         Whole-building preview
                       </p>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         Every floor is visible; choose which floor to emphasise.
                       </p>
                     </div>

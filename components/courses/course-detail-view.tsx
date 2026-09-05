@@ -70,7 +70,7 @@ export function CourseDetailTabsList() {
         <TabsTrigger
           key={id}
           value={id}
-          className="relative h-11 flex-none gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-[13px] text-zinc-500 shadow-none hover:text-zinc-900 data-[state=active]:border-brand-500 data-[state=active]:bg-transparent data-[state=active]:text-zinc-950 data-[state=active]:shadow-none"
+          className="relative h-11 flex-none gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-[13px] text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
         >
           <Icon size={15} aria-hidden="true" className="hidden sm:block" />
           {label}
@@ -154,7 +154,7 @@ function CourseReferenceText({
           key={index}
           href={`/courses/${part}?year=${academicYear}`}
           prefetch={false}
-          className="rounded font-mono font-semibold text-brand-700 underline decoration-brand-300 underline-offset-2 hover:text-brand-900"
+          className="rounded font-mono font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary"
         >
           {part}
         </Link>
@@ -164,7 +164,7 @@ function CourseReferenceText({
       <span
         key={index}
         title={`${part} is referenced by ANU but has not been imported yet`}
-        className="inline-flex items-center gap-1 rounded bg-zinc-100 px-1 font-mono font-semibold text-zinc-600"
+        className="inline-flex items-center gap-1 rounded bg-muted px-1 font-mono font-semibold text-muted-foreground"
       >
         <LockKeyhole size={10} aria-hidden="true" />
         {part}
@@ -185,8 +185,8 @@ function CourseReferenceChips({
 }) {
   if (course.prerequisiteCodes.length === 0) return null;
   return (
-    <div className="mt-5 border-t border-zinc-100 pt-4">
-      <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+    <div className="mt-5 border-t border-border/60 pt-4">
+      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         Detected course references
       </h3>
       <div className="mt-2 flex flex-wrap gap-2">
@@ -196,7 +196,7 @@ function CourseReferenceChips({
               key={reference}
               href={`/courses/${reference}?year=${academicYear}`}
               prefetch={false}
-              className="rounded-md bg-brand-50 px-2 py-1 font-mono text-xs font-semibold text-brand-700 ring-1 ring-brand-100 hover:bg-brand-100"
+              className="rounded-md bg-primary/10 px-2 py-1 font-mono text-xs font-semibold text-primary ring-1 ring-primary/20 hover:bg-primary/15"
             >
               {reference}
             </Link>
@@ -204,7 +204,7 @@ function CourseReferenceChips({
             <span
               key={reference}
               title={`${reference} has not been imported yet`}
-              className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2 py-1 font-mono text-xs font-semibold text-zinc-600 ring-1 ring-zinc-200"
+              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-muted-foreground ring-1 ring-border"
             >
               <LockKeyhole size={11} aria-hidden="true" />
               {reference}
@@ -289,9 +289,9 @@ function RequisiteExpressionSummary({
       ? "Complete all of the following"
       : "Complete one of the following";
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-3">
-      <p className="text-xs font-semibold text-zinc-800">{title}</p>
-      <ul className="mt-2 space-y-2 border-l border-zinc-200 pl-3 text-xs text-zinc-700">
+    <div className="rounded-lg border border-border bg-card p-3">
+      <p className="text-xs font-semibold text-foreground/90">{title}</p>
+      <ul className="mt-2 space-y-2 border-l border-border pl-3 text-xs text-foreground/80">
         {expression.conditions.map((condition, index) => (
           <li key={index}>
             <RequisiteExpressionSummary
@@ -321,13 +321,13 @@ function RequisiteProgressSummary({
         {progress.satisfied ? (
           <CheckCircle2
             aria-label="Completed"
-            className="mt-0.5 shrink-0 text-emerald-600"
+            className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300"
             size={16}
           />
         ) : (
           <Circle
             aria-label="Not completed"
-            className="mt-0.5 shrink-0 text-amber-700"
+            className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
             size={16}
           />
         )}
@@ -359,13 +359,13 @@ function RequisiteProgressSummary({
         {progress.satisfied ? (
           <CheckCircle2
             aria-label="Completed"
-            className="mt-0.5 shrink-0 text-emerald-600"
+            className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300"
             size={16}
           />
         ) : (
           <Circle
             aria-label="Not completed"
-            className="mt-0.5 shrink-0 text-amber-700"
+            className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
             size={16}
           />
         )}
@@ -382,13 +382,13 @@ function RequisiteProgressSummary({
         {progress.satisfied ? (
           <CheckCircle2
             aria-label="Enrolled"
-            className="mt-0.5 shrink-0 text-emerald-600"
+            className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300"
             size={16}
           />
         ) : (
           <Circle
             aria-label="Not enrolled"
-            className="mt-0.5 shrink-0 text-amber-700"
+            className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
             size={16}
           />
         )}
@@ -405,14 +405,14 @@ function RequisiteProgressSummary({
       ? "Complete all of the following"
       : "Complete one of the following";
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-3">
+    <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-zinc-800">{title}</p>
+        <p className="text-xs font-semibold text-foreground/90">{title}</p>
         <Badge tone={progress.satisfied ? "success" : "warning"}>
           {progress.satisfied ? "Met" : "Not met"}
         </Badge>
       </div>
-      <ul className="mt-3 space-y-2 border-l border-zinc-200 pl-3 text-xs text-zinc-700">
+      <ul className="mt-3 space-y-2 border-l border-border pl-3 text-xs text-foreground/80">
         {progress.conditions.map((condition, index) => (
           <li key={index}>
             <RequisiteProgressSummary
@@ -487,10 +487,10 @@ export function CourseDetailView({
     <div className={fullWidth ? "w-full" : "mx-auto max-w-6xl"}>
       <header className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+          <p className="text-[11px] font-bold tracking-wider text-muted-foreground/80 uppercase">
             {course.code} · {course.subject} · Level {course.level / 1000}
           </p>
-          <h1 className="mt-1 text-2xl leading-tight font-bold tracking-tight text-zinc-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
             {course.name}
           </h1>
           <div className="mt-3 flex flex-wrap gap-1.5">
@@ -522,21 +522,21 @@ export function CourseDetailView({
       <TabsContent value="overview" className="flex flex-col gap-4">
         <Card>
           <CardHeader title="About this course" />
-          <CardContent className="space-y-4 border-t border-zinc-100 pt-5">
+          <CardContent className="space-y-4 border-t border-border/60 pt-5">
             {course.introduction &&
             course.introduction !== course.description ? (
-              <p className="max-w-4xl text-sm leading-relaxed font-medium text-zinc-800">
+              <p className="max-w-4xl text-sm leading-relaxed font-medium text-foreground/90">
                 {course.introduction}
               </p>
             ) : null}
-            <p className="max-w-4xl text-[13px] leading-relaxed whitespace-pre-line text-zinc-600">
+            <p className="max-w-4xl text-[13px] leading-relaxed whitespace-pre-line text-muted-foreground">
               {course.description}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader title="Course essentials" />
-          <CardContent className="border-t border-zinc-100 pt-5">
+          <CardContent className="border-t border-border/60 pt-5">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
               {[
                 ["Academic year", String(course.year)],
@@ -552,10 +552,10 @@ export function CourseDetailView({
                 ["Last source update", formatUpdatedAt(course.sourceUpdatedAt)],
               ].map(([label, value]) => (
                 <div key={label} className="min-w-0">
-                  <dt className="text-[10px] font-semibold tracking-wider text-zinc-400 uppercase">
+                  <dt className="text-[10px] font-semibold tracking-wider text-muted-foreground/80 uppercase">
                     {label}
                   </dt>
-                  <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-zinc-700">
+                  <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-foreground/80">
                     {value}
                   </dd>
                 </div>
@@ -567,7 +567,7 @@ export function CourseDetailView({
               href={course.sourceUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-[13px] font-semibold text-brand-700 hover:text-brand-800"
+              className="text-[13px] font-semibold text-primary hover:text-primary/80"
             >
               View the ANU course source
             </a>
@@ -579,13 +579,13 @@ export function CourseDetailView({
         course.prescribedTexts ? (
           <Card>
             <CardHeader title="Study expectations" />
-            <CardContent className="grid gap-5 border-t border-zinc-100 pt-5 md:grid-cols-3">
+            <CardContent className="grid gap-5 border-t border-border/60 pt-5 md:grid-cols-3">
               {course.workloadText ? (
                 <section>
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
                     <GraduationCap size={15} aria-hidden="true" /> Workload
                   </h3>
-                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-zinc-600">
+                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
                     {course.workloadText}
                     {course.workloadHours !== null
                       ? ` (${course.workloadHours} hours)`
@@ -595,21 +595,21 @@ export function CourseDetailView({
               ) : null}
               {course.inherentRequirements ? (
                 <section>
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
                     <ClipboardCheck size={15} aria-hidden="true" /> Inherent
                     requirements
                   </h3>
-                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-zinc-600">
+                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
                     {course.inherentRequirements}
                   </p>
                 </section>
               ) : null}
               {course.prescribedTexts ? (
                 <section>
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-zinc-900">
+                  <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
                     <Library size={15} aria-hidden="true" /> Prescribed texts
                   </h3>
-                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-zinc-600">
+                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
                     {course.prescribedTexts}
                   </p>
                 </section>
@@ -621,10 +621,10 @@ export function CourseDetailView({
         {course.areasOfInterest.length || course.attributes.length ? (
           <Card>
             <CardHeader title="Areas and attributes" />
-            <CardContent className="space-y-4 border-t border-zinc-100 pt-5">
+            <CardContent className="space-y-4 border-t border-border/60 pt-5">
               {course.areasOfInterest.length ? (
                 <div>
-                  <h3 className="text-xs font-semibold text-zinc-900">
+                  <h3 className="text-xs font-semibold text-foreground">
                     Areas of interest
                   </h3>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -638,19 +638,19 @@ export function CourseDetailView({
               ) : null}
               {course.attributes.length ? (
                 <div>
-                  <h3 className="text-xs font-semibold text-zinc-900">
+                  <h3 className="text-xs font-semibold text-foreground">
                     Course attributes
                   </h3>
                   <dl className="mt-2 grid gap-2 sm:grid-cols-2">
                     {course.attributes.map((attribute, index) => (
                       <div
                         key={`${attribute.kind}:${attribute.value}:${index}`}
-                        className="rounded-lg border border-zinc-200 p-3"
+                        className="rounded-lg border border-border p-3"
                       >
-                        <dt className="text-[10px] font-semibold tracking-wide text-zinc-400 uppercase">
+                        <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
                           {humanise(attribute.kind)}
                         </dt>
-                        <dd className="mt-1 text-xs text-zinc-700">
+                        <dd className="mt-1 text-xs text-foreground/80">
                           {attribute.value}
                         </dd>
                       </div>
@@ -665,14 +665,14 @@ export function CourseDetailView({
         {course.learningOutcomes.length ? (
           <Card>
             <CardHeader title="Learning outcomes" />
-            <CardContent className="border-t border-zinc-100 pt-5">
+            <CardContent className="border-t border-border/60 pt-5">
               <ol className="space-y-3">
                 {course.learningOutcomes.map((outcome) => (
                   <li
                     key={outcome.position}
-                    className="flex gap-3 text-[13px] leading-relaxed text-zinc-700"
+                    className="flex gap-3 text-[13px] leading-relaxed text-foreground/80"
                   >
-                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-zinc-100 text-[11px] font-semibold text-zinc-600">
+                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">
                       {outcome.position}
                     </span>
                     <span>{outcome.body}</span>
@@ -686,24 +686,24 @@ export function CourseDetailView({
         {course.assessments.length ? (
           <Card>
             <CardHeader title="Assessment" />
-            <CardContent className="border-t border-zinc-100 p-0">
-              <div className="divide-y divide-zinc-100">
+            <CardContent className="border-t border-border/60 p-0">
+              <div className="divide-y divide-border/60">
                 {course.assessments.map((assessment) => (
                   <div
                     key={assessment.position}
                     className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
                   >
                     <div>
-                      <p className="text-[13px] font-semibold text-zinc-900">
+                      <p className="text-[13px] font-semibold text-foreground">
                         {assessment.title}
                       </p>
                       {assessment.dueText ? (
-                        <p className="mt-1 text-xs text-zinc-500">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {assessment.dueText}
                         </p>
                       ) : null}
                       {assessment.learningOutcomePositions.length ? (
-                        <p className="mt-1 text-[11px] text-zinc-400">
+                        <p className="mt-1 text-[11px] text-muted-foreground/80">
                           Learning outcomes{" "}
                           {assessment.learningOutcomePositions.join(", ")}
                         </p>
@@ -727,19 +727,19 @@ export function CourseDetailView({
         {course.fees.length ? (
           <Card>
             <CardHeader title="Fees" />
-            <CardContent className="border-t border-zinc-100 p-0">
-              <dl className="divide-y divide-zinc-100">
+            <CardContent className="border-t border-border/60 p-0">
+              <dl className="divide-y divide-border/60">
                 {course.fees.map((fee, index) => (
                   <div
                     key={`${fee.audience}:${fee.feeType}:${index}`}
                     className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
                   >
                     <div>
-                      <dt className="flex items-center gap-2 text-[13px] font-semibold text-zinc-900">
+                      <dt className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
                         <Banknote size={15} aria-hidden="true" />
                         {fee.sourceLabel ?? humanise(fee.feeType)}
                       </dt>
-                      <dd className="mt-1 text-xs text-zinc-500">
+                      <dd className="mt-1 text-xs text-muted-foreground">
                         {humanise(fee.audience)}
                         {fee.feeYear ? ` · ${fee.feeYear}` : ""}
                         {fee.basis !== "unknown"
@@ -747,7 +747,7 @@ export function CourseDetailView({
                           : ""}
                       </dd>
                     </div>
-                    <dd className="text-[13px] font-semibold text-zinc-800">
+                    <dd className="text-[13px] font-semibold text-foreground/90">
                       {feeValue(fee)}
                     </dd>
                   </div>
@@ -760,20 +760,20 @@ export function CourseDetailView({
         {course.relatedCourses.length ? (
           <Card>
             <CardHeader title="Related courses" />
-            <CardContent className="grid gap-3 border-t border-zinc-100 pt-5 sm:grid-cols-2">
+            <CardContent className="grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
               {course.relatedCourses.map((related) => (
                 <Link
                   key={`${related.kind}:${related.code}`}
                   href={`/courses/${related.code}?year=${course.year}`}
-                  className="rounded-lg border border-zinc-200 p-3 transition-colors hover:border-brand-200 hover:bg-brand-50/40"
+                  className="rounded-lg border border-border p-3 transition-colors hover:border-primary/25 hover:bg-primary/5"
                 >
-                  <p className="font-mono text-[11px] font-semibold text-brand-700">
+                  <p className="font-mono text-[11px] font-semibold text-primary">
                     {related.code}
                   </p>
-                  <p className="mt-1 text-[13px] font-medium text-zinc-900">
+                  <p className="mt-1 text-[13px] font-medium text-foreground">
                     {related.title ?? "Related ANU course"}
                   </p>
-                  <p className="mt-1 text-[11px] text-zinc-500">
+                  <p className="mt-1 text-[11px] text-muted-foreground">
                     {humanise(related.kind)}
                   </p>
                 </Link>
@@ -789,7 +789,7 @@ export function CourseDetailView({
             title="Prerequisite chain and unlocks"
             description="Detected course references stay visible even before their course records are imported."
           />
-          <CardContent className="border-t border-zinc-100 px-0 pt-5 pb-0">
+          <CardContent className="border-t border-border/60 px-0 pt-5 pb-0">
             <PrereqGraph
               academicYear={course.year}
               code={course.code}
@@ -833,16 +833,16 @@ export function CourseDetailView({
             }
             className="flex-col gap-3 sm:flex-row"
           />
-          <CardContent className="space-y-5 border-t border-zinc-100 pt-5 text-[13px] leading-relaxed text-zinc-700">
+          <CardContent className="space-y-5 border-t border-border/60 pt-5 text-[13px] leading-relaxed text-foreground/80">
             <Alert tone="warning" className="rounded-xl p-4">
               <CircleHelp aria-hidden="true" />
-              <AlertDescription className="text-amber-900">
+              <AlertDescription className="text-amber-900 dark:text-amber-300">
                 {ruleStatus}
               </AlertDescription>
             </Alert>
             {requisiteProgress && requisiteCompletion.isAuthenticated ? (
               <div>
-                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Your completed-course progress
                 </h3>
                 <div className="mt-2">
@@ -856,7 +856,7 @@ export function CourseDetailView({
             ) : null}
             {requisiteSummary ? (
               <div>
-                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   {structuredRule
                     ? "Imported requirement matrix"
                     : "Coursemap summary"}
@@ -871,7 +871,7 @@ export function CourseDetailView({
               </div>
             ) : null}
             <div>
-              <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                 Prerequisites
               </h3>
               <p className="mt-2 whitespace-pre-line">
@@ -888,8 +888,8 @@ export function CourseDetailView({
               />
             </div>
             {course.corequisiteText ? (
-              <div className="border-t border-zinc-100 pt-5">
-                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <div className="border-t border-border/60 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Corequisites
                 </h3>
                 <p className="mt-2 whitespace-pre-line">
@@ -902,8 +902,8 @@ export function CourseDetailView({
               </div>
             ) : null}
             {course.assumedKnowledgeText ? (
-              <div className="border-t border-zinc-100 pt-5">
-                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <div className="border-t border-border/60 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Assumed knowledge
                 </h3>
                 <p className="mt-2 whitespace-pre-line">
@@ -912,8 +912,8 @@ export function CourseDetailView({
               </div>
             ) : null}
             {course.permissionText ? (
-              <div className="border-t border-zinc-100 pt-5">
-                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <div className="border-t border-border/60 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Permission
                 </h3>
                 <p className="mt-2 whitespace-pre-line">
@@ -922,8 +922,8 @@ export function CourseDetailView({
               </div>
             ) : null}
             {course.incompatibilityText ? (
-              <div className="border-t border-zinc-100 pt-5">
-                <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <div className="border-t border-border/60 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   Incompatibilities
                 </h3>
                 <p className="mt-2 whitespace-pre-line">
@@ -959,8 +959,8 @@ export function CourseDetailView({
             }
           />
           {course.offerings.length ? (
-            <CardContent className="border-t border-zinc-100 p-0">
-              <div className="divide-y divide-zinc-100">
+            <CardContent className="border-t border-border/60 p-0">
+              <div className="divide-y divide-border/60">
                 {course.offerings.map((offering, index) => {
                   const startsOn = formatDate(offering.startsOn);
                   const endsOn = formatDate(offering.endsOn);
@@ -973,7 +973,7 @@ export function CourseDetailView({
                     >
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-[13px] font-semibold text-zinc-900">
+                          <h3 className="text-[13px] font-semibold text-foreground">
                             {offering.periodName}
                           </h3>
                           {offering.classNumber ? (
@@ -982,7 +982,7 @@ export function CourseDetailView({
                             </Badge>
                           ) : null}
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           {offering.deliveryMode ? (
                             <span>{offering.deliveryMode}</span>
                           ) : null}
@@ -1004,7 +1004,7 @@ export function CourseDetailView({
                             href={offering.classSummaryUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="mt-3 inline-flex text-xs font-semibold text-brand-700 hover:text-brand-800"
+                            className="mt-3 inline-flex text-xs font-semibold text-primary hover:text-primary/80"
                           >
                             Open ANU class summary
                           </a>
@@ -1014,16 +1014,20 @@ export function CourseDetailView({
                         <dl className="grid grid-cols-2 gap-3 text-xs">
                           {enrolClosesOn ? (
                             <div>
-                              <dt className="text-zinc-400">Last enrolment</dt>
-                              <dd className="mt-0.5 font-medium text-zinc-700">
+                              <dt className="text-muted-foreground/80">
+                                Last enrolment
+                              </dt>
+                              <dd className="mt-0.5 font-medium text-foreground/80">
                                 {enrolClosesOn}
                               </dd>
                             </div>
                           ) : null}
                           {censusOn ? (
                             <div>
-                              <dt className="text-zinc-400">Census date</dt>
-                              <dd className="mt-0.5 font-medium text-zinc-700">
+                              <dt className="text-muted-foreground/80">
+                                Census date
+                              </dt>
+                              <dd className="mt-0.5 font-medium text-foreground/80">
                                 {censusOn}
                               </dd>
                             </div>
@@ -1036,7 +1040,7 @@ export function CourseDetailView({
               </div>
             </CardContent>
           ) : (
-            <CardContent className="border-t border-zinc-100 p-0">
+            <CardContent className="border-t border-border/60 p-0">
               <Empty>
                 <EmptyHeader>
                   <EmptyMedia variant="icon">
@@ -1058,20 +1062,20 @@ export function CourseDetailView({
             title="Student experience and self-review"
             description="Shared placeholder while course-specific SELT and student feedback are imported."
           />
-          <CardContent className="space-y-5 border-t border-zinc-100 pt-5">
+          <CardContent className="space-y-5 border-t border-border/60 pt-5">
             <Alert tone="neutral" className="rounded-xl p-4">
               <MessageSquareText aria-hidden="true" />
               <AlertTitle className="text-[13px]">
                 No course-specific ratings are shown yet
               </AlertTitle>
-              <AlertDescription className="text-[13px] text-zinc-600">
+              <AlertDescription className="text-[13px] text-muted-foreground">
                 This is deliberately not a made-up score. Once authorised source
                 data is imported, it will appear here with its year and
                 provenance.
               </AlertDescription>
             </Alert>
             <div>
-              <h3 className="text-[13px] font-semibold text-zinc-900">
+              <h3 className="text-[13px] font-semibold text-foreground">
                 A useful self-review after taking the course
               </h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -1091,17 +1095,17 @@ export function CourseDetailView({
                 ].map(([title, description]) => (
                   <div
                     key={title}
-                    className="rounded-xl border border-zinc-200 p-4"
+                    className="rounded-xl border border-border p-4"
                   >
                     <ClipboardCheck
                       size={17}
-                      className="text-brand-600"
+                      className="text-primary"
                       aria-hidden="true"
                     />
-                    <h4 className="mt-2 text-[13px] font-semibold text-zinc-800">
+                    <h4 className="mt-2 text-[13px] font-semibold text-foreground/90">
                       {title}
                     </h4>
-                    <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       {description}
                     </p>
                   </div>

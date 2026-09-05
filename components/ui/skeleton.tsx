@@ -11,7 +11,7 @@ export function Skeleton({
       data-slot="skeleton"
       aria-hidden="true"
       className={cn(
-        "block animate-pulse rounded-md bg-zinc-200/65 motion-reduce:animate-none",
+        "block animate-pulse rounded-md bg-accent/65 motion-reduce:animate-none",
         className,
       )}
       {...rest}

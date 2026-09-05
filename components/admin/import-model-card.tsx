@@ -70,7 +70,7 @@ export function ImportModelCard({
             value={value}
           />
         </div>
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           {options.length === 0
             ? "Set COURSEMAP_OPENROUTER_MODELS to offer models here."
             : !canManage

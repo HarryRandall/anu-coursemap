@@ -49,7 +49,7 @@ export function UserDirectory({
   return (
     <DataTableShell
       footer={
-        <p className="text-xs text-zinc-500 tabular-nums">
+        <p className="text-xs text-muted-foreground tabular-nums">
           {users.length.toLocaleString("en-AU")}{" "}
           {users.length === 1 ? "user" : "users"}
         </p>
@@ -90,7 +90,7 @@ export function UserDirectory({
                 <TableCell className="p-0">
                   <Link
                     href={href}
-                    className="flex items-center gap-2.5 rounded-sm px-4 py-3 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none focus-visible:ring-inset"
+                    className="flex items-center gap-2.5 rounded-sm px-4 py-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
                   >
                     <span className="shrink-0">
                       <GeneratedAvatar
@@ -101,7 +101,7 @@ export function UserDirectory({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex min-w-0 items-center gap-2">
-                        <span className="truncate text-[13px] font-medium text-zinc-950 group-hover:text-brand-700">
+                        <span className="truncate text-[13px] font-medium text-foreground group-hover:text-primary">
                           {user.displayName}
                         </span>
                         {user.userId === currentUserId ? (
@@ -110,7 +110,7 @@ export function UserDirectory({
                           </Badge>
                         ) : null}
                       </span>
-                      <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
+                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                         {user.email ?? "No email"}
                       </span>
                     </span>
@@ -125,10 +125,10 @@ export function UserDirectory({
                     )}
                   </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs text-zinc-500 tabular-nums">
+                <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
                   {formatDate(user.createdAt)}
                 </TableCell>
-                <TableCell className="font-mono text-xs text-zinc-500 tabular-nums">
+                <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
                   {formatDate(user.updatedAt)}
                 </TableCell>
               </TableRow>

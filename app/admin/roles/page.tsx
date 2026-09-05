@@ -26,7 +26,7 @@ export default async function AdminRolesPage() {
               title="Role management is unavailable in demo mode"
               description="Connect Coursemap to Supabase to review database-backed application roles."
               icon={
-                <span className="grid size-9 place-items-center rounded-lg bg-brand-50 text-brand-700">
+                <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
                   <KeyRound size={17} aria-hidden="true" />
                 </span>
               }
@@ -44,7 +44,7 @@ export default async function AdminRolesPage() {
               title="Application roles could not be loaded"
               description="Confirm the admin user-management migration is applied, then reload this page."
               icon={
-                <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-700">
+                <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                   <AlertTriangle size={17} aria-hidden="true" />
                 </span>
               }

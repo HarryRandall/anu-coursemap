@@ -115,13 +115,13 @@ function DetailRow({
   mono?: boolean;
 }) {
   return (
-    <div className="grid gap-1 border-b border-zinc-100 py-3 last:border-b-0 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-start sm:gap-4">
-      <dt className="text-xs font-medium text-zinc-500">{label}</dt>
+    <div className="grid gap-1 border-b border-border/60 py-3 last:border-b-0 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-start sm:gap-4">
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd
         className={
           mono
-            ? "min-w-0 font-mono text-xs break-all text-zinc-700"
-            : "min-w-0 text-sm text-zinc-900"
+            ? "min-w-0 font-mono text-xs break-all text-foreground/80"
+            : "min-w-0 text-sm text-foreground"
         }
       >
         {value}
@@ -240,14 +240,14 @@ export function AdminUserDetail({
         { value: "access", label: "Access", icon: ShieldCheck },
       ].map(({ value, label, icon: Icon }) => (
         <TabsTrigger
-          className="h-12 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-zinc-500 shadow-none hover:text-zinc-950 data-[state=active]:border-brand-600 data-[state=active]:bg-transparent data-[state=active]:text-zinc-950 data-[state=active]:shadow-none"
+          className="h-12 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
           key={value}
           value={value}
         >
           <Icon aria-hidden="true" size={15} />
           {label}
           {value === "courses" && trackedCourses > 0 ? (
-            <span className="ml-0.5 text-[11px] text-zinc-400 tabular-nums">
+            <span className="ml-0.5 text-[11px] text-muted-foreground/80 tabular-nums">
               {trackedCourses}
             </span>
           ) : null}
@@ -284,7 +284,7 @@ export function AdminUserDetail({
                       title. At display size it was the largest type in the
                       console and read as one.
                     */}
-                    <h1 className="min-w-0 text-base font-semibold break-words text-zinc-950">
+                    <h1 className="min-w-0 text-base font-semibold break-words text-foreground">
                       {data.user.displayName}
                     </h1>
                     {data.user.userId === currentUserId ? (
@@ -294,7 +294,7 @@ export function AdminUserDetail({
                       {assignedRole?.name ?? "User"}
                     </Badge>
                   </div>
-                  <p className="mt-1 text-sm break-all text-zinc-500">
+                  <p className="mt-1 text-sm break-all text-muted-foreground">
                     {data.user.email ?? "No email address"}
                   </p>
                 </div>
@@ -313,7 +313,7 @@ export function AdminUserDetail({
                   : "Onboarding incomplete"}
               </Badge>
             </div>
-            <div className="grid border-t border-zinc-200/80 bg-zinc-50/50 sm:grid-cols-3 sm:divide-x sm:divide-zinc-200/80">
+            <div className="grid border-t border-border bg-muted/30 sm:grid-cols-3 sm:divide-x sm:divide-border/80">
               {[
                 {
                   icon: CalendarDays,
@@ -334,19 +334,19 @@ export function AdminUserDetail({
                 },
               ].map(({ icon: Icon, label, value }) => (
                 <div
-                  className="flex items-center gap-3 border-b border-zinc-200/80 px-5 py-3 last:border-b-0 sm:border-b-0"
+                  className="flex items-center gap-3 border-b border-border px-5 py-3 last:border-b-0 sm:border-b-0"
                   key={label}
                 >
                   <Icon
                     aria-hidden="true"
-                    className="shrink-0 text-zinc-400"
+                    className="shrink-0 text-muted-foreground/80"
                     size={15}
                   />
                   <div className="min-w-0">
-                    <p className="text-[10px] font-medium tracking-wide text-zinc-400 uppercase">
+                    <p className="text-[10px] font-medium tracking-wide text-muted-foreground/80 uppercase">
                       {label}
                     </p>
-                    <p className="mt-0.5 truncate text-xs font-medium text-zinc-700">
+                    <p className="mt-0.5 truncate text-xs font-medium text-foreground/80">
                       {value}
                     </p>
                   </div>
@@ -408,7 +408,7 @@ export function AdminUserDetail({
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="mb-4 text-3xl font-semibold tracking-tight text-zinc-950 tabular-nums">
+                      <p className="mb-4 text-3xl font-semibold tracking-tight text-foreground tabular-nums">
                         {progress.percent}% complete
                       </p>
                       <DegreeProgressBar compact progress={progress} />
@@ -485,7 +485,7 @@ export function AdminUserDetail({
                       icon={
                         <History
                           aria-hidden="true"
-                          className="mt-0.5 text-brand-600"
+                          className="mt-0.5 text-primary"
                           size={17}
                         />
                       }
@@ -501,19 +501,19 @@ export function AdminUserDetail({
                             {index < milestones.length - 1 ? (
                               <span
                                 aria-hidden="true"
-                                className="absolute top-4 bottom-0 left-[5px] w-px bg-zinc-200"
+                                className="absolute top-4 bottom-0 left-[5px] w-px bg-accent"
                               />
                             ) : null}
-                            <span className="relative mt-1 size-2.5 rounded-full border-2 border-white bg-brand-500 ring-1 ring-brand-200" />
+                            <span className="relative mt-1 size-2.5 rounded-full border-2 border-white bg-primary ring-1 ring-primary/25" />
                             <div className="min-w-0">
-                              <p className="text-xs font-semibold text-zinc-900">
+                              <p className="text-xs font-semibold text-foreground">
                                 {milestone.label}
                               </p>
-                              <p className="mt-0.5 text-[11px] text-zinc-500">
+                              <p className="mt-0.5 text-[11px] text-muted-foreground">
                                 {milestone.detail}
                               </p>
                               <time
-                                className="mt-1 block text-[10px] text-zinc-400 tabular-nums"
+                                className="mt-1 block text-[10px] text-muted-foreground/80 tabular-nums"
                                 dateTime={milestone.date}
                               >
                                 {formatDate(milestone.date)}
@@ -547,7 +547,7 @@ export function AdminUserDetail({
           <TabsContent className="mt-0" value="courses">
             <DataTableShell
               footer={
-                <p className="text-xs text-zinc-500 tabular-nums">
+                <p className="text-xs text-muted-foreground tabular-nums">
                   {trackedCourses.toLocaleString("en-AU")} unique{" "}
                   {trackedCourses === 1 ? "course" : "courses"}
                 </p>
@@ -593,14 +593,14 @@ export function AdminUserDetail({
                       <TableRow key={course.id}>
                         <TableCell>
                           <div className="flex min-w-0 items-center gap-3">
-                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 font-mono text-[10px] font-bold text-brand-700">
+                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 font-mono text-[10px] font-bold text-primary">
                               {course.code.slice(0, 2)}
                             </span>
                             <span className="min-w-0">
-                              <span className="block font-mono text-xs font-semibold text-zinc-950">
+                              <span className="block font-mono text-xs font-semibold text-foreground">
                                 {course.code}
                               </span>
-                              <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
+                              <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                                 {course.title}
                               </span>
                             </span>
@@ -609,16 +609,16 @@ export function AdminUserDetail({
                         <TableCell>
                           <Badge tone={status.tone}>{status.label}</Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-zinc-600">
+                        <TableCell className="text-xs text-muted-foreground">
                           {formatTerm(course)}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-zinc-600 tabular-nums">
+                        <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
                           {course.units}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-zinc-600 tabular-nums">
+                        <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
                           {course.mark ?? "Not recorded"}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-zinc-500 tabular-nums">
+                        <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
                           {formatDate(course.updatedAt)}
                         </TableCell>
                       </TableRow>

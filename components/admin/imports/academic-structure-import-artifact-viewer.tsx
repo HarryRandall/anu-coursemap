@@ -74,10 +74,14 @@ function PersistenceDecision({ value }: { value: unknown }) {
 
   return (
     <div className="space-y-4 p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
         <div>
-          <p className="text-xs font-medium text-zinc-500">Database action</p>
-          <p className="mt-1 text-sm font-semibold text-zinc-950">{summary}</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Database action
+          </p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {summary}
+          </p>
         </div>
         <Badge tone={changeKind === "unchanged" ? "neutral" : "warning"}>
           {readable(changeKind)}
@@ -85,26 +89,26 @@ function PersistenceDecision({ value }: { value: unknown }) {
       </div>
       <dl className="grid gap-3 text-xs sm:grid-cols-3">
         <div>
-          <dt className="text-zinc-500">Compared snapshot</dt>
-          <dd className="mt-1 font-mono text-zinc-800">
+          <dt className="text-muted-foreground">Compared snapshot</dt>
+          <dd className="mt-1 font-mono text-foreground/90">
             {String(value.comparedSnapshotId ?? "None")}
           </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Candidate snapshot</dt>
-          <dd className="mt-1 font-mono text-zinc-800">
+          <dt className="text-muted-foreground">Candidate snapshot</dt>
+          <dd className="mt-1 font-mono text-foreground/90">
             {String(value.candidateSnapshotId ?? "None")}
           </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Manual review</dt>
-          <dd className="mt-1 text-zinc-800">
+          <dt className="text-muted-foreground">Manual review</dt>
+          <dd className="mt-1 text-foreground/90">
             {value.requiresManualReview === false ? "Not required" : "Required"}
           </dd>
         </div>
       </dl>
-      <details className="group rounded-lg border border-zinc-200 bg-white">
-        <summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-medium text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+      <details className="group rounded-lg border border-border bg-card">
+        <summary className="min-h-11 cursor-pointer px-4 py-3 text-xs font-medium text-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
           Complete persistence record
         </summary>
         <JsonCode label="Complete persistence decision" value={value} />
@@ -125,8 +129,8 @@ function ArtifactContent({
 
   if (artifact.kind === "database_projection" && parsed !== null) {
     return (
-      <div className="space-y-4 bg-zinc-50/40 p-4 sm:p-5">
-        <p className="text-xs leading-5 text-zinc-600">
+      <div className="space-y-4 bg-muted/30 p-4 sm:p-5">
+        <p className="text-xs leading-5 text-muted-foreground">
           These are the destination tables and row shapes prepared by the
           worker. Angle-bracketed values are identifiers assigned when the
           candidate is saved.
@@ -152,7 +156,7 @@ function ArtifactContent({
   return (
     <pre
       aria-label={`${labels[artifact.kind] ?? artifact.kind} content`}
-      className="max-h-[70vh] overflow-auto border-t border-zinc-200 bg-zinc-50/60 px-5 py-4 font-mono text-xs leading-5 whitespace-pre text-zinc-700 outline-none selection:bg-brand-100 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-inset"
+      className="max-h-[70vh] overflow-auto border-t border-border bg-muted/30 px-5 py-4 font-mono text-xs leading-5 whitespace-pre text-foreground/80 outline-none selection:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       tabIndex={0}
     >
       <code>{content}</code>
@@ -255,13 +259,16 @@ export function AcademicStructureImportArtifactViewer({
 
   if (ordered.length === 0) {
     return (
-      <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-zinc-300 bg-white px-6 text-center">
+      <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-input bg-card px-6 text-center">
         <div>
-          <FileCode2 aria-hidden="true" className="mx-auto text-zinc-300" />
-          <p className="mt-2 text-sm font-medium text-zinc-700">
+          <FileCode2
+            aria-hidden="true"
+            className="mx-auto text-muted-foreground/60"
+          />
+          <p className="mt-2 text-sm font-medium text-foreground/80">
             No artefacts saved yet
           </p>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             Artefacts appear as the worker completes each stage.
           </p>
         </div>
@@ -300,8 +307,8 @@ export function AcademicStructureImportArtifactViewer({
       </div>
       {selected && selectedGroup ? (
         <TabsContent key={selectedGroup.kind} value={selectedGroup.kind}>
-          <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-            <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3 text-xs text-zinc-500">
+          <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+            <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3 text-xs text-muted-foreground">
               {selectedGroup.attempts.length > 1 ? (
                 <Select
                   aria-label={`Choose ${labels[selected.kind] ?? selected.kind} attempt`}
@@ -341,7 +348,7 @@ export function AcademicStructureImportArtifactViewer({
                 <AlertDescription>{errors[selected.id]}</AlertDescription>
               </Alert>
             ) : loading.includes(selected.id) && !content[selected.id] ? (
-              <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-zinc-500">
+              <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
                 <LoaderCircle
                   aria-hidden="true"
                   className="animate-spin motion-reduce:animate-none"

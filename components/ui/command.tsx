@@ -13,7 +13,7 @@ export function Command({
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "flex min-w-0 flex-col overflow-hidden bg-white text-zinc-900",
+        "flex min-w-0 flex-col overflow-hidden bg-card text-foreground",
         className,
       )}
       {...props}
@@ -32,15 +32,18 @@ export function CommandInput({
     <div
       data-slot="command-input-wrapper"
       className={cn(
-        "flex items-center gap-3 border-b border-zinc-100 px-4",
+        "flex items-center gap-3 border-b border-border/60 px-4",
         wrapperClassName,
       )}
     >
-      <Search className="size-4 shrink-0 text-zinc-400" aria-hidden="true" />
+      <Search
+        className="size-4 shrink-0 text-muted-foreground/80"
+        aria-hidden="true"
+      />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "h-12 w-full bg-transparent text-sm outline-none placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50",
+          "h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/80 disabled:cursor-not-allowed disabled:opacity-50",
           className,
         )}
         {...props}
@@ -72,7 +75,10 @@ export function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className={cn("py-8 text-center text-sm text-zinc-500", className)}
+      className={cn(
+        "py-8 text-center text-sm text-muted-foreground",
+        className,
+      )}
       {...props}
     />
   );
@@ -86,7 +92,7 @@ export function CommandGroup({
     <CommandPrimitive.Group
       data-slot="command-group"
       className={cn(
-        "overflow-hidden text-zinc-900 **:[[cmdk-group-heading]]:px-2.5 **:[[cmdk-group-heading]]:py-2 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wide **:[[cmdk-group-heading]]:text-zinc-400 **:[[cmdk-group-heading]]:uppercase",
+        "overflow-hidden text-foreground **:[[cmdk-group-heading]]:px-2.5 **:[[cmdk-group-heading]]:py-2 **:[[cmdk-group-heading]]:text-[11px] **:[[cmdk-group-heading]]:font-semibold **:[[cmdk-group-heading]]:tracking-wide **:[[cmdk-group-heading]]:text-muted-foreground/80 **:[[cmdk-group-heading]]:uppercase",
         className,
       )}
       {...props}
@@ -102,7 +108,7 @@ export function CommandItem({
     <CommandPrimitive.Item
       data-slot="command-item"
       className={cn(
-        "group/command-item relative flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-zinc-100 data-[selected=true]:text-zinc-950",
+        "group/command-item relative flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm outline-none select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 data-[selected=true]:bg-accent data-[selected=true]:text-foreground",
         className,
       )}
       {...props}
@@ -117,7 +123,7 @@ export function CommandSeparator({
   return (
     <CommandPrimitive.Separator
       data-slot="command-separator"
-      className={cn("-mx-1 h-px bg-zinc-100", className)}
+      className={cn("-mx-1 h-px bg-muted", className)}
       {...props}
     />
   );
@@ -131,7 +137,7 @@ export function CommandShortcut({
     <span
       data-slot="command-shortcut"
       className={cn(
-        "ml-auto shrink-0 text-xs text-zinc-400 group-data-[selected=true]/command-item:text-zinc-600",
+        "ml-auto shrink-0 text-xs text-muted-foreground/80 group-data-[selected=true]/command-item:text-muted-foreground",
         className,
       )}
       {...props}

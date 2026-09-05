@@ -23,14 +23,14 @@ export function DegreeProgressBar({
         className={cn(
           "flex overflow-hidden rounded-full",
           compact ? "h-2" : "h-2.5",
-          dark ? "bg-white/15" : "bg-zinc-200/80",
+          dark ? "bg-card/80" : "bg-accent/80",
         )}
         aria-label={`${progress.completed} units completed, ${progress.planned} units planned and ${progress.remaining} units still to plan`}
       >
         <span
           className={cn(
             "transition-[width] duration-300 motion-reduce:transition-none",
-            dark ? "bg-brand-400" : "bg-brand-600",
+            dark ? "bg-brand-400" : "bg-primary",
           )}
           style={{ width: `${completedWidth}%` }}
         />
@@ -49,7 +49,7 @@ export function DegreeProgressBar({
           [
             "Completed",
             progress.completed,
-            dark ? "bg-brand-400" : "bg-brand-600",
+            dark ? "bg-brand-400" : "bg-primary",
           ],
           [
             "In your plan",
@@ -59,14 +59,14 @@ export function DegreeProgressBar({
           [
             "Still to plan",
             progress.remaining,
-            dark ? "bg-white/25" : "bg-zinc-300",
+            dark ? "bg-card/80" : "bg-zinc-300",
           ],
         ].map(([label, value, dot]) => (
           <div key={label}>
             <dt
               className={cn(
                 "flex items-center gap-1.5 text-[10px] font-medium sm:text-[11px]",
-                dark ? "text-zinc-400" : "text-zinc-500",
+                dark ? "text-muted-foreground/80" : "text-muted-foreground",
               )}
             >
               <span
@@ -79,14 +79,14 @@ export function DegreeProgressBar({
               className={cn(
                 "mt-0.5 font-bold tracking-tight tabular-nums",
                 compact ? "text-sm" : "text-lg sm:text-xl",
-                dark ? "text-white" : "text-zinc-900",
+                dark ? "text-white" : "text-foreground",
               )}
             >
               {value}
               <span
                 className={cn(
                   "ml-1 text-[11px] font-medium",
-                  dark ? "text-zinc-500" : "text-zinc-400",
+                  dark ? "text-muted-foreground" : "text-muted-foreground/80",
                 )}
               >
                 units
@@ -99,7 +99,7 @@ export function DegreeProgressBar({
         <p
           className={cn(
             "mt-2 text-[11px] leading-relaxed",
-            dark ? "text-zinc-400" : "text-zinc-500",
+            dark ? "text-muted-foreground/80" : "text-muted-foreground",
           )}
         >
           Nothing is mapped yet. The bar stays empty until you add a course or

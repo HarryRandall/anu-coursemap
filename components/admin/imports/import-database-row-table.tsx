@@ -12,16 +12,16 @@ import { normaliseImportDatabaseTable } from "@/lib/coursemap/import-database-ta
 
 function DatabaseCellValue({ value }: { value: unknown }) {
   if (value === undefined) {
-    return <span className="text-zinc-400">Not present</span>;
+    return <span className="text-muted-foreground/80">Not present</span>;
   }
   if (value === null) {
-    return <span className="font-mono text-zinc-400">null</span>;
+    return <span className="font-mono text-muted-foreground/80">null</span>;
   }
   if (typeof value === "object") {
     const serialised = JSON.stringify(value);
     return (
       <pre
-        className="block h-8 max-w-[28rem] min-w-48 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap text-zinc-700"
+        className="block h-8 max-w-[28rem] min-w-48 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap text-foreground/80"
         title={serialised}
       >
         {serialised}
@@ -37,7 +37,7 @@ function DatabaseCellValue({ value }: { value: unknown }) {
         {value}
       </span>
     ) : (
-      <span className="font-mono text-zinc-400">&quot;&quot;</span>
+      <span className="font-mono text-muted-foreground/80">&quot;&quot;</span>
     );
   }
   return (

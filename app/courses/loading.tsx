@@ -11,10 +11,10 @@ export default function CoursesLoading() {
       >
         <span className="sr-only">Loading the course catalogue</span>
         <Card className="overflow-hidden">
-          <div className="border-b border-zinc-100 px-4 py-3">
+          <div className="border-b border-border/60 px-4 py-3">
             <Skeleton className="h-3 w-56 max-w-full" />
           </div>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-border/60">
             {Array.from({ length: 8 }, (_, index) => (
               <div key={index} className="flex items-center gap-3 px-4 py-3">
                 <Skeleton className="size-8 shrink-0 rounded-md" />

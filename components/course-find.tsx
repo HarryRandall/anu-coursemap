@@ -7,10 +7,12 @@ import {
   BookOpen,
   CalendarDays,
   GraduationCap,
+  Import,
   ListChecks,
   LoaderCircle,
   Map,
   Search,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -90,7 +92,40 @@ const defaultOptions: DefaultOption[] = [
   },
 ];
 
-export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
+const adminDefaultOptions: DefaultOption[] = [
+  {
+    href: "/admin/courses",
+    icon: BookOpen,
+    label: "Course Catalogue",
+    scope: "Academic data",
+  },
+  {
+    href: "/admin/courses/imports",
+    icon: Import,
+    label: "Course Imports",
+    scope: "Academic data",
+  },
+  {
+    href: "/admin/programmes",
+    icon: GraduationCap,
+    label: "Programmes",
+    scope: "Academic data",
+  },
+  {
+    href: "/admin/users",
+    icon: UsersRound,
+    label: "Users",
+    scope: "Access",
+  },
+];
+
+export function CourseFind({
+  admin = false,
+  onNavigate,
+}: {
+  admin?: boolean;
+  onNavigate: () => void;
+}) {
   const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -238,8 +273,9 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
   };
 
   const hasQuery = Boolean(query.trim());
+  const shortcuts = admin ? adminDefaultOptions : defaultOptions;
   const visibleRows = !hasQuery
-    ? defaultOptions.length
+    ? shortcuts.length
     : loading && results.length === 0
       ? 3
       : results.length > 0
@@ -268,11 +304,13 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={showFind}
-        className="bg-card text-muted-foreground ring-border hover:text-foreground hover:ring-ring/40 mt-5 flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg px-3 shadow-xs ring-1 transition-colors ring-inset"
+        className="mt-5 flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg bg-card px-3 text-muted-foreground shadow-xs ring-1 ring-border transition-colors ring-inset group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 hover:text-foreground hover:ring-ring/40"
       >
         <Search size={16} strokeWidth={1.8} aria-hidden="true" />
-        <span className="flex-1 text-left text-[13px]">Find</span>
-        <kbd className="grid size-6 place-items-center rounded-md border border-zinc-200 bg-zinc-50 text-[11px] font-medium text-zinc-500 shadow-xs">
+        <span className="flex-1 text-left text-[13px] group-data-[collapsible=icon]:hidden">
+          Find
+        </span>
+        <kbd className="grid size-6 place-items-center rounded-md border border-border bg-muted text-[11px] font-medium text-muted-foreground shadow-xs group-data-[collapsible=icon]:hidden">
           F
         </kbd>
       </button>
@@ -309,16 +347,16 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
 
               <div
                 aria-hidden="true"
-                className="find-dialog-background bg-popover ring-border pointer-events-none absolute inset-0 rounded-xl shadow-lg ring-1"
+                className="find-dialog-background pointer-events-none absolute inset-0 rounded-xl bg-popover shadow-lg ring-1 ring-border"
               />
 
               <div
                 aria-hidden="true"
-                className="find-closing-field bg-popover text-muted-foreground ring-border pointer-events-none absolute top-0 left-0 z-10 h-10 items-center gap-2 rounded-lg px-3 shadow-xs ring-1 ring-inset"
+                className="find-closing-field pointer-events-none absolute top-0 left-0 z-10 h-10 items-center gap-2 rounded-lg bg-popover px-3 text-muted-foreground shadow-xs ring-1 ring-border ring-inset"
               >
                 <Search size={16} strokeWidth={1.8} />
                 <span className="flex-1 text-[13px]">Find</span>
-                <kbd className="border-border bg-muted text-muted-foreground grid size-6 place-items-center rounded-md border text-[11px] font-medium shadow-xs">
+                <kbd className="grid size-6 place-items-center rounded-md border border-border bg-muted text-[11px] font-medium text-muted-foreground shadow-xs">
                   F
                 </kbd>
               </div>
@@ -334,7 +372,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                     size={16}
                     strokeWidth={1.8}
                     aria-hidden="true"
-                    className="text-muted-foreground shrink-0"
+                    className="shrink-0 text-muted-foreground"
                   />
                   <Command.Input
                     ref={inputRef}
@@ -350,28 +388,28 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                     aria-label="Find courses"
                     autoComplete="off"
                     spellCheck={false}
-                    className="text-foreground placeholder:text-muted-foreground h-10 min-w-0 flex-1 bg-transparent text-[13px] outline-none"
+                    className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
                   />
                   {loading && results.length > 0 && (
                     <LoaderCircle
                       size={13}
                       aria-label="Updating results"
-                      className="text-muted-foreground animate-spin"
+                      className="animate-spin text-muted-foreground"
                     />
                   )}
-                  <kbd className="border-border bg-muted text-muted-foreground rounded-md border px-1.5 py-0.5 text-[9px] font-medium shadow-xs">
+                  <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground shadow-xs">
                     Esc
                   </kbd>
                 </div>
 
-                <div className="bg-border h-px" />
+                <div className="h-px bg-border" />
 
                 <Command.List
                   label="Find results"
                   className="find-command-list h-[calc(100%-41px)] overflow-y-auto p-1"
                 >
                   {!hasQuery ? (
-                    defaultOptions.map((option) => (
+                    shortcuts.map((option) => (
                       <DefaultOptionItem
                         key={option.href}
                         option={option}
@@ -396,7 +434,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                             `/courses/${course.code}?year=${course.year}`,
                           )
                         }
-                        className="text-foreground/80 data-[selected=true]:bg-muted data-[selected=true]:text-foreground group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 outline-none"
+                        className="group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-foreground/80 outline-none data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
                       >
                         <CourseToken
                           code={course.code}
@@ -408,7 +446,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                           <span className="block truncate text-xs font-medium">
                             {course.name}
                           </span>
-                          <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
+                          <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
                             {course.code} · {course.units} units
                           </span>
                         </span>
@@ -437,16 +475,16 @@ function DefaultOptionItem({
     <Command.Item
       value={option.label}
       onSelect={onSelect}
-      className="flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-zinc-700 outline-none data-[selected=true]:bg-zinc-100 data-[selected=true]:text-zinc-950"
+      className="flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-foreground/80 outline-none data-[selected=true]:bg-accent data-[selected=true]:text-foreground"
     >
-      <span className="grid size-6 shrink-0 place-items-center text-zinc-500">
+      <span className="grid size-6 shrink-0 place-items-center text-muted-foreground">
         <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1 leading-tight">
         <span className="block truncate text-xs font-medium">
           {option.label}
         </span>
-        <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
+        <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
           {option.scope}
         </span>
       </span>
@@ -464,10 +502,10 @@ function LoadingRows() {
           aria-hidden="true"
           className="flex h-11 animate-pulse items-center gap-2.5 px-2"
         >
-          <span className="size-6 rounded-md bg-zinc-100" />
+          <span className="size-6 rounded-md bg-muted" />
           <span className="min-w-0 flex-1 space-y-1.5">
-            <span className="block h-2.5 w-3/5 rounded-full bg-zinc-100" />
-            <span className="block h-2 w-2/5 rounded-full bg-zinc-100" />
+            <span className="block h-2.5 w-3/5 rounded-full bg-muted" />
+            <span className="block h-2 w-2/5 rounded-full bg-muted" />
           </span>
         </div>
       ))}
@@ -485,7 +523,7 @@ function FindMessage({
   return (
     <p
       role={alert ? "alert" : "status"}
-      className="text-muted-foreground grid h-11 place-items-center px-3 text-center text-[11px]"
+      className="grid h-11 place-items-center px-3 text-center text-[11px] text-muted-foreground"
     >
       {message}
     </p>

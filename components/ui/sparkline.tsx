@@ -50,7 +50,7 @@ function ChartTooltip({
 }) {
   if (!active || payload?.[0]?.value == null) return null;
   return (
-    <div className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium text-zinc-800 tabular-nums shadow-xs">
+    <div className="rounded-md border border-border bg-card px-2 py-1 text-[11px] font-medium text-foreground/90 tabular-nums shadow-xs">
       {payload[0].value.toLocaleString("en-AU")}
     </div>
   );

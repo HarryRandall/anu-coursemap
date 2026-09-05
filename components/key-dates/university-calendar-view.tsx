@@ -134,10 +134,10 @@ export function UniversityCalendarView({
     <div className="mx-auto max-w-4xl">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
             {year}
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             {allEvents.length} key dates
           </p>
         </div>
@@ -152,8 +152,8 @@ export function UniversityCalendarView({
                 className={cn(
                   "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium",
                   availableYear === year
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900",
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >
                 {availableYear}
@@ -171,20 +171,20 @@ export function UniversityCalendarView({
             aria-labelledby={`month-heading-${month.key}`}
             className="scroll-mt-4"
           >
-            <div className="sticky top-0 z-10 flex items-baseline justify-between gap-3 border-b border-zinc-200 bg-zinc-50/95 py-2.5 backdrop-blur-sm">
+            <div className="sticky top-0 z-10 flex items-baseline justify-between gap-3 border-b border-border bg-muted/30 py-2.5 backdrop-blur-sm">
               <h3
                 id={`month-heading-${month.key}`}
-                className="text-sm font-semibold text-zinc-900"
+                className="text-sm font-semibold text-foreground"
               >
                 {month.label}
               </h3>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-muted-foreground">
                 {month.events.length}{" "}
                 {month.events.length === 1 ? "date" : "dates"}
               </span>
             </div>
 
-            <ol className="divide-y divide-zinc-100">
+            <ol className="divide-y divide-border/60">
               {month.events.map((event) => {
                 const {
                   day,
@@ -202,7 +202,7 @@ export function UniversityCalendarView({
                       dateTime={event.date}
                       className={cn(
                         "text-xs font-semibold tabular-nums",
-                        isToday ? "text-brand-700" : "text-zinc-500",
+                        isToday ? "text-primary" : "text-muted-foreground",
                       )}
                     >
                       {isToday ? (
@@ -220,7 +220,7 @@ export function UniversityCalendarView({
                     </time>
 
                     <div className="min-w-0">
-                      <p className="text-sm leading-snug font-medium text-zinc-900">
+                      <p className="text-sm leading-snug font-medium text-foreground">
                         {event.title}
                       </p>
                       <div className="mt-2 sm:hidden">
@@ -249,16 +249,18 @@ export function UniversityCalendarView({
           </Button>
         </div>
       ) : (
-        <p className="py-8 text-center text-xs text-zinc-400">End of {year}</p>
+        <p className="py-8 text-center text-xs text-muted-foreground/80">
+          End of {year}
+        </p>
       )}
 
-      <p className="border-t border-zinc-200 pt-4 text-xs text-zinc-500">
+      <p className="border-t border-border pt-4 text-xs text-muted-foreground">
         Source:{" "}
         <a
           href={sourceUrl}
           target="_blank"
           rel="noreferrer"
-          className="font-medium text-zinc-600 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900"
+          className="font-medium text-muted-foreground underline decoration-border underline-offset-2 hover:text-foreground"
         >
           ANU university calendar
           <ExternalLink size={11} aria-hidden="true" className="ml-1 inline" />

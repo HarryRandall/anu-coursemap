@@ -181,7 +181,7 @@ function WorkflowStatus({
         {statusLabel(record.importStatus)}
       </Badge>
       {details.length > 0 || record.latestImport ? (
-        <span className="block text-xs text-zinc-500">
+        <span className="block text-xs text-muted-foreground">
           {details.join(" · ")}
           {record.latestImport ? (
             <>
@@ -434,7 +434,7 @@ export function StructureDirectoryList({
             </ButtonLink>
             {data.year.sourceAvailability === "unavailable" ? (
               <span
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300"
                 title={
                   data.year.availabilityNote ??
                   `ANU lists no ${labels.singular} directory for ${data.year.year}.`
@@ -446,7 +446,7 @@ export function StructureDirectoryList({
             ) : null}
             {data.activeRun ? (
               <Link
-                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-900 hover:bg-brand-100"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15"
                 href={importsPath}
               >
                 <LoaderCircle
@@ -603,9 +603,7 @@ export function StructureDirectoryList({
                 {data.records.map((record) => (
                   <TableRow
                     className={
-                      selectedSet.has(record.code)
-                        ? "bg-brand-50/50"
-                        : undefined
+                      selectedSet.has(record.code) ? "bg-primary/5" : undefined
                     }
                     key={record.id}
                   >
@@ -622,22 +620,22 @@ export function StructureDirectoryList({
                       </TableCell>
                     )}
                     <TableCell>
-                      <span className="block font-medium text-zinc-950">
+                      <span className="block font-medium text-foreground">
                         {record.title}
                       </span>
-                      <span className="mt-0.5 block font-mono text-xs text-zinc-500">
+                      <span className="mt-0.5 block font-mono text-xs text-muted-foreground">
                         {record.code}
                       </span>
                     </TableCell>
                     {data.allYears ? (
-                      <TableCell className="text-sm text-zinc-600 tabular-nums">
+                      <TableCell className="text-sm text-muted-foreground tabular-nums">
                         {record.year}
                       </TableCell>
                     ) : null}
                     <TableCell>
                       <WorkflowStatus record={record} />
                     </TableCell>
-                    <TableCell className="text-xs text-zinc-600">
+                    <TableCell className="text-xs text-muted-foreground">
                       {[record.academicCareer, structureDetails(record)]
                         .filter((value) => value !== "-" && value !== null)
                         .join(" · ") || "-"}
@@ -695,7 +693,7 @@ export function StructureDirectoryList({
                           <Tooltip content="Open ANU source">
                             <a
                               aria-label={`Open ${record.code} at ANU`}
-                              className="inline-grid size-8 cursor-pointer place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                              className="inline-grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground/80 hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                               href={record.sourceUrl}
                               rel="noreferrer"
                               target="_blank"

@@ -261,7 +261,7 @@ export function CoursePicker({
           openerRef.current?.focus();
         }}
       >
-        <DialogHeader className="border-b border-zinc-100 px-5 pt-5 pr-16 pb-4">
+        <DialogHeader className="border-b border-border/60 px-5 pt-5 pr-16 pb-4">
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>Find a course</DialogTitle>
             <Badge tone="brand" className="py-0.5">
@@ -275,7 +275,7 @@ export function CoursePicker({
           </DialogDescription>
           {term.id === "unscheduled" ? (
             <div className="flex max-w-xs items-center gap-3 pt-1">
-              <span className="shrink-0 text-xs font-medium text-zinc-600">
+              <span className="shrink-0 text-xs font-medium text-muted-foreground">
                 Course year
               </span>
               <Select
@@ -355,7 +355,7 @@ export function CoursePicker({
               <section
                 aria-label="Course results"
                 className={cn(
-                  "h-[clamp(12rem,calc(100dvh-12rem),28rem)] min-h-0 border-zinc-100 md:border-r",
+                  "h-[clamp(12rem,calc(100dvh-12rem),28rem)] min-h-0 border-border/60 md:border-r",
                   mobilePreviewOpen
                     ? "hidden md:flex md:flex-col"
                     : "flex flex-col",
@@ -388,7 +388,7 @@ export function CoursePicker({
                                 value={`${course.code} ${course.name} ${course.school}`}
                                 data-previewed={selectedCode === course.code}
                                 onSelect={() => previewCourse(course.code)}
-                                className="data-[previewed=true]:bg-brand-50 data-[previewed=true]:ring-1 data-[previewed=true]:ring-brand-100 data-[previewed=true]:ring-inset"
+                                className="data-[previewed=true]:bg-primary/10 data-[previewed=true]:ring-1 data-[previewed=true]:ring-primary/20 data-[previewed=true]:ring-inset"
                               >
                                 <CourseToken
                                   code={course.code}
@@ -396,10 +396,10 @@ export function CoursePicker({
                                   size="sm"
                                 />
                                 <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-[13px] font-medium text-zinc-900">
+                                  <span className="block truncate text-[13px] font-medium text-foreground">
                                     {course.name}
                                   </span>
-                                  <span className="block truncate text-[11px] text-zinc-500">
+                                  <span className="block truncate text-[11px] text-muted-foreground">
                                     {course.code} · {course.school}
                                   </span>
                                 </span>
@@ -429,7 +429,7 @@ export function CoursePicker({
 
                 {hasNextPage && !failed ? (
                   <div
-                    className="shrink-0 border-t border-zinc-100 p-2"
+                    className="shrink-0 border-t border-border/60 p-2"
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     <Button
@@ -453,7 +453,7 @@ export function CoursePicker({
 
                 {firstPageFailed || (failed && page > 1) ? (
                   <div
-                    className="shrink-0 border-t border-zinc-100 p-2"
+                    className="shrink-0 border-t border-border/60 p-2"
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     <Button
@@ -515,7 +515,7 @@ function CoursePreview({
     <aside
       aria-label="Selected course details"
       className={cn(
-        "h-[clamp(12rem,calc(100dvh-12rem),28rem)] min-h-0 bg-zinc-50/50",
+        "h-[clamp(12rem,calc(100dvh-12rem),28rem)] min-h-0 bg-muted/30",
         course && mobileOpen ? "flex flex-col" : "hidden md:flex md:flex-col",
       )}
     >
@@ -526,7 +526,7 @@ function CoursePreview({
               ref={backButtonRef}
               type="button"
               onClick={onBack}
-              className="mb-2 -ml-2 inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-2 text-xs font-semibold text-zinc-500 hover:text-zinc-900 md:hidden"
+              className="mb-2 -ml-2 inline-flex min-h-11 cursor-pointer items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground md:hidden"
             >
               <ArrowLeft size={14} aria-hidden="true" /> Back to results
             </button>
@@ -537,57 +537,57 @@ function CoursePreview({
                 size="lg"
               />
               <div className="min-w-0 flex-1">
-                <p className="font-mono text-[11px] font-semibold text-zinc-500">
+                <p className="font-mono text-[11px] font-semibold text-muted-foreground">
                   {course.code}
                 </p>
-                <h3 className="mt-0.5 text-lg leading-tight font-bold tracking-tight text-zinc-950">
+                <h3 className="mt-0.5 text-lg leading-tight font-bold tracking-tight text-foreground">
                   {course.name}
                 </h3>
               </div>
             </div>
 
-            <p className="mt-4 text-[13px] leading-5 text-zinc-600">
+            <p className="mt-4 text-[13px] leading-5 text-muted-foreground">
               {course.description || "No course description is available yet."}
             </p>
 
-            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-zinc-200 py-4 text-[12px]">
+            <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border py-4 text-[12px]">
               <div>
-                <dt className="text-zinc-400">Units</dt>
-                <dd className="mt-0.5 font-medium text-zinc-800">
+                <dt className="text-muted-foreground/80">Units</dt>
+                <dd className="mt-0.5 font-medium text-foreground/90">
                   {course.units}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-400">Level</dt>
-                <dd className="mt-0.5 font-medium text-zinc-800">
+                <dt className="text-muted-foreground/80">Level</dt>
+                <dd className="mt-0.5 font-medium text-foreground/90">
                   {course.level / 1000}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-400">Offered</dt>
-                <dd className="mt-0.5 font-medium text-zinc-800">
+                <dt className="text-muted-foreground/80">Offered</dt>
+                <dd className="mt-0.5 font-medium text-foreground/90">
                   {course.sessions.join(", ") || "Not listed"}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-400">Convener</dt>
-                <dd className="mt-0.5 truncate font-medium text-zinc-800">
+                <dt className="text-muted-foreground/80">Convener</dt>
+                <dd className="mt-0.5 truncate font-medium text-foreground/90">
                   {course.convener || "Not listed"}
                 </dd>
               </div>
             </dl>
 
             <div className="mt-4">
-              <p className="text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+              <p className="text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
                 Prerequisites
               </p>
-              <p className="mt-1.5 text-[12px] leading-5 text-zinc-600">
+              <p className="mt-1.5 text-[12px] leading-5 text-muted-foreground">
                 {course.prerequisiteText || "No prerequisite listed."}
               </p>
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-end">
+          <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-end">
             <ButtonLink
               href={`/courses/${course.code}?year=${course.year}`}
               variant="secondary"

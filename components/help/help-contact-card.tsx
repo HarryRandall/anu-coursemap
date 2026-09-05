@@ -25,8 +25,8 @@ export function HelpContactCard() {
     <>
       <Card className="overflow-hidden lg:sticky lg:top-20 lg:self-start">
         <CardHeader title="Contact us" />
-        <CardContent className="border-t border-zinc-100 px-0 pb-0">
-          <div className="divide-y divide-zinc-100">
+        <CardContent className="border-t border-border/60 px-0 pb-0">
+          <div className="divide-y divide-border/60">
             {helpContactReasons.map((contact) => {
               const Icon =
                 reasonIcons[contact.id as keyof typeof reasonIcons] ?? Mail;
@@ -42,13 +42,13 @@ export function HelpContactCard() {
                   <Icon
                     size={17}
                     aria-hidden="true"
-                    className="mt-0.5 shrink-0 text-brand-600"
+                    className="mt-0.5 shrink-0 text-primary"
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-zinc-900">
+                    <span className="block text-[13px] font-semibold text-foreground">
                       {contact.label}
                     </span>
-                    <span className="mt-0.5 block text-xs leading-relaxed font-normal whitespace-normal text-zinc-500">
+                    <span className="mt-0.5 block text-xs leading-relaxed font-normal whitespace-normal text-muted-foreground">
                       {contact.description}
                     </span>
                   </span>

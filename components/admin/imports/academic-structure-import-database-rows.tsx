@@ -310,7 +310,7 @@ export function AcademicStructureImportDatabaseRows({
           {table.rows.length ? (
             <ImportDatabaseRowTable rows={table.rows} tableName={table.name} />
           ) : (
-            <p className="border-t border-zinc-200 px-5 py-4 text-xs text-zinc-500">
+            <p className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
               This candidate does not write a row to this table.
             </p>
           )}

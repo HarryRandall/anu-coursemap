@@ -93,10 +93,10 @@ function CollectionHeader({
   count: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
       <div>
-        <h2 className="text-sm font-semibold text-zinc-950">{children}</h2>
-        <p className="mt-1 text-xs text-zinc-500">
+        <h2 className="text-sm font-semibold text-foreground">{children}</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
           {count} {count === 1 ? "saved row" : "saved rows"}
         </p>
       </div>
@@ -143,7 +143,7 @@ function SummaryFieldsEditor({
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
       <CollectionHeader
         action={
           <Button onClick={addField} size="sm" variant="secondary">
@@ -183,7 +183,7 @@ function SummaryFieldsEditor({
 
           return (
             <div
-              className="rounded-lg border border-zinc-200 p-4"
+              className="rounded-lg border border-border p-4"
               key={`${field.position}-${field.fieldKey}`}
             >
               <div className="flex items-start gap-3">
@@ -227,9 +227,11 @@ function SummaryFieldsEditor({
                 </IconButton>
               </div>
 
-              <div className="mt-3 space-y-2 rounded-lg bg-zinc-50 p-3">
+              <div className="mt-3 space-y-2 rounded-lg bg-muted/50 p-3">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-medium text-zinc-700">Values</p>
+                  <p className="text-xs font-medium text-foreground/80">
+                    Values
+                  </p>
                   <Button
                     onClick={() =>
                       onProjectionChange({
@@ -329,7 +331,7 @@ function EvidenceEditor({
     });
 
   return (
-    <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+    <section className="overflow-hidden rounded-xl border border-border bg-card">
       <CollectionHeader
         action={
           <Button onClick={addEvidence} size="sm" variant="secondary">
@@ -351,7 +353,7 @@ function EvidenceEditor({
             });
           return (
             <div
-              className="rounded-lg border border-zinc-200 p-4"
+              className="rounded-lg border border-border p-4"
               key={`${evidence.position}-${index}`}
             >
               <div className="flex items-start gap-3">
@@ -447,8 +449,8 @@ function ProvenanceFields({
   onSourceTextChange: (value: string) => void;
 }) {
   return (
-    <details className="mt-3 border-t border-zinc-100 pt-3">
-      <summary className="cursor-pointer text-xs font-medium text-zinc-500 hover:text-zinc-800">
+    <details className="mt-3 border-t border-border/60 pt-3">
+      <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground/90">
         Source provenance
       </summary>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -597,13 +599,13 @@ function RequirementConditionEditor({
   const supportsLevels = ["level", "subject"].includes(condition.conditionKind);
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             Condition
           </p>
-          <p className="mt-1 truncate font-mono text-xs text-zinc-500">
+          <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
             {condition.key}
           </p>
         </div>
@@ -750,9 +752,11 @@ function RequirementConditionEditor({
 
       {condition.conditionKind === "course_list" ||
       condition.conditionKind === "structure_list" ? (
-        <div className="mt-4 rounded-lg bg-zinc-50 p-3">
+        <div className="mt-4 rounded-lg bg-muted/50 p-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-medium text-zinc-700">Allowed options</p>
+            <p className="text-xs font-medium text-foreground/80">
+              Allowed options
+            </p>
             <Button onClick={addOption} size="sm" variant="secondary">
               <Plus aria-hidden="true" size={13} /> Add option
             </Button>
@@ -919,16 +923,16 @@ function RequirementGroupEditor({
     <div
       className={
         depth === 0
-          ? "rounded-xl border border-zinc-200 bg-zinc-50 p-4 sm:p-5"
-          : "rounded-lg border border-zinc-200 bg-zinc-50/70 p-4"
+          ? "rounded-xl border border-border bg-muted/50 p-4 sm:p-5"
+          : "rounded-lg border border-border bg-muted/30 p-4"
       }
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             {depth === 0 ? "Root group" : "Nested group"}
           </p>
-          <p className="mt-1 truncate font-mono text-xs text-zinc-500">
+          <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
             {group.key}
           </p>
         </div>
@@ -1018,7 +1022,7 @@ function RequirementGroupEditor({
         sourceText={group.sourceText}
       />
 
-      <div className="mt-4 space-y-3 border-l-2 border-zinc-200 pl-3 sm:pl-4">
+      <div className="mt-4 space-y-3 border-l-2 border-border pl-3 sm:pl-4">
         {childGroups.map((child) => (
           <RequirementGroupEditor
             depth={depth + 1}
@@ -1037,7 +1041,7 @@ function RequirementGroupEditor({
           />
         ))}
         {childGroups.length === 0 && conditions.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-white px-4 py-5 text-sm text-zinc-500">
+          <p className="rounded-lg border border-dashed border-input bg-card px-4 py-5 text-sm text-muted-foreground">
             Add a condition or nested group before saving.
           </p>
         ) : null}
@@ -1125,19 +1129,19 @@ export function AcademicStructureManualSnapshotEditor({
 
   return (
     <form className="space-y-5" onSubmit={save}>
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-        <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
-          <h2 className="text-base font-semibold text-zinc-950">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="border-b border-border px-5 py-4 sm:px-6">
+          <h2 className="text-base font-semibold text-foreground">
             Edit draft snapshot
           </h2>
-          <p className="mt-1 text-xs leading-5 text-zinc-500">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             Saving creates an immutable manual draft based on snapshot{" "}
             {record.id}. It does not publish the structure.
           </p>
         </div>
         <div className="space-y-6 p-5 sm:p-6">
           <div>
-            <h3 className="text-sm font-semibold text-zinc-950">Identity</h3>
+            <h3 className="text-sm font-semibold text-foreground">Identity</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Field className="sm:col-span-2" label="Name">
                 {textField("title", { required: true })}
@@ -1182,8 +1186,8 @@ export function AcademicStructureManualSnapshotEditor({
             </div>
           </div>
 
-          <div className="border-t border-zinc-100 pt-6">
-            <h3 className="text-sm font-semibold text-zinc-950">
+          <div className="border-t border-border/60 pt-6">
+            <h3 className="text-sm font-semibold text-foreground">
               Admissions and combinations
             </h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -1263,7 +1267,7 @@ export function AcademicStructureManualSnapshotEditor({
             </div>
           </div>
 
-          <div className="grid gap-4 border-t border-zinc-100 pt-6 sm:grid-cols-2">
+          <div className="grid gap-4 border-t border-border/60 pt-6 sm:grid-cols-2">
             <Field className="sm:col-span-2" label="Introduction">
               {textField("introduction", { multiline: true })}
             </Field>
@@ -1279,7 +1283,7 @@ export function AcademicStructureManualSnapshotEditor({
         projection={projection}
       />
 
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
         <CollectionHeader
           action={
             <Button
@@ -1316,7 +1320,7 @@ export function AcademicStructureManualSnapshotEditor({
         <div className="space-y-3 p-5 sm:p-6">
           {projection.sections.map((section, index) => (
             <div
-              className="rounded-lg border border-zinc-200 p-4"
+              className="rounded-lg border border-border p-4"
               key={section.sectionKey}
             >
               <div className="flex items-start gap-3">
@@ -1424,7 +1428,7 @@ export function AcademicStructureManualSnapshotEditor({
         projection={projection}
       />
 
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
         <CollectionHeader
           action={
             <Button
@@ -1455,7 +1459,7 @@ export function AcademicStructureManualSnapshotEditor({
         <div className="space-y-3 p-5 sm:p-6">
           {projection.learningOutcomes.map((outcome, index) => (
             <div
-              className="rounded-lg border border-zinc-200 p-4"
+              className="rounded-lg border border-border p-4"
               key={`${outcome.position}-${index}`}
             >
               <div className="flex items-start gap-3">
@@ -1521,7 +1525,7 @@ export function AcademicStructureManualSnapshotEditor({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
         <CollectionHeader
           action={
             <Button
@@ -1568,7 +1572,7 @@ export function AcademicStructureManualSnapshotEditor({
               });
             return (
               <div
-                className="rounded-lg border border-zinc-200 p-4"
+                className="rounded-lg border border-border p-4"
                 key={`${fee.position}-${index}`}
               >
                 <div className="flex items-start gap-3">
@@ -1700,7 +1704,7 @@ export function AcademicStructureManualSnapshotEditor({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
         <CollectionHeader
           action={
             <Button
@@ -1745,7 +1749,7 @@ export function AcademicStructureManualSnapshotEditor({
               });
             return (
               <div
-                className="rounded-lg border border-zinc-200 p-4"
+                className="rounded-lg border border-border p-4"
                 key={`${relationship.position}-${index}`}
               >
                 <div className="flex items-start gap-3">
@@ -1837,7 +1841,7 @@ export function AcademicStructureManualSnapshotEditor({
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+      <section className="overflow-hidden rounded-xl border border-border bg-card">
         <CollectionHeader
           action={
             projection.requirementRootKey === null ? (
@@ -1893,14 +1897,14 @@ export function AcademicStructureManualSnapshotEditor({
               projection={projection}
             />
           ) : (
-            <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500">
+            <p className="rounded-lg border border-dashed border-input px-4 py-8 text-center text-sm text-muted-foreground">
               No structured requirement tree is saved.
             </p>
           )}
 
-          <div className="mt-5 border-t border-zinc-100 pt-5">
+          <div className="mt-5 border-t border-border/60 pt-5">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-zinc-950">
+              <h3 className="text-sm font-semibold text-foreground">
                 Preserved unmodelled wording
               </h3>
               <Button
@@ -1976,7 +1980,7 @@ export function AcademicStructureManualSnapshotEditor({
         </Alert>
       ) : null}
 
-      <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-zinc-200 bg-white/95 p-3 shadow-lg backdrop-blur">
+      <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-border bg-card/80 p-3 shadow-lg backdrop-blur">
         <Button disabled={saving} onClick={onCancel} variant="secondary">
           <X aria-hidden="true" size={15} /> Cancel
         </Button>
