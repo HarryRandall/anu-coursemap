@@ -97,7 +97,7 @@ export function FilterBar({
         </Button>
       </div>
 
-      <p className="shrink-0 text-sm text-tertiary md:pb-2.5">
+      <p className="text-tertiary shrink-0 text-sm md:pb-2.5">
         {resultCount} of {totalCount}
       </p>
     </div>
@@ -122,9 +122,9 @@ export function BulkActionBar({
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center gap-3 border-b border-secondary bg-brand-primary px-4 py-3"
+      className="bg-brand-primary flex flex-wrap items-center gap-3 border-b border-secondary px-4 py-3"
     >
-      <p className="text-sm font-semibold text-brand-secondary">
+      <p className="text-brand-secondary text-sm font-semibold">
         {count} course{count === 1 ? "" : "s"} selected
       </p>
 

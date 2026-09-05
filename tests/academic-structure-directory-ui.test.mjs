@@ -229,7 +229,7 @@ test("each structure kind has separate collection and detail routes", async () =
       "utf8",
     ),
     readFile(
-      new URL("../components/shell/sidebar.tsx", import.meta.url),
+      new URL("../components/shell/app-sidebar.tsx", import.meta.url),
       "utf8",
     ),
     readFile(

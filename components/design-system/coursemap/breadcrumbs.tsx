@@ -45,7 +45,7 @@ function buildSteps(items: Crumb[], maxVisible: number): Step[] {
 function Separator() {
   return (
     <li aria-hidden="true" className="flex items-center">
-      <ChevronRight className="size-4 text-fg-quaternary" />
+      <ChevronRight className="text-fg-quaternary size-4" />
     </li>
   );
 }

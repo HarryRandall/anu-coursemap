@@ -233,7 +233,7 @@ export function RichRowsTable({
         <li
           key={course.id}
           className={cx(
-            "flex flex-wrap items-center gap-4 px-4 py-4 transition duration-100 ease-linear first:rounded-t-xl last:rounded-b-xl hover:bg-primary_hover md:px-6",
+            "hover:bg-primary_hover flex flex-wrap items-center gap-4 px-4 py-4 transition duration-100 ease-linear first:rounded-t-xl last:rounded-b-xl md:px-6",
             selectedSet.has(course.id) && "bg-brand-primary_alt",
           )}
         >
@@ -254,15 +254,15 @@ export function RichRowsTable({
               <StatusBadge status={course.status} />
             </div>
             <p className="text-sm text-secondary">{course.title}</p>
-            <p className="text-xs text-quaternary">
+            <p className="text-quaternary text-xs">
               {course.session} &middot; {course.convener}
             </p>
           </div>
 
           <div className="flex w-40 flex-col gap-1.5 max-sm:w-full">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-xs text-tertiary">Enrolment</span>
-              <span className="font-mono text-xs text-quaternary">
+              <span className="text-tertiary text-xs">Enrolment</span>
+              <span className="text-quaternary font-mono text-xs">
                 {course.enrolled}/{course.capacity}
               </span>
             </div>
@@ -327,7 +327,7 @@ export function GroupedTable({
                 <th
                   colSpan={5}
                   scope="colgroup"
-                  className="sticky top-0 z-10 border-y border-secondary bg-secondary px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-tertiary uppercase md:px-6"
+                  className="text-tertiary sticky top-0 z-10 border-y border-secondary bg-secondary px-4 py-2.5 text-left text-xs font-semibold tracking-wide uppercase md:px-6"
                 >
                   <span className="flex items-center gap-2">
                     {session}
@@ -341,7 +341,7 @@ export function GroupedTable({
               {group.map((course) => (
                 <tr
                   key={course.id}
-                  className="border-b border-secondary transition duration-100 ease-linear last:border-0 hover:bg-primary_hover"
+                  className="hover:bg-primary_hover border-b border-secondary transition duration-100 ease-linear last:border-0"
                 >
                   <td className="w-10 py-3 pl-4 md:pl-6">
                     <Checkbox
@@ -362,7 +362,7 @@ export function GroupedTable({
                   <td className="py-3 pr-4 text-sm text-secondary">
                     {course.title}
                   </td>
-                  <td className="py-3 pr-4 text-sm text-tertiary max-sm:hidden">
+                  <td className="text-tertiary py-3 pr-4 text-sm max-sm:hidden">
                     {course.units} units
                   </td>
                   <td className="py-3 pr-4 md:pr-6">

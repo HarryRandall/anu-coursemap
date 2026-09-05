@@ -45,7 +45,10 @@ export function AppShell({
       <AppSidebar admin={admin} />
 
       <SidebarInset
-        className={cn("min-w-0", fill && "md:h-full md:min-h-0 md:overflow-hidden")}
+        className={cn(
+          "min-w-0",
+          fill && "md:h-full md:min-h-0 md:overflow-hidden",
+        )}
       >
         <Topbar
           actions={actions}
@@ -55,7 +58,7 @@ export function AppShell({
         {tabs && (
           <div
             className={cn(
-              "border-border bg-background border-b px-4 sm:px-6",
+              "border-b border-border bg-background px-4 sm:px-6",
               fill && "md:shrink-0",
             )}
           >
@@ -66,7 +69,7 @@ export function AppShell({
         )}
         <div
           className={cn(
-            "bg-muted/40 dark:bg-transparent min-h-[calc(100dvh-4rem)] w-full max-w-none min-w-0",
+            "min-h-[calc(100dvh-4rem)] w-full max-w-none min-w-0 bg-muted/40 dark:bg-transparent",
             !fullBleed && "px-4 py-6 sm:px-6 sm:py-7",
             // Lets a page hand its remaining height to one scrolling child,
             // such as a directory table that should reach the viewport floor.

@@ -38,7 +38,7 @@ function CardMenu({ onAction }: { onAction: (key: string) => void }) {
     <Dropdown.Root>
       <AriaButton
         aria-label="Metric options"
-        className="cursor-pointer rounded-md p-1 text-fg-quaternary outline-focus-ring transition duration-100 ease-linear hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="text-fg-quaternary outline-focus-ring hover:bg-primary_hover hover:text-fg-quaternary_hover cursor-pointer rounded-md p-1 transition duration-100 ease-linear focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         <DotsVertical className="size-5" />
       </AriaButton>
@@ -87,7 +87,7 @@ export function MetricCard({
           {icon && (
             <FeaturedIcon size="md" color="brand" theme="light" icon={icon} />
           )}
-          <p className="text-sm font-medium text-tertiary">{label}</p>
+          <p className="text-tertiary text-sm font-medium">{label}</p>
         </div>
         {onAction && <CardMenu onAction={onAction} />}
       </div>
@@ -97,7 +97,7 @@ export function MetricCard({
         {typeof change === "number" && <ChangeBadge change={change} />}
       </div>
 
-      {caption && <p className="text-sm text-tertiary">{caption}</p>}
+      {caption && <p className="text-tertiary text-sm">{caption}</p>}
     </div>
   );
 }
@@ -123,7 +123,7 @@ export function MetricTrendCard({
   return (
     <div className={shell}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-tertiary">{label}</p>
+        <p className="text-tertiary text-sm font-medium">{label}</p>
         {onAction && <CardMenu onAction={onAction} />}
       </div>
 
@@ -209,7 +209,7 @@ export function MetricProgressCard({
   return (
     <div className={shell}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-tertiary">{label}</p>
+        <p className="text-tertiary text-sm font-medium">{label}</p>
         {onAction && <CardMenu onAction={onAction} />}
       </div>
 
@@ -224,7 +224,7 @@ export function MetricProgressCard({
 
       <ProgressBarBase value={percentage} />
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {caption ?? `${Math.round(percentage)} per cent complete.`}
       </p>
     </div>
@@ -255,7 +255,7 @@ export function MetricBreakdownCard({
   return (
     <div className={shell}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-tertiary">{label}</p>
+        <p className="text-tertiary text-sm font-medium">{label}</p>
         {onAction && <CardMenu onAction={onAction} />}
       </div>
 
@@ -266,7 +266,7 @@ export function MetricBreakdownCard({
         </p>
       </div>
 
-      <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full bg-quaternary">
+      <div className="bg-quaternary flex h-2 w-full gap-0.5 overflow-hidden rounded-full">
         {segments.map((segment) => (
           <span
             key={segment.id}
@@ -287,9 +287,9 @@ export function MetricBreakdownCard({
                 aria-hidden="true"
                 className={cx("size-2 rounded-full", segment.className)}
               />
-              <span className="text-sm text-tertiary">{segment.label}</span>
+              <span className="text-tertiary text-sm">{segment.label}</span>
             </span>
-            <span className="font-mono text-xs text-quaternary">
+            <span className="text-quaternary font-mono text-xs">
               {segment.value}
             </span>
           </li>
@@ -314,7 +314,7 @@ export function MetricGaugeCard({
   return (
     <div className={cx(shell, "items-center text-center")}>
       <div className="flex w-full items-start justify-between gap-3">
-        <p className="text-sm font-medium text-tertiary">{label}</p>
+        <p className="text-tertiary text-sm font-medium">{label}</p>
         {onAction && <CardMenu onAction={onAction} />}
       </div>
 
@@ -340,7 +340,7 @@ export function MetricComparisonCard({
   return (
     <div className={shell}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-medium text-tertiary">{label}</p>
+        <p className="text-tertiary text-sm font-medium">{label}</p>
         {onAction && <CardMenu onAction={onAction} />}
       </div>
 

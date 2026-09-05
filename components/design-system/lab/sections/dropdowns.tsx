@@ -64,7 +64,7 @@ function ActionMenu() {
         </Dropdown.Root>
       </Variants>
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {last
           ? `Last action: ${last}. "Remove from plan" is disabled and cannot be chosen.`
           : "Open a menu and choose an item. The result appears here."}
@@ -82,7 +82,7 @@ function SectionedMenu() {
       <Dropdown.Popover>
         <Dropdown.Menu>
           <Dropdown.Section>
-            <Dropdown.SectionHeader className="px-3 pt-2 pb-1 text-xs font-semibold text-quaternary">
+            <Dropdown.SectionHeader className="text-quaternary px-3 pt-2 pb-1 text-xs font-semibold">
               Status
             </Dropdown.SectionHeader>
             <Dropdown.Item id="completed">Completed</Dropdown.Item>
@@ -91,7 +91,7 @@ function SectionedMenu() {
           </Dropdown.Section>
           <Dropdown.Separator />
           <Dropdown.Section>
-            <Dropdown.SectionHeader className="px-3 pt-2 pb-1 text-xs font-semibold text-quaternary">
+            <Dropdown.SectionHeader className="text-quaternary px-3 pt-2 pb-1 text-xs font-semibold">
               Teaching period
             </Dropdown.SectionHeader>
             <Dropdown.Item id="s1">Semester 1, 2026</Dropdown.Item>
@@ -166,7 +166,7 @@ function SelectionMenu() {
         </Dropdown.Root>
       </Variants>
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         Showing {statuses.size === 0 ? "no" : [...statuses].join(", ")} courses,
         sorted by {[...sort][0]}.
       </p>

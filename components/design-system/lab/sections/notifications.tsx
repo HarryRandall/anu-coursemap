@@ -90,7 +90,7 @@ function Triggers() {
 
       <div className="rounded-lg bg-secondary p-4">
         {log.length === 0 ? (
-          <p className="text-sm text-tertiary">
+          <p className="text-tertiary text-sm">
             No notification action taken yet. Raise one with actions and press
             its link.
           </p>

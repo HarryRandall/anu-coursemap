@@ -42,14 +42,14 @@ function ReuiReviewSection({
     <section className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4 border-b border-secondary pb-3">
         <div>
-          <p className="text-xs font-semibold tracking-wide text-brand-secondary uppercase">
+          <p className="text-brand-secondary text-xs font-semibold tracking-wide uppercase">
             ReUI
           </p>
           <h2 className="text-display-xs font-semibold text-primary">
             {category.label}
           </h2>
         </div>
-        <span className="text-sm text-tertiary">
+        <span className="text-tertiary text-sm">
           {visibleItems.length} shown
         </span>
       </div>

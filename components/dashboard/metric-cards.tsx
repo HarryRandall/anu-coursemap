@@ -235,11 +235,11 @@ function MiniBars({
           className="flex min-w-0 flex-1 flex-col items-center gap-1"
         >
           <span
-            className="bg-primary/70 w-full rounded-md"
+            className="w-full rounded-md bg-primary/70"
             style={{ height: `${Math.max((point.units / max) * 44, 3)}px` }}
             title={`${point.label}: ${point.units} units`}
           />
-          <small className="text-muted-foreground truncate text-[10px]">
+          <small className="truncate text-[10px] text-muted-foreground">
             {point.label}
           </small>
         </div>
@@ -303,7 +303,6 @@ export function buildMetricViews(
     nearTerms[0] ?? { label: "", units: 0 },
   );
   const lastCumulative = cumulative.at(-1);
-  const completedPlusEnrolled = progress.completed + enrolledUnits;
   const plannedOnly = Math.max(0, progress.planned - enrolledUnits);
 
   return {
@@ -399,7 +398,7 @@ export function buildMetricViews(
           {Array.from({ length: Math.min(freeCourses, 6) }).map((_, index) => (
             <span
               key={index}
-              className="border-border text-muted-foreground flex h-6 flex-1 items-center justify-center rounded-md border border-dashed text-[11px] font-semibold"
+              className="flex h-6 flex-1 items-center justify-center rounded-md border border-dashed border-border text-[11px] font-semibold text-muted-foreground"
             >
               +6
             </span>
@@ -504,16 +503,19 @@ export function buildMetricViews(
         <div className="flex flex-col gap-1.5">
           {buckets.slice(0, 3).map((bucket) => {
             const percent = bucket.targetUnits
-              ? Math.min(100, (bucket.completedUnits / bucket.targetUnits) * 100)
+              ? Math.min(
+                  100,
+                  (bucket.completedUnits / bucket.targetUnits) * 100,
+                )
               : 0;
             return (
               <div key={bucket.key} className="flex items-center gap-2">
-                <small className="text-muted-foreground w-24 truncate text-[10px]">
+                <small className="w-24 truncate text-[10px] text-muted-foreground">
                   {bucket.title}
                 </small>
-                <span className="bg-muted h-1.5 min-w-0 flex-1 overflow-hidden rounded-full">
+                <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
                   <span
-                    className="bg-primary block h-full rounded-full"
+                    className="block h-full rounded-full bg-primary"
                     style={{ width: `${percent}%` }}
                   />
                 </span>
@@ -534,7 +536,7 @@ export function buildMetricViews(
           {nextCourses.slice(0, 6).map((course) => (
             <span
               key={course.code}
-              className="bg-muted rounded-md px-2 py-1 font-mono text-[11px] font-semibold"
+              className="rounded-md bg-muted px-2 py-1 font-mono text-[11px] font-semibold"
             >
               {course.code}
             </span>
@@ -563,7 +565,7 @@ export function buildMetricViews(
                 "flex h-7 flex-1 items-center justify-center rounded-md text-[11px] font-bold tabular-nums",
                 term.units >= STANDARD_TERM_UNITS
                   ? "bg-primary/12 text-primary"
-                  : "border-border text-muted-foreground border border-dashed",
+                  : "border border-dashed border-border text-muted-foreground",
               )}
             >
               {term.units}
@@ -604,14 +606,14 @@ export function MetricCardView({ view }: { view: MetricView }) {
   return (
     <Card>
       <CardContent className="flex h-full flex-col gap-3 p-5">
-        <p className="text-muted-foreground text-[13px] font-medium">
+        <p className="text-[13px] font-medium text-muted-foreground">
           {view.title}
         </p>
         <div className="flex flex-1 items-center justify-between gap-4">
           <p className="text-2xl font-semibold tracking-tight">
             {view.value}{" "}
             {view.unit && (
-              <span className="text-muted-foreground text-sm font-normal">
+              <span className="text-sm font-normal text-muted-foreground">
                 {view.unit}
               </span>
             )}
@@ -619,7 +621,7 @@ export function MetricCardView({ view }: { view: MetricView }) {
           {view.aside}
         </div>
         {view.body}
-        <p className="text-muted-foreground text-xs">{view.note}</p>
+        <p className="text-xs text-muted-foreground">{view.note}</p>
       </CardContent>
     </Card>
   );

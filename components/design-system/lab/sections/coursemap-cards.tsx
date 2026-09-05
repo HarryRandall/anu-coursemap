@@ -46,7 +46,7 @@ function SelectableCourseGrid() {
       </Grid>
 
       <div className="flex flex-wrap items-center gap-3">
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           {log ??
             (codes.length > 0
               ? `${codes.join(", ")} selected. Open a card menu to run an action.`

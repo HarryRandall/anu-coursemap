@@ -33,7 +33,7 @@ function ValidatedStudentNumber() {
             : "Used to match your enrolment record."
         }
       />
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {invalid
           ? "The field is invalid, so the border, icon and hint all turn red."
           : "Valid. Clear the field or type u123 to see the invalid state."}
@@ -55,7 +55,7 @@ function SearchField() {
         value={query}
         onChange={setQuery}
       />
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {query
           ? `Searching for "${query}".`
           : "Type to search. The shortcut hint sits inside the field."}
@@ -89,7 +89,7 @@ function PinDemo() {
           Six digits, sent to your ANU address.
         </PinInput.Description>
       </PinInput>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {pin.length === 6
           ? "Code complete."
           : `${pin.length} of 6 digits entered.`}

@@ -38,14 +38,14 @@ export function SpacingSection() {
         <div className="flex flex-col gap-3">
           {spacingSteps.map((step) => (
             <div key={step} className="flex items-center gap-4">
-              <span className="w-16 shrink-0 font-mono text-xs text-quaternary">
+              <span className="text-quaternary w-16 shrink-0 font-mono text-xs">
                 {step}
               </span>
-              <span className="w-16 shrink-0 text-xs text-tertiary">
+              <span className="text-tertiary w-16 shrink-0 text-xs">
                 {step * 4}px
               </span>
               <div
-                className="h-3 rounded-sm bg-brand-solid"
+                className="bg-brand-solid h-3 rounded-sm"
                 style={{ width: `calc(var(--spacing) * ${step})` }}
               />
             </div>
@@ -61,9 +61,9 @@ export function SpacingSection() {
           {radii.map((radius) => (
             <div key={radius} className="flex flex-col items-center gap-2">
               <div
-                className={`size-16 bg-brand-primary ring-1 ring-brand ring-inset ${radius}`}
+                className={`bg-brand-primary ring-brand size-16 ring-1 ring-inset ${radius}`}
               />
-              <span className="text-center font-mono text-xs text-quaternary">
+              <span className="text-quaternary text-center font-mono text-xs">
                 {radius.replace("rounded-", "")}
               </span>
             </div>
@@ -81,9 +81,9 @@ export function SpacingSection() {
               <div
                 className={`flex h-24 items-center justify-center rounded-xl bg-primary ${shadow.className}`}
               >
-                <span className="text-xs text-tertiary">Surface</span>
+                <span className="text-tertiary text-xs">Surface</span>
               </div>
-              <span className="font-mono text-xs text-quaternary">
+              <span className="text-quaternary font-mono text-xs">
                 {shadow.label}
               </span>
             </div>
@@ -95,7 +95,7 @@ export function SpacingSection() {
         title="Container widths"
         description="Untitled UI's application container is 1280px. Below the xs breakpoint at 600px the laboratory collapses to a single column."
       >
-        <div className="flex flex-col gap-3 text-sm text-tertiary">
+        <div className="text-tertiary flex flex-col gap-3 text-sm">
           <div className="flex items-center justify-between border-b border-secondary pb-3">
             <span className="font-mono text-xs">--breakpoint-xxs</span>
             <span>320px</span>

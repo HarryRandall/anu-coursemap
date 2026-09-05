@@ -62,7 +62,7 @@ export function ComponentReviewSummary() {
   if (loading) {
     return (
       <div className="flex min-h-64 items-center justify-center rounded-xl border border-secondary bg-primary">
-        <p className="flex items-center gap-2 text-sm font-semibold text-tertiary">
+        <p className="text-tertiary flex items-center gap-2 text-sm font-semibold">
           <LoaderCircle aria-hidden className="size-4 animate-spin" />
           Loading review
         </p>
@@ -72,7 +72,7 @@ export function ComponentReviewSummary() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-error bg-error-primary p-5 text-sm font-semibold text-error-primary">
+      <div className="border-error bg-error-primary text-error-primary rounded-xl border p-5 text-sm font-semibold">
         {error}
       </div>
     );
@@ -114,10 +114,10 @@ export function ComponentReviewSummary() {
             key={decision}
             className="rounded-xl border border-secondary bg-primary p-4 shadow-xs"
           >
-            <p className="text-sm font-semibold text-tertiary">
+            <p className="text-tertiary text-sm font-semibold">
               {decisionLabels[decision]}
             </p>
-            <p className="mt-1 text-display-xs font-semibold text-primary">
+            <p className="text-display-xs mt-1 font-semibold text-primary">
               {counts[decision]}
             </p>
           </div>
@@ -138,11 +138,11 @@ export function ComponentReviewSummary() {
                     <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary">
                       {reviewSourceLabels[record.source]}
                     </span>
-                    <span className="rounded-md bg-brand-primary px-2 py-0.5 text-xs font-semibold text-brand-secondary">
+                    <span className="bg-brand-primary text-brand-secondary rounded-md px-2 py-0.5 text-xs font-semibold">
                       {decisionLabels[record.decision]}
                     </span>
                   </div>
-                  <p className="mt-1 truncate font-mono text-xs text-quaternary">
+                  <p className="text-quaternary mt-1 truncate font-mono text-xs">
                     {record.id}
                   </p>
                 </div>
@@ -156,7 +156,7 @@ export function ComponentReviewSummary() {
                           ? "/design-system/compare"
                           : `/design-system/review/${record.family}#${componentReviewDomId(record.id)}`
                   }
-                  className="flex min-h-10 shrink-0 items-center gap-1.5 self-start rounded-lg px-3 text-sm font-semibold text-brand-secondary outline-focus-ring hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-offset-2 sm:self-auto"
+                  className="text-brand-secondary outline-focus-ring hover:bg-primary_hover flex min-h-10 shrink-0 items-center gap-1.5 self-start rounded-lg px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 sm:self-auto"
                 >
                   View component
                   <ArrowRight aria-hidden className="size-4" />
@@ -172,7 +172,7 @@ export function ComponentReviewSummary() {
           </p>
           <Link
             href="/design-system/review/accordion"
-            className="flex min-h-11 items-center rounded-lg bg-brand-solid px-4 text-sm font-semibold text-white shadow-xs outline-focus-ring hover:bg-brand-solid_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-brand-solid outline-focus-ring hover:bg-brand-solid_hover flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-white shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Browse all component types
           </Link>

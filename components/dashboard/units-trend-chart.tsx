@@ -43,14 +43,14 @@ export function UnitsTrendChart({
       <CardContent className="flex h-full flex-col gap-4 p-6">
         <div>
           <h2 className="text-sm font-semibold">Units over time</h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Cumulative units, split between completed and still planned
             {degreeUnits ? ` · degree target ${degreeUnits}` : ""}
           </p>
         </div>
 
         {data.length === 0 ? (
-          <p className="text-muted-foreground flex flex-1 items-center justify-center py-10 text-sm">
+          <p className="flex flex-1 items-center justify-center py-10 text-sm text-muted-foreground">
             Add courses to your plan to see progress over time.
           </p>
         ) : (

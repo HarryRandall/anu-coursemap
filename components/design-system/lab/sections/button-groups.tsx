@@ -46,7 +46,7 @@ function ViewSwitcher() {
           Calendar
         </ButtonGroupItem>
       </ButtonGroup>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         Showing the plan as a{" "}
         <strong className="text-secondary">{current}</strong>.
       </p>
@@ -74,7 +74,7 @@ function SessionFilter() {
         <ButtonGroupItem id="winter">Winter</ButtonGroupItem>
         <ButtonGroupItem id="s2">Semester 2</ButtonGroupItem>
       </ButtonGroup>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {selected.size === 0
           ? "No teaching period selected."
           : `Filtering by ${[...selected].join(", ")}.`}

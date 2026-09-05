@@ -38,7 +38,7 @@ function ControlledSelect() {
       >
         {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
       </Select>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {chosen
           ? `Planning for ${chosen.label}.`
           : "No teaching period chosen."}

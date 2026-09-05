@@ -38,7 +38,7 @@ export function TooltipsSection() {
                   <HelpCircle className="size-5 stroke-[2.25px]" />
                 </TooltipTrigger>
               </Tooltip>
-              <span className="text-xs text-quaternary">{placement}</span>
+              <span className="text-quaternary text-xs">{placement}</span>
             </div>
           ))}
         </div>
@@ -145,7 +145,7 @@ export function TooltipsSection() {
                 <HelpCircle className="size-5 stroke-[2.25px]" />
               </TooltipTrigger>
             </Tooltip>
-            <span className="text-xs text-quaternary">300ms</span>
+            <span className="text-quaternary text-xs">300ms</span>
           </div>
           <div className="flex flex-col items-center gap-2">
             <Tooltip title="Opens immediately" delay={0}>
@@ -153,7 +153,7 @@ export function TooltipsSection() {
                 <HelpCircle className="size-5 stroke-[2.25px]" />
               </TooltipTrigger>
             </Tooltip>
-            <span className="text-xs text-quaternary">0ms</span>
+            <span className="text-quaternary text-xs">0ms</span>
           </div>
         </Variants>
       </Example>

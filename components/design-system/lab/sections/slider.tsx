@@ -19,7 +19,7 @@ function UnitLoadSlider() {
         labelPosition="bottom"
         labelFormatter={(units) => `${units} units`}
       />
-      <p className="pt-4 text-sm text-tertiary">
+      <p className="text-tertiary pt-4 text-sm">
         {value === 0
           ? "No study planned for this semester."
           : value > 24
@@ -47,7 +47,7 @@ function YearRangeSlider() {
         labelPosition="bottom"
         labelFormatter={(year) => String(year)}
       />
-      <p className="pt-4 text-sm text-tertiary">
+      <p className="text-tertiary pt-4 text-sm">
         Showing catalogue years {range[0]} to {range[1]}.
       </p>
     </div>

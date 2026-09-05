@@ -26,7 +26,6 @@ const edgeTransition = {
  * state when the visitor prefers reduced motion.
  */
 function PlanIllustration({ reduceMotion }: { reduceMotion: boolean }) {
-
   const appear = (delay: number) =>
     reduceMotion
       ? {}

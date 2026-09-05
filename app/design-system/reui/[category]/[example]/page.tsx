@@ -34,7 +34,7 @@ export default async function ReuiExamplePage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href={`/design-system/reui/${category.name}`}
-            className="flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-secondary outline-focus-ring hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="outline-focus-ring hover:bg-primary_hover flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-secondary focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
             {category.label}
@@ -43,7 +43,7 @@ export default async function ReuiExamplePage({
             href={previewUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex min-h-11 items-center gap-2 rounded-lg border border-secondary bg-primary px-3 text-sm font-semibold text-secondary shadow-xs outline-focus-ring hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="outline-focus-ring hover:bg-primary_hover flex min-h-11 items-center gap-2 rounded-lg border border-secondary bg-primary px-3 text-sm font-semibold text-secondary shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Open standalone
             <ExternalLink aria-hidden="true" className="size-4" />
@@ -61,7 +61,7 @@ export default async function ReuiExamplePage({
           />
         </div>
 
-        <p className="font-mono text-xs text-quaternary">
+        <p className="text-quaternary font-mono text-xs">
           @reui/catalogue/{category.name}/{example.name}
         </p>
       </div>

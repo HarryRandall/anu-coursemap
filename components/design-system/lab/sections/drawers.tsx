@@ -25,7 +25,7 @@ function FilterDrawer() {
                 <h2 className="text-lg font-semibold text-primary">
                   Filter the catalogue
                 </h2>
-                <p className="text-sm text-tertiary">
+                <p className="text-tertiary text-sm">
                   Narrow 1,284 courses down to the ones you can actually take.
                 </p>
               </SlideoutMenu.Header>
@@ -80,7 +80,7 @@ function FilterDrawer() {
         </SlideoutMenu>
       </SlideoutMenu.Trigger>
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {applied
           ? `Filters applied at ${applied}.`
           : "Nothing applied. Escape or the backdrop closes the drawer."}
@@ -100,7 +100,7 @@ function CourseDetailDrawer() {
         {({ close }) => (
           <>
             <SlideoutMenu.Header onClose={close}>
-              <p className="font-mono text-xs font-semibold text-quaternary">
+              <p className="text-quaternary font-mono text-xs font-semibold">
                 {course.code}
               </p>
               <h2 className="text-lg font-semibold text-primary">
@@ -124,7 +124,7 @@ function CourseDetailDrawer() {
                     key={term}
                     className="flex justify-between gap-4 border-b border-secondary pb-3 last:border-0"
                   >
-                    <dt className="text-sm text-tertiary">{term}</dt>
+                    <dt className="text-tertiary text-sm">{term}</dt>
                     <dd className="text-right text-sm font-medium text-secondary">
                       {detail}
                     </dd>

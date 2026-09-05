@@ -63,7 +63,7 @@ function ThemeSwitch() {
             aria-label={label}
             onClick={() => setTheme(value)}
             className={cx(
-              "flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold outline-focus-ring transition duration-100 ease-linear focus-visible:outline-2 focus-visible:outline-offset-2",
+              "outline-focus-ring flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition duration-100 ease-linear focus-visible:outline-2 focus-visible:outline-offset-2",
               selected
                 ? "bg-primary text-secondary shadow-xs ring-1 ring-primary ring-inset"
                 : "text-quaternary hover:text-secondary",
@@ -82,17 +82,17 @@ function LabMark() {
   return (
     <Link
       href="/design-system"
-      className="flex items-center gap-2.5 rounded-md outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="outline-focus-ring flex items-center gap-2.5 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <span
         aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-solid text-sm font-bold text-white"
+        className="bg-brand-solid flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold text-white"
       >
         C
       </span>
       <span className="flex flex-col">
         <span className="text-sm font-semibold text-primary">Coursemap</span>
-        <span className="text-xs text-tertiary">Component laboratory</span>
+        <span className="text-tertiary text-xs">Component laboratory</span>
       </span>
     </Link>
   );
@@ -197,13 +197,13 @@ function SidebarBody({
       />
 
       <div className="mt-auto border-t border-secondary px-5 py-4">
-        <p className="text-xs text-tertiary">
+        <p className="text-tertiary text-xs">
           Vendored from{" "}
           <a
             href="https://github.com/untitleduico/react"
             target="_blank"
             rel="noreferrer"
-            className="font-semibold text-brand-secondary underline underline-offset-2 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="text-brand-secondary outline-focus-ring font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             untitleduico/react
           </a>{" "}
@@ -212,7 +212,7 @@ function SidebarBody({
             href="https://github.com/keenthemes/reui"
             target="_blank"
             rel="noreferrer"
-            className="font-semibold text-brand-secondary underline underline-offset-2 outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="text-brand-secondary outline-focus-ring font-semibold underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             ReUI
           </a>{" "}
@@ -250,7 +250,7 @@ export function LabShell({
           <LabMark />
           <AriaButton
             aria-label="Expand navigation menu"
-            className="group flex items-center justify-center rounded-lg bg-primary p-2 text-fg-secondary outline-focus-ring hover:bg-primary_hover hover:text-fg-secondary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="group text-fg-secondary outline-focus-ring hover:bg-primary_hover hover:text-fg-secondary_hover flex items-center justify-center rounded-lg bg-primary p-2 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             <Menu02 className="size-6 transition duration-200 ease-in-out group-aria-expanded:opacity-0" />
             <CloseIcon className="absolute size-6 opacity-0 transition duration-200 ease-in-out group-aria-expanded:opacity-100" />
@@ -261,7 +261,7 @@ export function LabShell({
           isDismissable
           className={({ isEntering, isExiting }) =>
             cx(
-              "fixed inset-0 z-50 cursor-pointer bg-overlay/70 pr-16 backdrop-blur-md lg:hidden",
+              "bg-overlay/70 fixed inset-0 z-50 cursor-pointer pr-16 backdrop-blur-md lg:hidden",
               isEntering && "duration-300 ease-in-out animate-in fade-in",
               isExiting && "duration-200 ease-in-out animate-out fade-out",
             )
@@ -272,7 +272,7 @@ export function LabShell({
               <AriaButton
                 aria-label="Close navigation menu"
                 onPress={() => state.close()}
-                className="fixed top-2.5 right-3 flex cursor-pointer items-center justify-center rounded-lg p-2 text-fg-white/70 outline-focus-ring hover:bg-white/10 hover:text-fg-white focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="text-fg-white/70 outline-focus-ring hover:text-fg-white fixed top-2.5 right-3 flex cursor-pointer items-center justify-center rounded-lg p-2 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2"
               >
                 <CloseIcon className="size-6" />
               </AriaButton>
@@ -296,7 +296,7 @@ export function LabShell({
         <SidebarBody activeSlug={activeSlug} activeHref={activeHref} />
       </div>
 
-      <main className="min-w-0 flex-1 bg-secondary_alt">
+      <main className="bg-secondary_alt min-w-0 flex-1">
         <div
           className={cx(
             "mx-auto flex flex-col gap-8 px-4 py-8 md:px-8 md:py-12",
@@ -306,7 +306,7 @@ export function LabShell({
           <header className="flex flex-col gap-4">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex min-w-0 flex-col gap-1">
-                <h1 className="text-display-xs font-semibold text-primary md:text-display-sm">
+                <h1 className="text-display-xs md:text-display-sm font-semibold text-primary">
                   {title}
                 </h1>
                 <p className="text-md text-tertiary">{summary}</p>
@@ -337,7 +337,7 @@ export function LabShell({
                   href={docs}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-sm text-sm font-semibold text-brand-secondary underline underline-offset-3 outline-focus-ring hover:text-brand-secondary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+                  className="text-brand-secondary outline-focus-ring hover:text-brand-secondary_hover rounded-sm text-sm font-semibold underline underline-offset-3 focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
                   Official documentation
                 </a>

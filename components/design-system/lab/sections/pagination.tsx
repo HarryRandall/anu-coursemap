@@ -26,19 +26,19 @@ function PaginatedCourses() {
             className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3"
           >
             <span className="text-sm font-medium text-secondary">
-              <span className="font-mono text-xs text-quaternary">
+              <span className="text-quaternary font-mono text-xs">
                 {course.code}
               </span>{" "}
               {course.title}
             </span>
-            <span className="text-sm text-tertiary">{course.session}</span>
+            <span className="text-tertiary text-sm">{course.session}</span>
           </li>
         ))}
       </ul>
 
       <PaginationPageDefault page={page} total={pages} onPageChange={setPage} />
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         Showing {(page - 1) * PAGE_SIZE + 1} to{" "}
         {Math.min(page * PAGE_SIZE, courses.length)} of {courses.length}{" "}
         courses.
@@ -77,7 +77,7 @@ function Dots() {
         total={5}
         onPageChange={setPage}
       />
-      <p className="text-sm text-tertiary">Step {page} of 5.</p>
+      <p className="text-tertiary text-sm">Step {page} of 5.</p>
     </div>
   );
 }

@@ -122,7 +122,7 @@ export function ReviewDecisionControl({ item }: { item: ComponentReviewItem }) {
               disabled={disabled}
               onClick={() => setDecision(item, value)}
               className={cx(
-                "flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold whitespace-nowrap outline-focus-ring transition duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-60",
+                "outline-focus-ring flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold whitespace-nowrap transition duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-60",
                 checked
                   ? `${selectedClassName} shadow-xs ring-1 ring-inset`
                   : "text-quaternary hover:bg-primary hover:text-secondary",
@@ -163,7 +163,7 @@ function FilterButtons<T extends string>({
           aria-checked={value === choice.value}
           onClick={() => onChange(choice.value)}
           className={cx(
-            "min-h-10 cursor-pointer rounded-md px-3 text-sm font-semibold whitespace-nowrap outline-focus-ring transition duration-100 focus-visible:outline-2 focus-visible:outline-offset-2",
+            "outline-focus-ring min-h-10 cursor-pointer rounded-md px-3 text-sm font-semibold whitespace-nowrap transition duration-100 focus-visible:outline-2 focus-visible:outline-offset-2",
             value === choice.value
               ? "bg-primary text-secondary shadow-xs ring-1 ring-primary ring-inset"
               : "text-quaternary hover:text-secondary",
@@ -217,7 +217,7 @@ export function ReviewToolbar() {
           <p className="text-sm font-semibold text-primary">
             {reviewed} of {items.length} reviewed
           </p>
-          <p className="text-xs text-tertiary">{visible} currently shown</p>
+          <p className="text-tertiary text-xs">{visible} currently shown</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <span
@@ -244,13 +244,13 @@ export function ReviewToolbar() {
           <button
             type="button"
             onClick={focusNextUnreviewed}
-            className="min-h-10 cursor-pointer rounded-lg bg-primary px-3 text-sm font-semibold text-secondary shadow-xs ring-1 ring-primary outline-focus-ring ring-inset hover:bg-primary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="outline-focus-ring hover:bg-primary_hover min-h-10 cursor-pointer rounded-lg bg-primary px-3 text-sm font-semibold text-secondary shadow-xs ring-1 ring-primary ring-inset focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Next unreviewed
           </button>
           <Link
             href="/design-system/review"
-            className="flex min-h-10 items-center rounded-lg bg-brand-solid px-3 text-sm font-semibold text-white shadow-xs outline-focus-ring hover:bg-brand-solid_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-brand-solid outline-focus-ring hover:bg-brand-solid_hover flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold text-white shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Review summary
           </Link>

@@ -24,7 +24,7 @@ export function RequirementsPanel({
     <Card className="h-full">
       <CardContent className="flex h-full flex-col gap-4 p-6">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-muted-foreground text-[13px] font-medium">
+          <p className="text-[13px] font-medium text-muted-foreground">
             Degree requirements
           </p>
           <Button variant="ghost" size="sm" asChild>
@@ -36,7 +36,7 @@ export function RequirementsPanel({
         </div>
 
         {visible.length === 0 ? (
-          <p className="text-muted-foreground my-auto text-sm">
+          <p className="my-auto text-sm text-muted-foreground">
             {requirementsImported
               ? "The published rules for this programme have no unit groups to summarise yet."
               : "Requirement groups appear once the official programme rules have been imported and reviewed."}
@@ -52,13 +52,13 @@ export function RequirementsPanel({
                 <li key={bucket.key}>
                   <Link
                     href="/requirements"
-                    className="hover:bg-muted/60 -mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors"
+                    className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
                   >
                     <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                       <span className="truncate text-sm font-medium">
                         {bucket.title}
                       </span>
-                      <span className="text-muted-foreground text-xs">
+                      <span className="text-xs text-muted-foreground">
                         {target
                           ? `${bucket.completedUnits} of ${target} units complete`
                           : `${bucket.completedUnits} units complete`}
@@ -71,7 +71,7 @@ export function RequirementsPanel({
                     />
                     <ChevronRight
                       aria-hidden="true"
-                      className="text-muted-foreground size-4 shrink-0"
+                      className="size-4 shrink-0 text-muted-foreground"
                     />
                   </Link>
                 </li>

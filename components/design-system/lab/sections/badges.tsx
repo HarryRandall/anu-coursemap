@@ -64,7 +64,7 @@ function DismissibleTags() {
       </TagGroup>
 
       {tags.length === 0 && (
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           Every college filter has been removed.
         </p>
       )}
@@ -79,7 +79,7 @@ function DismissibleTags() {
             })),
           )
         }
-        className="self-start rounded-sm text-sm font-semibold text-brand-secondary underline underline-offset-3 outline-focus-ring hover:text-brand-secondary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="text-brand-secondary outline-focus-ring hover:text-brand-secondary_hover self-start rounded-sm text-sm font-semibold underline underline-offset-3 focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         Reset filters
       </button>
@@ -111,7 +111,7 @@ function SelectableTags() {
           ))}
         </TagList>
       </TagGroup>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {selected.size === 0
           ? "No teaching period selected."
           : `${selected.size} of ${sessions.length} periods selected.`}

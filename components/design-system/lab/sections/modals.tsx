@@ -31,7 +31,7 @@ function ConfirmModal() {
           <Modal>
             <Dialog className="w-full max-w-100">
               {({ close }) => (
-                <div className="flex flex-col gap-8 rounded-xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
+                <div className="ring-secondary_alt flex flex-col gap-8 rounded-xl bg-primary p-6 shadow-xl ring-1">
                   <div className="flex items-start gap-4">
                     <FeaturedIcon
                       size="lg"
@@ -43,7 +43,7 @@ function ConfirmModal() {
                       <h2 className="text-lg font-semibold text-primary">
                         Drop COMP2610?
                       </h2>
-                      <p className="text-sm text-tertiary">
+                      <p className="text-tertiary text-sm">
                         Information Theory is planned for Semester 2, 2026.
                         Dropping it will unset the prerequisite for COMP3670.
                       </p>
@@ -79,7 +79,7 @@ function ConfirmModal() {
         </ModalOverlay>
       </DialogTrigger>
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {confirmed
           ? `COMP2610 dropped at ${confirmed}.`
           : "Nothing dropped yet. Escape or the backdrop closes without acting."}
@@ -101,7 +101,7 @@ function FormModal() {
             <Dialog className="w-full max-w-120">
               {({ close }) => (
                 <form
-                  className="flex flex-col rounded-xl bg-primary shadow-xl ring-1 ring-secondary_alt"
+                  className="ring-secondary_alt flex flex-col rounded-xl bg-primary shadow-xl ring-1"
                   onSubmit={(event) => {
                     event.preventDefault();
                     const data = new FormData(event.currentTarget);
@@ -114,7 +114,7 @@ function FormModal() {
                       <h2 className="text-lg font-semibold text-primary">
                         Request a variation
                       </h2>
-                      <p className="text-sm text-tertiary">
+                      <p className="text-tertiary text-sm">
                         Your adviser reviews this before it reaches the college.
                       </p>
                     </div>
@@ -170,7 +170,7 @@ function FormModal() {
         </ModalOverlay>
       </DialogTrigger>
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {saved
           ? `Submitted: "${saved}"`
           : "Nothing submitted. The form requires a reason before it will submit."}
@@ -207,12 +207,12 @@ export function ModalsSection() {
               <Modal>
                 <Dialog className="w-full max-w-100">
                   {({ close }) => (
-                    <div className="flex flex-col gap-6 rounded-xl bg-primary p-6 shadow-xl ring-1 ring-secondary_alt">
+                    <div className="ring-secondary_alt flex flex-col gap-6 rounded-xl bg-primary p-6 shadow-xl ring-1">
                       <div className="flex flex-col gap-1">
                         <h2 className="text-lg font-semibold text-primary">
                           Catalogue import running
                         </h2>
-                        <p className="text-sm text-tertiary">
+                        <p className="text-tertiary text-sm">
                           Leaving now would abandon 1,284 partially imported
                           courses. Clicking the backdrop will not close this.
                         </p>

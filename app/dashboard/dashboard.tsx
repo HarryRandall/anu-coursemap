@@ -186,7 +186,11 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
               code: item.course.code,
               units: unitsForAttempt(item.attempt, item.course),
               ready: !["blocked", "approval"].includes(
-                effectiveStatus(item.attempt, state.attempts, planningCatalogue),
+                effectiveStatus(
+                  item.attempt,
+                  state.attempts,
+                  planningCatalogue,
+                ),
               ),
             }))
         : [];
@@ -247,7 +251,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
             <h1 className="text-2xl font-semibold tracking-tight">
               {degree.name}
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               {state.profile.commencementYear} entry &middot; {degree.college}
             </p>
           </div>
@@ -300,7 +304,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold">Your metrics</h2>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-muted-foreground">
                 {selected.length} of 12 cards shown
               </p>
             </div>
@@ -308,7 +312,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
           </div>
           {selected.length === 0 ? (
             <Card>
-              <CardContent className="text-muted-foreground p-6 text-sm">
+              <CardContent className="p-6 text-sm text-muted-foreground">
                 No metric cards selected. Use Customise to pick the numbers you
                 want at a glance.
               </CardContent>
@@ -332,10 +336,10 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
 
           <Card className="overflow-hidden">
             <CardContent className="flex h-full flex-col p-0">
-              <div className="border-border flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-4">
                 <div className="flex min-w-50 flex-1 flex-col gap-0.5">
                   <h2 className="text-sm font-semibold">Next in your plan</h2>
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-xs text-muted-foreground">
                     Your next scheduled courses, drawn from the saved plan.
                   </p>
                 </div>
@@ -364,7 +368,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
                   </Empty>
                 </div>
               ) : (
-                <ul className="divide-border flex flex-col divide-y">
+                <ul className="flex flex-col divide-y divide-border">
                   {nextCoursesList.map(({ attempt, course, term }) => {
                     const status = effectiveStatus(
                       attempt,
@@ -376,7 +380,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
                         key={attempt.id}
                         className="flex items-center gap-3 px-5 py-3.5"
                       >
-                        <span className="bg-primary/10 text-primary grid size-9 shrink-0 place-items-center rounded-lg font-mono text-[10px] font-bold">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 font-mono text-[10px] font-bold text-primary">
                           {course.code.slice(0, 4)}
                         </span>
 
@@ -385,7 +389,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
                             <span className="font-mono">{course.code}</span>{" "}
                             {course.name}
                           </p>
-                          <p className="text-muted-foreground text-xs">
+                          <p className="text-xs text-muted-foreground">
                             {term ? `${term.name} ${term.year}` : "Later"}
                           </p>
                         </div>
@@ -432,7 +436,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
               source has been imported and reviewed.{" "}
               <Link
                 href="/admin"
-                className="text-primary font-medium underline-offset-2 hover:underline"
+                className="font-medium text-primary underline-offset-2 hover:underline"
               >
                 Open the admin console
               </Link>

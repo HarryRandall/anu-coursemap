@@ -32,7 +32,7 @@ function CourseComboBox() {
           </Select.Item>
         )}
       </Select.ComboBox>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {chosen
           ? `${chosen.code} runs in ${chosen.session} and is convened by ${chosen.convener}.`
           : "Nothing selected yet."}
@@ -75,7 +75,7 @@ function FilteredSearch() {
 
       <div className="rounded-lg bg-secondary p-4">
         {results.length === 0 ? (
-          <p className="text-sm text-tertiary">
+          <p className="text-tertiary text-sm">
             No course matches &ldquo;{query}&rdquo;. Try a code such as
             COMP1100.
           </p>
@@ -83,7 +83,7 @@ function FilteredSearch() {
           <ul className="flex flex-col gap-1.5">
             {results.map((course) => (
               <li key={course.id} className="text-sm text-secondary">
-                <span className="font-mono text-xs text-quaternary">
+                <span className="text-quaternary font-mono text-xs">
                   {course.code}
                 </span>{" "}
                 {course.title}

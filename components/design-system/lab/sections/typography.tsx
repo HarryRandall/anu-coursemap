@@ -38,10 +38,10 @@ export function TypographySection() {
               className="flex flex-col gap-1 border-b border-secondary pb-6 last:border-0 last:pb-0"
             >
               <div className="flex flex-wrap items-baseline gap-3">
-                <span className="font-mono text-xs text-quaternary">
+                <span className="text-quaternary font-mono text-xs">
                   {entry.className}
                 </span>
-                <span className="text-xs text-quaternary">{entry.size}</span>
+                <span className="text-quaternary text-xs">{entry.size}</span>
               </div>
               <p className={`${entry.className} font-semibold text-primary`}>
                 Your ANU degree, mapped
@@ -62,10 +62,10 @@ export function TypographySection() {
               className="flex flex-col gap-1 border-b border-secondary pb-5 last:border-0 last:pb-0"
             >
               <div className="flex flex-wrap items-baseline gap-3">
-                <span className="font-mono text-xs text-quaternary">
+                <span className="text-quaternary font-mono text-xs">
                   {entry.className}
                 </span>
-                <span className="text-xs text-quaternary">{entry.size}</span>
+                <span className="text-quaternary text-xs">{entry.size}</span>
               </div>
               <p className={`${entry.className} text-tertiary`}>
                 COMP2100 Software Design Methodologies requires COMP1110 and is
@@ -83,7 +83,7 @@ export function TypographySection() {
         <div className="flex flex-col gap-4">
           {weights.map((weight) => (
             <div key={weight.className} className="flex flex-col gap-0.5">
-              <span className="font-mono text-xs text-quaternary">
+              <span className="text-quaternary font-mono text-xs">
                 {weight.className}
               </span>
               <p className={`text-xl text-primary ${weight.className}`}>

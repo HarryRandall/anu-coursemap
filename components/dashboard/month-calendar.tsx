@@ -126,108 +126,106 @@ export function MonthCalendar({
   return (
     <Card className="min-h-72">
       <CardContent className="flex h-full flex-col p-5">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold">Study calendar</h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">
-            Courses in scheduled study periods
-          </p>
-        </div>
-        <div className="flex items-center">
-          <Button
-            aria-label="Previous month"
-            variant="ghost"
-            size="icon"
-            onClick={() => setFocus((current) => shiftMonth(current, -1))}
-          >
-            <ChevronLeft size={16} aria-hidden="true" />
-          </Button>
-          <Button
-            aria-label="Next month"
-            variant="ghost"
-            size="icon"
-            onClick={() => setFocus((current) => shiftMonth(current, 1))}
-          >
-            <ChevronRight size={16} aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-      <p className="mt-3 text-sm font-medium">
-        {monthLabel(focus)}
-      </p>
-      <div className="mt-2 grid grid-cols-7">
-        {weekdayLabels.map((label) => (
-          <div
-            key={label}
-            className="text-muted-foreground/70 pb-1 text-center text-[10px] font-semibold tracking-wide uppercase"
-          >
-            {label}
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold">Study calendar</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Courses in scheduled study periods
+            </p>
           </div>
-        ))}
-        {cells.map((cell, index) => {
-          if (!cell) return <div key={`empty-${index}`} className="h-9" />;
-          const dayEvents = eventsOnDay(cell, events);
-          const isToday = sameDay(cell, today);
-          const dayClass = cn(
-            "mx-auto flex size-8 flex-col items-center justify-center rounded-full text-[12px] font-medium",
-            isToday && "bg-primary text-primary-foreground",
-            !isToday && dayEvents.length > 0 && "text-foreground",
-            !isToday && dayEvents.length === 0 && "text-muted-foreground",
-          );
-          if (dayEvents.length === 0) {
+          <div className="flex items-center">
+            <Button
+              aria-label="Previous month"
+              variant="ghost"
+              size="icon"
+              onClick={() => setFocus((current) => shiftMonth(current, -1))}
+            >
+              <ChevronLeft size={16} aria-hidden="true" />
+            </Button>
+            <Button
+              aria-label="Next month"
+              variant="ghost"
+              size="icon"
+              onClick={() => setFocus((current) => shiftMonth(current, 1))}
+            >
+              <ChevronRight size={16} aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+        <p className="mt-3 text-sm font-medium">{monthLabel(focus)}</p>
+        <div className="mt-2 grid grid-cols-7">
+          {weekdayLabels.map((label) => (
+            <div
+              key={label}
+              className="pb-1 text-center text-[10px] font-semibold tracking-wide text-muted-foreground/70 uppercase"
+            >
+              {label}
+            </div>
+          ))}
+          {cells.map((cell, index) => {
+            if (!cell) return <div key={`empty-${index}`} className="h-9" />;
+            const dayEvents = eventsOnDay(cell, events);
+            const isToday = sameDay(cell, today);
+            const dayClass = cn(
+              "mx-auto flex size-8 flex-col items-center justify-center rounded-full text-[12px] font-medium",
+              isToday && "bg-primary text-primary-foreground",
+              !isToday && dayEvents.length > 0 && "text-foreground",
+              !isToday && dayEvents.length === 0 && "text-muted-foreground",
+            );
+            if (dayEvents.length === 0) {
+              return (
+                <div
+                  key={cell.toISOString()}
+                  className="grid h-9 place-items-center"
+                >
+                  <span className={dayClass}>{cell.getDate()}</span>
+                </div>
+              );
+            }
             return (
-              <div
-                key={cell.toISOString()}
-                className="grid h-9 place-items-center"
-              >
-                <span className={dayClass}>{cell.getDate()}</span>
+              <div key={cell.toISOString()} className="group relative h-9">
+                <button
+                  type="button"
+                  aria-label={`${cell.getDate()} ${monthLabel(focus)}, ${dayEvents.map((event) => event.courseCode).join(", ")}`}
+                  className={cn(
+                    dayClass,
+                    !isToday &&
+                      "hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  )}
+                >
+                  {cell.getDate()}
+                  <span
+                    className={cn(
+                      "mt-px size-1 rounded-full",
+                      isToday
+                        ? "bg-primary-foreground"
+                        : accent[dayEvents[0].accent].dot,
+                    )}
+                    aria-hidden="true"
+                  />
+                </button>
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 rounded-lg bg-foreground px-2 py-1 text-[11px] font-medium whitespace-nowrap text-background shadow-md group-focus-within:block group-hover:block"
+                >
+                  {dayEvents.map((event) => event.courseCode).join(", ")}
+                </span>
               </div>
             );
-          }
-          return (
-            <div key={cell.toISOString()} className="group relative h-9">
-              <button
-                type="button"
-                aria-label={`${cell.getDate()} ${monthLabel(focus)}, ${dayEvents.map((event) => event.courseCode).join(", ")}`}
-                className={cn(
-                  dayClass,
-                  !isToday &&
-                    "hover:bg-muted focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2",
-                )}
-              >
-                {cell.getDate()}
-                <span
-                  className={cn(
-                    "mt-px size-1 rounded-full",
-                    isToday
-                      ? "bg-primary-foreground"
-                      : accent[dayEvents[0].accent].dot,
-                  )}
-                  aria-hidden="true"
-                />
-              </button>
-              <span
-                aria-hidden="true"
-                className="bg-foreground text-background pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 rounded-lg px-2 py-1 text-[11px] font-medium whitespace-nowrap shadow-md group-focus-within:block group-hover:block"
-              >
-                {dayEvents.map((event) => event.courseCode).join(", ")}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      {events.some((event) => event.startsOn && event.endsOn) ? null : (
-        <p className="text-muted-foreground mt-3 text-xs leading-5">
-          Calendar dates will appear once the selected study periods are
-          published.
-        </p>
-      )}
-      <Link
-        href="/calendar"
-        className="text-primary hover:text-primary/80 mt-auto pt-3 text-xs font-semibold"
-      >
-        Open calendar
-      </Link>
+          })}
+        </div>
+        {events.some((event) => event.startsOn && event.endsOn) ? null : (
+          <p className="mt-3 text-xs leading-5 text-muted-foreground">
+            Calendar dates will appear once the selected study periods are
+            published.
+          </p>
+        )}
+        <Link
+          href="/calendar"
+          className="mt-auto pt-3 text-xs font-semibold text-primary hover:text-primary/80"
+        >
+          Open calendar
+        </Link>
       </CardContent>
     </Card>
   );

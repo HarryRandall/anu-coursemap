@@ -62,7 +62,7 @@ export function CourseCard({
       className={cx(
         cardShell,
         "hover:ring-brand",
-        selected && "ring-2 ring-brand",
+        selected && "ring-brand ring-2",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -78,7 +78,7 @@ export function CourseCard({
           )}
           <CourseGlyph code={course.code} size="md" />
           <div className="flex min-w-0 flex-col gap-1">
-            <p className="font-mono text-xs font-semibold text-quaternary">
+            <p className="text-quaternary font-mono text-xs font-semibold">
               {course.code}
             </p>
             <h3 className="text-md font-semibold text-primary">
@@ -91,7 +91,7 @@ export function CourseCard({
           <Dropdown.Root>
             <AriaButton
               aria-label={`Actions for ${course.code}`}
-              className="shrink-0 cursor-pointer rounded-md p-1 text-fg-quaternary outline-focus-ring transition duration-100 ease-linear hover:bg-primary_hover hover:text-fg-quaternary_hover focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="text-fg-quaternary outline-focus-ring hover:bg-primary_hover hover:text-fg-quaternary_hover shrink-0 cursor-pointer rounded-md p-1 transition duration-100 ease-linear focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <DotsVertical className="size-5" />
             </AriaButton>
@@ -132,7 +132,7 @@ export function CourseCard({
       </div>
 
       {course.prerequisites.length > 0 && (
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           Requires{" "}
           <span className="font-mono text-secondary">
             {course.prerequisites.join(", ")}
@@ -151,7 +151,7 @@ export function CourseCard({
               .join("")}
             alt={course.convener}
           />
-          <span className="text-sm text-tertiary">{course.convener}</span>
+          <span className="text-tertiary text-sm">{course.convener}</span>
         </div>
 
         {locked ? (
@@ -160,7 +160,7 @@ export function CourseCard({
             description={`Complete ${course.prerequisites.join(" and ")} first.`}
           >
             <TooltipTrigger>
-              <span className="flex items-center gap-1.5 text-sm font-semibold text-quaternary">
+              <span className="text-quaternary flex items-center gap-1.5 text-sm font-semibold">
                 <Lock01 className="size-4" />
                 Locked
               </span>
@@ -197,7 +197,7 @@ export function ProgrammeCard({
     <article className={cardShell}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <p className="font-mono text-xs font-semibold text-quaternary">
+          <p className="text-quaternary font-mono text-xs font-semibold">
             {code}
           </p>
           <h3 className="text-md font-semibold text-primary">{title}</h3>
@@ -209,8 +209,8 @@ export function ProgrammeCard({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="text-sm text-tertiary">Progress</span>
-          <span className="font-mono text-xs text-quaternary">
+          <span className="text-tertiary text-sm">Progress</span>
+          <span className="text-quaternary font-mono text-xs">
             {completed} / {units} units
           </span>
         </div>
@@ -218,8 +218,8 @@ export function ProgrammeCard({
       </div>
 
       <div className="flex items-center justify-between gap-3 border-t border-secondary pt-4">
-        <span className="flex items-center gap-1.5 text-sm text-tertiary">
-          <Users01 className="size-4 text-fg-quaternary" />
+        <span className="text-tertiary flex items-center gap-1.5 text-sm">
+          <Users01 className="text-fg-quaternary size-4" />
           {completed === 0 ? "Not started" : `${Math.round(percentage)}% done`}
         </span>
         <Button size="sm" color="link-color" onClick={() => onAction?.("open")}>
@@ -252,7 +252,7 @@ export function RequirementCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="text-md font-semibold text-primary">{title}</h3>
-          <p className="text-sm text-tertiary">{detail}</p>
+          <p className="text-tertiary text-sm">{detail}</p>
         </div>
         <BadgeWithIcon
           size="sm"
@@ -266,10 +266,10 @@ export function RequirementCard({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="text-sm text-tertiary">
+          <span className="text-tertiary text-sm">
             {completed} of {required} units
           </span>
-          <span className="font-mono text-xs text-quaternary">
+          <span className="text-quaternary font-mono text-xs">
             {Math.round(percentage)}%
           </span>
         </div>
@@ -285,7 +285,7 @@ export function RequirementCard({
           ))}
         </div>
       ) : (
-        <p className="border-t border-secondary pt-4 text-sm text-tertiary">
+        <p className="text-tertiary border-t border-secondary pt-4 text-sm">
           No courses counted towards this requirement yet.
         </p>
       )}

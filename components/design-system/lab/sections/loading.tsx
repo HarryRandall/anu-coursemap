@@ -27,7 +27,7 @@ function LoadThenReveal() {
         >
           {loading ? "Finish loading" : "Load again"}
         </Button>
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           {loading
             ? "Skeletons match the real card geometry, so nothing shifts when the data lands."
             : "Loaded. Toggle back to compare the two states."}

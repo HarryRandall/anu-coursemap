@@ -173,7 +173,7 @@ export function IsolatedCataloguePreviewFrame({
                   role="radio"
                   aria-checked={selected}
                   onClick={() => setThemeOverride(value)}
-                  className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold outline-focus-ring transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                  className={`outline-focus-ring flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 ${
                     selected
                       ? "bg-primary text-secondary shadow-xs ring-1 ring-primary ring-inset"
                       : "text-quaternary hover:text-secondary"

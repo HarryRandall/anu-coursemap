@@ -90,7 +90,7 @@ export function ProgressSection() {
                 <span className="text-sm font-medium text-secondary">
                   {requirement.title}
                 </span>
-                <span className="font-mono text-xs text-quaternary">
+                <span className="text-quaternary font-mono text-xs">
                   {requirement.completed} / {requirement.required} units
                 </span>
               </div>

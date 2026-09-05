@@ -71,7 +71,7 @@ function DismissibleAlerts() {
 
       {visible.length === 0 && (
         <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-secondary p-6">
-          <p className="text-sm text-tertiary">
+          <p className="text-tertiary text-sm">
             Every alert has been dismissed.
           </p>
           <Button

@@ -60,7 +60,7 @@ export default async function ComponentReviewFamilyPage({
           return (
             <section key={section.slug} className="flex flex-col gap-5">
               <div className="border-b border-secondary pb-3">
-                <p className="text-xs font-semibold tracking-wide text-brand-secondary uppercase">
+                <p className="text-brand-secondary text-xs font-semibold tracking-wide uppercase">
                   {source === "untitled" ? "Untitled UI" : "Coursemap"}
                 </p>
                 <h2 className="text-display-xs font-semibold text-primary">

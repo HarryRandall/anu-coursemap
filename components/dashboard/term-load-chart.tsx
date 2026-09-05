@@ -1,6 +1,13 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, XAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ReferenceLine,
+  XAxis,
+} from "recharts";
 import { Card, CardContent } from "@reui/ui/card";
 import {
   ChartContainer,
@@ -34,13 +41,13 @@ export function TermLoadChart({
       <CardContent className="flex h-full flex-col gap-4 p-6">
         <div>
           <h2 className="text-sm font-semibold">Semester load</h2>
-          <p className="text-muted-foreground mt-0.5 text-xs">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Dashed line marks the standard {STANDARD_TERM_UNITS}-unit load
           </p>
         </div>
 
         {data.length === 0 ? (
-          <p className="text-muted-foreground flex flex-1 items-center justify-center py-10 text-sm">
+          <p className="flex flex-1 items-center justify-center py-10 text-sm text-muted-foreground">
             Add courses to see your semester load.
           </p>
         ) : (

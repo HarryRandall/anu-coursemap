@@ -85,10 +85,10 @@ export function AvatarsSection() {
               contrastBorder
               initials={adviser.initials}
               alt={adviser.name}
-              className="ring-2 ring-bg-primary"
+              className="ring-bg-primary ring-2"
             />
           ))}
-          <Avatar size="md" count={7} className="ring-2 ring-bg-primary" />
+          <Avatar size="md" count={7} className="ring-bg-primary ring-2" />
         </div>
       </Example>
     </Stack>

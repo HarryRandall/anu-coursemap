@@ -70,7 +70,7 @@ function ExampleSurface({
         <div className="flex flex-col gap-0.5">
           <h2 className="text-lg font-semibold text-primary">{title}</h2>
           {description && (
-            <p className="text-sm text-tertiary">{description}</p>
+            <p className="text-tertiary text-sm">{description}</p>
           )}
         </div>
       )}

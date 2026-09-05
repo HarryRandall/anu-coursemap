@@ -119,7 +119,7 @@ function UploadQueue() {
         <Button size="sm" color="secondary" onClick={() => setUploads([])}>
           Clear all
         </Button>
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           {uploads.length === 0
             ? "Nothing queued. Drop a file on the zone above, or browse for one."
             : `${uploads.filter((u) => u.progress === 100 && !u.failed).length} of ${uploads.length} complete.`}

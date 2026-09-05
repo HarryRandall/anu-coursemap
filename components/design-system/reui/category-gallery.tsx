@@ -49,14 +49,14 @@ export function ReuiCategoryGallery({
           <span className="sr-only">Search {category.label} examples</span>
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-fg-quaternary"
+            className="text-fg-quaternary pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2"
           />
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={`Search ${category.count} examples`}
-            className="min-h-12 w-full rounded-xl border border-secondary bg-primary pr-4 pl-11 text-sm text-primary shadow-xs outline-focus-ring placeholder:text-placeholder focus:border-brand focus:outline-2 focus:outline-offset-1"
+            className="outline-focus-ring placeholder:text-placeholder focus:border-brand min-h-12 w-full rounded-xl border border-secondary bg-primary pr-4 pl-11 text-sm text-primary shadow-xs focus:outline-2 focus:outline-offset-1"
           />
         </label>
       </div>
@@ -87,11 +87,11 @@ export function ReuiCategoryGallery({
                 <h2 className="text-md font-semibold text-primary">
                   {example.title}
                 </h2>
-                <p className="mt-0.5 truncate font-mono text-xs text-quaternary">
+                <p className="text-quaternary mt-0.5 truncate font-mono text-xs">
                   {example.name}
                 </p>
               </div>
-              <span className="shrink-0 rounded-md bg-brand-primary px-2 py-1 text-xs font-semibold text-brand-secondary">
+              <span className="bg-brand-primary text-brand-secondary shrink-0 rounded-md px-2 py-1 text-xs font-semibold">
                 ReUI
               </span>
             </div>

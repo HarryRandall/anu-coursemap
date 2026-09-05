@@ -91,7 +91,7 @@ const subheadingItems = [
 
 function PageBody() {
   return (
-    <div className="flex flex-1 flex-col gap-6 bg-secondary_alt p-6 md:p-8">
+    <div className="bg-secondary_alt flex flex-1 flex-col gap-6 p-6 md:p-8">
       <div className="flex flex-col gap-1">
         <h1 className="text-display-xs font-semibold text-primary">Courses</h1>
         <p className="text-md text-tertiary">
@@ -112,7 +112,7 @@ function PageBody() {
             className="rounded-xl bg-primary p-5 ring-1 ring-secondary"
           >
             <p className="text-sm font-semibold text-primary">{course}</p>
-            <p className="pt-1 text-sm text-tertiary">6 units</p>
+            <p className="text-tertiary pt-1 text-sm">6 units</p>
           </div>
         ))}
       </div>

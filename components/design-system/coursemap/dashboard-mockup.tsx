@@ -31,7 +31,7 @@ export function DegreeProgressHero() {
   ];
 
   return (
-    <section className="relative isolate overflow-hidden rounded-2xl bg-brand-solid p-6 text-white shadow-lg md:p-8">
+    <section className="bg-brand-solid relative isolate overflow-hidden rounded-2xl p-6 text-white shadow-lg md:p-8">
       <div
         aria-hidden="true"
         className="absolute -top-28 -right-16 -z-10 size-80 rounded-full bg-white/10 blur-3xl"
@@ -48,10 +48,10 @@ export function DegreeProgressHero() {
               Your degree
             </span>
             <div>
-              <h2 className="text-display-xs font-semibold text-white md:text-display-sm">
+              <h2 className="text-display-xs md:text-display-sm font-semibold text-white">
                 Bachelor of Advanced Computing
               </h2>
-              <p className="mt-1 text-md text-white/70">
+              <p className="text-md mt-1 text-white/70">
                 AUBAC · 2025 commencement · Four-year programme
               </p>
             </div>
@@ -139,7 +139,7 @@ export function PerformanceCard() {
           <h2 className="text-md font-semibold text-primary">
             Academic performance
           </h2>
-          <p className="mt-0.5 text-sm text-tertiary">
+          <p className="text-tertiary mt-0.5 text-sm">
             Recorded mark average by teaching period
           </p>
         </div>
@@ -151,13 +151,13 @@ export function PerformanceCard() {
       <div className="flex flex-1 flex-col gap-6 p-5">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-sm text-tertiary">Current average</p>
-            <p className="mt-1 text-display-md font-semibold tracking-tight text-primary">
+            <p className="text-tertiary text-sm">Current average</p>
+            <p className="text-display-md mt-1 font-semibold tracking-tight text-primary">
               76.4
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-tertiary">Best result</p>
+            <p className="text-tertiary text-sm">Best result</p>
             <p className="mt-1 text-lg font-semibold text-primary">84 · HD</p>
           </div>
         </div>
@@ -180,7 +180,7 @@ export function PerformanceCard() {
                 )}
                 style={{ height: `${result.value}%` }}
               />
-              <span className="pb-3 text-center text-[11px] text-quaternary">
+              <span className="text-quaternary pb-3 text-center text-[11px]">
                 {result.label}
               </span>
             </div>
@@ -196,7 +196,7 @@ export function PerformanceCard() {
           ].map(([grade, count]) => (
             <div key={grade} className="rounded-lg bg-secondary p-2.5">
               <p className="text-lg font-semibold text-primary">{count}</p>
-              <p className="text-xs text-tertiary">{grade}</p>
+              <p className="text-tertiary text-xs">{grade}</p>
             </div>
           ))}
         </div>
@@ -235,11 +235,11 @@ export function UpcomingDatesCard() {
       <div className="flex items-start justify-between gap-3 border-b border-secondary px-5 py-4">
         <div>
           <h2 className="text-md font-semibold text-primary">Upcoming dates</h2>
-          <p className="mt-0.5 text-sm text-tertiary">
+          <p className="text-tertiary mt-0.5 text-sm">
             The next milestones in your academic year
           </p>
         </div>
-        <CalendarDate className="size-5 text-fg-quaternary" />
+        <CalendarDate className="text-fg-quaternary size-5" />
       </div>
 
       <ol className="flex flex-1 flex-col divide-y divide-secondary">
@@ -260,7 +260,7 @@ export function UpcomingDatesCard() {
             </div>
             <div className="min-w-0 self-center">
               <p className="text-sm font-semibold text-primary">{date.title}</p>
-              <p className="mt-1 text-sm text-tertiary">{date.detail}</p>
+              <p className="text-tertiary mt-1 text-sm">{date.detail}</p>
             </div>
           </li>
         ))}
@@ -277,7 +277,7 @@ export function UpcomingDatesCard() {
 
 export function AcademicDashboardMockup() {
   return (
-    <div className="flex flex-col gap-6 rounded-2xl bg-secondary_alt p-4 ring-1 ring-secondary md:p-6 lg:p-8">
+    <div className="bg-secondary_alt flex flex-col gap-6 rounded-2xl p-4 ring-1 ring-secondary md:p-6 lg:p-8">
       <DashboardMetrics />
 
       <DegreeProgressHero />

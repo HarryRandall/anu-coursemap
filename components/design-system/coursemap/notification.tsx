@@ -57,7 +57,7 @@ export function NotificationCard({
         <div className="flex flex-col gap-1">
           <p className="text-sm font-semibold text-primary">{title}</p>
           {description && (
-            <p className="text-sm text-tertiary">{description}</p>
+            <p className="text-tertiary text-sm">{description}</p>
           )}
         </div>
 

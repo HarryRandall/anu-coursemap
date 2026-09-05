@@ -7,7 +7,7 @@ export default function PlanLoading() {
     <AppShell>
       <div aria-busy="true">
         <span className="sr-only">Loading your course plan</span>
-        <div className="bg-card ring-border mb-4 space-y-3 rounded-2xl px-4 py-3.5 shadow-sm ring-1 sm:px-5">
+        <div className="mb-4 space-y-3 rounded-2xl bg-card px-4 py-3.5 shadow-sm ring-1 ring-border sm:px-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="space-y-2">
               <Skeleton className="h-3 w-28" />

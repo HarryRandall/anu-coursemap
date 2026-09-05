@@ -10,7 +10,7 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       aria-hidden="true"
-      className={cx("animate-pulse rounded-md bg-quaternary", className)}
+      className={cx("bg-quaternary animate-pulse rounded-md", className)}
     />
   );
 }

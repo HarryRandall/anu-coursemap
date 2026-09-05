@@ -87,7 +87,7 @@ function LiveTabs() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-tertiary">
+              <p className="text-tertiary text-sm">
                 No courses counted towards this requirement yet.
               </p>
             )}

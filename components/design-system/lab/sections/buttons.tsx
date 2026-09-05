@@ -59,7 +59,7 @@ function LoadingDemo() {
       >
         Remove course
       </Button>
-      <span className="text-sm text-tertiary">
+      <span className="text-tertiary text-sm">
         {pending ? "Working…" : "Press a button to see the loading state."}
       </span>
     </Variants>

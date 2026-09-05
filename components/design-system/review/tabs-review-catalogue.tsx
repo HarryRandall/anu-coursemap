@@ -42,7 +42,7 @@ function ReviewItemCard({
       id={componentReviewDomId(item.id)}
       tabIndex={-1}
       data-review-decision={decision ?? "unreviewed"}
-      className="scroll-mt-40 overflow-hidden rounded-xl border border-secondary bg-primary shadow-xs outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="outline-focus-ring scroll-mt-40 overflow-hidden rounded-xl border border-secondary bg-primary shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <div className="border-b border-secondary">
         <IsolatedCataloguePreviewFrame
@@ -59,14 +59,14 @@ function ReviewItemCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-md font-semibold text-primary">{item.title}</h3>
-            <span className="rounded-md bg-brand-primary px-2 py-1 text-xs font-semibold text-brand-secondary">
+            <span className="bg-brand-primary text-brand-secondary rounded-md px-2 py-1 text-xs font-semibold">
               {reviewSourceLabels[item.source]}
             </span>
           </div>
           {item.description && (
-            <p className="mt-1 text-sm text-tertiary">{item.description}</p>
+            <p className="text-tertiary mt-1 text-sm">{item.description}</p>
           )}
-          <p className="mt-1 truncate font-mono text-xs text-quaternary">
+          <p className="text-quaternary mt-1 truncate font-mono text-xs">
             {item.id}
           </p>
         </div>
@@ -103,7 +103,7 @@ function ReviewSourceSection({
     <section className="flex flex-col gap-5">
       <div className="flex items-end justify-between gap-4 border-b border-secondary pb-3">
         <h2 className="text-display-xs font-semibold text-primary">{title}</h2>
-        <span className="text-sm text-tertiary">
+        <span className="text-tertiary text-sm">
           {visibleItems.length} shown
         </span>
       </div>
@@ -173,11 +173,11 @@ function ReviewCatalogueContents({
         </>
       ) : (
         <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-secondary bg-primary p-8 text-center">
-          <Search aria-hidden className="size-6 text-fg-quaternary" />
+          <Search aria-hidden className="text-fg-quaternary size-6" />
           <p className="text-md font-semibold text-primary">
             No components match these filters
           </p>
-          <p className="text-sm text-tertiary">
+          <p className="text-tertiary text-sm">
             Change the decision or source filter to continue reviewing.
           </p>
         </div>

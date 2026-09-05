@@ -54,7 +54,7 @@ function LiveTabs() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-tertiary">
+              <p className="text-tertiary text-sm">
                 No courses counted towards this requirement yet.
               </p>
             )}
@@ -75,7 +75,7 @@ export function TabsSection() {
         <div className="flex flex-col gap-8">
           {horizontalTypes.map((type) => (
             <div key={type} className="flex flex-col gap-2">
-              <p className="text-xs font-semibold tracking-wide text-quaternary uppercase">
+              <p className="text-quaternary text-xs font-semibold tracking-wide uppercase">
                 {type}
               </p>
               <Tabs defaultSelectedKey="plan">
@@ -98,7 +98,7 @@ export function TabsSection() {
         <div className="flex flex-col gap-8">
           {(["sm", "md"] as const).map((size) => (
             <div key={size} className="flex flex-col gap-2">
-              <p className="text-xs font-semibold tracking-wide text-quaternary uppercase">
+              <p className="text-quaternary text-xs font-semibold tracking-wide uppercase">
                 {size}
               </p>
               <Tabs defaultSelectedKey="all">

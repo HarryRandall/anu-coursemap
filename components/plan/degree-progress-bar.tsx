@@ -59,7 +59,7 @@ export function DegreeProgressBar({
           [
             "Still to plan",
             progress.remaining,
-            dark ? "bg-card/80" : "bg-zinc-300",
+            dark ? "bg-card/80" : "bg-border",
           ],
         ].map(([label, value, dot]) => (
           <div key={label}>

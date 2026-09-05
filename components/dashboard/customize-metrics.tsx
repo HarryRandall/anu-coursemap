@@ -1,7 +1,7 @@
 "use client";
 
 import { Settings2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { Button } from "@reui/ui/button";
 import { Checkbox } from "@reui/ui/checkbox";
 import {
@@ -25,45 +25,64 @@ function isMetricId(value: unknown): value is MetricId {
   return typeof value === "string" && value in METRIC_OPTIONS;
 }
 
+function parseStoredMetricIds(raw: string | null): MetricId[] | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    const ids = Array.isArray(parsed) ? parsed.filter(isMetricId) : [];
+    return ids.length > 0 ? ids : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Local listeners so a toggle in one component updates every subscriber. */
+const storageListeners = new Set<() => void>();
+
+function subscribeToStoredMetrics(listener: () => void) {
+  storageListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    storageListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
 /**
  * The reader's chosen metric cards, persisted locally per browser. Cards
  * always render in the canonical registry order regardless of the order
- * they were picked in.
+ * they were picked in. Reads go through useSyncExternalStore so the server
+ * renders the defaults and the client hydrates to the stored choice without
+ * a state write inside an effect.
  */
 export function useSelectedMetrics() {
-  const [stored, setStored] = useState<MetricId[] | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        setStored([...DEFAULT_METRIC_IDS]);
-        return;
-      }
-      const parsed: unknown = JSON.parse(raw);
-      const ids = Array.isArray(parsed) ? parsed.filter(isMetricId) : [];
-      setStored(ids.length > 0 ? ids : [...DEFAULT_METRIC_IDS]);
-    } catch {
-      setStored([...DEFAULT_METRIC_IDS]);
-    }
-  }, []);
+  const raw = useSyncExternalStore(
+    subscribeToStoredMetrics,
+    () => window.localStorage.getItem(STORAGE_KEY),
+    () => null,
+  );
+  const hydrated = useSyncExternalStore(
+    subscribeToStoredMetrics,
+    () => true,
+    () => false,
+  );
+  const selected = useMemo(
+    () => parseStoredMetricIds(raw) ?? [...DEFAULT_METRIC_IDS],
+    [raw],
+  );
 
   const toggle = useCallback((id: MetricId) => {
-    setStored((current) => {
-      const base = current ?? [...DEFAULT_METRIC_IDS];
-      const next = base.includes(id)
-        ? base.filter((item) => item !== id)
-        : METRIC_ORDER.filter((item) => base.includes(item) || item === id);
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    const base = parseStoredMetricIds(
+      window.localStorage.getItem(STORAGE_KEY),
+    ) ?? [...DEFAULT_METRIC_IDS];
+    const next = base.includes(id)
+      ? base.filter((item) => item !== id)
+      : METRIC_ORDER.filter((item) => base.includes(item) || item === id);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    storageListeners.forEach((listener) => listener());
   }, []);
 
-  return {
-    selected: stored ?? [...DEFAULT_METRIC_IDS],
-    hydrated: stored !== null,
-    toggle,
-  };
+  return { selected, hydrated, toggle };
 }
 
 export function CustomizeMetricsButton({
@@ -85,8 +104,8 @@ export function CustomizeMetricsButton({
         <SheetHeader>
           <SheetTitle>Metric cards</SheetTitle>
           <SheetDescription>
-            Pick the cards you want on your dashboard. Choices are saved on
-            this device.
+            Pick the cards you want on your dashboard. Choices are saved on this
+            device.
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col gap-1 px-4 pb-6">
@@ -96,7 +115,7 @@ export function CustomizeMetricsButton({
             return (
               <label
                 key={id}
-                className="hover:bg-muted/60 flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors"
+                className="flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors hover:bg-muted/60"
               >
                 <Checkbox
                   checked={checked}
@@ -106,7 +125,7 @@ export function CustomizeMetricsButton({
                 />
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="text-sm font-medium">{option.title}</span>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-xs text-muted-foreground">
                     {option.blurb}
                   </span>
                 </span>

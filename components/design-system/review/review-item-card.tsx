@@ -29,7 +29,7 @@ export function ReviewItemCard({
       id={componentReviewDomId(item.id)}
       tabIndex={-1}
       data-review-decision={decision ?? "unreviewed"}
-      className="scroll-mt-40 overflow-hidden rounded-xl border border-secondary bg-primary shadow-xs outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="outline-focus-ring scroll-mt-40 overflow-hidden rounded-xl border border-secondary bg-primary shadow-xs focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       <div className="border-b border-secondary">
         <IsolatedCataloguePreviewFrame
@@ -46,14 +46,14 @@ export function ReviewItemCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-md font-semibold text-primary">{item.title}</h3>
-            <span className="rounded-md bg-brand-primary px-2 py-1 text-xs font-semibold text-brand-secondary">
+            <span className="bg-brand-primary text-brand-secondary rounded-md px-2 py-1 text-xs font-semibold">
               {reviewSourceLabels[item.source]}
             </span>
           </div>
           {item.description && (
-            <p className="mt-1 text-sm text-tertiary">{item.description}</p>
+            <p className="text-tertiary mt-1 text-sm">{item.description}</p>
           )}
-          <p className="mt-1 truncate font-mono text-xs text-quaternary">
+          <p className="text-quaternary mt-1 truncate font-mono text-xs">
             {item.id}
           </p>
         </div>

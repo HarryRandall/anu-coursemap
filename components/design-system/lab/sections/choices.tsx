@@ -48,7 +48,7 @@ function RequirementChecklist() {
           />
         ))}
       </div>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {checked.size} of {requirements.length} requirement groups shown.
       </p>
     </div>
@@ -83,7 +83,7 @@ function PlanModeRadios() {
           isDisabled
         />
       </RadioGroup>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         Planning with the <strong className="text-secondary">{mode}</strong>{" "}
         load.
       </p>
@@ -122,7 +122,7 @@ function NotificationToggles() {
         onChange={(on) => setPrefs((p) => ({ ...p, timetable: on }))}
         isDisabled
       />
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {Object.values(prefs).filter(Boolean).length} of 3 notifications on.
       </p>
     </div>

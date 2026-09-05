@@ -119,10 +119,10 @@ function AnatomyGallery() {
           </ButtonGroup>
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-secondary_alt to-transparent sm:hidden"
+            className="from-secondary_alt pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l to-transparent sm:hidden"
           />
         </div>
-        <p className="text-sm text-tertiary">{anatomySummaries[current]}</p>
+        <p className="text-tertiary text-sm">{anatomySummaries[current]}</p>
       </div>
 
       <Grid cols={3}>
@@ -260,7 +260,7 @@ function AnatomyGallery() {
         )}
       </Grid>
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {log ?? "Open a card menu and choose an item. The result appears here."}
       </p>
     </div>
@@ -305,7 +305,7 @@ function MetricRow() {
         />
       </Grid>
 
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {log ?? "Open a card menu and choose an item. The result appears here."}
       </p>
     </div>
@@ -421,11 +421,11 @@ export function MetricsSection() {
         bare
       >
         <div className="flex h-56 flex-col items-center justify-center gap-2 rounded-xl bg-primary ring-1 ring-secondary">
-          <BarChart03 className="size-6 text-fg-quaternary" />
+          <BarChart03 className="text-fg-quaternary size-6" />
           <p className="text-sm font-semibold text-secondary">
             No enrolment data yet
           </p>
-          <p className="max-w-sm text-center text-sm text-tertiary">
+          <p className="text-tertiary max-w-sm text-center text-sm">
             Enrolment figures appear once a catalogue year has been imported and
             matched to a teaching period.
           </p>

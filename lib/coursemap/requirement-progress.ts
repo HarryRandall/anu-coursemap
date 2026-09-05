@@ -59,7 +59,11 @@ function conditionPredicates(
     predicates.push(
       (course) =>
         course.subject === subject &&
-        levelWithin(course.level, condition.minimumLevel, condition.maximumLevel),
+        levelWithin(
+          course.level,
+          condition.minimumLevel,
+          condition.maximumLevel,
+        ),
     );
   } else if (condition.conditionKind === "level") {
     predicates.push((course) =>

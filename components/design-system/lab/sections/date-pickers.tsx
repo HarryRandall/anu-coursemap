@@ -13,7 +13,7 @@ function CensusDatePicker() {
   return (
     <div className="flex flex-col gap-3">
       <DatePicker value={value} onChange={setValue} />
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {value
           ? `Census date set to ${value.toDate(getLocalTimeZone()).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}.`
           : "No census date chosen."}
@@ -36,7 +36,7 @@ function TeachingPeriodRange() {
   return (
     <div className="flex flex-col gap-3">
       <DateRangePicker value={range} onChange={setRange} />
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {range
           ? `Semester 1 runs ${format(range.start)} to ${format(range.end)}.`
           : "No teaching period chosen. Pick a start and end date, then apply."}

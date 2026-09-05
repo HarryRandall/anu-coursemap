@@ -203,12 +203,12 @@ function Swatch({
   return (
     <div className="flex flex-col gap-1.5">
       <div
-        className={`h-16 w-full rounded-lg ring-1 ring-secondary_alt ring-inset ${className}`}
+        className={`ring-secondary_alt h-16 w-full rounded-lg ring-1 ring-inset ${className}`}
       />
       <div className="flex flex-col">
         <span className="text-xs font-semibold text-secondary">{label}</span>
         {sub && (
-          <span className="font-mono text-xs text-quaternary">{sub}</span>
+          <span className="text-quaternary font-mono text-xs">{sub}</span>
         )}
       </div>
     </div>
@@ -257,16 +257,16 @@ export function FoundationsSection() {
         <div className="flex flex-col gap-5">
           {utilityRamps.map((ramp) => (
             <div key={ramp.label} className="flex flex-col gap-2">
-              <p className="text-xs font-semibold tracking-wide text-quaternary uppercase">
+              <p className="text-quaternary text-xs font-semibold tracking-wide uppercase">
                 {ramp.label}
               </p>
               <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
                 {ramp.swatches.map((swatch) => (
                   <div key={swatch.step} className="flex flex-col gap-1">
                     <div
-                      className={`h-10 w-full rounded-md ring-1 ring-secondary_alt ring-inset ${swatch.className}`}
+                      className={`ring-secondary_alt h-10 w-full rounded-md ring-1 ring-inset ${swatch.className}`}
                     />
-                    <span className="font-mono text-xs text-quaternary">
+                    <span className="text-quaternary font-mono text-xs">
                       {swatch.step}
                     </span>
                   </div>
@@ -306,7 +306,7 @@ export function FoundationsSection() {
               <span className={`text-md font-medium ${role}`}>
                 COMP1100 Programming as Problem Solving
               </span>
-              <span className="font-mono text-xs text-quaternary">{role}</span>
+              <span className="text-quaternary font-mono text-xs">{role}</span>
             </div>
           ))}
         </div>
@@ -350,19 +350,19 @@ export function FoundationsSection() {
         <Variants>
           <button
             type="button"
-            className="rounded-lg bg-brand-solid px-3.5 py-2.5 text-sm font-semibold text-white outline-focus-ring focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-brand-solid outline-focus-ring rounded-lg px-3.5 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Brand focus ring
           </button>
           <button
             type="button"
-            className="rounded-lg bg-primary px-3.5 py-2.5 text-sm font-semibold text-secondary ring-1 ring-primary outline-focus-ring ring-inset focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="outline-focus-ring rounded-lg bg-primary px-3.5 py-2.5 text-sm font-semibold text-secondary ring-1 ring-primary ring-inset focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Secondary focus ring
           </button>
           <button
             type="button"
-            className="rounded-lg bg-error-solid px-3.5 py-2.5 text-sm font-semibold text-white outline-focus-ring-error focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="bg-error-solid outline-focus-ring-error rounded-lg px-3.5 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Error focus ring
           </button>

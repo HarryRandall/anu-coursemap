@@ -42,7 +42,7 @@ export function Variants({
   return (
     <div className="flex flex-col gap-2">
       {label && (
-        <p className="text-xs font-semibold tracking-wide text-quaternary uppercase">
+        <p className="text-quaternary text-xs font-semibold tracking-wide uppercase">
           {label}
         </p>
       )}
@@ -89,9 +89,9 @@ export function FidelityNote({ children }: { children: ReactNode }) {
     <div className="relative overflow-hidden rounded-lg bg-primary p-4 pl-5 ring-1 ring-secondary">
       <span
         aria-hidden="true"
-        className="absolute inset-y-0 left-0 w-1 bg-utility-yellow-500"
+        className="bg-utility-yellow-500 absolute inset-y-0 left-0 w-1"
       />
-      <p className="text-sm text-tertiary">{children}</p>
+      <p className="text-tertiary text-sm">{children}</p>
     </div>
   );
 }

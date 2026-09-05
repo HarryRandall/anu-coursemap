@@ -71,24 +71,22 @@ export function DegreeProgressHero({
     <Card className="h-full">
       <CardContent className="flex h-full flex-col gap-5 p-6">
         <div className="flex flex-col gap-1">
-          <p className="text-muted-foreground text-[13px] font-medium">
+          <p className="text-[13px] font-medium text-muted-foreground">
             Degree progress
           </p>
-          <p className="text-muted-foreground truncate text-sm">
-            {degreeName}
-          </p>
+          <p className="truncate text-sm text-muted-foreground">{degreeName}</p>
         </div>
 
         <div className="flex flex-wrap items-end justify-between gap-3">
           <p className="text-4xl font-semibold tracking-tight">
             {progress.completed}
-            <span className="text-muted-foreground text-base font-normal">
+            <span className="text-base font-normal text-muted-foreground">
               {" "}
               / {total} units completed
             </span>
           </p>
           {unitTarget !== null && (
-            <Badge variant="secondary" className="text-primary font-semibold">
+            <Badge variant="secondary" className="font-semibold text-primary">
               {progress.percent}%
             </Badge>
           )}
@@ -109,7 +107,10 @@ export function DegreeProgressHero({
                   key={segment.id}
                   title={`${segment.label} · ${segment.units} units`}
                   style={{ flex: segment.units }}
-                  className={cn("h-full first:rounded-l-full last:rounded-r-full", segment.className)}
+                  className={cn(
+                    "h-full first:rounded-l-full last:rounded-r-full",
+                    segment.className,
+                  )}
                 />
               ))}
           </div>
@@ -121,7 +122,7 @@ export function DegreeProgressHero({
                   aria-hidden="true"
                   className={cn("size-2 rounded-full", segment.dotClassName)}
                 />
-                <dt className="text-muted-foreground text-xs">
+                <dt className="text-xs text-muted-foreground">
                   {segment.label}
                 </dt>
                 <dd className="text-xs font-semibold tabular-nums">
@@ -132,8 +133,8 @@ export function DegreeProgressHero({
           </dl>
         </div>
 
-        <div className="border-border mt-auto flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-          <p className="text-muted-foreground flex items-center gap-2 text-sm">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <CalendarCheck2 aria-hidden="true" className="size-4" />
             {finishLabel
               ? `Planned completion ${finishLabel}`

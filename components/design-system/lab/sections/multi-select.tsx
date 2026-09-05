@@ -40,7 +40,7 @@ function CollegeMultiSelect() {
           <MultiSelect.Item id={item.id}>{item.label}</MultiSelect.Item>
         )}
       </MultiSelect>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {count === 0
           ? "No college filter applied, so every course is shown."
           : `Filtering to ${count} of ${collegeItems.length} colleges.`}
@@ -99,7 +99,7 @@ function SessionTagSelect() {
       >
         {(item) => <TagSelect.Item id={item.id}>{item.label}</TagSelect.Item>}
       </TagSelect>
-      <p className="text-sm text-tertiary">
+      <p className="text-tertiary text-sm">
         {selectedItems.items.length === 0
           ? "No teaching period chosen."
           : `${selectedItems.items.length} of ${sessionItems.length} periods chosen.`}

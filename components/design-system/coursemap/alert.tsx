@@ -130,7 +130,7 @@ export function Alert({
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex flex-col gap-1">
           <p className="text-sm font-semibold text-primary">{title}</p>
-          {children && <div className="text-sm text-tertiary">{children}</div>}
+          {children && <div className="text-tertiary text-sm">{children}</div>}
         </div>
 
         {actions && actions.length > 0 && (

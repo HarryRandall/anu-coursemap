@@ -16,7 +16,7 @@ export function Topbar({
   breadcrumbSegmentLabels?: Record<string, string | null>;
 }) {
   return (
-    <header className="border-border bg-background relative flex min-h-14 flex-wrap items-center justify-between gap-2 overflow-visible border-b px-4 py-2 sm:flex-nowrap sm:gap-3 sm:px-6 sm:py-0">
+    <header className="relative flex min-h-14 flex-wrap items-center justify-between gap-2 overflow-visible border-b border-border bg-background px-4 py-2 sm:flex-nowrap sm:gap-3 sm:px-6 sm:py-0">
       <div className="flex min-w-0 items-center gap-2 overflow-visible">
         <SidebarTrigger className="shrink-0" />
         <Separator

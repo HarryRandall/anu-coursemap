@@ -221,10 +221,10 @@ function CourseTable() {
           </ButtonGroup>
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-secondary_alt to-transparent sm:hidden"
+            className="from-secondary_alt pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l to-transparent sm:hidden"
           />
         </div>
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           {tableVariantLabels[current].summary}
         </p>
       </div>
@@ -269,7 +269,7 @@ function CourseTable() {
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           {lastAction ??
             "Filters, sorting, selection and bulk actions are shared across every variant, so switching does not reset your state."}
         </p>

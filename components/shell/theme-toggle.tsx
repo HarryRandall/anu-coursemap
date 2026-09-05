@@ -2,7 +2,7 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Button } from "@reui/ui/button";
 import {
   DropdownMenu,
@@ -17,13 +17,18 @@ import {
  * under `coursemap.theme` and applied as a class on <html>, which the
  * `dark` custom variant in globals.css reads.
  */
+const subscribeToNothing = () => () => {};
+
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
 
   // The server does not know the stored preference, so the control renders
   // a stable placeholder until hydration to avoid a mismatch.
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
 
   return (
     <DropdownMenu>

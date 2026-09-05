@@ -76,7 +76,7 @@ export function ReuiCatalogueBrowser({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-tertiary">
+        <p className="text-tertiary text-sm">
           <span className="font-semibold text-primary">
             {filteredTotal.toLocaleString("en-AU")}
           </span>{" "}
@@ -87,14 +87,14 @@ export function ReuiCatalogueBrowser({
           <span className="sr-only">Search free ReUI examples</span>
           <Search
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2 text-fg-quaternary"
+            className="text-fg-quaternary pointer-events-none absolute top-1/2 left-3.5 size-5 -translate-y-1/2"
           />
           <input
             type="search"
             value={query}
             onChange={(event) => replaceSearch({ q: event.target.value })}
             placeholder="Search 1,105 examples"
-            className="min-h-13 w-full rounded-xl border border-secondary bg-primary pr-4 pl-11 text-sm text-primary shadow-xs outline-focus-ring placeholder:text-placeholder focus:border-brand focus:outline-2 focus:outline-offset-1"
+            className="outline-focus-ring placeholder:text-placeholder focus:border-brand min-h-13 w-full rounded-xl border border-secondary bg-primary pr-4 pl-11 text-sm text-primary shadow-xs focus:outline-2 focus:outline-offset-1"
           />
         </label>
       </div>
@@ -116,7 +116,7 @@ export function ReuiCatalogueBrowser({
                 <h2 className="text-display-xs font-semibold text-primary">
                   {category.label}
                 </h2>
-                <span className="shrink-0 text-sm text-tertiary">
+                <span className="text-tertiary shrink-0 text-sm">
                   {examples.length}{" "}
                   {examples.length === 1 ? "example" : "examples"}
                 </span>
@@ -144,11 +144,11 @@ export function ReuiCatalogueBrowser({
                         <h3 className="text-md font-semibold text-primary">
                           {example.title}
                         </h3>
-                        <p className="mt-0.5 truncate font-mono text-xs text-quaternary">
+                        <p className="text-quaternary mt-0.5 truncate font-mono text-xs">
                           {example.name}
                         </p>
                       </div>
-                      <span className="shrink-0 rounded-md bg-brand-primary px-2 py-1 text-xs font-semibold text-brand-secondary">
+                      <span className="bg-brand-primary text-brand-secondary shrink-0 rounded-md px-2 py-1 text-xs font-semibold">
                         ReUI
                       </span>
                     </div>
@@ -160,11 +160,11 @@ export function ReuiCatalogueBrowser({
         </div>
       ) : (
         <div className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-secondary bg-primary p-8 text-center">
-          <Search aria-hidden="true" className="size-6 text-fg-quaternary" />
+          <Search aria-hidden="true" className="text-fg-quaternary size-6" />
           <p className="text-md font-semibold text-primary">
             No examples found
           </p>
-          <p className="text-sm text-tertiary">
+          <p className="text-tertiary text-sm">
             Try a component name, behaviour or use case.
           </p>
         </div>
