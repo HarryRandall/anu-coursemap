@@ -157,7 +157,7 @@ export function RoadmapTimeline({
                     <span
                       className={cn(
                         "grid size-5 shrink-0 place-items-center rounded-full",
-                        done && "bg-primary text-white",
+                        done && "bg-primary text-primary-foreground",
                         current && "bg-primary ring-4 ring-primary/20",
                         future && "bg-card ring-2 ring-input",
                       )}
@@ -180,7 +180,7 @@ export function RoadmapTimeline({
         </div>
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-muted/90 to-transparent"
+          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background/90 to-transparent"
         />
       </div>
     </section>
