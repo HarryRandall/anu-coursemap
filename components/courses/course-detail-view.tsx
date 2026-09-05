@@ -502,7 +502,20 @@ export function CourseDetailView({
                 : "Offering not listed"}
             </Badge>
             <Badge tone="neutral">{course.delivery}</Badge>
+            <Badge
+              tone={course.offeringStatus === "offered" ? "success" : "warning"}
+            >
+              {course.offeringStatus === "offered"
+                ? `Offered in ${course.year}`
+                : course.offeringStatus === "not_offered"
+                  ? `Not offered in ${course.year}`
+                  : "Offering unconfirmed"}
+            </Badge>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {course.school}
+            {course.college ? ` · ${course.college}` : ""}
+          </p>
         </div>
         <Button
           className="w-full shrink-0 sm:w-auto"
@@ -519,268 +532,280 @@ export function CourseDetailView({
         </Button>
       </header>
 
-      <TabsContent value="overview" className="flex flex-col gap-4">
-        <Card>
-          <CardHeader title="About this course" />
-          <CardContent className="space-y-4 border-t border-border/60 pt-5">
-            {course.introduction &&
-            course.introduction !== course.description ? (
-              <p className="max-w-4xl text-sm leading-relaxed font-medium text-foreground/90">
-                {course.introduction}
-              </p>
+      <TabsContent value="overview">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <Card>
+              <CardHeader title="About this course" />
+              <CardContent className="space-y-4 border-t border-border/60 pt-5">
+                {course.introduction &&
+                course.introduction !== course.description ? (
+                  <p className="max-w-4xl text-sm leading-relaxed font-medium text-foreground/90">
+                    {course.introduction}
+                  </p>
+                ) : null}
+                <p className="max-w-4xl text-[13px] leading-relaxed whitespace-pre-line text-muted-foreground">
+                  {course.description}
+                </p>
+              </CardContent>
+            </Card>
+
+            {course.learningOutcomes.length ? (
+              <Card>
+                <CardHeader title="Learning outcomes" />
+                <CardContent className="border-t border-border/60 pt-5">
+                  <ol className="space-y-3">
+                    {course.learningOutcomes.map((outcome) => (
+                      <li
+                        key={outcome.position}
+                        className="flex gap-3 text-[13px] leading-relaxed text-foreground/80"
+                      >
+                        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">
+                          {outcome.position}
+                        </span>
+                        <span>{outcome.body}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </CardContent>
+              </Card>
             ) : null}
-            <p className="max-w-4xl text-[13px] leading-relaxed whitespace-pre-line text-muted-foreground">
-              {course.description}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader title="Course essentials" />
-          <CardContent className="border-t border-border/60 pt-5">
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
-              {[
-                ["Academic year", String(course.year)],
-                ["Course subject", course.subject],
-                ["Subject name", course.subjectName ?? "Not listed"],
-                ["Academic career", course.academicCareer ?? "Not listed"],
-                ["School", course.school],
-                ["College", course.college ?? "Not listed"],
-                ["Convener", course.convener],
-                ["Delivery", course.delivery],
-                ["Unit value", unitValueLabel(course)],
-                ["EFTSL", course.eftsl?.toString() ?? "Not listed"],
-                ["Last source update", formatUpdatedAt(course.sourceUpdatedAt)],
-              ].map(([label, value]) => (
-                <div key={label} className="min-w-0">
-                  <dt className="text-[10px] font-semibold tracking-wider text-muted-foreground/80 uppercase">
-                    {label}
-                  </dt>
-                  <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-foreground/80">
-                    {value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-          <CardFooter>
-            <a
-              href={course.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[13px] font-semibold text-primary hover:text-primary/80"
-            >
-              View the ANU course source
-            </a>
-          </CardFooter>
-        </Card>
 
-        {course.workloadText ||
-        course.inherentRequirements ||
-        course.prescribedTexts ? (
-          <Card>
-            <CardHeader title="Study expectations" />
-            <CardContent className="grid gap-5 border-t border-border/60 pt-5 md:grid-cols-3">
-              {course.workloadText ? (
-                <section>
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                    <GraduationCap size={15} aria-hidden="true" /> Workload
-                  </h3>
-                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
-                    {course.workloadText}
-                    {course.workloadHours !== null
-                      ? ` (${course.workloadHours} hours)`
-                      : ""}
-                  </p>
-                </section>
-              ) : null}
-              {course.inherentRequirements ? (
-                <section>
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                    <ClipboardCheck size={15} aria-hidden="true" /> Inherent
-                    requirements
-                  </h3>
-                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
-                    {course.inherentRequirements}
-                  </p>
-                </section>
-              ) : null}
-              {course.prescribedTexts ? (
-                <section>
-                  <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                    <Library size={15} aria-hidden="true" /> Prescribed texts
-                  </h3>
-                  <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
-                    {course.prescribedTexts}
-                  </p>
-                </section>
-              ) : null}
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {course.areasOfInterest.length || course.attributes.length ? (
-          <Card>
-            <CardHeader title="Areas and attributes" />
-            <CardContent className="space-y-4 border-t border-border/60 pt-5">
-              {course.areasOfInterest.length ? (
-                <div>
-                  <h3 className="text-xs font-semibold text-foreground">
-                    Areas of interest
-                  </h3>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {course.areasOfInterest.map((area) => (
-                      <Badge key={area} tone="neutral">
-                        {area}
-                      </Badge>
+            {course.assessments.length ? (
+              <Card>
+                <CardHeader
+                  title="Assessment"
+                  description="Weights and hurdle requirements come straight from the imported ANU record."
+                />
+                <CardContent className="border-t border-border/60 p-0">
+                  <div className="divide-y divide-border/60">
+                    {course.assessments.map((assessment) => (
+                      <div
+                        key={assessment.position}
+                        className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
+                      >
+                        <div>
+                          <p className="text-[13px] font-semibold text-foreground">
+                            {assessment.title}
+                          </p>
+                          {assessment.dueText ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {assessment.dueText}
+                            </p>
+                          ) : null}
+                          {assessment.learningOutcomePositions.length ? (
+                            <p className="mt-1 text-[11px] text-muted-foreground/80">
+                              Learning outcomes{" "}
+                              {assessment.learningOutcomePositions.join(", ")}
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="flex items-start gap-2">
+                          {assessment.weight !== null ? (
+                            <Badge tone="neutral">{assessment.weight}%</Badge>
+                          ) : null}
+                          {assessment.hurdle ? (
+                            <Badge tone="warning">Hurdle</Badge>
+                          ) : null}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                </div>
-              ) : null}
-              {course.attributes.length ? (
-                <div>
-                  <h3 className="text-xs font-semibold text-foreground">
-                    Course attributes
-                  </h3>
-                  <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-                    {course.attributes.map((attribute, index) => (
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {course.workloadText ||
+            course.inherentRequirements ||
+            course.prescribedTexts ? (
+              <Card>
+                <CardHeader title="Study expectations" />
+                <CardContent className="grid gap-5 border-t border-border/60 pt-5 md:grid-cols-2">
+                  {course.workloadText ? (
+                    <section>
+                      <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                        <GraduationCap size={15} aria-hidden="true" /> Workload
+                      </h3>
+                      <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
+                        {course.workloadText}
+                        {course.workloadHours !== null
+                          ? ` (${course.workloadHours} hours)`
+                          : ""}
+                      </p>
+                    </section>
+                  ) : null}
+                  {course.inherentRequirements ? (
+                    <section>
+                      <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                        <ClipboardCheck size={15} aria-hidden="true" /> Inherent
+                        requirements
+                      </h3>
+                      <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
+                        {course.inherentRequirements}
+                      </p>
+                    </section>
+                  ) : null}
+                  {course.prescribedTexts ? (
+                    <section>
+                      <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                        <Library size={15} aria-hidden="true" /> Prescribed
+                        texts
+                      </h3>
+                      <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
+                        {course.prescribedTexts}
+                      </p>
+                    </section>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {course.relatedCourses.length ? (
+              <Card>
+                <CardHeader title="Related courses" />
+                <CardContent className="grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
+                  {course.relatedCourses.map((related) => (
+                    <Link
+                      key={`${related.kind}:${related.code}`}
+                      href={`/courses/${related.code}?year=${course.year}`}
+                      className="rounded-lg border border-border p-3 transition-colors hover:border-primary/25 hover:bg-primary/5"
+                    >
+                      <p className="font-mono text-[11px] font-semibold text-primary">
+                        {related.code}
+                      </p>
+                      <p className="mt-1 text-[13px] font-medium text-foreground">
+                        {related.title ?? "Related ANU course"}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {humanise(related.kind)}
+                      </p>
+                    </Link>
+                  ))}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-4">
+            <Card>
+              <CardHeader title="Course essentials" />
+              <CardContent className="border-t border-border/60 pt-5">
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  {[
+                    ["Academic year", String(course.year)],
+                    ["Course subject", course.subject],
+                    ["Subject name", course.subjectName ?? "Not listed"],
+                    ["Academic career", course.academicCareer ?? "Not listed"],
+                    ["School", course.school],
+                    ["College", course.college ?? "Not listed"],
+                    ["Convener", course.convener],
+                    ["Delivery", course.delivery],
+                    ["Unit value", unitValueLabel(course)],
+                    ["EFTSL", course.eftsl?.toString() ?? "Not listed"],
+                    [
+                      "Last source update",
+                      formatUpdatedAt(course.sourceUpdatedAt),
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="text-[10px] font-semibold tracking-wider text-muted-foreground/80 uppercase">
+                        {label}
+                      </dt>
+                      <dd className="mt-0.5 text-[12px] leading-relaxed font-medium break-words text-foreground/80">
+                        {value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </CardContent>
+              <CardFooter>
+                <a
+                  href={course.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[13px] font-semibold text-primary hover:text-primary/80"
+                >
+                  View the ANU course source
+                </a>
+              </CardFooter>
+            </Card>
+
+            {course.fees.length ? (
+              <Card>
+                <CardHeader title="Fees" />
+                <CardContent className="border-t border-border/60 p-0">
+                  <dl className="divide-y divide-border/60">
+                    {course.fees.map((fee, index) => (
                       <div
-                        key={`${attribute.kind}:${attribute.value}:${index}`}
-                        className="rounded-lg border border-border p-3"
+                        key={`${fee.audience}:${fee.feeType}:${index}`}
+                        className="px-5 py-4"
                       >
-                        <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
-                          {humanise(attribute.kind)}
+                        <dt className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
+                          <Banknote size={15} aria-hidden="true" />
+                          {fee.sourceLabel ?? humanise(fee.feeType)}
                         </dt>
-                        <dd className="mt-1 text-xs text-foreground/80">
-                          {attribute.value}
+                        <dd className="mt-1 text-xs text-muted-foreground">
+                          {humanise(fee.audience)}
+                          {fee.feeYear ? ` · ${fee.feeYear}` : ""}
+                          {fee.basis !== "unknown"
+                            ? ` · ${humanise(fee.basis)} basis`
+                            : ""}
+                        </dd>
+                        <dd className="mt-1.5 text-[13px] font-semibold text-foreground/90">
+                          {feeValue(fee)}
                         </dd>
                       </div>
                     ))}
                   </dl>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
 
-        {course.learningOutcomes.length ? (
-          <Card>
-            <CardHeader title="Learning outcomes" />
-            <CardContent className="border-t border-border/60 pt-5">
-              <ol className="space-y-3">
-                {course.learningOutcomes.map((outcome) => (
-                  <li
-                    key={outcome.position}
-                    className="flex gap-3 text-[13px] leading-relaxed text-foreground/80"
-                  >
-                    <span className="grid size-6 shrink-0 place-items-center rounded-md bg-muted text-[11px] font-semibold text-muted-foreground">
-                      {outcome.position}
-                    </span>
-                    <span>{outcome.body}</span>
-                  </li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {course.assessments.length ? (
-          <Card>
-            <CardHeader title="Assessment" />
-            <CardContent className="border-t border-border/60 p-0">
-              <div className="divide-y divide-border/60">
-                {course.assessments.map((assessment) => (
-                  <div
-                    key={assessment.position}
-                    className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
-                  >
+            {course.areasOfInterest.length || course.attributes.length ? (
+              <Card>
+                <CardHeader title="Areas and attributes" />
+                <CardContent className="space-y-4 border-t border-border/60 pt-5">
+                  {course.areasOfInterest.length ? (
                     <div>
-                      <p className="text-[13px] font-semibold text-foreground">
-                        {assessment.title}
-                      </p>
-                      {assessment.dueText ? (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {assessment.dueText}
-                        </p>
-                      ) : null}
-                      {assessment.learningOutcomePositions.length ? (
-                        <p className="mt-1 text-[11px] text-muted-foreground/80">
-                          Learning outcomes{" "}
-                          {assessment.learningOutcomePositions.join(", ")}
-                        </p>
-                      ) : null}
+                      <h3 className="text-xs font-semibold text-foreground">
+                        Areas of interest
+                      </h3>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {course.areasOfInterest.map((area) => (
+                          <Badge key={area} tone="neutral">
+                            {area}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      {assessment.weight !== null ? (
-                        <Badge tone="neutral">{assessment.weight}%</Badge>
-                      ) : null}
-                      {assessment.hurdle ? (
-                        <Badge tone="warning">Hurdle</Badge>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {course.fees.length ? (
-          <Card>
-            <CardHeader title="Fees" />
-            <CardContent className="border-t border-border/60 p-0">
-              <dl className="divide-y divide-border/60">
-                {course.fees.map((fee, index) => (
-                  <div
-                    key={`${fee.audience}:${fee.feeType}:${index}`}
-                    className="grid gap-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto]"
-                  >
+                  ) : null}
+                  {course.attributes.length ? (
                     <div>
-                      <dt className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
-                        <Banknote size={15} aria-hidden="true" />
-                        {fee.sourceLabel ?? humanise(fee.feeType)}
-                      </dt>
-                      <dd className="mt-1 text-xs text-muted-foreground">
-                        {humanise(fee.audience)}
-                        {fee.feeYear ? ` · ${fee.feeYear}` : ""}
-                        {fee.basis !== "unknown"
-                          ? ` · ${humanise(fee.basis)} basis`
-                          : ""}
-                      </dd>
+                      <h3 className="text-xs font-semibold text-foreground">
+                        Course attributes
+                      </h3>
+                      <dl className="mt-2 grid gap-2">
+                        {course.attributes.map((attribute, index) => (
+                          <div
+                            key={`${attribute.kind}:${attribute.value}:${index}`}
+                            className="rounded-lg border border-border p-3"
+                          >
+                            <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
+                              {humanise(attribute.kind)}
+                            </dt>
+                            <dd className="mt-1 text-xs text-foreground/80">
+                              {attribute.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
                     </div>
-                    <dd className="text-[13px] font-semibold text-foreground/90">
-                      {feeValue(fee)}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {course.relatedCourses.length ? (
-          <Card>
-            <CardHeader title="Related courses" />
-            <CardContent className="grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
-              {course.relatedCourses.map((related) => (
-                <Link
-                  key={`${related.kind}:${related.code}`}
-                  href={`/courses/${related.code}?year=${course.year}`}
-                  className="rounded-lg border border-border p-3 transition-colors hover:border-primary/25 hover:bg-primary/5"
-                >
-                  <p className="font-mono text-[11px] font-semibold text-primary">
-                    {related.code}
-                  </p>
-                  <p className="mt-1 text-[13px] font-medium text-foreground">
-                    {related.title ?? "Related ANU course"}
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {humanise(related.kind)}
-                  </p>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-        ) : null}
+                  ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
+        </div>
       </TabsContent>
 
       <TabsContent value="requisites" className="flex flex-col gap-4">
