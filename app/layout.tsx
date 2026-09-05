@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
+import Script from "next/script";
+import { AppThemeProvider } from "@/components/shell/app-theme-provider";
 import { getAuthContext } from "@/lib/auth/viewer";
 import { loadCoursemapState } from "@/lib/coursemap/state";
 import type { Attempt } from "@/lib/coursemap/types";
@@ -65,17 +67,33 @@ export default async function RootLayout({
     : undefined;
 
   return (
-    <html lang="en">
-      <body className={`${GeistSans.variable} ${GeistMono.variable}`}>
-        <AppProvider
-          demoMode={demoMode}
-          viewer={viewer}
-          canAccessAdmin={canAccessAdmin}
-          demoInitialAttempts={demoInitialAttempts}
-          initialState={initialState}
-        >
-          {children}
-        </AppProvider>
+    <html lang="en" suppressHydrationWarning>
+      {/* style-nova activates the vendored ReUI component styles product-wide. */}
+      <body
+        className={`${GeistSans.variable} ${GeistMono.variable} style-nova`}
+      >
+        <Script id="coursemap-theme-init" strategy="beforeInteractive">
+          {`(() => {
+            let theme = "system";
+            try { theme = localStorage.getItem("coursemap.theme") || "system"; } catch {}
+            const dark = theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+            const root = document.documentElement;
+            root.classList.remove("light", "dark-mode");
+            root.classList.add(dark ? "dark-mode" : "light");
+            root.style.colorScheme = dark ? "dark" : "light";
+          })();`}
+        </Script>
+        <AppThemeProvider>
+          <AppProvider
+            demoMode={demoMode}
+            viewer={viewer}
+            canAccessAdmin={canAccessAdmin}
+            demoInitialAttempts={demoInitialAttempts}
+            initialState={initialState}
+          >
+            {children}
+          </AppProvider>
+        </AppThemeProvider>
       </body>
     </html>
   );

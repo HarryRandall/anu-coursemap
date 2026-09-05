@@ -19,9 +19,9 @@ import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { CourseDrawer, CoursePicker } from "@/components/overlays";
+import { Alert, AlertDescription, AlertTitle } from "@reui/ui/alert";
+import { Button } from "@reui/ui/button";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/overlay";
 import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
@@ -72,7 +72,7 @@ function StatusMark({
     return <XCircle size={size} className="shrink-0 text-rose-500" />;
   if (status === "blocked" || status === "approval")
     return <AlertTriangle size={size} className="shrink-0 text-amber-500" />;
-  return <Circle size={size} className="shrink-0 text-zinc-300" />;
+  return <Circle size={size} className="text-muted-foreground/40 shrink-0" />;
 }
 
 function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
@@ -415,17 +415,17 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
       <div
         key={`drop-preview-${previewEntry.attempt.id}-${term.id}`}
         aria-hidden="true"
-        className="pointer-events-none flex min-h-[52px] origin-top animate-drop-slot-in items-center gap-2.5 rounded-lg bg-brand-50/70 px-2 py-2 text-left ring-1 ring-brand-200 ring-inset"
+        className="bg-primary/10 ring-primary/30 pointer-events-none flex min-h-[52px] origin-top animate-drop-slot-in items-center gap-2.5 rounded-lg px-2 py-2 text-left ring-1 ring-inset"
       >
-        <GripVertical size={13} className="shrink-0 text-brand-300" />
+        <GripVertical size={13} className="text-primary/50 shrink-0" />
         <StatusMark status={previewEntry.status} />
-        <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-brand-600">
+        <span className="text-primary w-[4.75rem] shrink-0 font-mono text-[11px]">
           {previewEntry.course.code}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
+        <span className="text-foreground min-w-0 flex-1 truncate text-[13px] font-medium">
           {previewEntry.course.name}
         </span>
-        <span className="shrink-0 text-[11px] text-zinc-400">
+        <span className="text-muted-foreground shrink-0 text-[11px]">
           {unitsForAttempt(previewEntry.attempt, previewEntry.course)}u
         </span>
       </div>
@@ -437,22 +437,26 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         data-testid={`term-${term.id}`}
         data-drop-term={term.id}
         className={cn(
-          "flex min-h-44 flex-col rounded-xl bg-white p-2.5 ring-1 transition",
+          "bg-card flex min-h-44 flex-col rounded-xl p-2.5 ring-1 transition",
           dragging && dragPreview?.termId === term.id
-            ? "ring-2 ring-brand-300"
-            : "ring-zinc-200",
+            ? "ring-primary/40 ring-2"
+            : "ring-border",
         )}
       >
         <header className="flex items-center justify-between gap-2 px-1 pb-2">
-          <p className="text-[13px] font-semibold text-zinc-900">
+          <p className="text-foreground text-[13px] font-semibold">
             {term.name}
-            <span className="ml-2 font-normal text-zinc-400">{term.dates}</span>
+            <span className="text-muted-foreground ml-2 font-normal">
+              {term.dates}
+            </span>
           </p>
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
                 "text-[11px] font-medium",
-                units > 24 ? "text-amber-600" : "text-zinc-400",
+                units > 24
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-muted-foreground",
               )}
             >
               {term.id === "unscheduled"
@@ -464,7 +468,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               type="button"
               onClick={() => requestAddCourse(term)}
               aria-label={`Add a course to ${term.name} ${term.year}`}
-              className="grid size-8 cursor-pointer place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground grid size-8 cursor-pointer place-items-center rounded-md transition"
             >
               <Plus size={14} />
             </button>
@@ -479,10 +483,10 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                 <div
                   key={entry.attempt.id}
                   aria-hidden="true"
-                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400"
+                  className="border-border text-muted-foreground flex min-h-[52px] items-center justify-center gap-2 rounded-lg border border-dashed px-2 text-[11px] font-medium"
                   style={{ height: dragPointer?.rowHeight }}
                 >
-                  <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-zinc-200 bg-white">
+                  <span className="border-border bg-card grid size-[15px] shrink-0 place-items-center rounded-full border">
                     <Plus size={10} />
                   </span>
                   <span>Add course</span>
@@ -493,7 +497,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               <div
                 key={entry.attempt.id}
                 data-attempt-id={entry.attempt.id}
-                className="group relative grid min-h-[52px] grid-cols-[1.75rem_minmax(0,1fr)] rounded-lg transition-colors hover:bg-zinc-50"
+                className="group hover:bg-muted/50 relative grid min-h-[52px] grid-cols-[1.75rem_minmax(0,1fr)] rounded-lg transition-colors"
               >
                 <button
                   type="button"
@@ -501,7 +505,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   onPointerDown={(event) =>
                     startPointerDrag(event, entry, term)
                   }
-                  className="grid cursor-grab touch-none place-items-center rounded-l-lg text-zinc-200 transition hover:text-zinc-500 active:cursor-grabbing"
+                  className="text-muted-foreground/40 hover:text-muted-foreground grid cursor-grab touch-none place-items-center rounded-l-lg transition active:cursor-grabbing"
                 >
                   <GripVertical size={13} aria-hidden="true" />
                 </button>
@@ -515,13 +519,13 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                 >
                   <span className="flex items-center gap-2.5">
                     <StatusMark status={entry.status} />
-                    <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-zinc-500">
+                    <span className="text-muted-foreground w-[4.75rem] shrink-0 font-mono text-[11px]">
                       {entry.course.code}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
+                    <span className="text-foreground min-w-0 flex-1 truncate text-[13px] font-medium">
                       {entry.course.name}
                     </span>
-                    <span className="shrink-0 text-[11px] text-zinc-400">
+                    <span className="text-muted-foreground shrink-0 text-[11px]">
                       {unitsForAttempt(entry.attempt, entry.course)}u
                     </span>
                   </span>
@@ -538,7 +542,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   <span
                     id={`course-issue-${entry.attempt.id}`}
                     role="tooltip"
-                    className="pointer-events-none invisible absolute top-[calc(100%+0.25rem)] left-8 z-40 max-w-72 translate-y-1 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-[11px] leading-relaxed font-medium text-white opacity-0 shadow-lg transition duration-150 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+                    className="bg-foreground text-background pointer-events-none invisible absolute top-[calc(100%+0.25rem)] left-8 z-40 max-w-72 translate-y-1 rounded-lg px-2.5 py-1.5 text-[11px] leading-relaxed font-medium opacity-0 shadow-lg transition duration-150 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
                   >
                     {note}
                   </span>
@@ -557,9 +561,9 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   ? "Add an unscheduled course"
                   : `Add course in empty slot ${entries.length + index + 1} of ${STANDARD_COURSE_SLOTS} for ${term.name} ${term.year}`
               }
-              className="group flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-600"
+              className="group border-border text-muted-foreground hover:border-muted-foreground/40 hover:bg-muted/50 hover:text-foreground flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-2 text-[11px] font-medium transition"
             >
-              <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-zinc-200 bg-white transition group-hover:border-zinc-300">
+              <span className="border-border bg-card group-hover:border-muted-foreground/40 grid size-[15px] shrink-0 place-items-center rounded-full border transition">
                 <Plus size={10} />
               </span>
               <span>Add course</span>
@@ -586,7 +590,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       {degree && (degree.duration === null || degree.units === null) ? (
-        <Alert className="mb-5" tone="warning">
+        <Alert className="mb-5">
           <AlertTriangle aria-hidden="true" />
           <AlertTitle>Programme planning data is incomplete</AlertTitle>
           <AlertDescription>
@@ -608,18 +612,18 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               <section className="year-row" key={yearGroup.year}>
                 <div className="mb-2 flex items-end justify-between px-1">
                   <div className="flex items-baseline gap-2">
-                    <h2 className="text-sm font-semibold text-zinc-900">
+                    <h2 className="text-foreground text-sm font-semibold">
                       Year{" "}
                       {Math.max(
                         1,
                         yearGroup.year - state.profile.commencementYear + 1,
                       )}
                     </h2>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-muted-foreground text-xs">
                       {yearGroup.year}
                     </span>
                   </div>
-                  <span className="text-[11px] text-zinc-400">
+                  <span className="text-muted-foreground text-[11px]">
                     {unitsOf(yearEntries)} units
                   </span>
                 </div>
@@ -632,7 +636,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
 
           {unscheduled && (
             <section>
-              <h2 className="mb-2 px-1 text-sm font-semibold text-zinc-900">
+              <h2 className="text-foreground mb-2 px-1 text-sm font-semibold">
                 Later
               </h2>
               {renderLane(unscheduled)}
@@ -646,21 +650,21 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
           <div
             ref={floatingCardRef}
             aria-hidden="true"
-            className="absolute top-0 left-0 flex min-h-[52px] items-center gap-2.5 rounded-lg bg-white px-2 py-2 text-left opacity-95 shadow-lg ring-1 ring-zinc-200 will-change-transform"
+            className="bg-card ring-border absolute top-0 left-0 flex min-h-[52px] items-center gap-2.5 rounded-lg px-2 py-2 text-left opacity-95 shadow-lg ring-1 will-change-transform"
             style={{
               width: dragPointer.width,
               transform: `translate3d(${dragPointer.initialX - dragPointer.offsetX}px, ${dragPointer.initialY - dragPointer.offsetY}px, 0)`,
             }}
           >
-            <GripVertical size={13} className="shrink-0 text-zinc-400" />
+            <GripVertical size={13} className="text-muted-foreground shrink-0" />
             <StatusMark status={draggedStatus} />
-            <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-zinc-500">
+            <span className="text-muted-foreground w-[4.75rem] shrink-0 font-mono text-[11px]">
               {draggedCourse.code}
             </span>
-            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
+            <span className="text-foreground min-w-0 flex-1 truncate text-[13px] font-medium">
               {draggedCourse.name}
             </span>
-            <span className="shrink-0 text-[11px] text-zinc-400">
+            <span className="text-muted-foreground shrink-0 text-[11px]">
               {unitsForAttempt(draggedAttempt, draggedCourse)}u
             </span>
           </div>
@@ -686,29 +690,28 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         >
           <div className="p-5 sm:p-6">
             <div className="flex items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-200 ring-inset">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 ring-inset dark:text-amber-400">
                 <AlertTriangle size={19} />
               </span>
               <h2
                 id="overload-warning-title"
-                className="text-lg font-bold tracking-tight text-zinc-900"
+                className="text-foreground text-lg font-bold tracking-tight"
               >
                 This semester is already full
               </h2>
             </div>
-            <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">
+            <p className="text-muted-foreground mt-2 text-[13px] leading-relaxed">
               {pendingDrop
                 ? `Moving this course to ${overloadTarget.name} ${overloadTarget.year} would exceed the standard four-course, 24-unit study load.`
                 : `Adding another course would take ${overloadTarget.name} ${overloadTarget.year} above the standard four-course, 24-unit study load.`}{" "}
               Overloading may require approval.
             </p>
           </div>
-          <div className="flex justify-end gap-2 border-t border-zinc-100 bg-zinc-50/70 px-5 py-3.5">
-            <Button variant="secondary" onClick={() => setOverloadTerm(null)}>
+          <div className="border-border bg-muted/40 flex justify-end gap-2 border-t px-5 py-3.5">
+            <Button variant="outline" onClick={() => setOverloadTerm(null)}>
               Cancel
             </Button>
             <Button
-              variant="primary"
               onClick={() => {
                 if (pendingDrop) {
                   applyDrop(pendingDrop);

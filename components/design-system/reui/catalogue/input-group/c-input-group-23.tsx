@@ -1,0 +1,43 @@
+import { Field } from "@reui/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@reui/ui/input-group"
+import { Kbd, KbdGroup } from "@reui/ui/kbd"
+import { IconPlaceholder } from "@reui/icon-placeholder"
+
+export default function Pattern() {
+  return (
+    <Field className="max-w-xs">
+      <InputGroup>
+        <InputGroupAddon>
+          <IconPlaceholder
+            lucide="SparklesIcon"
+            tabler="IconSparkles"
+            hugeicons="SparklesIcon"
+            phosphor="SparkleIcon"
+            remixicon="RiSparklingLine"
+            className="text-emerald-500"
+          />
+        </InputGroupAddon>
+        <InputGroupInput placeholder="Ask AI to generate..." />
+        <InputGroupAddon align="inline-end">
+          <KbdGroup>
+            <Kbd>
+              <IconPlaceholder
+                lucide="CommandIcon"
+                tabler="IconCommand"
+                hugeicons="CommandIcon"
+                phosphor="CommandIcon"
+                remixicon="RiCommandLine"
+                className="size-3"
+              />
+            </Kbd>
+            <Kbd>Enter</Kbd>
+          </KbdGroup>
+        </InputGroupAddon>
+      </InputGroup>
+    </Field>
+  )
+}

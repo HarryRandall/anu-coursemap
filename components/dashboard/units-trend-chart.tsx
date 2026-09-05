@@ -1,219 +1,99 @@
 "use client";
 
-import { useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Card } from "@/components/ui/card";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Card, CardContent } from "@reui/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@reui/ui/chart";
 import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";
 
-const width = 720;
-const height = 220;
-const pad = { left: 34, right: 12, top: 14, bottom: 26 };
+const config = {
+  completed: { label: "Completed", color: "var(--chart-2)" },
+  planned: { label: "Planned", color: "var(--chart-1)" },
+} satisfies ChartConfig;
 
+/** Cumulative earned and planned units across the plan timeline. */
 export function UnitsTrendChart({
-  points,
   degreeUnits,
+  points,
 }: {
-  points: readonly DashboardTermPoint[];
   degreeUnits: number | null;
+  points: readonly DashboardTermPoint[];
 }) {
-  const [active, setActive] = useState<number | null>(null);
-  const maxMapped = Math.max(
-    degreeUnits ?? 0,
-    ...points.map((point) => point.units),
-    24,
-  );
-  const yMax = Math.ceil(maxMapped / 24) * 24;
-  const innerWidth = width - pad.left - pad.right;
-  const innerHeight = height - pad.top - pad.bottom;
-  const x = (index: number) =>
-    points.length <= 1
-      ? pad.left + innerWidth / 2
-      : pad.left + (index / (points.length - 1)) * innerWidth;
-  const y = (value: number) =>
-    pad.top + innerHeight - (value / yMax) * innerHeight;
-  const path = (value: (point: DashboardTermPoint) => number) =>
-    points
-      .map(
-        (point, index) =>
-          `${index === 0 ? "M" : "L"}${x(index)} ${y(value(point))}`,
-      )
-      .join(" ");
-  const gridValues = Array.from(
-    { length: Math.floor(yMax / 24) + 1 },
-    (_, step) => step * 24,
-  );
-  const hover = active === null ? null : points[active];
-
-  const move = (event: ReactPointerEvent<SVGSVGElement>) => {
-    if (points.length === 0) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const svgX = ((event.clientX - rect.left) / rect.width) * width;
-    let nearest = 0;
-    let best = Infinity;
-    points.forEach((_, index) => {
-      const distance = Math.abs(x(index) - svgX);
-      if (distance < best) {
-        best = distance;
-        nearest = index;
-      }
-    });
-    setActive(nearest);
-  };
+  const data = points.map((point) => ({
+    label: point.label,
+    completed: point.completed,
+    planned: point.planned,
+  }));
+  const peak = Math.max(...points.map((point) => point.units), 0);
+  const top = Math.max(peak, degreeUnits ?? 0);
 
   return (
-    <Card className="flex min-h-80 flex-col p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <Card>
+      <CardContent className="flex h-full flex-col gap-4 p-6">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-900">
-            Units over time
-          </h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">
-            {degreeUnits === null
-              ? "Earned so far and where your saved plan lands · degree target not recorded"
-              : `Earned so far and where your saved plan lands · degree target ${degreeUnits}u`}
+          <h2 className="text-sm font-semibold">Units over time</h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            Cumulative units, split between completed and still planned
+            {degreeUnits ? ` · degree target ${degreeUnits}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-4 text-[11px] text-zinc-500">
-          <span className="flex items-center gap-1.5">
-            <span className="h-0.5 w-4 rounded-full bg-brand-600" /> Earned
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="h-0 w-4 border-t-2 border-dashed border-brand-400" />{" "}
-            With plan
-          </span>
-        </div>
-      </div>
-      {points.length === 0 ? (
-        <p className="flex flex-1 items-center justify-center text-sm text-zinc-500">
-          Add scheduled courses to see your degree timeline.
-        </p>
-      ) : (
-        <div className="relative mt-3">
-          <svg
-            viewBox={`0 0 ${width} ${height}`}
-            className="h-auto w-full cursor-crosshair"
-            role="img"
-            aria-label="Cumulative units by study period. Hover or use arrow keys to inspect values."
-            tabIndex={0}
-            onPointerMove={move}
-            onPointerLeave={() => setActive(null)}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowRight") {
-                event.preventDefault();
-                setActive((current) =>
-                  Math.min(points.length - 1, (current ?? -1) + 1),
-                );
-              }
-              if (event.key === "ArrowLeft") {
-                event.preventDefault();
-                setActive((current) =>
-                  Math.max(0, (current ?? points.length) - 1),
-                );
-              }
-            }}
-          >
-            {gridValues.map((value) => (
-              <g key={value}>
-                <line
-                  x1={pad.left}
-                  x2={width - pad.right}
-                  y1={y(value)}
-                  y2={y(value)}
-                  className="stroke-zinc-100"
-                  strokeWidth="1"
+
+        {data.length === 0 ? (
+          <p className="text-muted-foreground flex flex-1 items-center justify-center py-10 text-sm">
+            Add courses to your plan to see progress over time.
+          </p>
+        ) : (
+          <ChartContainer config={config} className="h-56 w-full flex-1">
+            <AreaChart data={data} margin={{ left: 4, right: 4, top: 12 }}>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                interval="preserveStartEnd"
+              />
+              <YAxis hide domain={[0, Math.ceil(top * 1.05)]} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              {degreeUnits !== null && degreeUnits > 0 && (
+                <ReferenceLine
+                  y={degreeUnits}
+                  stroke="var(--color-muted-foreground)"
+                  strokeDasharray="4 4"
+                  strokeOpacity={0.5}
                 />
-                <text
-                  x={pad.left - 6}
-                  y={y(value) + 3}
-                  textAnchor="end"
-                  className="fill-zinc-400"
-                  fontSize="10"
-                >
-                  {value}
-                </text>
-              </g>
-            ))}
-            {degreeUnits !== null ? (
-              <line
-                x1={pad.left}
-                x2={width - pad.right}
-                y1={y(degreeUnits)}
-                y2={y(degreeUnits)}
-                stroke="var(--color-brand-200, #ddd6fe)"
-                strokeDasharray="3 3"
+              )}
+              <Area
+                dataKey="completed"
+                type="monotone"
+                stackId="units"
+                stroke="var(--color-completed)"
+                fill="var(--color-completed)"
+                fillOpacity={0.3}
               />
-            ) : null}
-            <path
-              d={path((point) => point.units)}
-              fill="none"
-              stroke="var(--color-brand-400, #a78bfa)"
-              strokeWidth="2"
-              strokeDasharray="5 4"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-            <path
-              d={path((point) => point.completed)}
-              fill="none"
-              stroke="var(--color-brand-600, #7c3aed)"
-              strokeWidth="2.25"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-            {points.map((point, index) => (
-              <circle
-                key={point.id}
-                cx={x(index)}
-                cy={y(point.completed)}
-                r={active === index ? 4.5 : 3}
-                fill="var(--color-brand-600, #7c3aed)"
-                stroke="white"
-                strokeWidth="1.5"
+              <Area
+                dataKey="planned"
+                type="monotone"
+                stackId="units"
+                stroke="var(--color-planned)"
+                fill="var(--color-planned)"
+                fillOpacity={0.2}
               />
-            ))}
-            {hover && active !== null && (
-              <line
-                x1={x(active)}
-                x2={x(active)}
-                y1={pad.top}
-                y2={height - pad.bottom}
-                stroke="var(--color-brand-600, #7c3aed)"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-              />
-            )}
-            {points.map((point, index) => (
-              <text
-                key={point.id}
-                x={x(index)}
-                y={height - 8}
-                textAnchor="middle"
-                className="fill-zinc-400"
-                fontSize="10"
-              >
-                {point.label}
-              </text>
-            ))}
-          </svg>
-          <div className="sr-only" aria-live="polite">
-            {hover
-              ? `${hover.label}: ${hover.completed} units earned, ${hover.units} units with plan`
-              : null}
-          </div>
-          {hover && active !== null && (
-            <div
-              className="pointer-events-none absolute top-1 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-white shadow-md"
-              style={{
-                left: `clamp(0.5rem, ${(x(active) / width) * 100}%, calc(100% - 9rem))`,
-              }}
-            >
-              <p className="text-[10px] text-zinc-400">{hover.label}</p>
-              <p className="text-xs font-semibold">
-                {hover.completed}u earned · {hover.units}u with plan
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+            </AreaChart>
+          </ChartContainer>
+        )}
+      </CardContent>
     </Card>
   );
 }

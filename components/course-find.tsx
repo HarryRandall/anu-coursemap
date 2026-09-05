@@ -268,7 +268,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={showFind}
-        className="mt-5 flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg bg-white px-3 text-zinc-500 shadow-xs ring-1 ring-zinc-200 transition-colors ring-inset hover:text-zinc-800 hover:ring-zinc-300"
+        className="bg-card text-muted-foreground ring-border hover:text-foreground hover:ring-ring/40 mt-5 flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg px-3 shadow-xs ring-1 transition-colors ring-inset"
       >
         <Search size={16} strokeWidth={1.8} aria-hidden="true" />
         <span className="flex-1 text-left text-[13px]">Find</span>
@@ -284,7 +284,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
         }}
       >
         <Dialog.Portal>
-          <Dialog.Overlay className="find-overlay fixed inset-0 z-[110] bg-zinc-950/5 backdrop-blur-[1px]" />
+          <Dialog.Overlay className="find-overlay fixed inset-0 z-[110] bg-zinc-950/5 backdrop-blur-[1px] dark:bg-zinc-950/40" />
           {geometry && (
             <Dialog.Content
               style={findStyle}
@@ -309,16 +309,16 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
 
               <div
                 aria-hidden="true"
-                className="find-dialog-background pointer-events-none absolute inset-0 rounded-xl bg-white shadow-lg ring-1 ring-zinc-300"
+                className="find-dialog-background bg-popover ring-border pointer-events-none absolute inset-0 rounded-xl shadow-lg ring-1"
               />
 
               <div
                 aria-hidden="true"
-                className="find-closing-field pointer-events-none absolute top-0 left-0 z-10 h-10 items-center gap-2 rounded-lg bg-white px-3 text-zinc-500 shadow-xs ring-1 ring-zinc-200 ring-inset"
+                className="find-closing-field bg-popover text-muted-foreground ring-border pointer-events-none absolute top-0 left-0 z-10 h-10 items-center gap-2 rounded-lg px-3 shadow-xs ring-1 ring-inset"
               >
                 <Search size={16} strokeWidth={1.8} />
                 <span className="flex-1 text-[13px]">Find</span>
-                <kbd className="grid size-6 place-items-center rounded-md border border-zinc-200 bg-zinc-50 text-[11px] font-medium text-zinc-500 shadow-xs">
+                <kbd className="border-border bg-muted text-muted-foreground grid size-6 place-items-center rounded-md border text-[11px] font-medium shadow-xs">
                   F
                 </kbd>
               </div>
@@ -334,7 +334,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                     size={16}
                     strokeWidth={1.8}
                     aria-hidden="true"
-                    className="shrink-0 text-zinc-500"
+                    className="text-muted-foreground shrink-0"
                   />
                   <Command.Input
                     ref={inputRef}
@@ -350,21 +350,21 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                     aria-label="Find courses"
                     autoComplete="off"
                     spellCheck={false}
-                    className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-zinc-950 outline-none placeholder:text-zinc-500"
+                    className="text-foreground placeholder:text-muted-foreground h-10 min-w-0 flex-1 bg-transparent text-[13px] outline-none"
                   />
                   {loading && results.length > 0 && (
                     <LoaderCircle
                       size={13}
                       aria-label="Updating results"
-                      className="animate-spin text-zinc-400"
+                      className="text-muted-foreground animate-spin"
                     />
                   )}
-                  <kbd className="rounded-md border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[9px] font-medium text-zinc-500 shadow-xs">
+                  <kbd className="border-border bg-muted text-muted-foreground rounded-md border px-1.5 py-0.5 text-[9px] font-medium shadow-xs">
                     Esc
                   </kbd>
                 </div>
 
-                <div className="h-px bg-zinc-200" />
+                <div className="bg-border h-px" />
 
                 <Command.List
                   label="Find results"
@@ -396,7 +396,7 @@ export function CourseFind({ onNavigate }: { onNavigate: () => void }) {
                             `/courses/${course.code}?year=${course.year}`,
                           )
                         }
-                        className="group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-zinc-700 outline-none data-[selected=true]:bg-zinc-100 data-[selected=true]:text-zinc-950"
+                        className="text-foreground/80 data-[selected=true]:bg-muted data-[selected=true]:text-foreground group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 outline-none"
                       >
                         <CourseToken
                           code={course.code}
@@ -485,7 +485,7 @@ function FindMessage({
   return (
     <p
       role={alert ? "alert" : "status"}
-      className="grid h-11 place-items-center px-3 text-center text-[11px] text-zinc-500"
+      className="text-muted-foreground grid h-11 place-items-center px-3 text-center text-[11px]"
     >
       {message}
     </p>

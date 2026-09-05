@@ -26,5 +26,14 @@
 
 ## Shape
 
-- Corner radius comes from the `--radius-*` tokens in `app/globals.css`, which are deliberately tighter than the Tailwind defaults. Change the token to reshape the app, never a pile of per-component overrides.
+- Corner radius, shadows, the type scale and the semantic colour roles come from the Untitled UI theme, vendored at `components/design-system/untitled/styles/theme.css` and imported by `app/globals.css`. Coursemap's earlier, tighter radius scale was retired in favour of it.
+- Reshape the app by changing a token, never with a pile of per-component overrides. Do not edit the vendored theme except for the brand ramp, which is already substituted; see `docs/design-system/provenance.md`.
+- Prefer semantic roles over raw palette steps: `bg-primary`, `text-tertiary`, `border-secondary`, `bg-brand-solid`, `ring-error_subtle`. They carry a dark-mode value; `zinc-500` does not.
 - Keep `rounded-full` for genuinely circular things only: avatars, status dots and pills.
+
+## Untitled UI components
+
+- `/design-system` is the reference implementation. Compare against it before inventing a pattern.
+- Vendored components are imported through the `@uui/*` alias. They are third-party MIT source and are excluded from Prettier and ESLint so they stay byte-comparable with upstream.
+- `components/design-system/coursemap/` holds the families Untitled UI keeps behind PRO, rebuilt from the free primitives.
+- React Aria portals overlays to `document.body`. Anything that themes a subtree must account for that.

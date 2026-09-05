@@ -1,0 +1,133 @@
+# Design source provenance
+
+## Vendored source
+
+`components/design-system/untitled/` is the Untitled UI React source, vendored
+verbatim. It is third-party code, not Coursemap code.
+
+| Field           | Value                                                   |
+| --------------- | ------------------------------------------------------- |
+| Repository      | https://github.com/untitleduico/react                   |
+| Licence         | MIT, Copyright (c) 2025 Untitled UI                     |
+| Commit          | `c981a73bcd6b6c68d2a54070f20f020191212828` (2026-08-26) |
+| Library version | 8                                                       |
+| CLI             | `untitledui@0.1.64`                                     |
+| Files           | 161                                                     |
+
+### How it was fetched
+
+The official CLI was run in an isolated scaffold rather than against this
+repository, because `untitledui add` rewrites `components.json` (which belongs
+to shadcn here), edits `app/globals.css` and installs its own dependency
+versions. The scaffold carried only a `package.json`, a `tsconfig.json` with an
+`@/*` path and a `components.json` whose aliases were plain `@/components`,
+`@/utils` and `@/hooks`, so the CLI emitted its stock import paths.
+
+```bash
+npx untitledui@0.1.64 add -y --lib-version 8 \
+  button button-group button-utility social-button \
+  input textarea select combobox tag-select \
+  checkbox radio-buttons toggle slider pin-input form \
+  badges badge-groups tags avatar tooltip dropdown \
+  progress-indicators file-upload-trigger \
+  tabs table modal slideout-menu empty-state \
+  pagination pagination-dot pagination-line \
+  date-picker date-range-picker file-upload-base \
+  loading-indicator charts-base \
+  sidebar-simple sidebar-slim sidebar-dual-tier \
+  sidebar-section-dividers sidebar-sections-subheadings \
+  header-navigation featured-icon dot-icon untitledui-logo
+
+# Second pass for components the first run did not pull in.
+npx untitledui@0.1.64 add -y --lib-version 8 \
+  progress-circles simple-circle dropdown-account-breadcrumb
+```
+
+All 45 components in the first run resolved with `pro: []` and `missing: []`. No
+licence key was needed and none was used.
+
+`styles/theme.css` and `styles/typography.css` come from the repository at the
+pinned commit rather than from the CLI, because the CLI does not serve them.
+
+### The only edits made to vendored files
+
+1. **Import prefix.** `@/components/` becomes `@uui/components/`, `@/utils/`
+   becomes `@uui/utils/` and `@/hooks/` becomes `@uui/hooks/`. `@uui/*` is a
+   single `tsconfig.json` path alias pointing at the vendored root, so re-pulling
+   is a copy plus one `sed`.
+2. **Brand ramp values.** The eleven `--color-brand-*` literals in `theme.css`
+   are replaced with Coursemap's violet, extended to 950. Untitled UI's stock
+   brand is already violet (`brand-600` `rgb(127 86 217)`), so this is a
+   like-for-like substitution. Every semantic role that references the ramp,
+   including `bg-brand-solid`, `focus-ring`, `border-brand` and the whole
+   `utility-brand` block with its dark-mode inversions, is untouched.
+
+Nothing else is changed. The vendored tree is excluded from Prettier
+(`.prettierignore`) and from ESLint (`eslint.config.mjs`) so that neither
+rewrites upstream formatting or forces edits against this project's rules. A
+byte comparison against the upstream commit is therefore meaningful.
+
+## ReUI source
+
+`components/design-system/reui/` contains the complete free ReUI reusable
+component registry, kept separate from the existing Coursemap and Untitled UI
+trees.
+
+| Field                   | Value                                                   |
+| ----------------------- | ------------------------------------------------------- |
+| Repository              | https://github.com/keenthemes/reui                      |
+| Licence                 | MIT, Copyright (c) 2025 Keenthemes Inc.                 |
+| Commit                  | `8a2c701eaf95729f238274d5ce2555a5a8bd23e7` (2026-09-01) |
+| Library version         | 2.5.2                                                   |
+| Reusable modules        | 77                                                      |
+| Free example components | 1,105                                                   |
+| Free component families | 74                                                      |
+| ReUI primitive families | 22                                                      |
+
+The `@reui` public registry returned an authorisation error during the import,
+so the public MIT source was copied from the official GitHub repository at the
+pinned commit. All 1,105 free Radix examples are vendored and grouped into 74
+searchable families in the local laboratory. The separately advertised 533
+ReUI Pro blocks are not public source and are not included.
+
+The catalogue is reproducibly generated by
+`scripts/sync-reui-free-components.mjs`. The source adaptations are mechanical
+import rewrites to the isolated `@reui/*` alias, a local Lucide adapter for
+ReUI's multi-library icon placeholder, compatibility rewrites for the Recharts
+and Event Calendar versions used by Coursemap, and disabling the original Gantt
+representative's time-dependent now marker by default to keep server rendering
+deterministic. ReUI's semantic tokens are scoped to `.reui-scope` so they do not
+replace Coursemap's existing Untitled UI tokens.
+
+## PRO-only families
+
+These are absent from both the MIT repository and the CLI's free catalogue, so
+they have no public source to copy. Each is rebuilt in
+`components/design-system/coursemap/` from the free primitives and the same
+semantic tokens, and is labelled `Adapted, no MIT source` in the laboratory.
+
+alerts, notifications and toasts, breadcrumbs, skeletons, metric cards,
+filter bar, command menus, banners, accordions, steppers.
+
+`application/filter-bar` was confirmed PRO by the CLI API, which returned it
+under `pro` rather than `components`.
+
+## Other permitted sources
+
+| Source                                                                                                                                            | Use                                                       | Licence boundary                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Untitled UI free Figma UI kit v2](https://www.figma.com/community/file/1020079203222518115/untitled-ui-free-figma-ui-kit-and-design-system-v2-0) | Visual reference for the families that have no MIT source | Free Community duplicate owned by the project account                                                                                                                                |
+| [`@untitledui/icons`](https://www.npmjs.com/package/@untitledui/icons)                                                                            | The icon set, version `0.0.22`                            | Untitled UI icon licence. Personal and commercial product use is permitted. Selling, sublicensing or redistributing the icons and creating derivative icon libraries are prohibited. |
+| [`@fontsource-variable/inter`](https://fontsource.org/fonts/inter)                                                                                | Self-hosted Inter Variable, version `5.3.0`               | SIL Open Font License 1.1                                                                                                                                                            |
+
+The icon package's `package.json` reports MIT, but its bundled `LICENSE` file
+contains the more restrictive Untitled UI icon licence. This project treats the
+bundled licence as authoritative and does not describe the icon package as open
+source.
+
+## Explicit exclusions
+
+- Untitled UI PRO Figma, React and icon packages.
+- Source copied from paywalled component previews or from the documentation site.
+- Any component visible only in PRO examples, unless independently rebuilt from
+  permitted primitives.

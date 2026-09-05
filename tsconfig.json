@@ -15,7 +15,9 @@
     "jsx": "react-jsx",
     "incremental": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@uui/*": ["./components/design-system/untitled/*"],
+      "@reui/*": ["./components/design-system/reui/*"]
     },
     "plugins": [
       {

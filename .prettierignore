@@ -10,3 +10,20 @@ public
 test-results
 tests/fixtures/calendar
 types/database.ts
+
+# Untitled UI source is vendored verbatim from untitleduico/react. Formatting it
+# would rewrite the upstream style and reorder Tailwind classes, which breaks
+# the byte comparison that proves it has not drifted. See docs/design-system.
+components/design-system/untitled
+
+# ReUI source is vendored from the upstream MIT registry. Keep its formatting
+# intact so future updates remain reviewable, while Coursemap-owned adapters and
+# laboratory integration remain covered by formatting checks.
+components/design-system/reui/components
+components/design-system/reui/examples
+components/design-system/reui/hooks
+components/design-system/reui/ui
+components/design-system/reui/catalogue
+components/design-system/reui/catalogue-data
+components/design-system/reui/style-nova.css
+components/design-system/reui/LICENSE.md

@@ -2,15 +2,93 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 
 /* ------------------------------------------------------------------ */
+/* ReUI foundations                                                    */
+/* ------------------------------------------------------------------ */
+/* Semantic colour roles, state variants and component styles come from the
+   vendored ReUI theme (third-party MIT source; see
+   docs/design-system/provenance.md). Its raw token values are defined on
+   :root / .dark-mode further down so the whole product — not just the
+   design-system laboratory — reads them. */
+@import "../components/design-system/reui/theme.css";
+
+/* The design-system laboratory (app/design-system) runs its own, second
+   Tailwind build. Its vendor trees and lab-only compositions stay out of the
+   production stylesheet; production scans only the ReUI primitives and
+   modules it actually renders. */
+@source not "../components/design-system/untitled";
+@source not "../components/design-system/reui/catalogue";
+@source not "../components/design-system/coursemap";
+@source not "../components/design-system/lab";
+@source not "../components/design-system/review";
+@source not "../components/design-system/shortlist";
+@source not "../components/design-system/comparison";
+@source not "../components/design-system/redesign";
+@source not "./design-system";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+/* The vendored theme declares data-active as a presence check, but React
+   renders boolean attributes literally, so ReUI components that write
+   data-active={false} still carry data-active="false" and match it. The
+   sidebar menu buttons do exactly that and every resting item picked up the
+   accent background. Redeclare the variant so an explicit "false" never
+   counts as active; later declarations win, and the vendored source stays
+   untouched. */
+@custom-variant data-active (&:is([data-active]:not([data-active="false"]), [data-state="active"]));
+
+@utility transition-inherit-all {
+  transition-property: inherit;
+  transition-duration: inherit;
+  transition-timing-function: inherit;
+}
+
+@utility scrollbar-hide {
+  &::-webkit-scrollbar {
+    display: none;
+    -webkit-appearance: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ReUI uses this shadcn utility name inside its Nova style preset. */
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ------------------------------------------------------------------ */
 /* Design tokens (Tailwind v4 @theme)                                  */
 /* ------------------------------------------------------------------ */
 @theme {
+  --animate-caret-blink: caret-blink 1s infinite;
+
+  @keyframes caret-blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    51%,
+    100% {
+      opacity: 0;
+    }
+  }
+
   --font-sans:
     var(--font-geist-sans), "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
 
-  /* Brand — refined violet */
+  /* Brand — refined violet. The ReUI semantic tokens (--primary and friends)
+     are the preferred way to colour new work; this ramp remains for the
+     legacy components that predate the overhaul. */
   --color-brand-50: #f5f3ff;
   --color-brand-100: #ede9fe;
   --color-brand-200: #ddd6fe;
@@ -21,10 +99,7 @@
   --color-brand-700: #6d28d9;
   --color-brand-800: #5b21b6;
   --color-brand-900: #4c1d95;
-
-  /* App surfaces */
-  --color-canvas: #f7f7f9;
-  --color-panel: #ffffff;
+  --color-brand-950: #2e1065;
 
   /* Elevation */
   --shadow-xs: 0 1px 2px rgba(18, 18, 22, 0.05);
@@ -34,18 +109,6 @@
     0 8px 24px rgba(18, 18, 22, 0.08), 0 2px 7px rgba(18, 18, 22, 0.04);
   --shadow-lg:
     0 24px 60px rgba(12, 12, 16, 0.18), 0 8px 24px rgba(12, 12, 16, 0.08);
-
-  /* Corner radius — deliberately tighter than the Tailwind defaults so the
-     interface reads as a dense tool rather than a consumer app. Overriding
-     the scale keeps every rounded-* utility in step. */
-  --radius-xs: 0.125rem;
-  --radius-sm: 0.1875rem;
-  --radius-md: 0.25rem;
-  --radius-lg: 0.3125rem;
-  --radius-xl: 0.375rem;
-  --radius-2xl: 0.5rem;
-  --radius-3xl: 0.75rem;
-  --radius-4xl: 1rem;
 
   /* Motion */
   --animate-modal-in: modal-in 160ms ease-out;
@@ -64,6 +127,114 @@
   --animate-limit-nudge: limit-nudge 420ms ease-out;
   --animate-limit-flash: limit-flash 900ms ease-out;
   --animate-limit-ring: limit-ring 900ms ease-out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Product theme — ReUI semantic tokens                                */
+/* ------------------------------------------------------------------ */
+/* The vendored ReUI theme maps utilities (bg-background, text-primary …)
+   onto these raw variables via @theme inline. The design-system laboratory
+   scopes its own copies under .reui-scope, which sits closer in the DOM and
+   therefore still wins inside lab previews. Primary is the Coursemap violet
+   (violet-600 in light, violet-500 in dark). */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.541 0.281 293.009);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: var(--color-red-800);
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-900);
+  --info: var(--color-violet-500);
+  --info-foreground: var(--color-violet-900);
+  --warning: var(--color-yellow-500);
+  --warning-foreground: var(--color-yellow-900);
+  --invert: var(--color-zinc-900);
+  --invert-foreground: var(--color-zinc-50);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.702 0.183 293.541);
+  --surface: oklch(0.98 0 0);
+  --surface-foreground: var(--foreground);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.96 0 0);
+  --code-number: oklch(0.56 0 0);
+  --selection: var(--color-violet-100);
+  --selection-foreground: var(--foreground);
+  --chart-1: oklch(0.541 0.281 293.009);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.6 0.118 184.704);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.541 0.281 293.009);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.702 0.183 293.541);
+}
+
+.dark-mode {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.269 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.606 0.25 292.717);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.371 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: var(--color-red-400);
+  --success: var(--color-emerald-400);
+  --success-foreground: var(--color-emerald-950);
+  --info: var(--color-violet-400);
+  --info-foreground: var(--color-violet-950);
+  --warning: var(--color-yellow-400);
+  --warning-foreground: var(--color-yellow-950);
+  --invert: var(--color-zinc-50);
+  --invert-foreground: var(--color-zinc-900);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.541 0.281 293.009);
+  --surface: oklch(0.205 0 0);
+  --code-highlight: oklch(0.269 0 0);
+  --code-number: oklch(0.708 0 0);
+  --selection: oklch(0.371 0 0);
+  --chart-1: oklch(0.606 0.25 292.717);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  /* The sidebar and topbar share the page ground in dark so the chrome reads
+     as one surface and the cards carry the elevation. */
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.606 0.25 292.717);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.541 0.281 293.009);
 }
 
 @keyframes modal-in {
@@ -271,8 +442,12 @@
     color-scheme: light;
   }
 
+  .dark-mode {
+    color-scheme: dark;
+  }
+
   * {
-    border-color: var(--color-zinc-200);
+    border-color: var(--color-border);
   }
 
   html {
@@ -286,8 +461,8 @@
   body {
     margin: 0;
     min-height: 100dvh;
-    background: var(--color-panel);
-    color: var(--color-zinc-900);
+    background: var(--color-background);
+    color: var(--color-foreground);
     font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.5;
@@ -321,7 +496,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-brand-400);
+    outline: 2px solid var(--color-ring);
     outline-offset: 2px;
   }
 
@@ -348,6 +523,17 @@
   }
   *:not(html, body)::-webkit-scrollbar-thumb:hover {
     background: var(--color-zinc-400);
+    background-clip: content-box;
+  }
+  .dark-mode *:not(html, body) {
+    scrollbar-color: var(--color-zinc-600) transparent;
+  }
+  .dark-mode *:not(html, body)::-webkit-scrollbar-thumb {
+    background: var(--color-zinc-600);
+    background-clip: content-box;
+  }
+  .dark-mode *:not(html, body)::-webkit-scrollbar-thumb:hover {
+    background: var(--color-zinc-500);
     background-clip: content-box;
   }
 }

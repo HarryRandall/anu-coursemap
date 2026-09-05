@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
-import { IconButton } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@reui/ui/button";
+import { Card, CardContent } from "@reui/ui/card";
 import type { DashboardCalendarEvent } from "@/lib/coursemap/dashboard-series";
 import { cn } from "@/lib/cn";
 import { accent } from "@/lib/ui";
@@ -124,43 +124,42 @@ export function MonthCalendar({
   const cells = monthCells(focus);
 
   return (
-    <Card className="flex min-h-80 flex-col p-4">
+    <Card className="min-h-72">
+      <CardContent className="flex h-full flex-col p-5">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-zinc-900">
-            Study calendar
-          </h2>
-          <p className="mt-0.5 text-[11px] text-zinc-500">
+          <h2 className="text-sm font-semibold">Study calendar</h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">
             Courses in scheduled study periods
           </p>
         </div>
         <div className="flex items-center">
-          <IconButton
-            label="Previous month"
+          <Button
+            aria-label="Previous month"
             variant="ghost"
+            size="icon"
             onClick={() => setFocus((current) => shiftMonth(current, -1))}
-            className="size-11"
           >
             <ChevronLeft size={16} aria-hidden="true" />
-          </IconButton>
-          <IconButton
-            label="Next month"
+          </Button>
+          <Button
+            aria-label="Next month"
             variant="ghost"
+            size="icon"
             onClick={() => setFocus((current) => shiftMonth(current, 1))}
-            className="size-11"
           >
             <ChevronRight size={16} aria-hidden="true" />
-          </IconButton>
+          </Button>
         </div>
       </div>
-      <p className="mt-3 text-sm font-medium text-zinc-800">
+      <p className="mt-3 text-sm font-medium">
         {monthLabel(focus)}
       </p>
       <div className="mt-2 grid grid-cols-7">
         {weekdayLabels.map((label) => (
           <div
             key={label}
-            className="pb-1 text-center text-[10px] font-semibold tracking-wide text-zinc-400 uppercase"
+            className="text-muted-foreground/70 pb-1 text-center text-[10px] font-semibold tracking-wide uppercase"
           >
             {label}
           </div>
@@ -171,9 +170,9 @@ export function MonthCalendar({
           const isToday = sameDay(cell, today);
           const dayClass = cn(
             "mx-auto flex size-8 flex-col items-center justify-center rounded-full text-[12px] font-medium",
-            isToday && "bg-brand-600 text-white",
-            !isToday && dayEvents.length > 0 && "text-zinc-900",
-            !isToday && dayEvents.length === 0 && "text-zinc-500",
+            isToday && "bg-primary text-primary-foreground",
+            !isToday && dayEvents.length > 0 && "text-foreground",
+            !isToday && dayEvents.length === 0 && "text-muted-foreground",
           );
           if (dayEvents.length === 0) {
             return (
@@ -193,21 +192,23 @@ export function MonthCalendar({
                 className={cn(
                   dayClass,
                   !isToday &&
-                    "hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600",
+                    "hover:bg-muted focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2",
                 )}
               >
                 {cell.getDate()}
                 <span
                   className={cn(
                     "mt-px size-1 rounded-full",
-                    isToday ? "bg-white" : accent[dayEvents[0].accent].dot,
+                    isToday
+                      ? "bg-primary-foreground"
+                      : accent[dayEvents[0].accent].dot,
                   )}
                   aria-hidden="true"
                 />
               </button>
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 rounded-lg bg-zinc-900 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white shadow-md group-focus-within:block group-hover:block"
+                className="bg-foreground text-background pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 hidden -translate-x-1/2 rounded-lg px-2 py-1 text-[11px] font-medium whitespace-nowrap shadow-md group-focus-within:block group-hover:block"
               >
                 {dayEvents.map((event) => event.courseCode).join(", ")}
               </span>
@@ -216,17 +217,18 @@ export function MonthCalendar({
         })}
       </div>
       {events.some((event) => event.startsOn && event.endsOn) ? null : (
-        <p className="mt-3 text-xs leading-5 text-zinc-500">
+        <p className="text-muted-foreground mt-3 text-xs leading-5">
           Calendar dates will appear once the selected study periods are
           published.
         </p>
       )}
       <Link
         href="/calendar"
-        className="mt-auto pt-3 text-xs font-semibold text-brand-600 hover:text-brand-700"
+        className="text-primary hover:text-primary/80 mt-auto pt-3 text-xs font-semibold"
       >
         Open calendar
       </Link>
+      </CardContent>
     </Card>
   );
 }
