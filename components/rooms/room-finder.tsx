@@ -29,6 +29,7 @@ import { CampusMap } from "@/components/rooms/campus-map";
 
 import { FilterBar } from "@/components/ui/filter-bar";
 
+import { Hint } from "@/components/ui/hint";
 import { cn } from "@/lib/cn";
 import { buildIndoorScene } from "@/lib/rooms/indoor-3d";
 import {
@@ -273,7 +274,6 @@ function LayerToggleRow({
               size="icon-sm"
               className="min-h-11 min-w-11 text-muted-foreground/80"
               aria-label={`About ${layer.name}`}
-              title={`About ${layer.name}`}
               type="button"
             >
               <Info aria-hidden="true" size={14} />
@@ -781,26 +781,26 @@ export function RoomFinder({
             const shown = level.id === shownLevelId;
             const onRoute = journey?.route.levelIds.includes(level.id) ?? false;
             return (
-              <button
-                aria-label={`Show ${level.name}`}
-                aria-current={shown ? "true" : undefined}
-                className={cn(
-                  "relative min-h-11 min-w-11 rounded-md text-xs font-semibold outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
-                  shown && "bg-primary text-white hover:bg-primary",
-                )}
-                key={level.id}
-                onClick={() => showIndoorLevel(level.id)}
-                title={level.name}
-                type="button"
-              >
-                {level.ref || level.number}
-                {onRoute && !shown ? (
-                  <span
-                    aria-label="on your route"
-                    className="absolute top-1 right-1 size-1.5 rounded-full bg-amber-500"
-                  />
-                ) : null}
-              </button>
+              <Hint key={level.id} label={level.name}>
+                <button
+                  aria-label={`Show ${level.name}`}
+                  aria-current={shown ? "true" : undefined}
+                  className={cn(
+                    "relative min-h-11 min-w-11 rounded-md text-xs font-semibold outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
+                    shown && "bg-primary text-white hover:bg-primary",
+                  )}
+                  onClick={() => showIndoorLevel(level.id)}
+                  type="button"
+                >
+                  {level.ref || level.number}
+                  {onRoute && !shown ? (
+                    <span
+                      aria-label="on your route"
+                      className="absolute top-1 right-1 size-1.5 rounded-full bg-amber-500"
+                    />
+                  ) : null}
+                </button>
+              </Hint>
             );
           })}
         </div>
@@ -1207,7 +1207,6 @@ export function RoomFinder({
                   onClick={swapRouteEndpoints}
                   variant="outline"
                   aria-label={"Swap start and destination"}
-                  title={"Swap start and destination"}
                   size="icon"
                   type="button"
                 >

@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "@reui/ui/alert";
 import { Button } from "@reui/ui/button";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
 import { Dialog, DialogContent, DialogTitle } from "@reui/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@reui/ui/tooltip";
 import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
@@ -511,27 +512,33 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                 >
                   <GripVertical size={13} aria-hidden="true" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAttempt(entry.attempt.id)}
-                  aria-describedby={
-                    note ? `course-issue-${entry.attempt.id}` : undefined
-                  }
-                  className="min-w-0 cursor-pointer py-2 pr-2 text-left"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <StatusMark status={entry.status} />
-                    <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-muted-foreground">
-                      {entry.course.code}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
-                      {entry.course.name}
-                    </span>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">
-                      {unitsForAttempt(entry.attempt, entry.course)}u
-                    </span>
-                  </span>
-                </button>
+                <Tooltip open={note ? undefined : false}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAttempt(entry.attempt.id)}
+                      className="min-w-0 cursor-pointer py-2 pr-2 text-left"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <StatusMark status={entry.status} />
+                        <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-muted-foreground">
+                          {entry.course.code}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
+                          {entry.course.name}
+                        </span>
+                        <span className="shrink-0 text-[11px] text-muted-foreground">
+                          {unitsForAttempt(entry.attempt, entry.course)}u
+                        </span>
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  {note ? (
+                    <TooltipContent align="start" side="bottom">
+                      {note}
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
                 {entry.status === "blocked" && (
                   <div className="col-span-2 flex justify-end px-2 pb-2">
                     <FixIssueButton
@@ -539,15 +546,6 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                       catalogue={planningCatalogue}
                     />
                   </div>
-                )}
-                {note && (
-                  <span
-                    id={`course-issue-${entry.attempt.id}`}
-                    role="tooltip"
-                    className="pointer-events-none invisible absolute top-[calc(100%+0.25rem)] left-8 z-40 max-w-72 translate-y-1 rounded-lg bg-foreground px-2.5 py-1.5 text-[11px] leading-relaxed font-medium text-background opacity-0 shadow-lg transition duration-150 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
-                  >
-                    {note}
-                  </span>
                 )}
               </div>
             );

@@ -71,7 +71,6 @@ export function EmailSupportDialog({
             className="-mr-1"
             variant="outline"
             aria-label={"Close"}
-            title={"Close"}
             size="icon"
             type="button"
           >

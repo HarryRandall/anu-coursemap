@@ -33,6 +33,7 @@ import {
   MessageSquareText,
   Plus,
 } from "lucide-react";
+import { Hint } from "@/components/ui/hint";
 import { PrereqGraph } from "@/components/prereq-graph";
 
 import type { CourseDetails } from "@/lib/coursemap/course-types";
@@ -158,15 +159,16 @@ function CourseReferenceText({
       );
     }
     return (
-      <span
+      <Hint
         key={index}
-        title={`${part} is referenced by ANU but has not been imported yet`}
-        className="inline-flex items-center gap-1 rounded bg-muted px-1 font-mono font-semibold text-muted-foreground"
+        label={`${part} is referenced by ANU but has not been imported yet`}
       >
-        <LockKeyhole size={10} aria-hidden="true" />
-        {part}
-        <span className="sr-only">Not imported yet</span>
-      </span>
+        <span className="inline-flex items-center gap-1 rounded bg-muted px-1 font-mono font-semibold text-muted-foreground">
+          <LockKeyhole size={10} aria-hidden="true" />
+          {part}
+          <span className="sr-only">Not imported yet</span>
+        </span>
+      </Hint>
     );
   });
 }
@@ -198,15 +200,16 @@ function CourseReferenceChips({
               {reference}
             </Link>
           ) : (
-            <span
+            <Hint
               key={reference}
-              title={`${reference} has not been imported yet`}
-              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-muted-foreground ring-1 ring-border"
+              label={`${reference} has not been imported yet`}
             >
-              <LockKeyhole size={11} aria-hidden="true" />
-              {reference}
-              <span className="sr-only">Not imported yet</span>
-            </span>
+              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-muted-foreground ring-1 ring-border">
+                <LockKeyhole size={11} aria-hidden="true" />
+                {reference}
+                <span className="sr-only">Not imported yet</span>
+              </span>
+            </Hint>
           ),
         )}
       </div>
@@ -526,11 +529,6 @@ export function CourseDetailView({
           className="w-full shrink-0 sm:w-auto"
           disabled={!onAddToPlan}
           onClick={onAddToPlan}
-          title={
-            onAddToPlan
-              ? undefined
-              : "Planning is only available on the live student page."
-          }
           variant="default"
           type="button"
         >

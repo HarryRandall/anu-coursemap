@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { CalendarCheck2, Layers3 } from "lucide-react";
 import { Card, CardContent } from "@reui/ui/card";
+import { Hint } from "@/components/ui/hint";
 import { cn } from "@/lib/cn";
 import { TrendChart, DonutChart, chartColours } from "./metric-charts";
 import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";
@@ -331,18 +332,21 @@ export function buildMetricViews(
       body: nextCourses.length > 0 && (
         <div className="flex gap-1.5">
           {nextCourses.slice(0, 6).map((course) => (
-            <span
+            <Hint
               key={course.code}
-              title={`${course.code} ${course.ready ? "ready" : "needs a check"}`}
-              className={cn(
-                "flex h-6 flex-1 items-center justify-center rounded-md text-[11px] font-bold",
-                course.ready
-                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                  : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-              )}
+              label={`${course.code} ${course.ready ? "ready" : "needs a check"}`}
             >
-              {course.ready ? "✓" : "!"}
-            </span>
+              <span
+                className={cn(
+                  "flex h-6 flex-1 items-center justify-center rounded-md text-[11px] font-bold",
+                  course.ready
+                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                )}
+              >
+                {course.ready ? "✓" : "!"}
+              </span>
+            </Hint>
           ))}
         </div>
       ),

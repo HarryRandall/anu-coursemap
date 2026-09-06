@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, LockKeyhole } from "lucide-react";
 import { useMemo } from "react";
+import { Hint } from "@/components/ui/hint";
 import { cn } from "@/lib/cn";
 import type { CoursePrerequisiteEdge } from "@/lib/coursemap/course-types";
 
@@ -260,15 +261,15 @@ export function PrereqGraph({
                     }
                     if (!isAvailable) {
                       return (
-                        <span
+                        <Hint
                           key={item}
-                          style={style}
-                          title={`${item} has not been imported yet`}
-                          className={nodeClassName}
+                          label={`${item} has not been imported yet`}
                         >
-                          <LockKeyhole size={11} aria-hidden="true" />
-                          {content}
-                        </span>
+                          <span style={style} className={nodeClassName}>
+                            <LockKeyhole size={11} aria-hidden="true" />
+                            {content}
+                          </span>
+                        </Hint>
                       );
                     }
                     return (
