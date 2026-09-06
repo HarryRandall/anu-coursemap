@@ -139,17 +139,7 @@ export function requirementBucketProgress({
         bucket.title !== null && bucket.predicates.length > 0,
     );
 
-  const credited = activeAttempts(attempts).flatMap((attempt) => {
-    const course = planningCourseForAttempt(attempt, catalogue);
-    if (!course) return [];
-    return [
-      {
-        attempt,
-        course,
-        units: unitsForAttempt(attempt, course),
-      },
-    ];
-  });
+  const credited = creditedAttempts(attempts, catalogue);
 
   return buckets.map(({ node, title, predicates }) => {
     let completedUnits = 0;
@@ -167,4 +157,265 @@ export function requirementBucketProgress({
       plannedUnits,
     };
   });
+}
+
+/**
+ * How far a single rule has progressed against the plan.
+ *
+ * - `satisfied`: the completed work already meets the rule's minimum.
+ * - `in_progress`: some completed or planned work counts, but not enough yet.
+ * - `not_started`: nothing in the plan matches the rule.
+ * - `over_limit`: a maximum-only rule has more units mapped than it allows.
+ * - `unmeasured`: the rule has no course, subject or level test Coursemap can
+ *   evaluate (tags, free text, unrestricted electives), or no stated target.
+ */
+export type RequirementNodeState =
+  "satisfied" | "in_progress" | "not_started" | "over_limit" | "unmeasured";
+
+export type RequirementNodeProgress = {
+  key: string;
+  state: RequirementNodeState;
+  /** Minimum units the rule asks for, when it states one. */
+  targetUnits: number | null;
+  /** Maximum units the rule allows, when it states one. */
+  maximumUnits: number | null;
+  /** Minimum number of listed courses the rule asks for, when it states one. */
+  targetCourses: number | null;
+  completedUnits: number;
+  /** Units scheduled (planned or enrolled) but not yet completed. */
+  plannedUnits: number;
+  /** Course codes from the plan that counted toward this rule. */
+  matchedCourseCodes: string[];
+};
+
+export type RequirementTreeProgress = ReadonlyMap<
+  string,
+  RequirementNodeProgress
+>;
+
+export function requirementNodeKey(node: PlanRequirementNode) {
+  return `${node.type}-${node.id}`;
+}
+
+type CreditedAttempt = {
+  attempt: Attempt;
+  course: MatchableCourse & { units?: number };
+  units: number;
+};
+
+function creditedAttempts(
+  attempts: readonly Attempt[],
+  catalogue: PlanningCatalogue,
+): CreditedAttempt[] {
+  return activeAttempts(attempts).flatMap((attempt) => {
+    const course = planningCourseForAttempt(attempt, catalogue);
+    if (!course) return [];
+    return [{ attempt, course, units: unitsForAttempt(attempt, course) }];
+  });
+}
+
+function stateFromUnits({
+  targetUnits,
+  maximumUnits,
+  targetCourses,
+  completedUnits,
+  plannedUnits,
+  completedCourses,
+  measurable,
+}: {
+  targetUnits: number | null;
+  maximumUnits: number | null;
+  targetCourses: number | null;
+  completedUnits: number;
+  plannedUnits: number;
+  completedCourses: number;
+  measurable: boolean;
+}): RequirementNodeState {
+  if (!measurable) return "unmeasured";
+  const mapped = completedUnits + plannedUnits;
+  if (targetUnits === null && targetCourses === null) {
+    // A maximum-only rule is a cap rather than a goal: it is fine until the
+    // plan crosses it. Without any stated bound there is nothing to measure.
+    if (maximumUnits === null) return "unmeasured";
+    return mapped > maximumUnits ? "over_limit" : "satisfied";
+  }
+  const unitsMet = targetUnits === null || completedUnits >= targetUnits;
+  const coursesMet =
+    targetCourses === null || completedCourses >= targetCourses;
+  if (unitsMet && coursesMet) return "satisfied";
+  if (mapped > 0) return "in_progress";
+  return "not_started";
+}
+
+function conditionProgress(
+  condition: PlanRequirementCondition,
+  credited: readonly CreditedAttempt[],
+): RequirementNodeProgress {
+  const predicates = conditionPredicates(condition);
+  let completedUnits = 0;
+  let plannedUnits = 0;
+  let completedCourses = 0;
+  const matchedCourseCodes: string[] = [];
+  credited.forEach(({ attempt, course, units }) => {
+    if (!predicates.some((matches) => matches(course))) return;
+    matchedCourseCodes.push(course.code);
+    if (attempt.status === "completed") {
+      completedUnits += units;
+      completedCourses += 1;
+    } else {
+      plannedUnits += units;
+    }
+  });
+  const targetUnits = condition.minimumUnits;
+  const maximumUnits = condition.maximumUnits;
+  const targetCourses = condition.minimumCourses;
+  return {
+    key: requirementNodeKey(condition),
+    state: stateFromUnits({
+      targetUnits,
+      maximumUnits,
+      targetCourses,
+      completedUnits,
+      plannedUnits,
+      completedCourses,
+      measurable: predicates.length > 0,
+    }),
+    targetUnits,
+    maximumUnits,
+    targetCourses,
+    completedUnits,
+    plannedUnits,
+    matchedCourseCodes,
+  };
+}
+
+/**
+ * Combines child states the way the group's operator reads: every child for
+ * `all_of`, one child for `any_of` and a count of children for
+ * `minimum_count`. Unmeasured children are ignored so one free-text rule
+ * does not hide progress on its siblings.
+ */
+function groupStateFromChildren(
+  group: PlanRequirementGroup,
+  children: readonly RequirementNodeProgress[],
+): RequirementNodeState {
+  const measurable = children.filter((child) => child.state !== "unmeasured");
+  if (measurable.length === 0) return "unmeasured";
+  const satisfied = measurable.filter(
+    (child) => child.state === "satisfied",
+  ).length;
+  const active = measurable.some(
+    (child) => child.state === "satisfied" || child.state === "in_progress",
+  );
+  if (measurable.some((child) => child.state === "over_limit")) {
+    return "over_limit";
+  }
+  const required =
+    group.operator === "any_of"
+      ? 1
+      : group.operator === "minimum_count"
+        ? (group.minimumCount ?? 1)
+        : measurable.length;
+  if (satisfied >= required) return "satisfied";
+  return active ? "in_progress" : "not_started";
+}
+
+function groupProgress(
+  group: PlanRequirementGroup,
+  credited: readonly CreditedAttempt[],
+  into: Map<string, RequirementNodeProgress>,
+): RequirementNodeProgress {
+  const children = group.children.map((child) =>
+    child.type === "condition"
+      ? conditionProgress(child, credited)
+      : groupProgress(child, credited, into),
+  );
+  children.forEach((child) => into.set(child.key, child));
+
+  // Units roll up through the union of matched courses so a course that
+  // satisfies two sibling rules is only counted once for the parent.
+  const matchedCourseCodes = [
+    ...new Set(children.flatMap((child) => child.matchedCourseCodes)),
+  ];
+  const matched = new Set(matchedCourseCodes);
+  let completedUnits = 0;
+  let plannedUnits = 0;
+  let completedCourses = 0;
+  credited.forEach(({ attempt, course, units }) => {
+    if (!matched.has(course.code)) return;
+    if (attempt.status === "completed") {
+      completedUnits += units;
+      completedCourses += 1;
+    } else {
+      plannedUnits += units;
+    }
+  });
+
+  const childState = groupStateFromChildren(group, children);
+  const hasOwnTarget =
+    group.minimumUnits !== null || group.maximumUnits !== null;
+  const unitState = hasOwnTarget
+    ? stateFromUnits({
+        targetUnits: group.minimumUnits,
+        maximumUnits: group.maximumUnits,
+        targetCourses: null,
+        completedUnits,
+        plannedUnits,
+        completedCourses,
+        measurable: childState !== "unmeasured",
+      })
+    : childState;
+
+  // A group with its own unit total is satisfied only when both the children
+  // and the total agree; otherwise the stricter reading wins.
+  const order: RequirementNodeState[] = [
+    "over_limit",
+    "not_started",
+    "in_progress",
+    "satisfied",
+    "unmeasured",
+  ];
+  const state =
+    unitState === "unmeasured"
+      ? childState
+      : childState === "unmeasured"
+        ? unitState
+        : order[Math.min(order.indexOf(unitState), order.indexOf(childState))];
+
+  return {
+    key: requirementNodeKey(group),
+    state,
+    targetUnits: group.minimumUnits,
+    maximumUnits: group.maximumUnits,
+    targetCourses: null,
+    completedUnits,
+    plannedUnits,
+    matchedCourseCodes,
+  };
+}
+
+/**
+ * Progress for every node in one published requirement tree, keyed by
+ * `requirementNodeKey`. The requirements page uses this to show each rule's
+ * completed, planned and remaining units with a satisfied state.
+ *
+ * This is an indicative reading, not a formal audit: a course may legitimately
+ * count toward several rules, and rules Coursemap cannot evaluate are reported
+ * as `unmeasured` rather than guessed at.
+ */
+export function requirementTreeProgress({
+  root,
+  attempts,
+  catalogue,
+}: {
+  root: PlanRequirementGroup | null;
+  attempts: readonly Attempt[];
+  catalogue: PlanningCatalogue;
+}): RequirementTreeProgress {
+  const progress = new Map<string, RequirementNodeProgress>();
+  if (!root) return progress;
+  const credited = creditedAttempts(attempts, catalogue);
+  const rootProgress = groupProgress(root, credited, progress);
+  progress.set(rootProgress.key, rootProgress);
+  return progress;
 }
