@@ -129,7 +129,10 @@
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: var(--background);
-  --tooltip-background: oklch(1 0 0);
+  /* One tooltip surface for Radix tooltips and chart hover cards. */
+  --tooltip: oklch(1 0 0);
+  --tooltip-foreground: oklch(0.145 0 0);
+  --tooltip-border: oklch(0.922 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: var(--background);
   --popover-foreground: oklch(0.145 0 0);
@@ -181,7 +184,9 @@
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: var(--background);
-  --tooltip-background: oklch(0.205 0 0);
+  --tooltip: oklch(0 0 0);
+  --tooltip-foreground: oklch(1 0 0);
+  --tooltip-border: oklch(1 0 0 / 18%);
   --card-foreground: oklch(0.985 0 0);
   --popover: var(--background);
   --popover-foreground: oklch(0.985 0 0);
@@ -662,6 +667,32 @@
       background-color: var(--accent);
     }
   }
+}
+
+/*
+ * Tooltips share one surface everywhere: white with a hairline in light mode,
+ * black with a light hairline and white text in dark mode. Radix tooltips,
+ * ReUI chart tooltips and the custom Recharts hover cards all use it.
+ */
+.coursemap-tooltip,
+.style-nova .cn-tooltip-content,
+.style-nova .cn-chart-tooltip {
+  border: 1px solid var(--tooltip-border);
+  border-radius: 0.5rem;
+  background-color: var(--tooltip);
+  color: var(--tooltip-foreground);
+  box-shadow: 0 8px 24px -12px oklch(0 0 0 / 35%);
+}
+
+/* Radix sets display: block inline on the arrow, so the override must win. */
+.style-nova .cn-tooltip-arrow {
+  display: none !important;
+}
+
+/* Collapsed sidebar: the hidden group label is pulled over the previous
+   group's last item, so it must not take pointer events. */
+.style-nova .group[data-collapsible="icon"] .cn-sidebar-group-label {
+  pointer-events: none;
 }
 
 /* Page sections use one tab rhythm; the indicator stays above the divider. */

@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartHoverCard } from "@/components/ui/chart-tooltip";
 import { cn } from "@/lib/cn";
 
 export type SparklineVariant = "area" | "bar" | "line";
@@ -41,28 +42,18 @@ function LastDot({
   );
 }
 
-function ChartTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ value?: number }>;
-}) {
-  if (!active || payload?.[0]?.value == null) return null;
-  return (
-    <div className="rounded-md border border-border bg-(--tooltip-background) px-2 py-1 text-[11px] font-medium text-foreground/90 tabular-nums shadow-xs">
-      {payload[0].value.toLocaleString("en-AU")}
-    </div>
-  );
-}
-
 function axes(peak: number) {
   return (
     <>
       <XAxis dataKey="index" hide />
       <YAxis domain={[0, peak]} hide />
       <Tooltip
-        content={<ChartTooltip />}
+        content={
+          <ChartHoverCard
+            showNames={false}
+            format={(value) => Number(value).toLocaleString("en-AU")}
+          />
+        }
         cursor={false}
         isAnimationActive={false}
       />

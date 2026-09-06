@@ -17,6 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartHoverCard } from "@/components/ui/chart-tooltip";
 
 export const chartColours = {
   violet: "#9e77ed",
@@ -28,34 +29,6 @@ export const chartColours = {
 };
 export type MetricPoint = { label: string; units: number };
 export type ChartSegment = { name: string; value: number; fill: string };
-
-export function MetricTooltip({
-  active,
-  payload,
-  label,
-  units = false,
-}: {
-  active?: boolean;
-  payload?: readonly { name?: string | number; value?: string | number }[];
-  label?: string | number;
-  units?: boolean;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="w-max max-w-56 rounded-md border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md">
-      {label != null && <p className="mb-1 font-medium">{label}</p>}
-      {payload.map((entry, index) => (
-        <div key={index} className="flex items-baseline justify-between gap-3">
-          <span>{entry.name}</span>
-          <span className="shrink-0 font-medium tabular-nums">
-            {entry.value}
-            {units ? " units" : ""}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export function TrendChart({
   points,
@@ -120,7 +93,7 @@ export function TrendChart({
           <Tooltip
             allowEscapeViewBox={{ x: false, y: true }}
             wrapperStyle={{ zIndex: 200 }}
-            content={<MetricTooltip units />}
+            content={<ChartHoverCard suffix=" units" />}
             cursor={{
               stroke: "var(--color-muted-foreground)",
               strokeDasharray: "3 3",
@@ -227,7 +200,7 @@ export function DonutChart({
               allowEscapeViewBox={{ x: true, y: true }}
               reverseDirection={{ x: true, y: false }}
               wrapperStyle={{ zIndex: 200 }}
-              content={<MetricTooltip />}
+              content={<ChartHoverCard />}
             />
           )}
         </PieChart>

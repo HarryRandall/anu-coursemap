@@ -2,12 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  DonutChart,
-  TrendChart,
-  chartColours,
-  MetricTooltip,
-} from "./metric-charts";
+import { DonutChart, TrendChart, chartColours } from "./metric-charts";
 import { MetricCardView } from "./metric-cards";
 import {
   Area,
@@ -21,6 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChartHoverCard } from "@/components/ui/chart-tooltip";
 import { Card, CardContent } from "@reui/ui/card";
 import { Button } from "@reui/ui/button";
 
@@ -204,7 +200,7 @@ export function UniversityMetricsPreview() {
               <YAxis hide domain={[0, 7]} />
               <XAxis dataKey="term" hide />
               <Tooltip
-                content={<MetricTooltip />}
+                content={<ChartHoverCard />}
                 wrapperStyle={{ zIndex: 200 }}
                 cursor={{ stroke: "var(--color-border)" }}
               />
@@ -270,7 +266,7 @@ export function UniversityMetricsPreview() {
                 axisLine={false}
               />
               <Tooltip
-                content={<MetricTooltip />}
+                content={<ChartHoverCard />}
                 wrapperStyle={{ zIndex: 200 }}
                 cursor={{ fill: "var(--color-muted)", fillOpacity: 0.3 }}
               />
