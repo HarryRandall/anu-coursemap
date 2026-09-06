@@ -269,8 +269,8 @@ test("keeps the key-dates experience continuous and data-driven", async () => {
   assert.match(page, /loadPublishedUniversityCalendar/);
   assert.match(page, /decorateUniversityCalendarEvents/);
   assert.match(calendarView, /groupUniversityCalendarEventsByMonth/);
-  assert.match(calendarView, /IntersectionObserver/);
-  assert.match(calendarView, /Load more dates/);
+  assert.match(calendarView, /Calendar year/);
+  assert.match(calendarView, /Past dates/);
   assert.doesNotMatch(calendarView, /Next up|Breakdown|MonthAgenda|monthCells/);
   assert.doesNotMatch(calendarView, /const events = \[/);
 });
@@ -459,7 +459,7 @@ test("routes course imports through the directory and durable run workspace", as
   assert.match(directoryHtml, /Refresh the course directory/i);
   assert.match(directoryHtml, /Search courses by code or title/i);
   assert.doesNotMatch(directoryHtml, /Import selected/i);
-  assert.match(directoryHtml, /No directory courses/i);
+  assert.match(directoryHtml, /No courses for/i);
   // Deployment state no longer renders as a full-width banner; it surfaces on
   // the import control in the selection bar instead.
   assert.doesNotMatch(directoryHtml, /Detailed imports are disabled/i);
@@ -914,4 +914,22 @@ test("returns rooms as results in their own right, not just their building", asy
   assert.match(indoorDirections.text(), /Enter Forestry Building/);
   assert.match(indoorDirections.text(), /Take the lift/);
   assert.match(indoorDirections.text(), /Continue to 1\.01/);
+});
+
+test("removes component reference pages and navigation", async () => {
+  for (const route of [
+    "/design-system",
+    "/design-system/typography",
+    "/admin/design-system/components",
+    "/admin/design-system/foundations",
+    "/admin/design-system-preview/tokens/foundations",
+    "/api/design-system/review",
+  ]) {
+    assert.equal((await render(route)).status, 404, route);
+  }
+  const html = await (await render("/admin/courses")).text();
+  const links = load(html)("a")
+    .map((_, element) => load(html)(element).attr("href"))
+    .get();
+  assert.ok(links.every((href) => !href.includes("design-system")));
 });

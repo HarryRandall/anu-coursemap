@@ -60,8 +60,8 @@ test("uses the shared directory management pattern on the course list", async ()
   assert.match(source, /<DirectorySelectionBar/u);
   assert.match(source, /onImport=\{\(model\) => void startImport\(model\)\}/u);
   assert.match(source, /requestedModel,/u);
-  assert.match(source, /coursePublicId.*data\.year\.year/u);
-  assert.match(source, /href=.*\/courses\/.*record\.code/u);
+  assert.match(source, /coursePublicId.*record\.year/u);
+  assert.match(source, /href:.*\/courses\/.*record\.code/u);
   assert.doesNotMatch(source, /<TableHead>Directory<\/TableHead>/u);
   assert.doesNotMatch(source, /Import selected<\/Button>/u);
 });
@@ -87,7 +87,7 @@ test("keeps the compact year picker inline and puts All last", async () => {
   assert.match(pickerSource, /allLabel = "All"/u);
   assert.match(
     pickerSource,
-    /ordered\.map[\s\S]*\{allowAll \? \([\s\S]*\{allLabel\}/u,
+    /ordered\.map[\s\S]*allowAll \? \[\{ value: "all", label: allLabel \}\]/u,
   );
 });
 
@@ -105,7 +105,7 @@ test("gives Radix popovers a concrete trigger inside tooltips", async () => {
 
 test("makes the pipeline the first and default course import review tab", async () => {
   const source = await readFile(targetReviewPath, "utf8");
-  assert.match(source, /<Tabs defaultValue="pipeline">/);
+  assert.match(source, /<Tabs defaultValue="pipeline"(?:\s[^>]*)?>/);
   const pipeline = source.indexOf(
     '<TabsTrigger value="pipeline">Pipeline<\/TabsTrigger>',
   );
@@ -143,7 +143,7 @@ test("keeps draft decisions compact and provides a full candidate course preview
   const source = await readFile(targetReviewPath, "utf8");
   const appShell = source.indexOf("<AppShell");
   const accept = source.indexOf('confirmLabel="Accept as draft"');
-  const tabs = source.indexOf('<Tabs defaultValue="pipeline">');
+  const tabs = source.indexOf('<Tabs defaultValue="pipeline"');
   assert.ok(appShell >= 0);
   assert.ok(accept > appShell && accept < tabs);
   assert.match(source, /<CourseDetailTabsList \/>/);
@@ -159,8 +159,8 @@ test("uses light JSON artefacts and table-shaped database projections", async ()
   ]);
   assert.match(artifactSource, /<JsonCode/);
   assert.match(artifactSource, /projectedCourseDatabaseTables\(parsed\)/);
-  assert.match(artifactSource, /<CourseImportDatabaseRows/);
-  assert.match(databaseRowsSource, /<ImportDatabaseRowTable/);
+  assert.match(artifactSource, /<DatabaseRowsViewer/);
+  assert.match(databaseRowsSource, /<DatabaseRowsViewer/);
   assert.match(tableSource, /<TableHeader>/);
   assert.match(tableSource, /<TableHead/);
   assert.match(tableSource, /<TableRow/);
@@ -170,7 +170,7 @@ test("uses light JSON artefacts and table-shaped database projections", async ()
   assert.match(tableSource, /max-w-\[28rem\]/);
   assert.match(tableSource, /overflow-x-auto overflow-y-hidden/);
   assert.match(artifactSource, /const grouped = useMemo/);
-  assert.match(artifactSource, /<Select/);
+  assert.match(artifactSource, /<OptionPicker/);
   assert.match(artifactSource, /Attempt \$\{artifact\.attemptNumber\}/);
   assert.doesNotMatch(
     artifactSource,

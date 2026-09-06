@@ -46,3 +46,25 @@ test("gives non-object and empty-object rows a readable value column", () => {
     rows: [{ value: {} }],
   });
 });
+
+test("formats quantities and local timestamps without changing identifiers or dates", async () => {
+  const { formatImportDatabaseValue: format } =
+    await import("../lib/coursemap/import-database-value.ts");
+  assert.equal(format("amount", 12345.67, "Australia/Sydney"), "12,345.67");
+  assert.equal(format("course_id", 12345, "Australia/Sydney"), "12345");
+  assert.equal(format("academic_year", 2026, "Australia/Sydney"), "2026");
+  assert.equal(
+    format("starts_on", "2026-09-06", "Australia/Sydney"),
+    "2026-09-06",
+  );
+  assert.equal(
+    format("course_id", "<courses AATD1001>", "Australia/Sydney"),
+    "<courses AATD1001>",
+  );
+  assert.match(
+    format("created_at", "2026-09-06T23:00:00Z", "Australia/Sydney"),
+    /7 Sept 2026.*9:00 am.*Australia\/Sydney/,
+  );
+  assert.equal(format("active", false, "UTC"), "No");
+  assert.equal(format("value", null, "UTC"), "null");
+});

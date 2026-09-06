@@ -217,7 +217,7 @@ test("requirements view distinguishes source wording, interpretation and nested 
   assert.match(source, /state\.profile\.minorCodes/u);
   assert.match(source, /state\.profile\.specialisationCodes/u);
   assert.match(source, /selectedStructureCodes/u);
-  assert.match(source, /<Badge tone="success">Selected<\/Badge>/u);
+  assert.match(source, /<Badge variant=\{"success-light"\}>Selected<\/Badge>/u);
   assert.match(source, /Source rules requiring a manual check/u);
   assert.match(
     source,
