@@ -20,7 +20,8 @@ export default async function SignupPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const next = safeInternalRedirect(first(params.next));
+  // New accounts are offered onboarding first; the wizard itself can be skipped.
+  const next = safeInternalRedirect(first(params.next), "/onboarding");
 
   const configured = Boolean(getSupabaseConfig());
   const signInHref = `/login?next=${encodeURIComponent(next)}`;

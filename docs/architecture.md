@@ -14,7 +14,7 @@ Next.js owns routing, server rendering and mutations. Supabase Auth owns identit
 
 - Route components load data on the server by default.
 - Client components are limited to interaction boundaries such as search, drag-and-drop and graph exploration.
-- Authenticated students without a primary plan are routed to `/onboarding` before the dashboard; the wizard creates the profile and primary plan in one server action.
+- Onboarding is optional. New sign-ups are offered `/onboarding`, which creates the profile and primary plan in one server action; students without a plan otherwise see the dashboard empty state.
 - Domain rules remain framework-independent and operate on typed inputs.
 - Supabase clients are request-scoped. Server and browser clients live behind separate modules.
 - Generated database types are committed and used at every query boundary.

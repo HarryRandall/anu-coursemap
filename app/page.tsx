@@ -5,19 +5,17 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingHeader } from "@/components/landing/landing-header";
 import { LandingHero } from "@/components/landing/landing-hero";
 import { getAuthViewer } from "@/lib/auth/viewer";
-import { hasPrimaryPlan } from "@/lib/coursemap/state";
 import { isDemoMode } from "@/lib/supabase/config";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
   const viewer = await getAuthViewer();
-  if (!isDemoMode() && viewer && !(await hasPrimaryPlan(viewer))) {
-    redirect("/onboarding");
-  }
+  // Signed-in students go straight to the app; onboarding is offered from the
+  // dashboard empty state rather than forced here.
   if (!isDemoMode() && viewer) {
     redirect("/dashboard");
   }
-  const canOpenPlan = isDemoMode() || Boolean(viewer);
+  const canOpenPlan = isDemoMode() || viewer !== null;
 
   return (
     <main className="min-h-dvh bg-white">

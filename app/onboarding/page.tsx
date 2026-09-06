@@ -28,7 +28,7 @@ export default async function OnboardingPage() {
       <main className="landing-mesh grid min-h-dvh place-items-center px-4 py-10">
         <h1 className="sr-only">Onboarding</h1>
         <Card className="w-full max-w-xl p-4 sm:p-5">
-          <Alert role="alert" variant={"warning"}>
+          <Alert role="alert" variant="warning">
             <CircleAlert aria-hidden="true" />
             <AlertTitle>Planning catalogue temporarily unavailable</AlertTitle>
             <AlertDescription>
