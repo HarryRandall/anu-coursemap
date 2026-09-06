@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@reui/ui/button";
@@ -24,7 +23,6 @@ const monthNames = [
   "December",
 ];
 const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const gridCells = 42;
 
 type YearMonth = { year: number; month: number };
 
@@ -55,10 +53,7 @@ function monthCells({ year, month }: YearMonth) {
   const cells: Array<Date | null> = Array.from({ length: leading }, () => null);
   for (let day = 1; day <= days; day += 1)
     cells.push(new Date(year, month, day));
-  return [
-    ...cells,
-    ...Array.from({ length: gridCells - cells.length }, () => null),
-  ];
+  return [...cells, ...Array.from({ length: 42 - cells.length }, () => null)];
 }
 
 function sameDay(left: Date, right: Date) {
@@ -124,15 +119,10 @@ export function MonthCalendar({
   const cells = monthCells(focus);
 
   return (
-    <Card className="min-h-72">
-      <CardContent className="flex h-full flex-col p-5">
+    <Card className="h-full py-0">
+      <CardContent className="flex h-full flex-col p-4">
         <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-semibold">Study calendar</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Courses in scheduled study periods
-            </p>
-          </div>
+          <h2 className="text-sm font-semibold">{monthLabel(focus)}</h2>
           <div className="flex items-center">
             <Button
               aria-label="Previous month"
@@ -152,7 +142,6 @@ export function MonthCalendar({
             </Button>
           </div>
         </div>
-        <p className="mt-3 text-sm font-medium">{monthLabel(focus)}</p>
         <div className="mt-2 grid grid-cols-7">
           {weekdayLabels.map((label) => (
             <div
@@ -220,12 +209,6 @@ export function MonthCalendar({
             published.
           </p>
         )}
-        <Link
-          href="/calendar"
-          className="mt-auto pt-3 text-xs font-semibold text-primary hover:text-primary/80"
-        >
-          Open calendar
-        </Link>
       </CardContent>
     </Card>
   );

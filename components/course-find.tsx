@@ -1,7 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import * as Dialog from "@radix-ui/react-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@reui/ui/dialog";
 import { Command } from "cmdk";
 import {
   BookOpen,
@@ -42,22 +47,12 @@ type DefaultOption = {
 type FindGeometry = {
   left: number;
   top: number;
-  triggerHeight: number;
-  triggerWidth: number;
   width: number;
-};
-
-type FindStyle = CSSProperties & {
-  "--find-scale-x": string;
-  "--find-scale-y": string;
-  "--find-trigger-height": string;
-  "--find-trigger-width": string;
 };
 
 const modalWidth = 420;
 const viewportGutter = 12;
-const fieldHeight = 40;
-const closeDuration = 190;
+const dialogHeight = 269;
 
 const defaultOptions: DefaultOption[] = [
   {
@@ -129,7 +124,6 @@ export function CourseFind({
   const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const resetTimerRef = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
   const [geometry, setGeometry] = useState<FindGeometry | null>(null);
   const [query, setQuery] = useState("");
@@ -149,9 +143,10 @@ export function CourseFind({
     );
     const nextGeometry = {
       left,
-      top: Math.max(rect.top, viewportGutter),
-      triggerHeight: rect.height,
-      triggerWidth: Math.min(rect.width, width),
+      top: Math.max(
+        viewportGutter,
+        Math.min(rect.top, window.innerHeight - dialogHeight - viewportGutter),
+      ),
       width,
     };
     setGeometry(nextGeometry);
@@ -159,36 +154,17 @@ export function CourseFind({
   }, []);
 
   const showFind = useCallback(() => {
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current);
-      resetTimerRef.current = null;
-    }
+    setQuery("");
+    setResults([]);
+    setLoading(false);
+    setError(null);
     measure();
     setOpen(true);
   }, [measure]);
 
   const hideFind = useCallback(() => {
     setOpen(false);
-    if (resetTimerRef.current !== null) {
-      window.clearTimeout(resetTimerRef.current);
-    }
-    resetTimerRef.current = window.setTimeout(() => {
-      setQuery("");
-      setResults([]);
-      setLoading(false);
-      setError(null);
-      resetTimerRef.current = null;
-    }, closeDuration);
   }, []);
-
-  useEffect(
-    () => () => {
-      if (resetTimerRef.current !== null) {
-        window.clearTimeout(resetTimerRef.current);
-      }
-    },
-    [],
-  );
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -228,7 +204,7 @@ export function CourseFind({
 
   useEffect(() => {
     const text = query.trim();
-    if (!text) return;
+    if (!open || !text) return;
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
@@ -244,6 +220,7 @@ export function CourseFind({
         if (!response.ok) {
           throw new Error(payload.error ?? "Course search is unavailable.");
         }
+        if (controller.signal.aborted) return;
         setResults(payload.courses ?? []);
         setError(null);
       } catch (caughtError) {
@@ -264,7 +241,7 @@ export function CourseFind({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [query]);
+  }, [open, query]);
 
   const navigate = (href: string) => {
     hideFind();
@@ -274,25 +251,14 @@ export function CourseFind({
 
   const hasQuery = Boolean(query.trim());
   const shortcuts = admin ? adminDefaultOptions : defaultOptions;
-  const visibleRows = !hasQuery
-    ? shortcuts.length
-    : loading && results.length === 0
-      ? 3
-      : results.length > 0
-        ? results.length
-        : 1;
-  const dialogHeight = fieldHeight + 1 + 8 + visibleRows * 44;
-  const findStyle = geometry
-    ? ({
+  const findStyle: CSSProperties | undefined = geometry
+    ? {
         top: geometry.top,
         left: geometry.left,
         width: geometry.width,
         height: dialogHeight,
-        "--find-scale-x": `${geometry.triggerWidth / geometry.width}`,
-        "--find-scale-y": `${geometry.triggerHeight / dialogHeight}`,
-        "--find-trigger-height": `${geometry.triggerHeight}px`,
-        "--find-trigger-width": `${geometry.triggerWidth}px`,
-      } satisfies FindStyle)
+        maxHeight: `calc(100dvh - ${geometry.top + viewportGutter}px)`,
+      }
     : undefined;
 
   return (
@@ -304,7 +270,7 @@ export function CourseFind({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={showFind}
-        className="mt-5 flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg bg-card px-3 text-muted-foreground shadow-xs ring-1 ring-border transition-colors ring-inset group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 hover:text-foreground hover:ring-ring/40"
+        className="flex h-10 w-full cursor-pointer items-center gap-2 rounded-lg bg-card px-3 text-muted-foreground shadow-xs ring-1 ring-border transition-colors ring-inset group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 hover:text-foreground hover:ring-ring/40"
       >
         <Search size={16} strokeWidth={1.8} aria-hidden="true" />
         <span className="flex-1 text-left text-[13px] group-data-[collapsible=icon]:hidden">
@@ -315,150 +281,129 @@ export function CourseFind({
         </kbd>
       </button>
 
-      <Dialog.Root
+      <Dialog
         open={open}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) hideFind();
         }}
       >
-        <Dialog.Portal>
-          <Dialog.Overlay className="find-overlay fixed inset-0 z-[110] bg-zinc-950/5 backdrop-blur-[1px] dark:bg-zinc-950/40" />
-          {geometry && (
-            <Dialog.Content
-              style={findStyle}
-              aria-describedby="course-find-description"
-              onOpenAutoFocus={(event) => {
-                event.preventDefault();
-                inputRef.current?.focus();
-              }}
-              onCloseAutoFocus={(event) => {
-                event.preventDefault();
-                triggerRef.current?.focus();
-              }}
-              className="find-dialog fixed z-[120] outline-none"
+        {geometry && (
+          <DialogContent
+            showCloseButton={false}
+            style={findStyle}
+            aria-describedby="course-find-description"
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+              inputRef.current?.focus();
+            }}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              triggerRef.current?.focus();
+            }}
+            className="find-dialog fixed z-[120] translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-xl border-0 bg-popover p-0 shadow-lg ring-1 ring-border outline-none"
+          >
+            <DialogTitle className="sr-only">Find courses</DialogTitle>
+            <DialogDescription id="course-find-description" className="sr-only">
+              Search the published course catalogue by course code or name.
+            </DialogDescription>
+
+            <Command
+              label="Find courses"
+              loop
+              shouldFilter={false}
+              className="relative h-full min-h-0 overflow-hidden rounded-xl"
             >
-              <Dialog.Title className="sr-only">Find courses</Dialog.Title>
-              <Dialog.Description
-                id="course-find-description"
-                className="sr-only"
-              >
-                Search the published course catalogue by course code or name.
-              </Dialog.Description>
-
-              <div
-                aria-hidden="true"
-                className="find-dialog-background pointer-events-none absolute inset-0 rounded-xl bg-popover shadow-lg ring-1 ring-border"
-              />
-
-              <div
-                aria-hidden="true"
-                className="find-closing-field pointer-events-none absolute top-0 left-0 z-10 h-10 items-center gap-2 rounded-lg bg-popover px-3 text-muted-foreground shadow-xs ring-1 ring-border ring-inset"
-              >
-                <Search size={16} strokeWidth={1.8} />
-                <span className="flex-1 text-[13px]">Find</span>
-                <kbd className="grid size-6 place-items-center rounded-md border border-border bg-muted text-[11px] font-medium text-muted-foreground shadow-xs">
-                  F
+              <div className="relative flex h-10 items-center gap-2 px-3">
+                <Search
+                  size={16}
+                  strokeWidth={1.8}
+                  aria-hidden="true"
+                  className="shrink-0 text-muted-foreground"
+                />
+                <Command.Input
+                  ref={inputRef}
+                  value={query}
+                  onValueChange={(value) => {
+                    if (value.trim() === query.trim()) {
+                      setQuery(value);
+                      return;
+                    }
+                    const hasValue = Boolean(value.trim());
+                    setQuery(value);
+                    setError(null);
+                    setLoading(hasValue);
+                    if (!hasValue) setResults([]);
+                  }}
+                  placeholder="Find courses…"
+                  aria-label="Find courses"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
+                />
+                {loading && results.length > 0 && (
+                  <LoaderCircle
+                    size={13}
+                    aria-label="Updating results"
+                    className="animate-spin text-muted-foreground"
+                  />
+                )}
+                <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground shadow-xs">
+                  Esc
                 </kbd>
               </div>
 
-              <Command
-                label="Find courses"
-                loop
-                shouldFilter={false}
-                className="find-dialog-content relative h-full overflow-hidden rounded-xl"
+              <div className="h-px bg-border" />
+
+              <Command.List
+                label="Find results"
+                className="find-command-list h-[calc(100%-41px)] overflow-y-auto p-1"
               >
-                <div className="relative flex h-10 items-center gap-2 px-3">
-                  <Search
-                    size={16}
-                    strokeWidth={1.8}
-                    aria-hidden="true"
-                    className="shrink-0 text-muted-foreground"
-                  />
-                  <Command.Input
-                    ref={inputRef}
-                    value={query}
-                    onValueChange={(value) => {
-                      const hasValue = Boolean(value.trim());
-                      setQuery(value);
-                      setError(null);
-                      setLoading(hasValue);
-                      if (!hasValue) setResults([]);
-                    }}
-                    placeholder="Find courses…"
-                    aria-label="Find courses"
-                    autoComplete="off"
-                    spellCheck={false}
-                    className="h-10 min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
-                  />
-                  {loading && results.length > 0 && (
-                    <LoaderCircle
-                      size={13}
-                      aria-label="Updating results"
-                      className="animate-spin text-muted-foreground"
+                {!hasQuery ? (
+                  shortcuts.map((option) => (
+                    <DefaultOptionItem
+                      key={option.href}
+                      option={option}
+                      onSelect={() => navigate(option.href)}
                     />
-                  )}
-                  <kbd className="rounded-md border border-border bg-muted px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground shadow-xs">
-                    Esc
-                  </kbd>
-                </div>
-
-                <div className="h-px bg-border" />
-
-                <Command.List
-                  label="Find results"
-                  className="find-command-list h-[calc(100%-41px)] overflow-y-auto p-1"
-                >
-                  {!hasQuery ? (
-                    shortcuts.map((option) => (
-                      <DefaultOptionItem
-                        key={option.href}
-                        option={option}
-                        onSelect={() => navigate(option.href)}
+                  ))
+                ) : loading && results.length === 0 ? (
+                  <LoadingRows />
+                ) : error ? (
+                  <FindMessage message={error} alert />
+                ) : results.length === 0 ? (
+                  <FindMessage message={`No courses match '${query.trim()}'`} />
+                ) : (
+                  results.map((course) => (
+                    <Command.Item
+                      key={course.code}
+                      value={course.code}
+                      onSelect={() =>
+                        navigate(`/courses/${course.code}?year=${course.year}`)
+                      }
+                      className="group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-foreground/80 outline-none data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
+                    >
+                      <CourseToken
+                        code={course.code}
+                        accent={course.accent}
+                        size="sm"
+                        className="!size-6 !rounded-md !text-[8px]"
                       />
-                    ))
-                  ) : loading && results.length === 0 ? (
-                    <LoadingRows />
-                  ) : error ? (
-                    <FindMessage message={error} alert />
-                  ) : results.length === 0 ? (
-                    <FindMessage
-                      message={`No courses match '${query.trim()}'`}
-                    />
-                  ) : (
-                    results.map((course) => (
-                      <Command.Item
-                        key={course.code}
-                        value={course.code}
-                        onSelect={() =>
-                          navigate(
-                            `/courses/${course.code}?year=${course.year}`,
-                          )
-                        }
-                        className="group flex h-11 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-foreground/80 outline-none data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
-                      >
-                        <CourseToken
-                          code={course.code}
-                          accent={course.accent}
-                          size="sm"
-                          className="!size-6 !rounded-md !text-[8px]"
-                        />
-                        <span className="min-w-0 flex-1 leading-tight">
-                          <span className="block truncate text-xs font-medium">
-                            {course.name}
-                          </span>
-                          <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
-                            {course.code} · {course.units} units
-                          </span>
+                      <span className="min-w-0 flex-1 leading-tight">
+                        <span className="block truncate text-xs font-medium">
+                          {course.name}
                         </span>
-                      </Command.Item>
-                    ))
-                  )}
-                </Command.List>
-              </Command>
-            </Dialog.Content>
-          )}
-        </Dialog.Portal>
-      </Dialog.Root>
+                        <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                          {course.code} · {course.units} units
+                        </span>
+                      </span>
+                    </Command.Item>
+                  ))
+                )}
+              </Command.List>
+            </Command>
+          </DialogContent>
+        )}
+      </Dialog>
     </>
   );
 }

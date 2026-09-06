@@ -7,10 +7,12 @@ import { Breadcrumbs } from "@/components/shell/breadcrumbs";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 
 export function Topbar({
+  showThemeToggle = true,
   actions,
   currentBreadcrumbLabel,
   breadcrumbSegmentLabels,
 }: {
+  showThemeToggle?: boolean;
   actions?: ReactNode;
   currentBreadcrumbLabel?: string;
   breadcrumbSegmentLabels?: Record<string, string | null>;
@@ -21,7 +23,7 @@ export function Topbar({
         <SidebarTrigger className="shrink-0" />
         <Separator
           orientation="vertical"
-          className="mr-1 hidden data-[orientation=vertical]:h-4 sm:block"
+          className="mr-1 hidden sm:block data-vertical:h-4 data-vertical:self-center"
         />
         <Breadcrumbs
           currentLabel={currentBreadcrumbLabel}
@@ -31,7 +33,7 @@ export function Topbar({
 
       <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
         {actions}
-        <ThemeToggle />
+        {showThemeToggle && <ThemeToggle />}
       </div>
     </header>
   );

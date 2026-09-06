@@ -1,15 +1,18 @@
 "use client";
-
-import { useState } from "react";
-import { Bug, Database, Lightbulb, Mail } from "lucide-react";
-import { EmailSupportDialog } from "@/components/help/email-support-dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@reui/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
-} from "@/components/ui/card";
+  CardTitle,
+} from "@reui/ui/card";
+import { cn } from "@/lib/cn";
+
+import { useState } from "react";
+import { Bug, Database, Lightbulb, Mail } from "lucide-react";
+import { EmailSupportDialog } from "@/components/help/email-support-dialog";
+
 import { helpContactReasons } from "@/lib/help";
 
 const reasonIcons = {
@@ -24,7 +27,11 @@ export function HelpContactCard() {
   return (
     <>
       <Card className="overflow-hidden lg:sticky lg:top-20 lg:self-start">
-        <CardHeader title="Contact us" />
+        <CardHeader>
+          <CardTitle>
+            <h2>{"Contact us"}</h2>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="border-t border-border/60 px-0 pb-0">
           <div className="divide-y divide-border/60">
             {helpContactReasons.map((contact) => {
@@ -38,6 +45,7 @@ export function HelpContactCard() {
                   aria-haspopup="dialog"
                   aria-expanded={reasonId === contact.id}
                   onClick={() => setReasonId(contact.id)}
+                  type="button"
                 >
                   <Icon
                     size={17}
@@ -59,13 +67,15 @@ export function HelpContactCard() {
         </CardContent>
         <CardFooter>
           <Button
-            variant="secondary"
-            fullWidth
+            variant="outline"
             aria-haspopup="dialog"
             aria-expanded={reasonId === "other"}
             onClick={() => setReasonId("other")}
+            className={cn(undefined, "w-full")}
+            type="button"
           >
-            <Mail size={15} aria-hidden="true" /> Email support
+            <Mail size={15} aria-hidden="true" />
+            Email support
           </Button>
         </CardFooter>
       </Card>

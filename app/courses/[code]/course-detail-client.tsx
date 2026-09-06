@@ -1,4 +1,5 @@
 "use client";
+import { Tabs } from "@reui/ui/tabs";
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,7 +12,7 @@ import {
 } from "@/components/courses/course-detail-view";
 import { TermChooser } from "@/components/overlays";
 import { AppShell } from "@/components/shell";
-import { Tabs } from "@/components/ui/tabs";
+
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import type { CompletedRequisiteCourse } from "@/lib/coursemap/requisite-summary";
 

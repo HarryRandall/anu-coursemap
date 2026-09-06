@@ -1,7 +1,8 @@
 "use client";
+import { Checkbox } from "@reui/ui/checkbox";
 
 import { useId } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { cn } from "@/lib/cn";
 
 type StructureOption = {

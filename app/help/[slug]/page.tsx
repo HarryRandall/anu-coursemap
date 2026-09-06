@@ -1,15 +1,12 @@
+import { Button } from "@reui/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@reui/ui/card";
+import ReuiLink from "next/link";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ArticleToc } from "@/components/help/article-toc";
 import { AppShell } from "@/components/shell";
-import { ButtonLink } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+
 import {
   adjacentHelpArticles,
   helpArticleBySlug,
@@ -62,10 +59,12 @@ export default async function HelpArticlePage({
               ))}
             </CardContent>
             <CardFooter className="justify-start">
-              <ButtonLink href={article.productHref} variant="primary">
-                {article.productLabel}
-                <ArrowRight size={16} aria-hidden="true" />
-              </ButtonLink>
+              <Button asChild variant="default">
+                <ReuiLink href={article.productHref}>
+                  {article.productLabel}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </ReuiLink>
+              </Button>
             </CardFooter>
           </Card>
 

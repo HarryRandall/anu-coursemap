@@ -1,9 +1,16 @@
+import {
+  Card,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@reui/ui/card";
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { HelpContactCard } from "@/components/help/help-contact-card";
 import { helpTopicIcons } from "@/components/help/topic-icons";
 import { AppShell } from "@/components/shell";
-import { Card, CardFooter, CardHeader } from "@/components/ui/card";
+
 import { helpArticles } from "@/lib/help";
 
 export default function HelpPage() {
@@ -26,16 +33,19 @@ export default function HelpPage() {
                   className="group block h-full rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   <Card className="flex h-full flex-col overflow-hidden transition group-hover:border-input group-hover:shadow-sm motion-reduce:transition-none">
-                    <CardHeader
-                      className="flex-1"
-                      icon={
+                    <CardHeader className="flex-1">
+                      {
                         <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition group-hover:bg-primary/15 motion-reduce:transition-none">
                           <Icon size={17} aria-hidden="true" />
                         </span>
                       }
-                      title={topic.title}
-                      description={topic.description}
-                    />
+                      <CardTitle>
+                        <h2>{topic.title}</h2>
+                      </CardTitle>
+                      {Boolean(topic.description) && (
+                        <CardDescription>{topic.description}</CardDescription>
+                      )}
+                    </CardHeader>
                     <CardFooter className="text-[13px] font-semibold text-primary">
                       <span className="inline-flex items-center gap-1.5">
                         Read guide

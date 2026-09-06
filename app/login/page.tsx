@@ -1,9 +1,10 @@
+import { Alert, AlertDescription } from "@reui/components/alert";
 import Link from "next/link";
 import { CircleCheck, TriangleAlert } from "lucide-react";
 import { AuthShell } from "@/app/auth/auth-shell";
 import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
 import { SocialSignIn } from "@/app/auth/social-sign-in";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 
@@ -36,14 +37,14 @@ export default async function LoginPage({
       </p>
 
       {signedOut && (
-        <Alert className="mt-5">
+        <Alert className="mt-5" variant={"default"}>
           <CircleCheck aria-hidden="true" />
           <AlertDescription>You have been signed out.</AlertDescription>
         </Alert>
       )}
 
       {(!configured || configurationMissing) && (
-        <Alert className="mt-5" role="alert" tone="warning">
+        <Alert className="mt-5" role="alert" variant={"warning"}>
           <TriangleAlert aria-hidden="true" />
           <AlertDescription>
             Local Supabase is not configured. Copy .env.example to .env.local,

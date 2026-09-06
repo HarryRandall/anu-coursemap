@@ -1,4 +1,11 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import ReuiLink from "next/link";
 
 import {
   Check,
@@ -18,10 +25,7 @@ import type {
 } from "@/lib/coursemap/admin-catalogue";
 import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
 import { AppShell } from "@/components/shell";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+
 import { AcademicStructureManualSnapshotEditor } from "@/components/admin/academic-structures/manual-snapshot-editor";
 
 function formatDate(value: string | null) {
@@ -196,17 +200,13 @@ export function ProgrammeReview({
   }
 
   const tabs = (
-    <TabsList className="h-auto min-w-max justify-start gap-0 rounded-none bg-transparent p-0">
+    <TabsList variant="line">
       {[
         { label: "Details", value: "details" },
         { label: "Requirements", value: "requirements" },
         { label: "Source", value: "source" },
       ].map((item) => (
-        <TabsTrigger
-          className="h-12 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
-          key={item.value}
-          value={item.value}
-        >
+        <TabsTrigger key={item.value} value={item.value}>
           {item.label}
         </TabsTrigger>
       ))}
@@ -226,8 +226,14 @@ export function ProgrammeReview({
           canEdit || (isDraft && canPublish) ? (
             <div className="flex items-center gap-2">
               {canEdit ? (
-                <Button onClick={() => setEditing(true)} size="sm">
-                  <Pencil aria-hidden="true" size={15} /> Edit draft
+                <Button
+                  onClick={() => setEditing(true)}
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                >
+                  <Pencil aria-hidden="true" size={15} />
+                  Edit draft
                 </Button>
               ) : null}
               {isDraft && canPublish ? (
@@ -240,7 +246,8 @@ export function ProgrammeReview({
                       ? "Verify the imported requirements before publishing."
                       : undefined
                   }
-                  variant="primary"
+                  variant="default"
+                  type="button"
                 >
                   <Check aria-hidden="true" size={15} />
                   {publishing ? "Publishing..." : "Publish"}
@@ -259,7 +266,20 @@ export function ProgrammeReview({
           </h1>
 
           {message ? (
-            <Alert role="status" tone={message.tone}>
+            <Alert
+              role="status"
+              variant={
+                (
+                  {
+                    neutral: "default",
+                    brand: "info",
+                    danger: "destructive",
+                    success: "success",
+                    warning: "warning",
+                  } as const
+                )[message.tone]
+              }
+            >
               {message.tone === "success" ? (
                 <CheckCircle2 aria-hidden="true" />
               ) : (
@@ -323,7 +343,13 @@ export function ProgrammeReview({
                 <h2 className="text-base font-semibold text-foreground">
                   Requirements
                 </h2>
-                <Badge tone={record.groups.length ? "neutral" : "warning"}>
+                <Badge
+                  variant={
+                    badgeVariantForTone[
+                      record.groups.length ? "neutral" : "warning"
+                    ]
+                  }
+                >
                   {record.groups.length}{" "}
                   {record.groups.length === 1 ? "group" : "groups"}
                 </Badge>
@@ -347,14 +373,22 @@ export function ProgrammeReview({
                   Source
                 </h2>
                 {record.source ? (
-                  <ButtonLink
-                    href={record.source.canonicalUrl}
-                    rel="noreferrer"
+                  <Button
+                    asChild
+
                     size="sm"
-                    target="_blank"
+
+                    variant="outline"
                   >
-                    <ExternalLink aria-hidden="true" size={15} /> Open ANU page
-                  </ButtonLink>
+                    <ReuiLink
+                      rel="noreferrer"
+                      target="_blank"
+                      href={record.source.canonicalUrl}
+                    >
+                      <ExternalLink aria-hidden="true" size={15} />
+                      Open ANU page
+                    </ReuiLink>
+                  </Button>
                 ) : null}
               </div>
               <div className="px-5 sm:px-6">

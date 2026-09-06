@@ -1,4 +1,5 @@
 "use client";
+import { useReturnFocus } from "@/hooks/use-return-focus";
 
 import {
   AlertTriangle,
@@ -22,7 +23,7 @@ import { CourseDrawer, CoursePicker } from "@/components/overlays";
 import { Alert, AlertDescription, AlertTitle } from "@reui/ui/alert";
 import { Button } from "@reui/ui/button";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
-import { Modal } from "@/components/ui/overlay";
+import { Dialog, DialogContent, DialogTitle } from "@reui/ui/dialog";
 import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
@@ -76,6 +77,7 @@ function StatusMark({
 }
 
 function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
+  const overloadFocus = useReturnFocus();
   const { demoMode, state, reorderAttempt, notify } = useCoursemap();
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [overloadTerm, setOverloadTerm] = useState<string | null>(null);
@@ -683,52 +685,64 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         />
       )}
       {overloadTarget && (
-        <Modal
-          onClose={() => {
-            setOverloadTerm(null);
-            setPendingDrop(null);
-          }}
-          labelledBy="overload-warning-title"
-          className="max-w-md"
-        >
-          <div className="p-5 sm:p-6">
-            <div className="flex items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 ring-inset dark:text-amber-400">
-                <AlertTriangle size={19} />
-              </span>
-              <h2
-                id="overload-warning-title"
-                className="text-lg font-bold tracking-tight text-foreground"
-              >
-                This semester is already full
-              </h2>
-            </div>
-            <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-              {pendingDrop
-                ? `Moving this course to ${overloadTarget.name} ${overloadTarget.year} would exceed the standard four-course, 24-unit study load.`
-                : `Adding another course would take ${overloadTarget.name} ${overloadTarget.year} above the standard four-course, 24-unit study load.`}{" "}
-              Overloading may require approval.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2 border-t border-border bg-muted/40 px-5 py-3.5">
-            <Button variant="outline" onClick={() => setOverloadTerm(null)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (pendingDrop) {
-                  applyDrop(pendingDrop);
-                } else {
-                  setPicker({ termId: overloadTarget.id, intent: "all" });
-                }
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open)
+              (() => {
                 setOverloadTerm(null);
                 setPendingDrop(null);
-              }}
-            >
-              {pendingDrop ? "Move anyway" : "Continue to courses"}
-            </Button>
-          </div>
-        </Modal>
+              })();
+          }}
+        >
+          <DialogContent
+            {...overloadFocus}
+            showCloseButton={false}
+            aria-labelledby={"overload-warning-title"}
+            aria-describedby={undefined}
+            className={"max-w-md"}
+          >
+            <div className="p-5 sm:p-6">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 ring-inset dark:text-amber-400">
+                  <AlertTriangle size={19} />
+                </span>
+                <DialogTitle asChild>
+                  <h2
+                    id="overload-warning-title"
+                    className="text-lg font-bold tracking-tight text-foreground"
+                  >
+                    This semester is already full
+                  </h2>
+                </DialogTitle>
+              </div>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                {pendingDrop
+                  ? `Moving this course to ${overloadTarget.name} ${overloadTarget.year} would exceed the standard four-course, 24-unit study load.`
+                  : `Adding another course would take ${overloadTarget.name} ${overloadTarget.year} above the standard four-course, 24-unit study load.`}{" "}
+                Overloading may require approval.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-border bg-muted/40 px-5 py-3.5">
+              <Button variant="outline" onClick={() => setOverloadTerm(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (pendingDrop) {
+                    applyDrop(pendingDrop);
+                  } else {
+                    setPicker({ termId: overloadTarget.id, intent: "all" });
+                  }
+                  setOverloadTerm(null);
+                  setPendingDrop(null);
+                }}
+              >
+                {pendingDrop ? "Move anyway" : "Continue to courses"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
       {selectedAttempt && (
         <CourseDrawer

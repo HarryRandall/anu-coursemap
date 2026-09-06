@@ -1,10 +1,9 @@
 "use client";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
 
-import Link from "next/link";
-import { ArrowRight, CalendarCheck2 } from "lucide-react";
 import { Badge } from "@reui/ui/badge";
-import { Button } from "@reui/ui/button";
 import { Card, CardContent } from "@reui/ui/card";
+
 import { cn } from "@/lib/cn";
 import type { DegreeUnitProgress } from "@/lib/planner";
 
@@ -16,23 +15,15 @@ type Segment = {
   dotClassName: string;
 };
 
-/**
- * The lead card: total progress with a segmented completed / enrolled /
- * planned / unallocated bar, the planned completion date and a path to the
- * plan board.
- */
+/** Total degree progress, split by course status. */
 export function DegreeProgressHero({
-  degreeName,
   progress,
   unitTarget,
   enrolledUnits,
-  finishLabel,
 }: {
-  degreeName: string;
   progress: DegreeUnitProgress;
   unitTarget: number | null;
   enrolledUnits: number;
-  finishLabel: string | null;
 }) {
   const plannedOnly = Math.max(0, progress.planned - enrolledUnits);
   const segments: Segment[] = [
@@ -68,17 +59,10 @@ export function DegreeProgressHero({
   const total = unitTarget ?? progress.mapped;
 
   return (
-    <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-5 p-6">
-        <div className="flex flex-col gap-1">
-          <p className="text-[13px] font-medium text-muted-foreground">
-            Degree progress
-          </p>
-          <p className="truncate text-sm text-muted-foreground">{degreeName}</p>
-        </div>
-
+    <Card className="h-full py-0">
+      <CardContent className="flex h-full flex-col justify-between gap-5 p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <p className="text-4xl font-semibold tracking-tight">
+          <p className="text-3xl font-semibold tracking-tight">
             {progress.completed}
             <span className="text-base font-normal text-muted-foreground">
               {" "}
@@ -92,10 +76,10 @@ export function DegreeProgressHero({
           )}
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-1 flex-col justify-center gap-4">
           <div
             className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full"
-            role="img"
+            role="group"
             aria-label={segments
               .map((segment) => `${segment.label}: ${segment.units} units`)
               .join(", ")}
@@ -103,19 +87,24 @@ export function DegreeProgressHero({
             {segments
               .filter((segment) => segment.units > 0)
               .map((segment) => (
-                <span
-                  key={segment.id}
-                  title={`${segment.label} · ${segment.units} units`}
-                  style={{ flex: segment.units }}
-                  className={cn(
-                    "h-full first:rounded-l-full last:rounded-r-full",
-                    segment.className,
-                  )}
-                />
+                <Tooltip key={segment.id}>
+                  <TooltipTrigger asChild>
+                    <span
+                      tabIndex={0}
+                      aria-label={`${segment.label}: ${segment.units} units`}
+                      style={{ flex: segment.units }}
+                      className={cn(
+                        "h-full first:rounded-l-full last:rounded-r-full",
+                        segment.className,
+                      )}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>{`${segment.label}: ${segment.units} units`}</TooltipContent>
+                </Tooltip>
               ))}
           </div>
 
-          <dl className="flex flex-wrap gap-x-6 gap-y-2">
+          <dl className="flex flex-wrap gap-x-4 gap-y-2">
             {segments.map((segment) => (
               <div key={segment.id} className="flex items-center gap-2">
                 <span
@@ -131,21 +120,6 @@ export function DegreeProgressHero({
               </div>
             ))}
           </dl>
-        </div>
-
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CalendarCheck2 aria-hidden="true" className="size-4" />
-            {finishLabel
-              ? `Planned completion ${finishLabel}`
-              : "Add courses to project a completion date"}
-          </p>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/plan">
-              Open my plan
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </Button>
         </div>
       </CardContent>
     </Card>

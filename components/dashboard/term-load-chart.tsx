@@ -1,28 +1,12 @@
 "use client";
 
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ReferenceLine,
-  XAxis,
-} from "recharts";
+import Link from "next/link";
 import { Card, CardContent } from "@reui/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@reui/ui/chart";
+import { cn } from "@/lib/cn";
 import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";
 import { STANDARD_TERM_UNITS } from "@/lib/planner";
 
-const config = {
-  units: { label: "Units", color: "var(--chart-1)" },
-} satisfies ChartConfig;
-
-/** Units per semester with the standard 24-unit load marked. */
+/** Six-unit tiles show the shape of each semester, including partial units. */
 export function TermLoadChart({
   terms,
   currentTermId,
@@ -30,65 +14,115 @@ export function TermLoadChart({
   terms: readonly DashboardTermPoint[];
   currentTermId?: string;
 }) {
-  const data = terms.map((term) => ({
-    id: term.id,
-    label: term.label,
-    units: term.units,
-  }));
-
+  const years = [...new Set(terms.map((term) => term.year))];
   return (
-    <Card>
-      <CardContent className="flex h-full flex-col gap-4 p-6">
-        <div>
-          <h2 className="text-sm font-semibold">Semester load</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Dashed line marks the standard {STANDARD_TERM_UNITS}-unit load
-          </p>
+    <Card className="py-0">
+      <CardContent className="flex flex-col gap-4 p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">Your degree at a glance</h2>
+          <span className="text-xs text-muted-foreground">
+            Each tile = 6 units
+          </span>
         </div>
-
-        {data.length === 0 ? (
-          <p className="flex flex-1 items-center justify-center py-10 text-sm text-muted-foreground">
-            Add courses to see your semester load.
+        {terms.length === 0 ? (
+          <p className="py-8 text-sm text-muted-foreground">
+            Add courses to see your degree take shape.
           </p>
         ) : (
-          <ChartContainer config={config} className="h-56 w-full flex-1">
-            <BarChart data={data} margin={{ top: 12 }}>
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                interval="preserveStartEnd"
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <ReferenceLine
-                y={STANDARD_TERM_UNITS}
-                stroke="var(--color-muted-foreground)"
-                strokeDasharray="4 4"
-                strokeOpacity={0.5}
-              />
-              <Bar dataKey="units" radius={[6, 6, 0, 0]} maxBarSize={36}>
-                {data.map((entry) => (
-                  <Cell
-                    key={entry.id}
-                    fill={
-                      entry.units > STANDARD_TERM_UNITS
-                        ? "var(--chart-4)"
-                        : "var(--chart-1)"
-                    }
-                    fillOpacity={
-                      entry.units > STANDARD_TERM_UNITS ||
-                      entry.id === currentTermId
-                        ? 1
-                        : 0.4
-                    }
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ChartContainer>
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+            {years.map((year) => (
+              <section key={year} className="min-w-0">
+                <h3 className="mb-3 text-xs font-semibold text-muted-foreground">
+                  {year}
+                </h3>
+                <div className="flex flex-col gap-4">
+                  {terms
+                    .filter((term) => term.year === year)
+                    .map((term) => (
+                      <Link
+                        key={term.id}
+                        href="/plan"
+                        aria-label={`${term.label}: ${term.completed} completed, ${term.planned} planned units. Open plan.`}
+                        className="group flex flex-col gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                      >
+                        <div className="flex items-center justify-between gap-1 text-[11px]">
+                          <span
+                            className={cn(
+                              "text-muted-foreground",
+                              term.id === currentTermId &&
+                                "font-semibold text-sky-600 dark:text-sky-400",
+                            )}
+                          >
+                            {term.label}
+                            {term.id === currentTermId ? " · Now" : ""}
+                          </span>
+                          <span className="text-muted-foreground tabular-nums">
+                            {term.units}u
+                          </span>
+                        </div>
+                        <div
+                          className="grid grid-cols-4 gap-1.5"
+                          aria-hidden="true"
+                        >
+                          {Array.from(
+                            {
+                              length: Math.ceil(
+                                Math.max(STANDARD_TERM_UNITS, term.units) / 6,
+                              ),
+                            },
+                            (_, index) => {
+                              const completed = Math.max(
+                                0,
+                                Math.min(6, term.completed - index * 6),
+                              );
+                              const planned = Math.max(
+                                0,
+                                Math.min(
+                                  6 - completed,
+                                  term.units - index * 6 - completed,
+                                ),
+                              );
+                              return (
+                                <span
+                                  key={index}
+                                  className="flex h-5 overflow-hidden rounded-sm bg-muted ring-1 ring-border/50 transition-colors ring-inset group-hover:bg-muted/70"
+                                >
+                                  <span
+                                    className="h-full bg-emerald-500"
+                                    style={{
+                                      width: `${(completed / 6) * 100}%`,
+                                    }}
+                                  />
+                                  <span
+                                    className="h-full bg-violet-500"
+                                    style={{ width: `${(planned / 6) * 100}%` }}
+                                  />
+                                </span>
+                              );
+                            },
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              </section>
+            ))}
+          </div>
         )}
+        <div className="flex flex-wrap gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <span className="size-2 rounded-sm bg-emerald-500" />
+            Completed
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="size-2 rounded-sm bg-violet-500" />
+            Planned / enrolled
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="size-2 rounded-sm bg-muted ring-1 ring-border" />
+            Open capacity
+          </span>
+        </div>
       </CardContent>
     </Card>
   );

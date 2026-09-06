@@ -1,4 +1,5 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
 
 import { CalendarDays } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -8,7 +9,7 @@ import { EventCalendarNav } from "@reui/components/event-calendar/event-calendar
 import type { CalendarEvent } from "@reui/components/event-calendar/event-calendar-types";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
   planTimelineTerms,
@@ -180,7 +181,7 @@ export function StudyCalendar({
         </div>
 
         {keyDates.length === 0 ? (
-          <Alert tone="neutral">
+          <Alert variant={"default"}>
             <CalendarDays aria-hidden="true" />
             <AlertDescription>
               No published ANU key dates are available yet, so the calendar

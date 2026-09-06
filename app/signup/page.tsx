@@ -1,9 +1,10 @@
+import { Alert, AlertDescription } from "@reui/components/alert";
 import Link from "next/link";
 import { TriangleAlert } from "lucide-react";
 import { AuthShell } from "@/app/auth/auth-shell";
 import { SignUpForm } from "@/app/auth/sign-up/sign-up-form";
 import { SocialSignIn } from "@/app/auth/social-sign-in";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 
@@ -35,7 +36,7 @@ export default async function SignupPage({
       </p>
 
       {!configured && (
-        <Alert className="mt-5" role="alert" tone="warning">
+        <Alert className="mt-5" role="alert" variant={"warning"}>
           <TriangleAlert aria-hidden="true" />
           <AlertDescription>
             Local Supabase is not configured. Copy .env.example to .env.local,

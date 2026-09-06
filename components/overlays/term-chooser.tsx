@@ -1,14 +1,18 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { useReturnFocus } from "@/hooks/use-return-focus";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Badge } from "@reui/components/badge";
+import { Skeleton } from "@reui/ui/skeleton";
+import { cn } from "@/lib/cn";
 
 import { ArrowRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCoursemap } from "@/app/providers";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
-import { Modal } from "@/components/ui/overlay";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button, IconButton } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogTitle } from "@reui/ui/dialog";
 
 export function TermChooser({
   course,
@@ -17,6 +21,7 @@ export function TermChooser({
   course: Pick<CourseDetails, "code" | "name" | "sessions" | "year">;
   onClose: () => void;
 }) {
+  const restoreFocus = useReturnFocus();
   const { addCourse, notify } = useCoursemap();
   const [terms, setTerms] = useState<
     Array<{ id: string; year: number; name: string; dates: string }>
@@ -57,96 +62,125 @@ export function TermChooser({
   }, []);
 
   return (
-    <Modal
-      onClose={onClose}
-      labelledBy="term-dialog-title"
-      className="w-full max-w-md"
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
-      <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
-        <div>
-          <p className="text-[11px] font-bold tracking-wider text-muted-foreground/80 uppercase">
-            {course.code}
-          </p>
-          <h2
-            id="term-dialog-title"
-            className="mt-0.5 text-lg font-bold tracking-tight text-foreground"
-          >
-            Choose a semester
-          </h2>
-        </div>
-        <IconButton label="Close semester chooser" onClick={onClose}>
-          <X size={18} />
-        </IconButton>
-      </header>
-      <div className="max-h-[70vh] overflow-y-auto p-2">
-        {error ? (
-          <Alert tone="danger" role="alert" className="m-3 w-auto">
-            <X />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : terms.length === 0 ? (
-          <div className="space-y-2 p-2" aria-busy="true">
-            <span className="sr-only">Loading available semesters</span>
-            {Array.from({ length: 3 }, (_, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 rounded-lg px-3 py-3"
+      <DialogContent
+        {...restoreFocus}
+        showCloseButton={false}
+        aria-labelledby={"term-dialog-title"}
+        aria-describedby={undefined}
+        className={"w-full max-w-md"}
+      >
+        <header className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+          <div>
+            <p className="text-[11px] font-bold tracking-wider text-muted-foreground/80 uppercase">
+              {course.code}
+            </p>
+            <DialogTitle asChild>
+              <h2
+                id="term-dialog-title"
+                className="mt-0.5 text-lg font-bold tracking-tight text-foreground"
               >
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Skeleton className="h-3.5 w-32" />
-                  <Skeleton className="h-3 w-44" />
-                </div>
-                <Skeleton className="h-5 w-16" />
-              </div>
-            ))}
+                Choose a semester
+              </h2>
+            </DialogTitle>
           </div>
-        ) : (
-          terms
-            .filter(
-              (term) => term.id === "unscheduled" || term.year === course.year,
-            )
-            .map((term) => {
-              const unscheduled = term.id === "unscheduled";
-              const available =
-                unscheduled || course.sessions.includes(term.name);
-              return (
-                <Button
-                  key={term.id}
-                  variant="ghost"
-                  fullWidth
-                  onClick={async () => {
-                    const result = await addCourse(
-                      course.code,
-                      term.id,
-                      course.year,
-                    );
-                    notify(result.message, result.ok ? "success" : "warning");
-                    if (result.ok) onClose();
-                  }}
-                  className="h-auto justify-start rounded-lg px-3 py-3 text-left"
+          <Button
+            onClick={onClose}
+            variant="outline"
+            aria-label={"Close semester chooser"}
+            title={"Close semester chooser"}
+            size="icon"
+            type="button"
+          >
+            <X size={18} />
+          </Button>
+        </header>
+        <div className="max-h-[70vh] overflow-y-auto p-2">
+          {error ? (
+            <Alert role="alert" className="m-3 w-auto" variant={"destructive"}>
+              <X />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          ) : terms.length === 0 ? (
+            <div className="space-y-2 p-2" aria-busy="true">
+              <span className="sr-only">Loading available semesters</span>
+              {Array.from({ length: 3 }, (_, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3"
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold text-foreground">
-                      {term.name}
-                      {unscheduled ? "" : ` ${term.year}`}
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-32" />
+                    <Skeleton className="h-3 w-44" />
+                  </div>
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            terms
+              .filter(
+                (term) =>
+                  term.id === "unscheduled" || term.year === course.year,
+              )
+              .map((term) => {
+                const unscheduled = term.id === "unscheduled";
+                const available =
+                  unscheduled || course.sessions.includes(term.name);
+                return (
+                  <Button
+                    key={term.id}
+                    variant="ghost"
+                    onClick={async () => {
+                      const result = await addCourse(
+                        course.code,
+                        term.id,
+                        course.year,
+                      );
+                      notify(result.message, result.ok ? "success" : "warning");
+                      if (result.ok) onClose();
+                    }}
+                    className={cn(
+                      "h-auto justify-start rounded-lg px-3 py-3 text-left",
+                      "w-full",
+                    )}
+                    type="button"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-semibold text-foreground">
+                        {term.name}
+                        {unscheduled ? "" : ` ${term.year}`}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {term.dates}
+                      </span>
                     </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {term.dates}
-                    </span>
-                  </span>
-                  <Badge tone={available ? "success" : "neutral"}>
-                    {unscheduled
-                      ? "Choose later"
-                      : available
-                        ? "Offered"
-                        : "Not listed"}
-                  </Badge>
-                  <ArrowRight size={16} className="text-muted-foreground/60" />
-                </Button>
-              );
-            })
-        )}
-      </div>
-    </Modal>
+                    <Badge
+                      variant={
+                        badgeVariantForTone[available ? "success" : "neutral"]
+                      }
+                    >
+                      {unscheduled
+                        ? "Choose later"
+                        : available
+                          ? "Offered"
+                          : "Not listed"}
+                    </Badge>
+                    <ArrowRight
+                      size={16}
+                      className="text-muted-foreground/60"
+                    />
+                  </Button>
+                );
+              })
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,4 +1,9 @@
 "use client";
+import { Button } from "@reui/ui/button";
+import { Checkbox } from "@reui/ui/checkbox";
+import { Field } from "@reui/ui/field";
+import { Popover, PopoverContent, PopoverTrigger } from "@reui/ui/popover";
+import { OptionPicker } from "@/components/ui/option-picker";
 
 import {
   useCallback,
@@ -21,16 +26,9 @@ import {
   Route,
 } from "lucide-react";
 import { CampusMap } from "@/components/rooms/campus-map";
-import { Button, IconButton } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field } from "@/components/ui/field";
+
 import { FilterBar } from "@/components/ui/filter-bar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Select } from "@/components/ui/select";
+
 import { cn } from "@/lib/cn";
 import { buildIndoorScene } from "@/lib/rooms/indoor-3d";
 import {
@@ -270,14 +268,16 @@ function LayerToggleRow({
       {layer.description ? (
         <Popover>
           <PopoverTrigger asChild>
-            <IconButton
-              label={`About ${layer.name}`}
+            <Button
               variant="ghost"
               size="icon-sm"
               className="min-h-11 min-w-11 text-muted-foreground/80"
+              aria-label={`About ${layer.name}`}
+              title={`About ${layer.name}`}
+              type="button"
             >
               <Info aria-hidden="true" size={14} />
-            </IconButton>
+            </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-64 p-3">
             <p className="text-xs leading-5 text-muted-foreground">
@@ -942,7 +942,12 @@ export function RoomFinder({
           <div className="mt-2 flex flex-wrap gap-2">
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="sm" className="min-h-11 flex-1">
+                <Button
+                  size="sm"
+                  className="min-h-11 flex-1"
+                  variant="outline"
+                  type="button"
+                >
                   <Layers3 aria-hidden="true" size={14} />
                   Layers
                   <span className="text-muted-foreground/80">
@@ -989,11 +994,12 @@ export function RoomFinder({
 
             <Button
               size="sm"
-              variant={directionsOpen ? "subtle" : "secondary"}
+              variant={directionsOpen ? "secondary" : "outline"}
               className="min-h-11 flex-1"
               aria-expanded={directionsOpen}
               aria-controls="room-finder-directions"
               onClick={toggleDirections}
+              type="button"
             >
               <Route aria-hidden="true" size={14} />
               Directions
@@ -1020,6 +1026,7 @@ export function RoomFinder({
                   }}
                   size="sm"
                   variant="ghost"
+                  type="button"
                 >
                   Clear this room
                 </Button>
@@ -1141,33 +1148,71 @@ export function RoomFinder({
             >
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
                 <div className="space-y-2.5">
-                  <Field label="From">
-                    <Select
-                      aria-label="Directions start"
-                      className="min-h-11"
-                      value={fromSlug}
-                      options={placeOptions}
-                      onChange={(slug) => changeRouteEndpoint("from", slug)}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"From"}</span>
+                      <OptionPicker
+                        value={"coursemap:" + String(fromSlug)}
+                        onValueChange={(nextValue) => {
+                          const option = placeOptions.find(
+                            (option) =>
+                              "coursemap:" + String(option.value) === nextValue,
+                          );
+                          if (option)
+                            ((slug) => changeRouteEndpoint("from", slug))(
+                              option.value,
+                            );
+                        }}
+                        className={"min-h-11"}
+                        aria-label={"Directions start"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        items={placeOptions.map((option) => ({
+                          value: "coursemap:" + String(option.value),
+                          label: option.label,
+                        }))}
+                      />
+                    </label>
                   </Field>
-                  <Field label="To">
-                    <Select
-                      aria-label="Directions destination"
-                      className="min-h-11"
-                      value={toSlug}
-                      options={destinationOptions}
-                      onChange={(slug) => changeRouteEndpoint("to", slug)}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"To"}</span>
+                      <OptionPicker
+                        value={"coursemap:" + String(toSlug)}
+                        onValueChange={(nextValue) => {
+                          const option = destinationOptions.find(
+                            (option) =>
+                              "coursemap:" + String(option.value) === nextValue,
+                          );
+                          if (option)
+                            ((slug) => changeRouteEndpoint("to", slug))(
+                              option.value,
+                            );
+                        }}
+                        className={"min-h-11"}
+                        aria-label={"Directions destination"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        items={destinationOptions.map((option) => ({
+                          value: "coursemap:" + String(option.value),
+                          label: option.label,
+                        }))}
+                      />
+                    </label>
                   </Field>
                 </div>
-                <IconButton
-                  label="Swap start and destination"
+                <Button
                   className="mb-0.5 min-h-11 min-w-11"
                   disabled={!fromSlug || !toSlug}
                   onClick={swapRouteEndpoints}
+                  variant="outline"
+                  aria-label={"Swap start and destination"}
+                  title={"Swap start and destination"}
+                  size="icon"
+                  type="button"
                 >
                   <ArrowRightLeft aria-hidden="true" size={15} />
-                </IconButton>
+                </Button>
               </div>
 
               <div className="mt-3 min-h-5 text-xs" aria-live="polite">

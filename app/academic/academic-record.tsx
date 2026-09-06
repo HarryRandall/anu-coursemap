@@ -1,19 +1,24 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Badge } from "@reui/components/badge";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@reui/ui/card";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@reui/ui/empty";
 
 import { Award, BookCheck, FileClock, GraduationCap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useCoursemap } from "@/app/providers";
 import { CourseDrawer } from "@/components/overlays";
 import { AppShell } from "@/components/shell";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader } from "@/components/ui/card";
+
 import { CourseToken } from "@/components/ui/course-token";
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+
 import { StatTile } from "@/components/ui/stat-tile";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
@@ -129,11 +134,25 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
         </div>
 
         <Card className="overflow-hidden">
-          <CardHeader
-            action={<Badge tone="neutral">{entries.length} records</Badge>}
-            description="Only courses saved in your Coursemap plan are shown."
-            title="Course history"
-          />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Course history"}</h2>
+            </CardTitle>
+            {Boolean(
+              "Only courses saved in your Coursemap plan are shown.",
+            ) && (
+              <CardDescription>
+                {"Only courses saved in your Coursemap plan are shown."}
+              </CardDescription>
+            )}
+            {Boolean(
+              <Badge variant={"outline"}>{entries.length} records</Badge>,
+            ) && (
+              <CardAction>
+                {<Badge variant={"outline"}>{entries.length} records</Badge>}
+              </CardAction>
+            )}
+          </CardHeader>
           {entries.length === 0 ? (
             <Empty className="rounded-none px-5 py-12">
               <EmptyHeader>
@@ -166,12 +185,14 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
                     </span>
                   </span>
                   <Badge
-                    tone={
-                      attempt.status === "completed"
-                        ? "success"
-                        : attempt.status === "failed"
-                          ? "danger"
-                          : "neutral"
+                    variant={
+                      badgeVariantForTone[
+                        attempt.status === "completed"
+                          ? "success"
+                          : attempt.status === "failed"
+                            ? "danger"
+                            : "neutral"
+                      ]
                     }
                   >
                     {attempt.status}

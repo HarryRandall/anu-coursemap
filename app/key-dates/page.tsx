@@ -1,9 +1,6 @@
-import { CalendarDays, CircleAlert, ExternalLink } from "lucide-react";
-import { UniversityCalendarView } from "@/components/key-dates/university-calendar-view";
-import { AppShell } from "@/components/shell/app-shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ButtonLink, buttonClasses } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@reui/components/alert";
+import { Button, buttonVariants } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -11,7 +8,12 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@reui/ui/empty";
+import ReuiLink from "next/link";
+import { CalendarDays, CircleAlert, ExternalLink } from "lucide-react";
+import { UniversityCalendarView } from "@/components/key-dates/university-calendar-view";
+import { AppShell } from "@/components/shell/app-shell";
+
 import { decorateUniversityCalendarEvents } from "@/lib/coursemap/university-calendar";
 import {
   loadPublishedUniversityCalendar,
@@ -47,7 +49,7 @@ function EmptyCalendarCard() {
             href={ANU_CALENDAR_URL}
             target="_blank"
             rel="noreferrer"
-            className={buttonClasses({ variant: "secondary", size: "sm" })}
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
           >
             View the ANU calendar
             <ExternalLink size={14} aria-hidden="true" />
@@ -61,7 +63,7 @@ function EmptyCalendarCard() {
 function CalendarLoadError({ retryHref }: { retryHref: string }) {
   return (
     <Card className="mx-auto max-w-xl p-4 sm:p-5">
-      <Alert tone="warning" role="alert">
+      <Alert role="alert" variant={"warning"}>
         <CircleAlert aria-hidden="true" />
         <AlertTitle>Key dates temporarily unavailable</AlertTitle>
         <AlertDescription>
@@ -69,14 +71,14 @@ function CalendarLoadError({ retryHref }: { retryHref: string }) {
         </AlertDescription>
       </Alert>
       <div className="mt-4 flex flex-wrap gap-2">
-        <ButtonLink href={retryHref} size="sm" variant="primary">
-          Try again
-        </ButtonLink>
+        <Button asChild size="sm" variant="default">
+          <ReuiLink href={retryHref}>Try again</ReuiLink>
+        </Button>
         <a
           href={ANU_CALENDAR_URL}
           target="_blank"
           rel="noreferrer"
-          className={buttonClasses({ variant: "secondary", size: "sm" })}
+          className={buttonVariants({ variant: "secondary", size: "sm" })}
         >
           View the ANU calendar
           <ExternalLink size={14} aria-hidden="true" />
@@ -122,7 +124,7 @@ export default async function KeyDatesPage({
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full min-w-0">
         <h1 className="sr-only">Key dates</h1>
 
         {calendarUnavailable ? (

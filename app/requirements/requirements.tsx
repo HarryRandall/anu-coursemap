@@ -1,4 +1,26 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Alert, AlertDescription, AlertTitle } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@reui/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@reui/ui/empty";
+import ReuiLink from "next/link";
 
 import {
   BookOpenCheck,
@@ -9,25 +31,9 @@ import {
 import { useMemo } from "react";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 import { CourseToken } from "@/components/ui/course-token";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+
 import type {
   PlanCatalogue,
   PlanRequirementCondition,
@@ -211,7 +217,7 @@ function RequirementConditionView({
                     size="sm"
                   />
                 ) : (
-                  <Badge tone="neutral">
+                  <Badge variant={"outline"}>
                     {option.structureKind ?? "structure"}
                   </Badge>
                 )}
@@ -226,9 +232,11 @@ function RequirementConditionView({
                   ) : null}
                 </span>
                 {selectedStructure ? (
-                  <Badge tone="success">Selected</Badge>
+                  <Badge variant={"success-light"}>Selected</Badge>
                 ) : attemptStatus ? (
-                  <Badge tone={attemptTone(attemptStatus)}>
+                  <Badge
+                    variant={badgeVariantForTone[attemptTone(attemptStatus)]}
+                  >
                     {attemptStatus}
                   </Badge>
                 ) : null}
@@ -310,11 +318,13 @@ function RequirementGroupView({
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <Badge tone={alternative ? "brand" : "neutral"}>
+          <Badge
+            variant={badgeVariantForTone[alternative ? "brand" : "neutral"]}
+          >
             <GitBranch aria-hidden="true" />
             {groupInstruction(group)}
           </Badge>
-          {units ? <Badge tone="neutral">{units}</Badge> : null}
+          {units ? <Badge variant={"outline"}>{units}</Badge> : null}
         </div>
       </div>
 
@@ -376,16 +386,21 @@ function StructureRequirementsCard({
   const typeLabel = structureKindLabels[requirements.structureKind];
   return (
     <Card className="overflow-hidden">
-      <CardHeader
-        className="border-b border-border/60"
-        description={`${typeLabel} ${requirements.structureCode}${catalogue.academicYear ? ` · Published ${catalogue.academicYear}` : ""}`}
-        icon={
+      <CardHeader className="border-b border-border/60">
+        {
           <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <ListChecks aria-hidden="true" size={17} />
           </span>
         }
-        title={`${requirements.structureName} requirements`}
-      />
+        <CardTitle>
+          <h2>{`${requirements.structureName} requirements`}</h2>
+        </CardTitle>
+        {Boolean(
+          `${typeLabel} ${requirements.structureCode}${catalogue.academicYear ? ` · Published ${catalogue.academicYear}` : ""}`,
+        ) && (
+          <CardDescription>{`${typeLabel} ${requirements.structureCode}${catalogue.academicYear ? ` · Published ${catalogue.academicYear}` : ""}`}</CardDescription>
+        )}
+      </CardHeader>
       <CardContent className="space-y-4 pt-5">
         {requirements.root ? (
           <RequirementGroupView
@@ -401,7 +416,7 @@ function StructureRequirementsCard({
         )}
 
         {requirements.unmodelled.length > 0 ? (
-          <Alert tone="warning">
+          <Alert variant={"warning"}>
             <CircleAlert aria-hidden="true" />
             <AlertTitle>Source rules requiring a manual check</AlertTitle>
             <AlertDescription>
@@ -531,7 +546,9 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
-                <ButtonLink href="/onboarding">Start onboarding</ButtonLink>
+                <Button asChild variant="outline">
+                  <ReuiLink href="/onboarding">Start onboarding</ReuiLink>
+                </Button>
               </EmptyContent>
             </Empty>
           </Card>
@@ -574,7 +591,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
             </Card>
 
             {!hasPublishedProgrammeRequirements ? (
-              <Alert tone="warning" className="rounded-xl px-5 py-4">
+              <Alert className="rounded-xl px-5 py-4" variant={"warning"}>
                 <CircleAlert aria-hidden="true" />
                 <AlertTitle>
                   Published programme requirements are not available yet
@@ -590,7 +607,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
               <Alert
                 className="rounded-xl px-5 py-4"
                 key={`${structure.kind}-${structure.code}`}
-                tone="warning"
+                variant={"warning"}
               >
                 <CircleAlert aria-hidden="true" />
                 <AlertTitle>
@@ -616,11 +633,16 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
               ))}
 
             <Card className="overflow-hidden">
-              <CardHeader
-                className="border-b border-border/60"
-                title="Courses currently in your plan"
-                description="Published course data only."
-              />
+              <CardHeader className="border-b border-border/60">
+                <CardTitle>
+                  <h2>{"Courses currently in your plan"}</h2>
+                </CardTitle>
+                {Boolean("Published course data only.") && (
+                  <CardDescription>
+                    {"Published course data only."}
+                  </CardDescription>
+                )}
+              </CardHeader>
               {courses.length === 0 ? (
                 <Empty className="rounded-none">
                   <EmptyHeader>

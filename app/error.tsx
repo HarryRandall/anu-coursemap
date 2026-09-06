@@ -1,8 +1,6 @@
 "use client";
-
-import { CircleAlert } from "lucide-react";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -10,7 +8,10 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@reui/ui/empty";
+import ReuiLink from "next/link";
+
+import { CircleAlert } from "lucide-react";
 
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
@@ -19,7 +20,7 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
       <Card className="w-full max-w-md">
         <Empty className="px-7 py-8">
           <EmptyHeader role="alert">
-            <EmptyMedia variant="error">
+            <EmptyMedia variant="icon">
               <CircleAlert aria-hidden="true" />
             </EmptyMedia>
             <EmptyTitle>Coursemap could not load this page</EmptyTitle>
@@ -30,10 +31,12 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
           </EmptyHeader>
           <EmptyContent>
             <div className="flex flex-wrap justify-center gap-2">
-              <Button variant="primary" onClick={reset}>
+              <Button variant="default" onClick={reset} type="button">
                 Try again
               </Button>
-              <ButtonLink href="/dashboard">Return home</ButtonLink>
+              <Button asChild variant="outline">
+                <ReuiLink href="/dashboard">Return home</ReuiLink>
+              </Button>
             </div>
           </EmptyContent>
         </Empty>

@@ -1,4 +1,5 @@
 "use client";
+import { Toaster } from "@reui/ui/sonner";
 
 import { toast } from "sonner";
 import {
@@ -10,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Toaster } from "@/components/ui/sonner";
+
 import type { AuthViewer } from "@/lib/auth/viewer";
 import type { Attempt, AttemptStatus } from "@/lib/coursemap/types";
 import {

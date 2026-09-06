@@ -1,4 +1,9 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Field, FieldDescription } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+import { OptionPicker } from "@/components/ui/option-picker";
 
 import {
   ArrowLeft,
@@ -12,9 +17,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
+
 import { BrandMark } from "@/components/brand-mark";
 import { StructureMultiSelect } from "@/components/profile/structure-multi-select";
 import { cn } from "@/lib/cn";
@@ -241,7 +244,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
 
           {unavailable ? (
             <div className="p-6 sm:p-9">
-              <Alert tone="warning">
+              <Alert variant={"warning"}>
                 <TriangleAlert aria-hidden="true" />
                 <AlertDescription>
                   A degree has not been published for the{" "}
@@ -258,28 +261,38 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                   <legend className="text-base font-semibold text-zinc-900">
                     Tell us who is planning
                   </legend>
-                  <Field label="Your name">
-                    <Input
-                      autoComplete="name"
-                      autoFocus
-                      onChange={(event) => setName(event.target.value)}
-                      placeholder="Your name"
-                      required
-                      value={name}
-                      className="min-h-11"
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Your name"}</span>
+                      <Input
+                        autoComplete="name"
+                        autoFocus
+                        onChange={(event) => setName(event.target.value)}
+                        placeholder="Your name"
+                        required
+                        value={name}
+                        className="min-h-11"
+                      />
+                    </label>
                   </Field>
-                  <Field
-                    hint="Optional. Use the format u1234567."
-                    label="Student number"
-                  >
-                    <Input
-                      autoComplete="off"
-                      onChange={(event) => setStudentNumber(event.target.value)}
-                      placeholder="u1234567"
-                      value={studentNumber}
-                      className="min-h-11"
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">
+                        {"Student number"}
+                      </span>
+                      <Input
+                        autoComplete="off"
+                        onChange={(event) =>
+                          setStudentNumber(event.target.value)
+                        }
+                        placeholder="u1234567"
+                        value={studentNumber}
+                        className="min-h-11"
+                      />
+                      <FieldDescription>
+                        {"Optional. Use the format u1234567."}
+                      </FieldDescription>
+                    </label>
                   </Field>
                 </fieldset>
               )}
@@ -289,67 +302,140 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                   <legend className="text-base font-semibold text-zinc-900">
                     Choose your course of study
                   </legend>
-                  <Field
-                    hint="Your requirements follow the catalogue year you started under."
-                    label="Rules year"
-                  >
-                    <Select
-                      aria-label="Rules year"
-                      className="min-h-11"
-                      onChange={(value) => {
-                        const nextYear = Number(value);
-                        const nextDegree = catalogue.degrees.find(
-                          (item) => item.catalogueYear === nextYear,
-                        );
-                        setCatalogueYear(nextYear);
-                        setDegreeCode(nextDegree?.code ?? "");
-                        setMajorCode("");
-                        setMinorCodes([]);
-                        setSpecialisationCodes([]);
-                        setYearOfStudy(1);
-                      }}
-                      options={catalogue.catalogueYears.map((item) => ({
-                        value: item.year,
-                        label: `${item.year} catalogue`,
-                      }))}
-                      value={catalogueYear}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">
+                        {"Rules year"}
+                      </span>
+                      <OptionPicker
+                        value={"coursemap:" + String(catalogueYear)}
+                        onValueChange={(nextValue) => {
+                          const option = catalogue.catalogueYears
+                            .map((item) => ({
+                              value: item.year,
+                              label: `${item.year} catalogue`,
+                            }))
+                            .find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                          if (option)
+                            ((value) => {
+                              const nextYear = Number(value);
+                              const nextDegree = catalogue.degrees.find(
+                                (item) => item.catalogueYear === nextYear,
+                              );
+                              setCatalogueYear(nextYear);
+                              setDegreeCode(nextDegree?.code ?? "");
+                              setMajorCode("");
+                              setMinorCodes([]);
+                              setSpecialisationCodes([]);
+                              setYearOfStudy(1);
+                            })(option.value);
+                        }}
+                        className={"min-h-11"}
+                        aria-label={"Rules year"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        searchable={false}
+                        items={catalogue.catalogueYears
+                          .map((item) => ({
+                            value: item.year,
+                            label: `${item.year} catalogue`,
+                          }))
+                          .map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                      />
+                      <FieldDescription>
+                        {
+                          "Your requirements follow the catalogue year you started under."
+                        }
+                      </FieldDescription>
+                    </label>
                   </Field>
-                  <Field label="Degree">
-                    <Select
-                      aria-label="Degree"
-                      className="min-h-11"
-                      onChange={(value) => {
-                        setDegreeCode(value);
-                        setMajorCode("");
-                        setMinorCodes([]);
-                        setSpecialisationCodes([]);
-                        setYearOfStudy(1);
-                      }}
-                      options={degrees.map((item) => ({
-                        value: item.code,
-                        label: `${item.name} (${item.code})`,
-                      }))}
-                      value={degreeCode}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Degree"}</span>
+                      <OptionPicker
+                        value={"coursemap:" + String(degreeCode)}
+                        onValueChange={(nextValue) => {
+                          const option = degrees
+                            .map((item) => ({
+                              value: item.code,
+                              label: `${item.name} (${item.code})`,
+                            }))
+                            .find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                          if (option)
+                            ((value) => {
+                              setDegreeCode(value);
+                              setMajorCode("");
+                              setMinorCodes([]);
+                              setSpecialisationCodes([]);
+                              setYearOfStudy(1);
+                            })(option.value);
+                        }}
+                        className={"min-h-11"}
+                        aria-label={"Degree"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        items={degrees
+                          .map((item) => ({
+                            value: item.code,
+                            label: `${item.name} (${item.code})`,
+                          }))
+                          .map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                      />
+                    </label>
                   </Field>
-                  <Field
-                    hint="Optional. You can pick this later."
-                    label="Major"
-                  >
-                    <Select
-                      aria-label="Major"
-                      className="min-h-11"
-                      onChange={setMajorCode}
-                      options={[
-                        { value: "", label: "Choose later" },
-                        ...majors.map((item) => ({
-                          value: item.code,
-                          label: `${item.name} (${item.code})`,
-                        })),
-                      ]}
-                      value={majorCode}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Major"}</span>
+                      <OptionPicker
+                        value={"coursemap:" + String(majorCode)}
+                        onValueChange={(nextValue) => {
+                          const option = (
+                            [
+                              { value: "", label: "Choose later" },
+                              ...majors.map((item) => ({
+                                value: item.code,
+                                label: `${item.name} (${item.code})`,
+                              })),
+                            ] as const
+                          ).find(
+                            (option) =>
+                              "coursemap:" + String(option.value) === nextValue,
+                          );
+                          if (option) setMajorCode(option.value);
+                        }}
+                        className={"min-h-11"}
+                        aria-label={"Major"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        items={[
+                          { value: "", label: "Choose later" },
+                          ...majors.map((item) => ({
+                            value: item.code,
+                            label: `${item.name} (${item.code})`,
+                          })),
+                        ].map((option) => ({
+                          value: "coursemap:" + String(option.value),
+                          label: option.label,
+                        }))}
+                      />
+                      <FieldDescription>
+                        {"Optional. You can pick this later."}
+                      </FieldDescription>
+                    </label>
                   </Field>
                   {minors.length > 0 ? (
                     <StructureMultiSelect
@@ -378,37 +464,86 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     Nearly there
                   </legend>
                   <div className="grid gap-5 sm:grid-cols-2">
-                    <Field label="What year of your degree are you in?">
-                      <Select
-                        aria-label="Year of study"
-                        className="min-h-11"
-                        disabled={!planningDurationAvailable}
-                        onChange={setYearOfStudy}
-                        options={studyYears.map((year) => ({
-                          value: year,
-                          label: `Year ${year}`,
-                        }))}
-                        value={yearOfStudy}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"What year of your degree are you in?"}
+                        </span>
+                        <OptionPicker
+                          value={"coursemap:" + String(yearOfStudy)}
+                          onValueChange={(nextValue) => {
+                            const option = studyYears
+                              .map((year) => ({
+                                value: year,
+                                label: `Year ${year}`,
+                              }))
+                              .find(
+                                (option) =>
+                                  "coursemap:" + String(option.value) ===
+                                  nextValue,
+                              );
+                            if (option) setYearOfStudy(option.value);
+                          }}
+                          disabled={!planningDurationAvailable}
+                          className={"min-h-11"}
+                          aria-label={"Year of study"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          searchable={false}
+                          items={studyYears
+                            .map((year) => ({
+                              value: year,
+                              label: `Year ${year}`,
+                            }))
+                            .map((option) => ({
+                              value: "coursemap:" + String(option.value),
+                              label: option.label,
+                            }))}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Study load">
-                      <Select
-                        aria-label="Study load"
-                        className="min-h-11"
-                        onChange={(value) =>
-                          setStudyLoad(value as "Full time" | "Part time")
-                        }
-                        options={[
-                          { value: "Full time", label: "Full time" },
-                          { value: "Part time", label: "Part time" },
-                        ]}
-                        value={studyLoad}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Study load"}
+                        </span>
+                        <OptionPicker
+                          value={"coursemap:" + String(studyLoad)}
+                          onValueChange={(nextValue) => {
+                            const option = (
+                              [
+                                { value: "Full time", label: "Full time" },
+                                { value: "Part time", label: "Part time" },
+                              ] as const
+                            ).find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                            if (option)
+                              ((value) =>
+                                setStudyLoad(
+                                  value as "Full time" | "Part time",
+                                ))(option.value);
+                          }}
+                          className={"min-h-11"}
+                          aria-label={"Study load"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          items={[
+                            { value: "Full time", label: "Full time" },
+                            { value: "Part time", label: "Part time" },
+                          ].map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                        />
+                      </label>
                     </Field>
                   </div>
 
                   {degree?.durationYears === null || degree?.units === null ? (
-                    <Alert tone="warning">
+                    <Alert variant={"warning"}>
                       <TriangleAlert aria-hidden="true" />
                       <AlertDescription>
                         {!planningDurationAvailable
@@ -493,7 +628,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
               )}
 
               {message && (
-                <Alert className="mt-5" role="alert" tone="warning">
+                <Alert className="mt-5" role="alert" variant={"warning"}>
                   <TriangleAlert aria-hidden="true" />
                   <AlertDescription>{message}</AlertDescription>
                 </Alert>
@@ -507,12 +642,13 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                   onClick={goBack}
                   disabled={submitting}
                 >
-                  <ArrowLeft className="size-4" aria-hidden="true" /> Back
+                  <ArrowLeft className="size-4" aria-hidden="true" />
+                  Back
                 </Button>
                 {stepId === "details" ? (
                   <Button
                     type="submit"
-                    variant="primary"
+                    variant="default"
                     className="min-h-11 !rounded-xl px-6"
                     disabled={submitting || !planningDurationAvailable}
                   >
@@ -521,7 +657,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                 ) : (
                   <Button
                     type="submit"
-                    variant="primary"
+                    variant="default"
                     className="min-h-11 !rounded-xl px-6"
                   >
                     Continue{" "}

@@ -1,6 +1,5 @@
-import { SearchX } from "lucide-react";
-import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -8,7 +7,9 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@reui/ui/empty";
+import ReuiLink from "next/link";
+import { SearchX } from "lucide-react";
 
 export default function NotFound() {
   return (
@@ -27,10 +28,12 @@ export default function NotFound() {
           </EmptyHeader>
           <EmptyContent>
             <div className="flex flex-wrap justify-center gap-2">
-              <ButtonLink href="/dashboard" variant="primary">
-                Return home
-              </ButtonLink>
-              <ButtonLink href="/courses">Browse courses</ButtonLink>
+              <Button asChild variant="default">
+                <ReuiLink href="/dashboard">Return home</ReuiLink>
+              </Button>
+              <Button asChild variant="outline">
+                <ReuiLink href="/courses">Browse courses</ReuiLink>
+              </Button>
             </div>
           </EmptyContent>
         </Empty>

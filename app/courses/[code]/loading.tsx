@@ -1,6 +1,7 @@
+import { Card } from "@reui/ui/card";
+import { Skeleton } from "@reui/ui/skeleton";
 import { AppShell } from "@/components/shell";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import { cn } from "@/lib/cn";
 
 function SectionSkeleton({ rows }: { rows: number }) {

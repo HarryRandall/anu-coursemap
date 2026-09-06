@@ -14,7 +14,18 @@ export default async function AdminUserDetailPage({
   const data = await loadAdminUserDetail(id);
   if (!data) notFound();
 
-  return <AdminUserDetail currentUserId={viewer.id} data={data} />;
+  return (
+    <AdminUserDetail
+      currentUserId={viewer.id}
+      data={data}
+      accountAgeDays={Math.max(
+        0,
+        Math.floor(
+          (Date.now() - new Date(data.user.createdAt).getTime()) / 86_400_000,
+        ),
+      )}
+    />
+  );
 }
 
 export const dynamic = "force-dynamic";

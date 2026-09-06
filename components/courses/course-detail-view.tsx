@@ -1,4 +1,20 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@reui/components/alert";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@reui/ui/card";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@reui/ui/empty";
+import { TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
 
 import Link from "next/link";
 import {
@@ -18,22 +34,7 @@ import {
   Plus,
 } from "lucide-react";
 import { PrereqGraph } from "@/components/prereq-graph";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import {
   evaluateRequisiteExpression,
@@ -65,13 +66,9 @@ export function courseTabFromSearch(value: string | null): CourseTab {
  */
 export function CourseDetailTabsList() {
   return (
-    <TabsList className="h-11 w-full justify-start gap-1 rounded-none bg-transparent p-0">
+    <TabsList variant="line">
       {courseDetailTabs.map(({ id, label, icon: Icon }) => (
-        <TabsTrigger
-          key={id}
-          value={id}
-          className="relative h-11 flex-none gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-2.5 text-[13px] text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
-        >
+        <TabsTrigger key={id} value={id}>
           <Icon size={15} aria-hidden="true" className="hidden sm:block" />
           {label}
         </TabsTrigger>
@@ -408,7 +405,11 @@ function RequisiteProgressSummary({
     <div className="rounded-lg border border-border bg-card p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold text-foreground/90">{title}</p>
-        <Badge tone={progress.satisfied ? "success" : "warning"}>
+        <Badge
+          variant={
+            badgeVariantForTone[progress.satisfied ? "success" : "warning"]
+          }
+        >
           {progress.satisfied ? "Met" : "Not met"}
         </Badge>
       </div>
@@ -494,16 +495,20 @@ export function CourseDetailView({
             {course.name}
           </h1>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            <Badge tone="neutral">{course.year}</Badge>
-            <Badge tone="neutral">{unitValueLabel(course)}</Badge>
-            <Badge tone="neutral">
+            <Badge variant={"outline"}>{course.year}</Badge>
+            <Badge variant={"outline"}>{unitValueLabel(course)}</Badge>
+            <Badge variant={"outline"}>
               {course.sessions.length
                 ? course.sessions.join(" · ")
                 : "Offering not listed"}
             </Badge>
-            <Badge tone="neutral">{course.delivery}</Badge>
+            <Badge variant={"outline"}>{course.delivery}</Badge>
             <Badge
-              tone={course.offeringStatus === "offered" ? "success" : "warning"}
+              variant={
+                badgeVariantForTone[
+                  course.offeringStatus === "offered" ? "success" : "warning"
+                ]
+              }
             >
               {course.offeringStatus === "offered"
                 ? `Offered in ${course.year}`
@@ -526,9 +531,11 @@ export function CourseDetailView({
               ? undefined
               : "Planning is only available on the live student page."
           }
-          variant="primary"
+          variant="default"
+          type="button"
         >
-          <Plus size={16} aria-hidden="true" /> Add to plan
+          <Plus size={16} aria-hidden="true" />
+          Add to plan
         </Button>
       </header>
 
@@ -536,7 +543,11 @@ export function CourseDetailView({
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
           <div className="flex min-w-0 flex-col gap-4">
             <Card>
-              <CardHeader title="About this course" />
+              <CardHeader>
+                <CardTitle>
+                  <h2>{"About this course"}</h2>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="space-y-4 border-t border-border/60 pt-5">
                 {course.introduction &&
                 course.introduction !== course.description ? (
@@ -552,7 +563,11 @@ export function CourseDetailView({
 
             {course.learningOutcomes.length ? (
               <Card>
-                <CardHeader title="Learning outcomes" />
+                <CardHeader>
+                  <CardTitle>
+                    <h2>{"Learning outcomes"}</h2>
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="border-t border-border/60 pt-5">
                   <ol className="space-y-3">
                     {course.learningOutcomes.map((outcome) => (
@@ -573,10 +588,20 @@ export function CourseDetailView({
 
             {course.assessments.length ? (
               <Card>
-                <CardHeader
-                  title="Assessment"
-                  description="Weights and hurdle requirements come straight from the imported ANU record."
-                />
+                <CardHeader>
+                  <CardTitle>
+                    <h2>{"Assessment"}</h2>
+                  </CardTitle>
+                  {Boolean(
+                    "Weights and hurdle requirements come straight from the imported ANU record.",
+                  ) && (
+                    <CardDescription>
+                      {
+                        "Weights and hurdle requirements come straight from the imported ANU record."
+                      }
+                    </CardDescription>
+                  )}
+                </CardHeader>
                 <CardContent className="border-t border-border/60 p-0">
                   <div className="divide-y divide-border/60">
                     {course.assessments.map((assessment) => (
@@ -602,10 +627,12 @@ export function CourseDetailView({
                         </div>
                         <div className="flex items-start gap-2">
                           {assessment.weight !== null ? (
-                            <Badge tone="neutral">{assessment.weight}%</Badge>
+                            <Badge variant={"outline"}>
+                              {assessment.weight}%
+                            </Badge>
                           ) : null}
                           {assessment.hurdle ? (
-                            <Badge tone="warning">Hurdle</Badge>
+                            <Badge variant={"warning-light"}>Hurdle</Badge>
                           ) : null}
                         </div>
                       </div>
@@ -619,7 +646,11 @@ export function CourseDetailView({
             course.inherentRequirements ||
             course.prescribedTexts ? (
               <Card>
-                <CardHeader title="Study expectations" />
+                <CardHeader>
+                  <CardTitle>
+                    <h2>{"Study expectations"}</h2>
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="grid gap-5 border-t border-border/60 pt-5 md:grid-cols-2">
                   {course.workloadText ? (
                     <section>
@@ -662,7 +693,11 @@ export function CourseDetailView({
 
             {course.relatedCourses.length ? (
               <Card>
-                <CardHeader title="Related courses" />
+                <CardHeader>
+                  <CardTitle>
+                    <h2>{"Related courses"}</h2>
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="grid gap-3 border-t border-border/60 pt-5 sm:grid-cols-2">
                   {course.relatedCourses.map((related) => (
                     <Link
@@ -688,7 +723,11 @@ export function CourseDetailView({
 
           <div className="flex min-w-0 flex-col gap-4">
             <Card>
-              <CardHeader title="Course essentials" />
+              <CardHeader>
+                <CardTitle>
+                  <h2>{"Course essentials"}</h2>
+                </CardTitle>
+              </CardHeader>
               <CardContent className="border-t border-border/60 pt-5">
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-4">
                   {[
@@ -732,7 +771,11 @@ export function CourseDetailView({
 
             {course.fees.length ? (
               <Card>
-                <CardHeader title="Fees" />
+                <CardHeader>
+                  <CardTitle>
+                    <h2>{"Fees"}</h2>
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="border-t border-border/60 p-0">
                   <dl className="divide-y divide-border/60">
                     {course.fees.map((fee, index) => (
@@ -763,7 +806,11 @@ export function CourseDetailView({
 
             {course.areasOfInterest.length || course.attributes.length ? (
               <Card>
-                <CardHeader title="Areas and attributes" />
+                <CardHeader>
+                  <CardTitle>
+                    <h2>{"Areas and attributes"}</h2>
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-4 border-t border-border/60 pt-5">
                   {course.areasOfInterest.length ? (
                     <div>
@@ -772,7 +819,7 @@ export function CourseDetailView({
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {course.areasOfInterest.map((area) => (
-                          <Badge key={area} tone="neutral">
+                          <Badge key={area} variant={"outline"}>
                             {area}
                           </Badge>
                         ))}
@@ -810,10 +857,20 @@ export function CourseDetailView({
 
       <TabsContent value="requisites" className="flex flex-col gap-4">
         <Card>
-          <CardHeader
-            title="Prerequisite chain and unlocks"
-            description="Detected course references stay visible even before their course records are imported."
-          />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Prerequisite chain and unlocks"}</h2>
+            </CardTitle>
+            {Boolean(
+              "Detected course references stay visible even before their course records are imported.",
+            ) && (
+              <CardDescription>
+                {
+                  "Detected course references stay visible even before their course records are imported."
+                }
+              </CardDescription>
+            )}
+          </CardHeader>
           <CardContent className="border-t border-border/60 px-0 pt-5 pb-0">
             <PrereqGraph
               academicYear={course.year}
@@ -827,22 +884,35 @@ export function CourseDetailView({
         </Card>
 
         <Card>
-          <CardHeader
-            title="Requisites and compatibility"
-            description={
+          <CardHeader className="flex-col gap-3 sm:flex-row">
+            <CardTitle>
+              <h2>{"Requisites and compatibility"}</h2>
+            </CardTitle>
+            {Boolean(
               <>
                 An exact Coursemap summary is shown when the wording can be read
                 safely. The official wording remains alongside it.
-              </>
-            }
-            action={
+              </>,
+            ) && (
+              <CardDescription>
+                {
+                  <>
+                    An exact Coursemap summary is shown when the wording can be
+                    read safely. The official wording remains alongside it.
+                  </>
+                }
+              </CardDescription>
+            )}
+            {Boolean(
               <Badge
-                tone={
-                  structuredRule ||
-                  requisiteSummary ||
-                  course.reviewState === "verified"
-                    ? "success"
-                    : "warning"
+                variant={
+                  badgeVariantForTone[
+                    structuredRule ||
+                    requisiteSummary ||
+                    course.reviewState === "verified"
+                      ? "success"
+                      : "warning"
+                  ]
                 }
               >
                 {structuredRule
@@ -854,12 +924,37 @@ export function CourseDetailView({
                     : course.reviewState === "verified"
                       ? "Source reviewed"
                       : "Rule logic unknown"}
-              </Badge>
-            }
-            className="flex-col gap-3 sm:flex-row"
-          />
+              </Badge>,
+            ) && (
+              <CardAction>
+                {
+                  <Badge
+                    variant={
+                      badgeVariantForTone[
+                        structuredRule ||
+                        requisiteSummary ||
+                        course.reviewState === "verified"
+                          ? "success"
+                          : "warning"
+                      ]
+                    }
+                  >
+                    {structuredRule
+                      ? requisiteCompletion.isAuthenticated
+                        ? "Eligibility checked"
+                        : "Structured rule"
+                      : requisiteSummary
+                        ? "Structured summary"
+                        : course.reviewState === "verified"
+                          ? "Source reviewed"
+                          : "Rule logic unknown"}
+                  </Badge>
+                }
+              </CardAction>
+            )}
+          </CardHeader>
           <CardContent className="space-y-5 border-t border-border/60 pt-5 text-[13px] leading-relaxed text-foreground/80">
-            <Alert tone="warning" className="rounded-xl p-4">
+            <Alert className="rounded-xl p-4" variant={"warning"}>
               <CircleHelp aria-hidden="true" />
               <AlertDescription className="text-amber-900 dark:text-amber-300">
                 {ruleStatus}
@@ -966,13 +1061,25 @@ export function CourseDetailView({
 
       <TabsContent value="offerings" className="flex flex-col gap-4">
         <Card>
-          <CardHeader
-            title="Available study periods"
-            description="Imported from ANU class information. Confirm enrolment dates in the official source."
-            action={
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Available study periods"}</h2>
+            </CardTitle>
+            {Boolean(
+              "Imported from ANU class information. Confirm enrolment dates in the official source.",
+            ) && (
+              <CardDescription>
+                {
+                  "Imported from ANU class information. Confirm enrolment dates in the official source."
+                }
+              </CardDescription>
+            )}
+            {Boolean(
               <Badge
-                tone={
-                  course.offeringStatus === "offered" ? "success" : "neutral"
+                variant={
+                  badgeVariantForTone[
+                    course.offeringStatus === "offered" ? "success" : "neutral"
+                  ]
                 }
               >
                 {course.offeringStatus === "offered"
@@ -980,9 +1087,29 @@ export function CourseDetailView({
                   : course.offeringStatus === "not_offered"
                     ? `Not offered in ${course.year}`
                     : "Offering status unknown"}
-              </Badge>
-            }
-          />
+              </Badge>,
+            ) && (
+              <CardAction>
+                {
+                  <Badge
+                    variant={
+                      badgeVariantForTone[
+                        course.offeringStatus === "offered"
+                          ? "success"
+                          : "neutral"
+                      ]
+                    }
+                  >
+                    {course.offeringStatus === "offered"
+                      ? `Offered in ${course.year}`
+                      : course.offeringStatus === "not_offered"
+                        ? `Not offered in ${course.year}`
+                        : "Offering status unknown"}
+                  </Badge>
+                }
+              </CardAction>
+            )}
+          </CardHeader>
           {course.offerings.length ? (
             <CardContent className="border-t border-border/60 p-0">
               <div className="divide-y divide-border/60">
@@ -1002,7 +1129,7 @@ export function CourseDetailView({
                             {offering.periodName}
                           </h3>
                           {offering.classNumber ? (
-                            <Badge tone="neutral">
+                            <Badge variant={"outline"}>
                               Class {offering.classNumber}
                             </Badge>
                           ) : null}
@@ -1083,12 +1210,22 @@ export function CourseDetailView({
 
       <TabsContent value="student-review" className="flex flex-col gap-4">
         <Card>
-          <CardHeader
-            title="Student experience and self-review"
-            description="Shared placeholder while course-specific SELT and student feedback are imported."
-          />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Student experience and self-review"}</h2>
+            </CardTitle>
+            {Boolean(
+              "Shared placeholder while course-specific SELT and student feedback are imported.",
+            ) && (
+              <CardDescription>
+                {
+                  "Shared placeholder while course-specific SELT and student feedback are imported."
+                }
+              </CardDescription>
+            )}
+          </CardHeader>
           <CardContent className="space-y-5 border-t border-border/60 pt-5">
-            <Alert tone="neutral" className="rounded-xl p-4">
+            <Alert className="rounded-xl p-4" variant={"default"}>
               <MessageSquareText aria-hidden="true" />
               <AlertTitle className="text-[13px]">
                 No course-specific ratings are shown yet

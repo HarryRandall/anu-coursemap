@@ -1,10 +1,13 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Field, FieldDescription } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+import { cn } from "@/lib/cn";
 
 import { CircleAlert, LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/field";
+
 import { createClient } from "@/lib/supabase/browser";
 
 export function SignUpForm({
@@ -72,74 +75,83 @@ export function SignUpForm({
   return (
     <form onSubmit={submit} className="space-y-4">
       <input type="hidden" name="next" value={next} />
-      <Field label="Email address">
-        <span className="relative block">
-          <Mail
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
-            aria-hidden="true"
-          />
-          <Input
-            type="email"
-            name="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            autoComplete="email"
-            maxLength={254}
-            placeholder="name@anu.edu.au"
-            required
-            disabled={!configured || submitting}
-            className="min-h-11 pl-10"
-          />
-        </span>
+      <Field>
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium">{"Email address"}</span>
+          <span className="relative block">
+            <Mail
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden="true"
+            />
+            <Input
+              type="email"
+              name="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              autoComplete="email"
+              maxLength={254}
+              placeholder="name@anu.edu.au"
+              required
+              disabled={!configured || submitting}
+              className="min-h-11 pl-10"
+            />
+          </span>
+        </label>
       </Field>
 
-      <Field
-        label="Password"
-        hint="Use at least 8 characters and do not reuse your ANU password."
-      >
-        <span className="relative block">
-          <LockKeyhole
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
-            aria-hidden="true"
-          />
-          <Input
-            type="password"
-            name="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="new-password"
-            minLength={8}
-            maxLength={128}
-            required
-            disabled={!configured || submitting}
-            className="min-h-11 pl-10"
-          />
-        </span>
+      <Field>
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium">{"Password"}</span>
+          <span className="relative block">
+            <LockKeyhole
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden="true"
+            />
+            <Input
+              type="password"
+              name="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
+              required
+              disabled={!configured || submitting}
+              className="min-h-11 pl-10"
+            />
+          </span>
+          <FieldDescription>
+            {"Use at least 8 characters and do not reuse your ANU password."}
+          </FieldDescription>
+        </label>
       </Field>
 
-      <Field label="Confirm password">
-        <span className="relative block">
-          <LockKeyhole
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
-            aria-hidden="true"
-          />
-          <Input
-            type="password"
-            name="passwordConfirmation"
-            value={passwordConfirmation}
-            onChange={(event) => setPasswordConfirmation(event.target.value)}
-            autoComplete="new-password"
-            minLength={8}
-            maxLength={128}
-            required
-            disabled={!configured || submitting}
-            className="min-h-11 pl-10"
-          />
-        </span>
+      <Field>
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-medium">{"Confirm password"}</span>
+          <span className="relative block">
+            <LockKeyhole
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-zinc-400"
+              aria-hidden="true"
+            />
+            <Input
+              type="password"
+              name="passwordConfirmation"
+              value={passwordConfirmation}
+              onChange={(event) => setPasswordConfirmation(event.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              maxLength={128}
+              required
+              disabled={!configured || submitting}
+              className="min-h-11 pl-10"
+            />
+          </span>
+        </label>
       </Field>
 
       {errorMessage && (
-        <Alert tone="danger" role="alert">
+        <Alert role="alert" variant={"destructive"}>
           <CircleAlert />
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
@@ -147,10 +159,9 @@ export function SignUpForm({
 
       <Button
         type="submit"
-        variant="primary"
-        fullWidth
+        variant="default"
         disabled={!configured || submitting}
-        className="min-h-11"
+        className={cn("min-h-11", "w-full")}
       >
         {submitting ? "Creating account..." : "Create account"}
       </Button>

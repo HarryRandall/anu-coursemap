@@ -121,3 +121,19 @@ export function safeImportSearch(value: string | undefined) {
     .replace(/[^A-Za-z0-9 &-]/g, " ")
     .replace(/\s+/g, " ");
 }
+
+/** Processing failures and active work take precedence over a review result. */
+export function importOutcome(processingStatus: string, reviewStatus: string) {
+  if (processingStatus === "failed" || processingStatus === "cancelled")
+    return processingStatus;
+  if (processingStatus === "queued") return "queued";
+  if (processingStatus === "processing" || processingStatus === "running")
+    return "processing";
+  if (reviewStatus === "accepted" || reviewStatus === "rejected")
+    return reviewStatus;
+  if (processingStatus === "unchanged" || reviewStatus === "unchanged")
+    return "unchanged";
+  if (reviewStatus === "pending" || reviewStatus === "needs_review")
+    return "needs-review";
+  return processingStatus;
+}

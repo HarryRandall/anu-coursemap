@@ -1,8 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { CalendarCheck2, Layers3 } from "lucide-react";
 import { Card, CardContent } from "@reui/ui/card";
 import { cn } from "@/lib/cn";
+import { TrendChart, DonutChart, chartColours } from "./metric-charts";
 import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";
 import type { RequirementBucketProgress } from "@/lib/coursemap/requirement-progress";
 import { STANDARD_TERM_UNITS, type DegreeUnitProgress } from "@/lib/planner";
@@ -89,7 +91,7 @@ export const METRIC_OPTIONS: Record<
     blurb: "How evenly the upcoming semesters are loaded.",
   },
   finish: {
-    title: "Planned finish",
+    title: "Last scheduled term",
     blurb: "When the current plan runs out of scheduled semesters.",
   },
 };
@@ -129,91 +131,41 @@ export type MetricInputs = {
 /* ------------------------------------------------------------------ */
 
 function Ring({ percent, label }: { percent: number; label: string }) {
-  const clamped = Math.max(0, Math.min(100, percent));
+  const value = Math.max(0, Math.min(100, percent));
   return (
-    <svg
-      viewBox="0 0 64 64"
-      className="size-14 shrink-0"
-      role="img"
-      aria-label={label}
-    >
-      <circle
-        cx="32"
-        cy="32"
-        r="25"
-        fill="none"
-        className="stroke-border"
-        strokeWidth="7"
-      />
-      <circle
-        cx="32"
-        cy="32"
-        r="25"
-        fill="none"
-        className="stroke-primary"
-        strokeWidth="7"
-        strokeLinecap="round"
-        pathLength="100"
-        strokeDasharray={`${clamped} 100`}
-        transform="rotate(-90 32 32)"
-      />
-    </svg>
+    <DonutChart
+      segments={[
+        { name: label, value, fill: chartColours.green },
+        { name: "Remaining (%)", value: 100 - value, fill: chartColours.muted },
+      ]}
+    />
   );
 }
 
-function Sparkline({
-  values,
-  max,
+function TickMeter({
+  percent,
   label,
+  steps = 20,
 }: {
-  values: readonly number[];
-  max: number;
+  percent: number;
   label: string;
+  steps?: number;
 }) {
-  if (values.length < 2) return null;
-  const top = Math.max(max, ...values, 1);
-  const step = 280 / (values.length - 1);
+  const filled = (Math.max(0, Math.min(100, percent)) / 100) * steps;
   return (
-    <svg
-      viewBox="0 0 280 46"
-      preserveAspectRatio="none"
-      className="h-11 w-full"
-      role="img"
-      aria-label={label}
-    >
-      <polyline
-        points={values
-          .map((value, index) => `${index * step},${44 - (value / top) * 42}`)
-          .join(" ")}
-        fill="none"
-        className="stroke-primary"
-        strokeWidth="2.5"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
-
-function SegmentRow({
-  segments,
-  label,
-}: {
-  segments: readonly { className: string; flex: number; title?: string }[];
-  label: string;
-}) {
-  return (
-    <div
-      className="flex h-2 w-full gap-1 overflow-hidden"
-      role="img"
-      aria-label={label}
-    >
-      {segments.map((segment, index) => (
+    <div className="flex h-3 gap-1" role="img" aria-label={label}>
+      {Array.from({ length: steps }, (_, index) => (
         <span
           key={index}
-          title={segment.title}
-          style={{ flex: Math.max(segment.flex, 0.0001) }}
-          className={cn("h-full rounded-full", segment.className)}
-        />
+          className="relative flex-1 overflow-hidden rounded-xs bg-muted"
+        >
+          <span
+            className="absolute inset-y-0 left-0 bg-current"
+            style={{
+              width: `${Math.max(0, Math.min(1, filled - index)) * 100}%`,
+            }}
+          />
+        </span>
       ))}
     </div>
   );
@@ -221,31 +173,11 @@ function SegmentRow({
 
 function MiniBars({
   points,
-  label,
 }: {
   points: readonly { label: string; units: number }[];
   label: string;
 }) {
-  const max = Math.max(STANDARD_TERM_UNITS, ...points.map((p) => p.units), 1);
-  return (
-    <div className="flex items-end gap-3" role="img" aria-label={label}>
-      {points.map((point) => (
-        <div
-          key={point.label}
-          className="flex min-w-0 flex-1 flex-col items-center gap-1"
-        >
-          <span
-            className="w-full rounded-md bg-primary/70"
-            style={{ height: `${Math.max((point.units / max) * 44, 3)}px` }}
-            title={`${point.label}: ${point.units} units`}
-          />
-          <small className="truncate text-[10px] text-muted-foreground">
-            {point.label}
-          </small>
-        </div>
-      ))}
-    </div>
-  );
+  return <TrendChart points={points} kind="bar" colour={chartColours.blue} />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -321,16 +253,21 @@ export function buildMetricViews(
                   ? "standard load"
                   : "below standard load"
             }${focusTermLabel ? ` · ${focusTermLabel}` : ""}`,
-      body: focusCourses.length > 0 && (
-        <SegmentRow
-          label={`Units per course: ${focusCourses
-            .map((c) => `${c.code} ${c.units}`)
-            .join(", ")}`}
-          segments={focusCourses.map((c) => ({
-            className: "bg-primary",
-            flex: c.units,
-            title: `${c.code} · ${c.units} units`,
-          }))}
+      aside: (
+        <DonutChart
+          half
+          segments={[
+            {
+              name: "Scheduled units",
+              value: focusUnits,
+              fill: chartColours.blue,
+            },
+            {
+              name: "Available units",
+              value: Math.max(0, STANDARD_TERM_UNITS - focusUnits),
+              fill: chartColours.muted,
+            },
+          ]}
         />
       ),
     },
@@ -346,19 +283,45 @@ export function buildMetricViews(
         unitTarget && unitTarget > 0
           ? `${progress.mapped} of ${unitTarget} units have a place`
           : "No unit target recorded for this programme",
-      aside:
-        unitTarget && unitTarget > 0 ? (
-          <Ring
-            percent={(progress.mapped / unitTarget) * 100}
-            label={`${progress.mapped} of ${unitTarget} units allocated`}
-          />
-        ) : undefined,
+      aside: unitTarget ? (
+        <DonutChart
+          segments={[
+            {
+              name: "Allocated units",
+              value: progress.mapped,
+              fill: chartColours.violet,
+            },
+            {
+              name: "Unallocated units",
+              value: Math.max(0, unitTarget - progress.mapped),
+              fill: chartColours.muted,
+            },
+          ]}
+        />
+      ) : undefined,
     },
     readiness: {
       id: "readiness",
       title: METRIC_OPTIONS.readiness.title,
-      value: String(readyCount),
-      unit: `/ ${nextCourses.length} ready`,
+      value: nextCourses.length ? String(readyCount) : "Not scheduled",
+      unit: nextCourses.length ? `/ ${nextCourses.length} ready` : "",
+      aside: (
+        <DonutChart
+          half
+          segments={[
+            {
+              name: "Ready courses",
+              value: readyCount,
+              fill: chartColours.green,
+            },
+            {
+              name: "Need checking",
+              value: needsCheck,
+              fill: chartColours.amber,
+            },
+          ]}
+        />
+      ),
       note:
         nextCourses.length === 0
           ? "Nothing scheduled next semester yet"
@@ -393,27 +356,21 @@ export function buildMetricViews(
         progress.remaining === 0
           ? "Every unit of the degree has a course"
           : `Equivalent to ${freeCourses} standard 6-unit ${courseWord(freeCourses)}`,
-      body: freeCourses > 0 && (
-        <div className="flex gap-1.5">
-          {Array.from({ length: Math.min(freeCourses, 6) }).map((_, index) => (
-            <span
-              key={index}
-              className="flex h-6 flex-1 items-center justify-center rounded-md border border-dashed border-border text-[11px] font-semibold text-muted-foreground"
-            >
-              +6
-            </span>
-          ))}
-        </div>
-      ),
+      body: unitTarget ? (
+        <TickMeter
+          percent={(progress.remaining / unitTarget) * 100}
+          label={`${progress.remaining} free units out of ${unitTarget}`}
+        />
+      ) : undefined,
     },
     "semester-bars": {
       id: "semester-bars",
       title: METRIC_OPTIONS["semester-bars"].title,
       value: String(nearTerms[0]?.units ?? 0),
-      unit: "units next semester",
+      unit: "units",
       note:
         nearTerms.length > 0
-          ? `Units per semester · last shown ${nearTerms.at(-1)?.units ?? 0}`
+          ? `${nearTerms[0]?.label} onwards · standard load 24 units`
           : "No upcoming semesters in the plan",
       body: nearTerms.length > 0 && (
         <MiniBars
@@ -448,31 +405,22 @@ export function buildMetricViews(
       value: String(unitTarget ?? progress.mapped),
       unit: "degree units",
       note: `${progress.completed} completed · ${enrolledUnits} enrolled · ${plannedOnly} planned · ${progress.remaining} free`,
-      body: (
-        <SegmentRow
-          label={`${progress.completed} completed, ${enrolledUnits} enrolled, ${plannedOnly} planned, ${progress.remaining} free`}
+      aside: (
+        <DonutChart
           segments={[
             {
-              className: "bg-emerald-500",
-              flex: progress.completed,
-              title: `Completed · ${progress.completed}`,
+              name: "Completed",
+              value: progress.completed,
+              fill: chartColours.green,
             },
+            { name: "Enrolled", value: enrolledUnits, fill: chartColours.blue },
+            { name: "Planned", value: plannedOnly, fill: chartColours.violet },
             {
-              className: "bg-primary",
-              flex: enrolledUnits,
-              title: `Enrolled · ${enrolledUnits}`,
+              name: "Unallocated",
+              value: progress.remaining,
+              fill: chartColours.muted,
             },
-            {
-              className: "bg-primary/35",
-              flex: plannedOnly,
-              title: `Planned · ${plannedOnly}`,
-            },
-            {
-              className: "bg-muted-foreground/25",
-              flex: progress.remaining,
-              title: `Free · ${progress.remaining}`,
-            },
-          ].filter((segment) => segment.flex > 0)}
+          ]}
         />
       ),
     },
@@ -483,10 +431,12 @@ export function buildMetricViews(
       unit: lastCumulative ? `units by end of ${lastCumulative.year}` : "units",
       note: "Cumulative units · includes future plans",
       body: (
-        <Sparkline
-          values={cumulative.map((point) => point.units)}
-          max={unitTarget ?? 0}
-          label="Cumulative planned units over time"
+        <TrendChart
+          points={cumulative.map((point) => ({
+            label: point.label,
+            units: point.units,
+          }))}
+          colour={chartColours.rose}
         />
       ),
     },
@@ -500,8 +450,8 @@ export function buildMetricViews(
           ? "Programme rules have not been imported yet"
           : "Completed units in each applicable group",
       body: buckets.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {buckets.slice(0, 3).map((bucket) => {
+        <div className="flex flex-col gap-1">
+          {buckets.slice(0, 2).map((bucket) => {
             const percent = bucket.targetUnits
               ? Math.min(
                   100,
@@ -513,9 +463,9 @@ export function buildMetricViews(
                 <small className="w-24 truncate text-[10px] text-muted-foreground">
                   {bucket.title}
                 </small>
-                <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-muted">
+                <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-current/15">
                   <span
-                    className="block h-full rounded-full bg-primary"
+                    className="block h-full rounded-full bg-current"
                     style={{ width: `${percent}%` }}
                   />
                 </span>
@@ -528,6 +478,7 @@ export function buildMetricViews(
     "next-term": {
       id: "next-term",
       title: METRIC_OPTIONS["next-term"].title,
+      aside: <Layers3 className="size-6 opacity-50" aria-hidden="true" />,
       value: String(nextCourses.length),
       unit: `${courseWord(nextCourses.length)} · ${nextUnits} units`,
       note: nextTermLabel ?? "No upcoming semester scheduled",
@@ -555,44 +506,28 @@ export function buildMetricViews(
           : lightest.units < STANDARD_TERM_UNITS
             ? `${STANDARD_TERM_UNITS - lightest.units} units below standard in ${lightest.label}`
             : "Every upcoming semester carries a standard load",
-      body: nearTerms.length > 0 && (
-        <div className="flex gap-1.5">
-          {nearTerms.map((term) => (
-            <span
-              key={term.id}
-              title={`${term.label}: ${term.units} units`}
-              className={cn(
-                "flex h-7 flex-1 items-center justify-center rounded-md text-[11px] font-bold tabular-nums",
-                term.units >= STANDARD_TERM_UNITS
-                  ? "bg-primary/12 text-primary"
-                  : "border border-dashed border-border text-muted-foreground",
-              )}
-            >
-              {term.units}
-            </span>
-          ))}
-        </div>
+      body: (
+        <TrendChart
+          points={nearTerms.map((term) => ({
+            label: term.label,
+            units: term.units,
+          }))}
+          kind="line"
+          colour={chartColours.amber}
+        />
       ),
     },
     finish: {
       id: "finish",
-      title: METRIC_OPTIONS.finish.title,
-      value: finishLabel ?? "—",
+      title: "Last scheduled term",
+      value: finishLabel ?? "Not scheduled",
       unit: "",
       note:
         nearTerms.length > 0
           ? `${nearTerms.length} upcoming ${semesterWord(nearTerms.length)} · ${progress.remaining} units still to allocate`
           : "Add courses to project a finish date",
-      body: nearTerms.length > 0 && (
-        <MiniBars
-          points={nearTerms.map((term) => ({
-            label: term.label,
-            units: term.units,
-          }))}
-          label={nearTerms
-            .map((term) => `${term.label}: ${term.units} units`)
-            .join(", ")}
-        />
+      aside: (
+        <CalendarCheck2 className="size-6 opacity-50" aria-hidden="true" />
       ),
     },
   };
@@ -602,18 +537,70 @@ export function buildMetricViews(
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
 
-export function MetricCardView({ view }: { view: MetricView }) {
+const metricTones: Record<MetricId, string> = {
+  load: "text-sky-600 dark:text-sky-400",
+  coverage: "text-violet-600 dark:text-violet-400",
+  readiness: "text-amber-600 dark:text-amber-400",
+  remaining: "text-amber-600 dark:text-amber-400",
+  "semester-bars": "text-sky-600 dark:text-sky-400",
+  "completion-ring": "text-emerald-600 dark:text-emerald-400",
+  "unit-mix": "text-violet-600 dark:text-violet-400",
+  "progress-line": "text-rose-600 dark:text-rose-400",
+  requirements: "text-cyan-600 dark:text-cyan-400",
+  "next-term": "text-sky-600 dark:text-sky-400",
+  "load-balance": "text-amber-600 dark:text-amber-400",
+  finish: "text-rose-600 dark:text-rose-400",
+};
+
+export function MetricCardView({
+  view,
+  compact = false,
+}: {
+  view: MetricView;
+  compact?: boolean;
+}) {
+  if (compact)
+    return (
+      <Card className="relative overflow-visible py-0 focus-within:z-10 hover:z-10">
+        <CardContent className="relative flex h-32 flex-col justify-between p-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            {view.title}
+          </p>
+          <p className="max-w-[55%] text-xl font-semibold tabular-nums">
+            {view.value}{" "}
+            <span className="text-xs font-normal text-muted-foreground">
+              {view.unit}
+            </span>
+          </p>
+          <div className="absolute top-6 right-4 flex h-20 w-2/5 items-center justify-end">
+            {view.aside ? (
+              view.aside
+            ) : (
+              <div className="w-full">{view.body}</div>
+            )}
+          </div>
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            {view.note}
+          </p>
+        </CardContent>
+      </Card>
+    );
   return (
-    <Card>
-      <CardContent className="flex h-full flex-col gap-3 p-5">
-        <p className="text-[13px] font-medium text-muted-foreground">
+    <Card className="relative overflow-visible py-0 focus-within:z-10 hover:z-10">
+      <CardContent
+        className={cn(
+          "flex h-full min-h-32 flex-col gap-1.5 p-4",
+          metricTones[view.id],
+        )}
+      >
+        <p className="text-xs font-medium text-muted-foreground">
           {view.title}
         </p>
-        <div className="flex flex-1 items-center justify-between gap-4">
-          <p className="text-2xl font-semibold tracking-tight">
+        <div className="flex min-h-8 items-center justify-between gap-3">
+          <p className="text-xl font-semibold tracking-tight text-foreground tabular-nums">
             {view.value}{" "}
             {view.unit && (
-              <span className="text-sm font-normal text-muted-foreground">
+              <span className="text-xs font-normal tracking-normal text-muted-foreground">
                 {view.unit}
               </span>
             )}
@@ -621,7 +608,9 @@ export function MetricCardView({ view }: { view: MetricView }) {
           {view.aside}
         </div>
         {view.body}
-        <p className="text-xs text-muted-foreground">{view.note}</p>
+        <p className="mt-auto text-[11px] leading-4 text-muted-foreground">
+          {view.note}
+        </p>
       </CardContent>
     </Card>
   );

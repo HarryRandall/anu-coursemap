@@ -1,6 +1,7 @@
+import { Badge } from "@reui/components/badge";
 import type { ReactNode } from "react";
 import { ArrowDown, Search } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+
 import { CourseToken } from "@/components/ui/course-token";
 import { StatusPill } from "@/components/ui/status-pill";
 import { cn } from "@/lib/cn";
@@ -52,8 +53,8 @@ function CourseRow({
           {code} <span className="font-medium text-zinc-600">{name}</span>
         </p>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          <Badge tone="neutral">{units} units</Badge>
-          <Badge tone="info">{session}</Badge>
+          <Badge variant={"outline"}>{units} units</Badge>
+          <Badge variant={"info-light"}>{session}</Badge>
         </div>
       </div>
     </div>

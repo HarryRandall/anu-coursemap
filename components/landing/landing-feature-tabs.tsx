@@ -1,4 +1,5 @@
 "use client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
 
 import Image from "next/image";
 import {
@@ -14,7 +15,6 @@ import {
   PlanOverlay,
   PrerequisitesOverlay,
 } from "@/components/landing/landing-overlays";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const scenes = [
   {

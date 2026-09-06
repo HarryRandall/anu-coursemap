@@ -1,6 +1,6 @@
+import { Card } from "@reui/ui/card";
+import { Skeleton } from "@reui/ui/skeleton";
 import { AppShell } from "@/components/shell";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RequirementsLoading() {
   return (

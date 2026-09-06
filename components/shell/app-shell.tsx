@@ -8,6 +8,7 @@ import { Topbar } from "@/components/shell/topbar";
 
 export type AppShellProps = {
   children: ReactNode;
+  showThemeToggle?: boolean;
   actions?: ReactNode;
   /** Section tab links rendered in a full-width bar below the breadcrumbs. */
   tabs?: ReactNode;
@@ -24,6 +25,7 @@ export type AppShellProps = {
 
 export function AppShell({
   children,
+  showThemeToggle = true,
   actions,
   tabs,
   currentBreadcrumbLabel,
@@ -51,6 +53,7 @@ export function AppShell({
         )}
       >
         <Topbar
+          showThemeToggle={showThemeToggle}
           actions={actions}
           breadcrumbSegmentLabels={breadcrumbSegmentLabels}
           currentBreadcrumbLabel={currentBreadcrumbLabel}
@@ -62,7 +65,10 @@ export function AppShell({
               fill && "md:shrink-0",
             )}
           >
-            <nav aria-label="Page sections" className="flex items-center gap-1">
+            <nav
+              aria-label="Page sections"
+              className="flex min-w-0 items-center overflow-x-auto overflow-y-hidden"
+            >
               {tabs}
             </nav>
           </div>

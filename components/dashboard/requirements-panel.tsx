@@ -1,15 +1,16 @@
 "use client";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
 
 import Link from "next/link";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@reui/ui/button";
 import { Card, CardContent } from "@reui/ui/card";
-import { Progress } from "@reui/ui/progress";
+
 import type { RequirementBucketProgress } from "@/lib/coursemap/requirement-progress";
 
 /**
  * A compact read of the top-level programme requirement groups. Numbers are
- * indicative — the requirements page remains the formal audit.
+ * indicative; the requirements page remains the formal audit.
  */
 export function RequirementsPanel({
   buckets,
@@ -21,16 +22,22 @@ export function RequirementsPanel({
   const visible = buckets.slice(0, 4);
 
   return (
-    <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-4 p-6">
+    <Card className="h-full py-0">
+      <CardContent className="flex h-full flex-col gap-2 p-5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[13px] font-medium text-muted-foreground">
-            Degree requirements
-          </p>
-          <Button variant="ghost" size="sm" asChild>
+          <h2 className="text-sm font-semibold">Degree requirements</h2>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="group hover:bg-accent hover:text-foreground hover:no-underline focus-visible:ring-2 focus-visible:ring-ring dark:hover:bg-accent"
+            asChild
+          >
             <Link href="/requirements">
               View all
-              <ArrowRight aria-hidden="true" />
+              <ArrowRight
+                aria-hidden="true"
+                className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+              />
             </Link>
           </Button>
         </div>
@@ -42,38 +49,52 @@ export function RequirementsPanel({
               : "Requirement groups appear once the official programme rules have been imported and reviewed."}
           </p>
         ) : (
-          <ul className="flex flex-1 flex-col justify-center gap-1">
+          <ul className="flex flex-col gap-4">
             {visible.map((bucket) => {
               const target = bucket.targetUnits;
-              const percent = target
-                ? Math.min(100, (bucket.completedUnits / target) * 100)
-                : 0;
+              const scale = Math.max(
+                target ?? 0,
+                bucket.completedUnits + bucket.plannedUnits,
+                1,
+              );
               return (
                 <li key={bucket.key}>
-                  <Link
-                    href="/requirements"
-                    className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/60"
-                  >
-                    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                      <span className="truncate text-sm font-medium">
-                        {bucket.title}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {target
-                          ? `${bucket.completedUnits} of ${target} units complete`
-                          : `${bucket.completedUnits} units complete`}
-                      </span>
-                    </span>
-                    <Progress
-                      value={percent}
-                      className="w-20 shrink-0"
-                      aria-hidden="true"
-                    />
-                    <ChevronRight
-                      aria-hidden="true"
-                      className="size-4 shrink-0 text-muted-foreground"
-                    />
-                  </Link>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href="/requirements"
+                        className="group flex flex-col gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <span className="flex items-baseline justify-between gap-3">
+                          <span className="truncate text-xs font-medium">
+                            {bucket.title}
+                          </span>
+                          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                            {bucket.completedUnits + bucket.plannedUnits}
+                            {target ? ` / ${target}` : ""} units
+                          </span>
+                        </span>
+                        <span
+                          className="flex h-2.5 overflow-hidden rounded-sm bg-border transition-opacity group-hover:opacity-80"
+                          aria-hidden="true"
+                        >
+                          <span
+                            className="h-full bg-emerald-500"
+                            style={{
+                              width: `${(bucket.completedUnits / scale) * 100}%`,
+                            }}
+                          />
+                          <span
+                            className="h-full bg-primary/60"
+                            style={{
+                              width: `${(bucket.plannedUnits / scale) * 100}%`,
+                            }}
+                          />
+                        </span>
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent>{`${bucket.title}: ${bucket.completedUnits} completed, ${bucket.plannedUnits} planned${target ? ` · ${target} units` : ""}`}</TooltipContent>
+                  </Tooltip>
                 </li>
               );
             })}

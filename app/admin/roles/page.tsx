@@ -1,7 +1,8 @@
+import { Card, CardHeader, CardTitle, CardDescription } from "@reui/ui/card";
 import { AlertTriangle, KeyRound } from "lucide-react";
 import { RolePermissionMatrix } from "@/components/admin/role-permission-matrix";
 import { AppShell } from "@/components/shell";
-import { Card, CardHeader } from "@/components/ui/card";
+
 import { loadAdminRoleManagement } from "@/lib/admin/users";
 import { isDemoMode } from "@/lib/supabase/config";
 
@@ -22,15 +23,25 @@ export default async function AdminRolesPage() {
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-5">
         {isDemoMode() ? (
           <Card>
-            <CardHeader
-              title="Role management is unavailable in demo mode"
-              description="Connect Coursemap to Supabase to review database-backed application roles."
-              icon={
+            <CardHeader>
+              {
                 <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
                   <KeyRound size={17} aria-hidden="true" />
                 </span>
               }
-            />
+              <CardTitle>
+                <h2>{"Role management is unavailable in demo mode"}</h2>
+              </CardTitle>
+              {Boolean(
+                "Connect Coursemap to Supabase to review database-backed application roles.",
+              ) && (
+                <CardDescription>
+                  {
+                    "Connect Coursemap to Supabase to review database-backed application roles."
+                  }
+                </CardDescription>
+              )}
+            </CardHeader>
           </Card>
         ) : data ? (
           <RolePermissionMatrix
@@ -40,15 +51,25 @@ export default async function AdminRolesPage() {
           />
         ) : (
           <Card>
-            <CardHeader
-              title="Application roles could not be loaded"
-              description="Confirm the admin user-management migration is applied, then reload this page."
-              icon={
+            <CardHeader>
+              {
                 <span className="grid size-9 place-items-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
                   <AlertTriangle size={17} aria-hidden="true" />
                 </span>
               }
-            />
+              <CardTitle>
+                <h2>{"Application roles could not be loaded"}</h2>
+              </CardTitle>
+              {Boolean(
+                "Confirm the admin user-management migration is applied, then reload this page.",
+              ) && (
+                <CardDescription>
+                  {
+                    "Confirm the admin user-management migration is applied, then reload this page."
+                  }
+                </CardDescription>
+              )}
+            </CardHeader>
           </Card>
         )}
       </div>

@@ -1,8 +1,9 @@
 "use client";
+import { Button } from "@reui/ui/button";
 
 import { useEffect, useRef, useState } from "react";
 import { Box, LoaderCircle, MapPinOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import {
   addIndoorLayers,
   INDOOR_LAYER_IDS,
@@ -993,9 +994,10 @@ export function CampusMap({
         <div className="absolute bottom-8 left-3 z-10 flex items-center gap-2">
           <Button
             size="sm"
-            variant="secondary"
+            variant="outline"
             aria-pressed={isPerspective}
             onClick={togglePerspective}
+            type="button"
           >
             <Box aria-hidden="true" size={14} />
             {isPerspective ? "2D view" : "3D view"}

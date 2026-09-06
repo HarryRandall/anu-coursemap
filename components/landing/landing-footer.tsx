@@ -1,6 +1,7 @@
+import { Button } from "@reui/ui/button";
+import ReuiLink from "next/link";
 import { ArrowRight } from "lucide-react";
 import { LandingMark } from "@/components/landing/landing-mark";
-import { ButtonLink } from "@/components/ui/button";
 
 export function LandingFooter({ canOpenPlan }: { canOpenPlan: boolean }) {
   return (
@@ -24,21 +25,25 @@ export function LandingFooter({ canOpenPlan }: { canOpenPlan: boolean }) {
               ready to keep a degree plan across semesters.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <ButtonLink
-                href={canOpenPlan ? "/plan" : "/signup"}
+              <Button
+                asChild
                 size="lg"
                 className="!rounded-full !bg-white !text-zinc-950 !ring-white hover:!bg-zinc-100"
+                variant="outline"
               >
-                {canOpenPlan ? "Open your plan" : "Get Coursemap free"}
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </ButtonLink>
-              <ButtonLink
-                href="/courses"
+                <ReuiLink href={canOpenPlan ? "/plan" : "/signup"}>
+                  {canOpenPlan ? "Open your plan" : "Get Coursemap free"}
+                  <ArrowRight className="size-4" aria-hidden="true" />
+                </ReuiLink>
+              </Button>
+              <Button
+                asChild
                 size="lg"
                 className="!rounded-full !bg-white/10 !text-white !ring-white/25 hover:!bg-white/20"
+                variant="outline"
               >
-                Explore courses
-              </ButtonLink>
+                <ReuiLink href="/courses">Explore courses</ReuiLink>
+              </Button>
             </div>
           </div>
         </div>

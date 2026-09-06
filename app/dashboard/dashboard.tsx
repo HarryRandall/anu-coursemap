@@ -1,32 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import {
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  ListChecks,
-  Lock,
-  TriangleAlert,
-} from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { useMemo } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@reui/ui/alert";
-import { Badge } from "@reui/ui/badge";
-import { Button } from "@reui/ui/button";
-import { Card, CardContent } from "@reui/ui/card";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@reui/ui/empty";
 import { useCoursemap } from "@/app/providers";
-import {
-  CustomizeMetricsButton,
-  useSelectedMetrics,
-} from "@/components/dashboard/customize-metrics";
 import { DegreeProgressHero } from "@/components/dashboard/degree-progress-hero";
 import {
   buildMetricViews,
@@ -36,8 +14,12 @@ import {
 import { MonthCalendar } from "@/components/dashboard/month-calendar";
 import { PlanEmptyState } from "@/components/dashboard/plan-empty-state";
 import { RequirementsPanel } from "@/components/dashboard/requirements-panel";
-import { TermLoadChart } from "@/components/dashboard/term-load-chart";
-import { UnitsTrendChart } from "@/components/dashboard/units-trend-chart";
+import {
+  UniversityMetricsPreview,
+  PlanningMetricsPreview,
+  TuitionMetric,
+} from "@/components/dashboard/university-metrics-preview";
+import { DegreeComposition } from "@/components/dashboard/degree-composition";
 import { AppShell } from "@/components/shell";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
@@ -82,7 +64,7 @@ function finishLabelFor(
 
 export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   const { state } = useCoursemap();
-  const { selected, toggle } = useSelectedMetrics();
+  const previewMetrics = process.env.NODE_ENV === "development";
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
   );
@@ -138,14 +120,6 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
       (total, item) => total + unitsForAttempt(item.attempt, item.course),
       0,
     );
-  const nextCoursesList = planned
-    .filter((item) => item.attempt.status !== "completed")
-    .sort(
-      (left, right) =>
-        (left.term?.year ?? 9999) - (right.term?.year ?? 9999) ||
-        (left.term?.id ?? "").localeCompare(right.term?.id ?? ""),
-    )
-    .slice(0, 5);
   const termLoads = useMemo(
     () =>
       dashboardTermLoads({ ...planningCatalogue, attempts: state.attempts }),
@@ -246,30 +220,7 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <header className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex min-w-0 flex-col gap-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {degree.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {state.profile.commencementYear} entry &middot; {degree.college}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/requirements">
-                <ListChecks aria-hidden="true" />
-                Requirements
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/plan">
-                <CalendarDays aria-hidden="true" />
-                Edit plan
-              </Link>
-            </Button>
-          </div>
-        </header>
+        <h1 className="sr-only">Dashboard</h1>
 
         {unitTarget === null && (
           <Alert>
@@ -286,13 +237,24 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
           </Alert>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)]">
+        <section aria-label="Your metrics" className="flex flex-col gap-4">
+          {previewMetrics ? (
+            <UniversityMetricsPreview />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <MetricCardView view={metricViews["completion-ring"]} />
+              <MetricCardView view={metricViews.remaining} />
+              <TuitionMetric />
+              <MetricCardView view={metricViews.readiness} />
+            </div>
+          )}
+        </section>
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)]">
           <DegreeProgressHero
-            degreeName={degree.name}
             progress={progress}
             unitTarget={unitTarget}
             enrolledUnits={enrolledUnits}
-            finishLabel={finishLabelFor(termLoads, timelineTerms)}
           />
           <RequirementsPanel
             buckets={buckets}
@@ -300,131 +262,26 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
           />
         </div>
 
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-semibold">Your metrics</h2>
-              <p className="text-xs text-muted-foreground">
-                {selected.length} of 12 cards shown
-              </p>
-            </div>
-            <CustomizeMetricsButton selected={selected} onToggle={toggle} />
+        {previewMetrics ? (
+          <PlanningMetricsPreview />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {(["load", "coverage", "semester-bars"] as const).map((id) => (
+              <MetricCardView compact key={id} view={metricViews[id]} />
+            ))}
           </div>
-          {selected.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-sm text-muted-foreground">
-                No metric cards selected. Use Customise to pick the numbers you
-                want at a glance.
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {selected.map((id) => (
-                <MetricCardView key={id} view={metricViews[id]} />
-              ))}
-            </div>
-          )}
-        </section>
+        )}
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.6fr)]">
-          <UnitsTrendChart degreeUnits={unitTarget} points={cumulativeUnits} />
+        <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <DegreeComposition
+            courseLinks={Object.fromEntries(
+              catalogue.courses.map((course) => [
+                course.code,
+                `/courses/${course.code}?year=${course.year}`,
+              ]),
+            )}
+          />
           <MonthCalendar events={calendarEvents} />
-        </div>
-
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-          <TermLoadChart terms={termLoads} currentTermId={currentTermId} />
-
-          <Card className="overflow-hidden">
-            <CardContent className="flex h-full flex-col p-0">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-4">
-                <div className="flex min-w-50 flex-1 flex-col gap-0.5">
-                  <h2 className="text-sm font-semibold">Next in your plan</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Your next scheduled courses, drawn from the saved plan.
-                  </p>
-                </div>
-                <Button size="sm" variant="outline" asChild>
-                  <Link href="/plan">Edit plan</Link>
-                </Button>
-              </div>
-
-              {nextCoursesList.length === 0 ? (
-                <div className="px-5 py-10">
-                  <Empty>
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <CalendarDays aria-hidden="true" />
-                      </EmptyMedia>
-                      <EmptyTitle>No courses planned yet</EmptyTitle>
-                      <EmptyDescription>
-                        Choose a course from your plan board to get started.
-                      </EmptyDescription>
-                    </EmptyHeader>
-                    <EmptyContent>
-                      <Button asChild>
-                        <Link href="/plan">Open the plan board</Link>
-                      </Button>
-                    </EmptyContent>
-                  </Empty>
-                </div>
-              ) : (
-                <ul className="flex flex-col divide-y divide-border">
-                  {nextCoursesList.map(({ attempt, course, term }) => {
-                    const status = effectiveStatus(
-                      attempt,
-                      state.attempts,
-                      planningCatalogue,
-                    );
-                    return (
-                      <li
-                        key={attempt.id}
-                        className="flex items-center gap-3 px-5 py-3.5"
-                      >
-                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 font-mono text-[10px] font-bold text-primary">
-                          {course.code.slice(0, 4)}
-                        </span>
-
-                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <p className="truncate text-sm font-semibold">
-                            <span className="font-mono">{course.code}</span>{" "}
-                            {course.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {term ? `${term.name} ${term.year}` : "Later"}
-                          </p>
-                        </div>
-
-                        {status === "blocked" ? (
-                          <Badge
-                            variant="secondary"
-                            className="bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                          >
-                            <Lock aria-hidden="true" />
-                            Needs prerequisites
-                          </Badge>
-                        ) : attempt.status === "completed" ? (
-                          <Badge
-                            variant="secondary"
-                            className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                          >
-                            <CheckCircle2 aria-hidden="true" />
-                            Completed
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <Clock aria-hidden="true" />
-                            {attempt.status === "enrolled"
-                              ? "In progress"
-                              : "Planned"}
-                          </Badge>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {!catalogue.programmeRequirementsImported && (

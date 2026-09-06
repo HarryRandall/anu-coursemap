@@ -1,4 +1,35 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from "@reui/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@reui/ui/dialog";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@reui/ui/empty";
+import { Skeleton } from "@reui/ui/skeleton";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { cn } from "@/lib/cn";
+import ReuiLink from "next/link";
 
 import {
   AlertCircle,
@@ -13,35 +44,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { useCoursemap } from "@/app/providers";
 import type { Course, Term } from "@/lib/coursemap/types";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandShortcut,
-} from "@/components/ui/command";
+
 import { CourseToken } from "@/components/ui/course-token";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Select } from "@/components/ui/select";
-import { cn } from "@/lib/cn";
 
 type CourseSearchResponse = {
   academicYear: number;
@@ -264,7 +268,7 @@ export function CoursePicker({
         <DialogHeader className="border-b border-border/60 px-5 pt-5 pr-16 pb-4">
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>Find a course</DialogTitle>
-            <Badge tone="brand" className="py-0.5">
+            <Badge className="py-0.5" variant={"primary-light"}>
               {intent === "recommended" ? "Recommended for" : "Add to"}{" "}
               {destination}
             </Badge>
@@ -278,21 +282,41 @@ export function CoursePicker({
               <span className="shrink-0 text-xs font-medium text-muted-foreground">
                 Course year
               </span>
-              <Select
-                aria-label="Course year for unscheduled course"
-                value={academicYear}
-                options={selectableAcademicYears.map((year) => ({
-                  value: year,
-                  label: String(year),
-                }))}
-                onChange={(year) => {
-                  setUnscheduledAcademicYear(year);
-                  setPage(1);
-                  setResponse(null);
-                  setSelectedCode(null);
-                  setMobilePreviewOpen(false);
-                  setFailedKey(null);
+              <OptionPicker
+                value={"coursemap:" + String(academicYear)}
+                onValueChange={(nextValue) => {
+                  const option = selectableAcademicYears
+                    .map((year) => ({
+                      value: year,
+                      label: String(year),
+                    }))
+                    .find(
+                      (option) =>
+                        "coursemap:" + String(option.value) === nextValue,
+                    );
+                  if (option)
+                    ((year) => {
+                      setUnscheduledAcademicYear(year);
+                      setPage(1);
+                      setResponse(null);
+                      setSelectedCode(null);
+                      setMobilePreviewOpen(false);
+                      setFailedKey(null);
+                    })(option.value);
                 }}
+                aria-label={"Course year for unscheduled course"}
+                onPointerDown={(event) => event.stopPropagation()}
+                placeholder={"Select..."}
+                searchable={false}
+                items={selectableAcademicYears
+                  .map((year) => ({
+                    value: year,
+                    label: String(year),
+                  }))
+                  .map((option) => ({
+                    value: "coursemap:" + String(option.value),
+                    label: option.label,
+                  }))}
               />
             </div>
           ) : null}
@@ -326,10 +350,7 @@ export function CoursePicker({
                   setFailedKey(null);
                 }
               }}
-              wrapperClassName={cn(
-                "col-span-full",
-                mobilePreviewOpen && "hidden md:flex",
-              )}
+
               placeholder="Search by course code or name"
               aria-label="Search courses"
             />
@@ -404,13 +425,20 @@ export function CoursePicker({
                                   </span>
                                 </span>
                                 {inPlan ? (
-                                  <Badge tone="brand" className="px-2 py-0.5">
+                                  <Badge
+                                    className="px-2 py-0.5"
+                                    variant={"primary-light"}
+                                  >
                                     In plan
                                   </Badge>
                                 ) : (
                                   <Badge
-                                    tone={available ? "success" : "warning"}
                                     className="px-2 py-0.5"
+                                    variant={
+                                      badgeVariantForTone[
+                                        available ? "success" : "warning"
+                                      ]
+                                    }
                                   >
                                     {available ? term.shortName : "Not offered"}
                                   </Badge>
@@ -433,11 +461,12 @@ export function CoursePicker({
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
-                      fullWidth
                       disabled={loading}
                       onClick={loadNextPage}
+                      className={cn(undefined, "w-full")}
+                      type="button"
                     >
                       {loading ? (
                         <LoaderCircle
@@ -457,10 +486,11 @@ export function CoursePicker({
                     onKeyDown={(event) => event.stopPropagation()}
                   >
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
-                      fullWidth
                       onClick={retrySearch}
+                      className={cn(undefined, "w-full")}
+                      type="button"
                     >
                       {page > 1 ? "Retry loading results" : "Retry search"}
                     </Button>
@@ -588,20 +618,23 @@ function CoursePreview({
           </div>
 
           <div className="flex shrink-0 flex-col-reverse gap-2 border-t border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-end">
-            <ButtonLink
-              href={`/courses/${course.code}?year=${course.year}`}
-              variant="secondary"
+            <Button
+              asChild
+              variant="outline"
               size="sm"
               className="min-h-11 sm:min-h-8"
             >
-              View course <ExternalLink size={14} aria-hidden="true" />
-            </ButtonLink>
+              <ReuiLink href={`/courses/${course.code}?year=${course.year}`}>
+                View course <ExternalLink size={14} aria-hidden="true" />
+              </ReuiLink>
+            </Button>
             <Button
-              variant="primary"
+              variant="default"
               size="sm"
               className="min-h-11 sm:min-h-8"
               disabled={inPlan || adding}
               onClick={onAdd}
+              type="button"
             >
               {adding ? (
                 <LoaderCircle
@@ -660,7 +693,7 @@ function SearchFailure() {
   return (
     <Empty className="min-h-full !rounded-none">
       <EmptyHeader>
-        <EmptyMedia variant="error">
+        <EmptyMedia variant="icon">
           <AlertCircle />
         </EmptyMedia>
         <EmptyTitle>Course search is unavailable</EmptyTitle>

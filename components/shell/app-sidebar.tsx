@@ -135,7 +135,7 @@ function NavMenuItem({
         asChild
         isActive={isActive}
         tooltip={item.label}
-        className="data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:hover:bg-sidebar-primary data-[active=true]:hover:text-sidebar-primary-foreground"
+        className="h-10 gap-3 px-3 data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:hover:bg-sidebar-primary data-[active=true]:hover:text-sidebar-primary-foreground"
       >
         <Link href={item.href} onClick={onNavigate}>
           <Icon aria-hidden="true" />
@@ -161,12 +161,15 @@ function NavSections({
   return (
     <>
       {sections.map((section) => (
-        <SidebarGroup key={section.label ?? "primary"}>
+        <SidebarGroup
+          key={section.label ?? "primary"}
+          className="px-3 py-2 group-data-[collapsible=icon]:px-2"
+        >
           {section.label ? (
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
           ) : null}
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {section.items.map((item) => (
                 <NavMenuItem
                   key={item.href}
@@ -199,7 +202,7 @@ export function AppSidebar({ admin }: { admin: boolean }) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="gap-3 px-3 pb-3 group-data-[collapsible=icon]:px-2">
         <Link
           href={admin ? "/admin/dashboard" : "/dashboard"}
           aria-label="Coursemap home"
@@ -211,28 +214,6 @@ export function AppSidebar({ admin }: { admin: boolean }) {
             coursemap
           </strong>
         </Link>
-
-        {!admin && (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild size="lg" tooltip="My degree plan">
-                <Link href="/profile" onClick={closeMobileNav}>
-                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                    <GraduationCap aria-hidden="true" className="size-4" />
-                  </span>
-                  <span className="grid min-w-0 flex-1 text-left leading-tight">
-                    <span className="truncate text-[13px] font-semibold">
-                      My degree plan
-                    </span>
-                    <span className="truncate text-[11px] text-muted-foreground">
-                      {state.profile.commencementYear} commencement
-                    </span>
-                  </span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
 
         <CourseFind admin={admin} onNavigate={closeMobileNav} />
       </SidebarHeader>

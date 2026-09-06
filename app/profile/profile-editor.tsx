@@ -1,4 +1,10 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription } from "@reui/ui/card";
+import { Field, FieldDescription } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+import { OptionPicker } from "@/components/ui/option-picker";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
@@ -11,10 +17,7 @@ import {
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { StructureMultiSelect } from "@/components/profile/structure-multi-select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
-import { Field, Input, Select } from "@/components/ui/field";
+
 import type { OnboardingCatalogue } from "@/lib/coursemap/onboarding-catalogue";
 import { nominalProgrammeDuration } from "@/lib/coursemap/plan-timeline";
 
@@ -119,8 +122,9 @@ export function ProfileEditor({
       actions={
         !demoMode ? (
           <form action="/auth/logout" method="post">
-            <Button size="sm" type="submit" variant="secondary">
-              <LogOut size={15} /> Sign out
+            <Button size="sm" type="submit" variant="outline">
+              <LogOut size={15} />
+              Sign out
             </Button>
           </form>
         ) : undefined
@@ -130,127 +134,236 @@ export function ProfileEditor({
         <h1 className="sr-only">Profile and study details</h1>
 
         <Card className="overflow-hidden">
-          <CardHeader
-            className="border-b border-border/60"
-            icon={
+          <CardHeader className="border-b border-border/60">
+            {
               <UserRound
                 size={18}
                 className="text-primary"
                 aria-hidden="true"
               />
             }
-            title="About you"
-            description="Keep your saved plan identifiable."
-          />
+            <CardTitle>
+              <h2>{"About you"}</h2>
+            </CardTitle>
+            {Boolean("Keep your saved plan identifiable.") && (
+              <CardDescription>
+                {"Keep your saved plan identifiable."}
+              </CardDescription>
+            )}
+          </CardHeader>
           <div className="grid gap-5 p-5 sm:grid-cols-2">
-            <Field className="sm:col-span-2" label="Name">
-              <Input
-                onChange={(event) =>
-                  setDraft({ ...draft, name: event.target.value })
-                }
-                value={draft.name}
-              />
+            <Field className="sm:col-span-2">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Name"}</span>
+                <Input
+                  onChange={(event) =>
+                    setDraft({ ...draft, name: event.target.value })
+                  }
+                  value={draft.name}
+                />
+              </label>
             </Field>
-            <Field
-              hint="Optional. Use the format u1234567."
-              label="Student number"
-            >
-              <Input
-                onChange={(event) =>
-                  setDraft({ ...draft, studentId: event.target.value })
-                }
-                value={draft.studentId}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Student number"}</span>
+                <Input
+                  onChange={(event) =>
+                    setDraft({ ...draft, studentId: event.target.value })
+                  }
+                  value={draft.studentId}
+                />
+                <FieldDescription>
+                  {"Optional. Use the format u1234567."}
+                </FieldDescription>
+              </label>
             </Field>
-            <Field label="Study load">
-              <Select
-                aria-label="Study load"
-                onChange={(value) =>
-                  setDraft({
-                    ...draft,
-                    studyLoad: value as "Full time" | "Part time",
-                  })
-                }
-                options={[
-                  { value: "Full time", label: "Full time" },
-                  { value: "Part time", label: "Part time" },
-                ]}
-                value={draft.studyLoad}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Study load"}</span>
+                <OptionPicker
+                  value={"coursemap:" + String(draft.studyLoad)}
+                  onValueChange={(nextValue) => {
+                    const option = (
+                      [
+                        { value: "Full time", label: "Full time" },
+                        { value: "Part time", label: "Part time" },
+                      ] as const
+                    ).find(
+                      (option) =>
+                        "coursemap:" + String(option.value) === nextValue,
+                    );
+                    if (option)
+                      ((value) =>
+                        setDraft({
+                          ...draft,
+                          studyLoad: value as "Full time" | "Part time",
+                        }))(option.value);
+                  }}
+                  aria-label={"Study load"}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={"Select..."}
+                  items={[
+                    { value: "Full time", label: "Full time" },
+                    { value: "Part time", label: "Part time" },
+                  ].map((option) => ({
+                    value: "coursemap:" + String(option.value),
+                    label: option.label,
+                  }))}
+                />
+              </label>
             </Field>
           </div>
         </Card>
 
         <Card className="overflow-hidden">
-          <CardHeader
-            className="border-b border-border/60"
-            icon={
+          <CardHeader className="border-b border-border/60">
+            {
               <GraduationCap
                 size={18}
                 className="text-primary"
                 aria-hidden="true"
               />
             }
-            title="Course of study"
-            description="Only administrator-published academic structures appear here."
-          />
-          <div className="grid gap-5 p-5 sm:grid-cols-2">
-            <Field label="Catalogue year">
-              <Select
-                aria-label="Catalogue year"
-                onChange={(value) => {
-                  const catalogueYear = Number(value);
-                  const degree = catalogue.degrees.find(
-                    (item) => item.catalogueYear === catalogueYear,
-                  );
-                  setDraft({
-                    ...draft,
-                    catalogueYear,
-                    degreeCode: degree?.code ?? "",
-                    majorCode: "",
-                    minorCodes: [],
-                    specialisationCodes: [],
-                  });
-                }}
-                options={catalogueYears.map((year) => ({
-                  value: year,
-                  label: `${year} catalogue`,
-                }))}
-                value={draft.catalogueYear}
-              />
-            </Field>
-            <Field label="Degree">
-              <Select
-                aria-label="Degree"
-                onChange={(value) =>
-                  setDraft({
-                    ...draft,
-                    degreeCode: value,
-                    majorCode: "",
-                    minorCodes: [],
-                    specialisationCodes: [],
-                  })
+            <CardTitle>
+              <h2>{"Course of study"}</h2>
+            </CardTitle>
+            {Boolean(
+              "Only administrator-published academic structures appear here.",
+            ) && (
+              <CardDescription>
+                {
+                  "Only administrator-published academic structures appear here."
                 }
-                options={degrees.map((item) => ({
-                  value: item.code,
-                  label: `${item.name} (${item.code})`,
-                }))}
-                value={draft.degreeCode}
-              />
+              </CardDescription>
+            )}
+          </CardHeader>
+          <div className="grid gap-5 p-5 sm:grid-cols-2">
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Catalogue year"}</span>
+                <OptionPicker
+                  value={"coursemap:" + String(draft.catalogueYear)}
+                  onValueChange={(nextValue) => {
+                    const option = catalogueYears
+                      .map((year) => ({
+                        value: year,
+                        label: `${year} catalogue`,
+                      }))
+                      .find(
+                        (option) =>
+                          "coursemap:" + String(option.value) === nextValue,
+                      );
+                    if (option)
+                      ((value) => {
+                        const catalogueYear = Number(value);
+                        const degree = catalogue.degrees.find(
+                          (item) => item.catalogueYear === catalogueYear,
+                        );
+                        setDraft({
+                          ...draft,
+                          catalogueYear,
+                          degreeCode: degree?.code ?? "",
+                          majorCode: "",
+                          minorCodes: [],
+                          specialisationCodes: [],
+                        });
+                      })(option.value);
+                  }}
+                  aria-label={"Catalogue year"}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={"Select..."}
+                  searchable={false}
+                  items={catalogueYears
+                    .map((year) => ({
+                      value: year,
+                      label: `${year} catalogue`,
+                    }))
+                    .map((option) => ({
+                      value: "coursemap:" + String(option.value),
+                      label: option.label,
+                    }))}
+                />
+              </label>
             </Field>
-            <Field hint="Optional" label="Major">
-              <Select
-                aria-label="Major"
-                onChange={(value) => setDraft({ ...draft, majorCode: value })}
-                options={[
-                  { value: "", label: "Choose later" },
-                  ...majors.map((item) => ({
-                    value: item.code,
-                    label: `${item.name} (${item.code})`,
-                  })),
-                ]}
-                value={draft.majorCode}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Degree"}</span>
+                <OptionPicker
+                  value={"coursemap:" + String(draft.degreeCode)}
+                  onValueChange={(nextValue) => {
+                    const option = degrees
+                      .map((item) => ({
+                        value: item.code,
+                        label: `${item.name} (${item.code})`,
+                      }))
+                      .find(
+                        (option) =>
+                          "coursemap:" + String(option.value) === nextValue,
+                      );
+                    if (option)
+                      ((value) =>
+                        setDraft({
+                          ...draft,
+                          degreeCode: value,
+                          majorCode: "",
+                          minorCodes: [],
+                          specialisationCodes: [],
+                        }))(option.value);
+                  }}
+                  aria-label={"Degree"}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={"Select..."}
+                  items={degrees
+                    .map((item) => ({
+                      value: item.code,
+                      label: `${item.name} (${item.code})`,
+                    }))
+                    .map((option) => ({
+                      value: "coursemap:" + String(option.value),
+                      label: option.label,
+                    }))}
+                />
+              </label>
+            </Field>
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Major"}</span>
+                <OptionPicker
+                  value={"coursemap:" + String(draft.majorCode)}
+                  onValueChange={(nextValue) => {
+                    const option = (
+                      [
+                        { value: "", label: "Choose later" },
+                        ...majors.map((item) => ({
+                          value: item.code,
+                          label: `${item.name} (${item.code})`,
+                        })),
+                      ] as const
+                    ).find(
+                      (option) =>
+                        "coursemap:" + String(option.value) === nextValue,
+                    );
+                    if (option)
+                      ((value) => setDraft({ ...draft, majorCode: value }))(
+                        option.value,
+                      );
+                  }}
+                  aria-label={"Major"}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={"Select..."}
+                  items={[
+                    { value: "", label: "Choose later" },
+                    ...majors.map((item) => ({
+                      value: item.code,
+                      label: `${item.name} (${item.code})`,
+                    })),
+                  ].map((option) => ({
+                    value: "coursemap:" + String(option.value),
+                    label: option.label,
+                  }))}
+                />
+                <FieldDescription>{"Optional"}</FieldDescription>
+              </label>
             </Field>
             {minors.length > 0 ? (
               <StructureMultiSelect
@@ -274,22 +387,48 @@ export function ProfileEditor({
                 value={draft.specialisationCodes}
               />
             ) : null}
-            <Field label="When did you start this degree?">
-              <Select
-                aria-label="Commencement year"
-                disabled={planningDuration === null}
-                onChange={(value) =>
-                  setDraft({ ...draft, commencementYear: value })
-                }
-                options={commencementYears.map((year) => ({
-                  value: year,
-                  label: String(year),
-                }))}
-                value={draft.commencementYear}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">
+                  {"When did you start this degree?"}
+                </span>
+                <OptionPicker
+                  value={"coursemap:" + String(draft.commencementYear)}
+                  onValueChange={(nextValue) => {
+                    const option = commencementYears
+                      .map((year) => ({
+                        value: year,
+                        label: String(year),
+                      }))
+                      .find(
+                        (option) =>
+                          "coursemap:" + String(option.value) === nextValue,
+                      );
+                    if (option)
+                      ((value) =>
+                        setDraft({ ...draft, commencementYear: value }))(
+                        option.value,
+                      );
+                  }}
+                  disabled={planningDuration === null}
+                  aria-label={"Commencement year"}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={"Select..."}
+                  searchable={false}
+                  items={commencementYears
+                    .map((year) => ({
+                      value: year,
+                      label: String(year),
+                    }))
+                    .map((option) => ({
+                      value: "coursemap:" + String(option.value),
+                      label: option.label,
+                    }))}
+                />
+              </label>
             </Field>
             {degree?.durationYears === null || degree?.units === null ? (
-              <Alert className="sm:col-span-2" tone="warning">
+              <Alert className="sm:col-span-2" variant={"warning"}>
                 <TriangleAlert aria-hidden="true" />
                 <AlertDescription>
                   {planningDuration === null
@@ -306,8 +445,10 @@ export function ProfileEditor({
         <Button
           disabled={saving || !ready || planningDuration === null}
           type="submit"
+          variant="outline"
         >
-          <Save size={16} /> {saving ? "Saving…" : "Save details"}
+          <Save size={16} />
+          {saving ? "Saving…" : "Save details"}
         </Button>
       </form>
     </AppShell>
