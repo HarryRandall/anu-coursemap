@@ -1,4 +1,5 @@
 "use client";
+import { constrainIndoorMove } from "@/lib/rooms/indoor-move";
 import { alignedRectangle } from "@/lib/rooms/indoor-orientation";
 
 import { useCallback, useMemo, useRef, useState, type Dispatch } from "react";
@@ -594,7 +595,25 @@ export function useEditorPointer({
           return { ...current, current: resolve(rawPoint, current.origin) };
         }
         if (current.kind === "move") {
-          return { ...current, current: rawPoint };
+          const space = document.spaces.find(
+            (space) => space.id === current.targetId,
+          );
+          if (!space || !footprint) return current;
+          const delta = constrainIndoorMove(
+            space.geometry,
+            {
+              x: rawPoint.x - current.origin.x,
+              y: rawPoint.y - current.origin.y,
+            },
+            footprint,
+          );
+          return {
+            ...current,
+            current: {
+              x: current.origin.x + delta.x,
+              y: current.origin.y + delta.y,
+            },
+          };
         }
         if (current.kind === "resize") {
           return {
@@ -609,7 +628,7 @@ export function useEditorPointer({
         return current;
       });
     },
-    [resolve, setDrag],
+    [document.spaces, footprint, resolve, setDrag],
   );
 
   const onPointerUp = useCallback(() => {

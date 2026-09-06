@@ -969,7 +969,10 @@ test("the indoor editor is split into a picker, a shared canvas and pure modules
   assert.match(editor, /showInactiveLevels: perspective/);
   assert.match(editor, /explode: perspective \? 2\.25 : 1/);
   assert.match(editor, /editingEnabled = !perspective/);
-  assert.match(editor, /drawing=\{editingEnabled && tool !== "select"\}/);
+  assert.match(
+    editor,
+    /drawing=\{[\s\S]*editingEnabled &&\s*\(tool !== "select" \|\| pointer.drag.kind !== "idle"\)/,
+  );
   assert.match(editor, /pointer\.cancel\(\);\s*setTool\("select"\)/);
 
   // The breadcrumb owns the building identity; a tool rail, a floating floor

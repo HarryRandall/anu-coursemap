@@ -1,6 +1,5 @@
 "use client";
 import { buildingDrawingAngle } from "@/lib/rooms/indoor-orientation";
-import { Input } from "@reui/ui/input";
 import { toast } from "sonner";
 
 import { useSearchParams } from "next/navigation";
@@ -450,6 +449,11 @@ export function IndoorEditor({
       onZoomOut={() => surfaceRef.current?.zoomOut()}
       perspective={perspective}
       snap={snapSettings}
+      drawingAngle={drawingAngle}
+      onDrawingAngleChange={(angle) => {
+        cancelPointer();
+        setDrawingAngle(angle);
+      }}
     />
   );
 
@@ -506,53 +510,15 @@ export function IndoorEditor({
             aria-label="Floor plan canvas"
             className="relative flex min-h-[28rem] min-w-0 flex-1 flex-col md:min-h-0"
           >
-            <div className="flex flex-wrap items-center gap-3 border-b bg-card px-3 py-2 text-xs">
-              <label className="flex items-center gap-2">
-                Building orientation
-                <Input
-                  aria-label="Building orientation in degrees"
-                  type="number"
-                  step="1"
-                  min="-180"
-                  max="180"
-                  className="h-8 w-20"
-                  value={drawingAngle}
-                  onChange={(event) => {
-                    cancelPointer();
-                    setDrawingAngle(Number(event.target.value));
-                  }}
-                />
-                °
-              </label>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  cancelPointer();
-                  setDrawingAngle(null);
-                }}
-              >
-                Align to building
-              </Button>
-              <span>
-                {perspective
-                  ? "3D preview · choose a tool to draw"
-                  : `${toolDefinition(tool).label} · Plan view`}
-              </span>
-              {editingEnabled && pointer.drag.kind !== "idle" ? (
-                <span>Red: building boundary · Amber: room contact</span>
-              ) : null}
-              <span>
-                Grid: {snapSettings.grid ? "On" : "Off"} · Walls and corners:{" "}
-                {snapSettings.geometry ? "On" : "Off"}
-              </span>
-            </div>
             {level && footprint ? (
               <IndoorMapSurface
                 centre={building.coordinates}
                 className="min-h-0 flex-1"
                 draft={editingEnabled ? pointer.drag : null}
-                drawing={editingEnabled && tool !== "select"}
+                drawing={
+                  editingEnabled &&
+                  (tool !== "select" || pointer.drag.kind !== "idle")
+                }
                 frameOutline={level.outline}
                 hiddenLayers={hiddenLayers}
                 onKeyDown={editingEnabled ? pointer.onKeyDown : undefined}
@@ -573,6 +539,7 @@ export function IndoorEditor({
                 palette={palette}
                 perspective={perspective}
                 drawingAngle={drawingAngle}
+                showGrid={snapSettings.grid && editingEnabled}
                 projection={footprint}
                 ref={surfaceRef}
                 scene={scene}

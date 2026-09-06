@@ -1,4 +1,5 @@
 "use client";
+import { buildIndoorGrid } from "@/lib/rooms/indoor-grid-scene";
 import type { CampusIndoorSpace } from "@/lib/rooms/indoor-map";
 
 import { animateLiftCabins } from "@/components/admin/rooms/animate-lift-cabins";
@@ -202,6 +203,7 @@ export type IndoorMapSurfaceProps = Readonly<{
   drawing: boolean;
   perspective: boolean;
   drawingAngle?: number;
+  showGrid?: boolean;
   palette?: IndoorPalette;
   /** Layer groups switched off in the inspector. */
   hiddenLayers?: ReadonlySet<IndoorLayerGroup>;
@@ -237,6 +239,7 @@ export const IndoorMapSurface = forwardRef<
     drawing,
     perspective,
     drawingAngle = 0,
+    showGrid = false,
     palette = DEFAULT_INDOOR_PALETTE,
     hiddenLayers,
     onWorldPointerDown,
@@ -378,6 +381,20 @@ export const IndoorMapSurface = forwardRef<
               "text-color": paletteRef.current.labelText,
               "text-halo-color": paletteRef.current.background,
               "text-halo-width": 2,
+            },
+          });
+          map.addSource("coursemap-drawing-grid", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer({
+            id: "coursemap-drawing-grid",
+            type: "line",
+            source: "coursemap-drawing-grid",
+            paint: {
+              "line-color": paletteRef.current.labelText,
+              "line-width": ["case", ["get", "major"], 1, 0.5],
+              "line-opacity": ["case", ["get", "major"], 0.3, 0.14],
             },
           });
           addIndoorDraftLayers(map, paletteRef.current);
@@ -579,22 +596,15 @@ export const IndoorMapSurface = forwardRef<
     if (!ready || !map) return;
 
     function report() {
-      const bounds = map!.getBounds();
       const container = map!.getContainer();
-      const width = container.clientWidth || 1;
       const zoom = map!.getZoom();
       container.dataset.indoorZoom = zoom.toFixed(2);
-      const west = projectIndoorPoint(
-        projection,
-        bounds.getWest(),
-        bounds.getSouth(),
-      );
-      const east = projectIndoorPoint(
-        projection,
-        bounds.getEast(),
-        bounds.getSouth(),
-      );
-      handlersRef.current.onScaleChange?.(Math.abs(east.x - west.x) / width);
+      const centre = map!.getCenter();
+      const pixel = map!.project(centre);
+      const next = map!.unproject([pixel.x + 1, pixel.y]);
+      const a = projectIndoorPoint(projection, centre.lng, centre.lat);
+      const b = projectIndoorPoint(projection, next.lng, next.lat);
+      handlersRef.current.onScaleChange?.(Math.hypot(b.x - a.x, b.y - a.y));
       handlersRef.current.onZoomChange?.(zoom);
     }
 
@@ -604,6 +614,38 @@ export const IndoorMapSurface = forwardRef<
       map.off("move", report);
     };
   }, [projection, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map || !map.getSource("coursemap-drawing-grid")) return;
+    function updateGrid() {
+      const centre = map!.getCenter();
+      const pixel = map!.project(centre);
+      const next = map!.unproject([pixel.x + 1, pixel.y]);
+      const a = projectIndoorPoint(projection, centre.lng, centre.lat);
+      const b = projectIndoorPoint(projection, next.lng, next.lat);
+      const scale = 1 / Math.hypot(b.x - a.x, b.y - a.y);
+      (
+        map!.getSource(
+          "coursemap-drawing-grid",
+        ) as import("maplibre-gl").GeoJSONSource
+      ).setData(
+        showGrid
+          ? buildIndoorGrid(projection, drawingAngle, scale)
+          : { type: "FeatureCollection", features: [] },
+      );
+      map!.setPaintProperty(
+        "coursemap-drawing-grid",
+        "line-color",
+        palette.labelText,
+      );
+    }
+    updateGrid();
+    map.on("zoomend", updateGrid);
+    return () => {
+      map.off("zoomend", updateGrid);
+    };
+  }, [ready, projection, drawingAngle, showGrid, palette]);
 
   useEffect(() => {
     const map = mapRef.current;

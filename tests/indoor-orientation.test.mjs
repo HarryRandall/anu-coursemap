@@ -4,6 +4,8 @@ import { loadLibModules } from "./helpers/lib-modules.mjs";
 const modules = await loadLibModules(
   [
     "rooms/indoor-orientation",
+    "rooms/indoor-move",
+    "rooms/indoor-grid-scene",
     "rooms/indoor-snap",
     "rooms/indoor-placement-feedback",
   ],
@@ -60,4 +62,50 @@ test("collision markers identify the crossed edges and contained rooms", () => {
       .length,
     0,
   );
+});
+
+test("a room dragged beyond the footprint stops flush at the edge", () => {
+  const ring = [
+    { x: 0, y: 0 },
+    { x: 100, y: 0 },
+    { x: 100, y: 100 },
+    { x: 0, y: 100 },
+  ];
+  const footprint = {
+    outline: ring,
+    polygons: [{ exterior: ring, holes: [] }],
+  };
+  const room = { type: "rectangle", x: 20, y: 20, width: 30, height: 20 };
+  const delta = modules["indoor-move"].constrainIndoorMove(
+    room,
+    { x: -50, y: 0 },
+    footprint,
+  );
+  assert.ok(Math.abs(room.x + delta.x) < 0.001);
+  const right = modules["indoor-move"].constrainIndoorMove(
+    room,
+    { x: 100, y: 0 },
+    footprint,
+  );
+  assert.ok(Math.abs(room.x + room.width + right.x - 100) < 0.001);
+  assert.deepEqual(
+    modules["indoor-move"].constrainIndoorMove(room, { x: 4, y: 5 }, footprint),
+    { x: 4, y: 5 },
+  );
+});
+
+test("visible grid has major lines and becomes finer with zoom", () => {
+  const projection = {
+    viewBox: { width: 100, height: 100 },
+    reference: { west: 149, north: -35, latitude: -35, offsetX: 0, offsetY: 0 },
+    metresPerUnit: 0.1,
+  };
+  const coarse = modules["indoor-grid-scene"].buildIndoorGrid(
+    projection,
+    30,
+    1,
+  );
+  const fine = modules["indoor-grid-scene"].buildIndoorGrid(projection, 30, 10);
+  assert.ok(fine.features.length > coarse.features.length);
+  assert.ok(fine.features.some((feature) => feature.properties.major));
 });

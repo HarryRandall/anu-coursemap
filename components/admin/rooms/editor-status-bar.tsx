@@ -2,6 +2,7 @@
 
 import {
   Box,
+  Compass,
   Grid3x3,
   Magnet,
   Maximize2,
@@ -9,6 +10,8 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@reui/ui/popover";
+import { Input } from "@reui/ui/input";
 import { RailDivider } from "@/components/admin/rooms/tool-rail";
 import { Button } from "@reui/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
@@ -28,12 +31,16 @@ export function CanvasControls({
   snap,
   perspective,
   onSnapChange,
+  drawingAngle,
+  onDrawingAngleChange,
   onZoomIn,
   onZoomOut,
   onFit,
   onPerspectiveChange,
 }: {
   snap: SnapSettings;
+  drawingAngle: number;
+  onDrawingAngleChange: (angle: number | null) => void;
   perspective: boolean;
   onSnapChange: (snap: SnapSettings) => void;
   onZoomIn: () => void;
@@ -82,6 +89,38 @@ export function CanvasControls({
       <RailDivider />
 
       <div aria-label="Camera" className={group} role="group">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              aria-label="Building orientation"
+              size="icon-sm"
+              variant="ghost"
+            >
+              <Compass size={15} />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent side="right" className="w-56 space-y-3">
+            <label className="grid gap-2 text-sm">
+              Building orientation
+              <Input
+                aria-label="Building orientation in degrees"
+                type="number"
+                value={drawingAngle}
+                onChange={(event) =>
+                  onDrawingAngleChange(Number(event.target.value))
+                }
+              />
+            </label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDrawingAngleChange(null)}
+            >
+              Align to building
+            </Button>
+          </PopoverContent>
+        </Popover>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
