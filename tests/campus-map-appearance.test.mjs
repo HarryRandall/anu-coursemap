@@ -5,12 +5,12 @@ const modules = await loadLibModules(
   ["rooms/campus-map-appearance"],
   "campus-map-appearance",
 );
-test("basemap clutter is hidden while street and selected building names remain", () => {
+test("basemap labels are hidden while selected building names remain", () => {
   const { isCampusBasemapClutter } = modules["campus-map-appearance"];
   assert.equal(isCampusBasemapClutter({ type: "symbol", id: "poi_r1" }), true);
   assert.equal(
     isCampusBasemapClutter({ type: "symbol", id: "highway-name-minor" }),
-    false,
+    true,
   );
   assert.equal(
     isCampusBasemapClutter({

@@ -1,4 +1,6 @@
 "use client";
+import { animateLiftCabins } from "@/components/admin/rooms/animate-lift-cabins";
+import { DEFAULT_INDOOR_PALETTE } from "@/lib/rooms/indoor-palette";
 import { useTheme } from "next-themes";
 import {
   applyCampusMapAppearance,
@@ -695,13 +697,25 @@ export function CampusMap({
               "text-ignore-placement": true,
               "text-max-width": 16,
               "text-offset": [0, -0.6],
-              "text-size": 13,
+              "text-size": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                15,
+                0,
+                16,
+                8,
+                18,
+                12,
+                20,
+                14,
+              ],
             },
             paint: {
               "text-color": "#27272a",
               "text-halo-blur": 0.5,
               "text-halo-color": "#ffffff",
-              "text-halo-width": 2,
+              "text-halo-width": 1,
             },
           });
 
@@ -831,6 +845,29 @@ export function CampusMap({
       ? indoorScene
       : null;
     updateIndoorLayers(map, visibleIndoorScene);
+    if (map.getLayer(ANU_BUILDING_LAYER_ID)) {
+      map.setLayoutProperty(
+        ANU_BUILDING_LAYER_ID,
+        "visibility",
+        visibleLayerSlugs.has("buildings") ? "visible" : "none",
+      );
+    }
+    // Only remove the selected shell; neighbouring buildings stay visible.
+    if (map.getLayer(SELECTED_ANU_BUILDING_LAYER_ID)) {
+      map.setLayoutProperty(
+        SELECTED_ANU_BUILDING_LAYER_ID,
+        "visibility",
+        visibleIndoorScene || !visibleLayerSlugs.has("buildings")
+          ? "none"
+          : "visible",
+      );
+    }
+    if (map.getLayer(SELECTED_BUILDING_LABEL_LAYER_ID))
+      map.setLayoutProperty(
+        SELECTED_BUILDING_LABEL_LAYER_ID,
+        "visibility",
+        visibleIndoorScene ? "none" : "visible",
+      );
     // Keep the whole-building preview transparent enough to see connectors.
     for (const [id, opacity] of [
       [INDOOR_LAYER_IDS.slabs, 0.05],
@@ -851,10 +888,26 @@ export function CampusMap({
       map.setPaintProperty(
         SELECTED_ANU_BUILDING_LAYER_ID,
         "fill-extrusion-opacity",
-        visibleIndoorScene ? 0.07 : 0.88,
+        visibleIndoorScene ? 0 : 0.88,
       );
     }
   }, [indoorScene, mapReady, visibleLayerSlugs]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (
+      !mapReady ||
+      !map ||
+      !indoorScene ||
+      !visibleLayerSlugs.has("buildings")
+    )
+      return;
+    return animateLiftCabins(
+      map,
+      indoorScene.connectors,
+      DEFAULT_INDOOR_PALETTE,
+    );
+  }, [mapReady, indoorScene, visibleLayerSlugs]);
 
   useEffect(() => {
     const map = mapRef.current;

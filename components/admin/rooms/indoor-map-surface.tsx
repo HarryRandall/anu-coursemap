@@ -19,7 +19,15 @@ import {
   updateIndoorLayers,
   type IndoorLayerGroup,
 } from "@/components/rooms/indoor-3d-layers";
-import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from "@reui/ui/empty";
+import { MapPinOff, RotateCw } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { IndoorScene } from "@/lib/rooms/indoor-3d";
 import { buildIndoorDraftGeoJson } from "@/lib/rooms/indoor-draft";
@@ -261,6 +269,7 @@ export const IndoorMapSurface = forwardRef<
   const frameRef = useRef<(animate: boolean) => void>(() => {});
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   // Handlers live in refs so the map is created once and never torn down.
   const handlersRef = useRef({
@@ -458,13 +467,14 @@ export const IndoorMapSurface = forwardRef<
         }, 12_000);
         map.once("load", () => {
           loaded = true;
+          if (!cancelled) setFailed(false);
           window.clearTimeout(timeout);
         });
         map.once("remove", () => window.clearTimeout(timeout));
       })
       .catch((error: unknown) => {
         console.error("The indoor map surface could not start.", error);
-        setFailed(true);
+        if (!cancelled) setFailed(true);
       });
 
     return () => {
@@ -474,7 +484,7 @@ export const IndoorMapSurface = forwardRef<
     };
     // The map is created once; the camera and data are driven by later effects.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
 
   useEffect(() => {
     paletteRef.current = palette;
@@ -806,12 +816,30 @@ export const IndoorMapSurface = forwardRef<
         tabIndex={0}
       />
       {failed ? (
-        <Alert className="absolute inset-x-3 top-3" variant="destructive">
-          <AlertDescription>
-            The map could not be loaded, so this building cannot be edited right
-            now.
-          </AlertDescription>
-        </Alert>
+        <div className="absolute inset-0 grid place-items-center bg-background/95 p-6">
+          <Empty className="w-full max-w-sm border bg-card p-6" role="alert">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <MapPinOff aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>Couldn&apos;t load the map</EmptyTitle>
+              <EmptyDescription>
+                Your floor plan is still here. Try loading the map again to
+                continue editing.
+              </EmptyDescription>
+            </EmptyHeader>
+            <Button
+              onClick={() => {
+                setFailed(false);
+                setReady(false);
+                setAttempt((value) => value + 1);
+              }}
+            >
+              <RotateCw aria-hidden="true" />
+              Retry
+            </Button>
+          </Empty>
+        </div>
       ) : null}
     </div>
   );

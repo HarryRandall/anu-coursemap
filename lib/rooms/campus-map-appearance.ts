@@ -2,11 +2,7 @@ import type { Map as MapLibreMap, LayerSpecification } from "maplibre-gl";
 
 const originals = new WeakMap<MapLibreMap, LayerSpecification[]>();
 export function isCampusBasemapClutter(layer: LayerSpecification) {
-  return (
-    layer.type === "symbol" &&
-    !layer.id.startsWith("coursemap-") &&
-    !/^(highway-name|water_name)/.test(layer.id)
-  );
+  return layer.type === "symbol" && !layer.id.startsWith("coursemap-");
 }
 
 /** Restyle the loaded vector map in place, preserving camera and selection. */
