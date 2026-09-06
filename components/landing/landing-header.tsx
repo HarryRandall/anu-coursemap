@@ -1,6 +1,7 @@
+import { Button } from "@reui/ui/button";
+import ReuiLink from "next/link";
 import Link from "next/link";
 import { LandingMark } from "@/components/landing/landing-mark";
-import { ButtonLink } from "@/components/ui/button";
 
 export function LandingHeader({ canOpenPlan }: { canOpenPlan: boolean }) {
   return (
@@ -10,41 +11,41 @@ export function LandingHeader({ canOpenPlan }: { canOpenPlan: boolean }) {
           <LandingMark />
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2" aria-label="Landing">
-          <ButtonLink
-            href="/courses"
+          <Button
+            asChild
             variant="ghost"
             size="sm"
             className="min-h-11 px-3 max-sm:hidden"
           >
-            Browse courses
-          </ButtonLink>
+            <ReuiLink href="/courses">Browse courses</ReuiLink>
+          </Button>
           {canOpenPlan ? (
-            <ButtonLink
-              href="/plan"
-              variant="primary"
+            <Button
+              asChild
+              variant="default"
               size="sm"
               className="min-h-11 !rounded-full px-4"
             >
-              Open your plan
-            </ButtonLink>
+              <ReuiLink href="/plan">Open your plan</ReuiLink>
+            </Button>
           ) : (
             <>
-              <ButtonLink
-                href="/login"
+              <Button
+                asChild
                 variant="ghost"
                 size="sm"
                 className="min-h-11 px-3"
               >
-                Sign in
-              </ButtonLink>
-              <ButtonLink
-                href="/signup"
-                variant="primary"
+                <ReuiLink href="/login">Sign in</ReuiLink>
+              </Button>
+              <Button
+                asChild
+                variant="default"
                 size="sm"
                 className="min-h-11 !rounded-full px-4"
               >
-                Get started free
-              </ButtonLink>
+                <ReuiLink href="/signup">Get started free</ReuiLink>
+              </Button>
             </>
           )}
         </nav>

@@ -10,3 +10,10 @@ public
 test-results
 tests/fixtures/calendar
 types/database.ts
+
+# Preserve the retained upstream source formatting.
+components/reui/components
+components/reui/hooks
+components/reui/ui
+components/reui/style-nova.css
+components/reui/LICENSE.md

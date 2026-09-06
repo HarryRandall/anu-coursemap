@@ -1,12 +1,15 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { SidebarInset, SidebarProvider } from "@reui/ui/sidebar";
 import { cn } from "@/lib/cn";
-import { Sidebar } from "@/components/shell/sidebar";
+import { AppSidebar } from "@/components/shell/app-sidebar";
+import { useSidebarDefaultOpen } from "@/components/shell/sidebar-preference";
 import { Topbar } from "@/components/shell/topbar";
 
 export type AppShellProps = {
   children: ReactNode;
+  showThemeToggle?: boolean;
   actions?: ReactNode;
   /** Section tab links rendered in a full-width bar below the breadcrumbs. */
   tabs?: ReactNode;
@@ -23,6 +26,7 @@ export type AppShellProps = {
 
 export function AppShell({
   children,
+  showThemeToggle = true,
   actions,
   tabs,
   currentBreadcrumbLabel,
@@ -31,12 +35,12 @@ export function AppShell({
   fill = false,
   fullBleed = false,
 }: AppShellProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
+  const { open, setOpen } = useSidebarDefaultOpen();
   return (
-    <div
+    <SidebarProvider
+      open={open}
+      onOpenChange={setOpen}
       className={cn(
-        "min-h-dvh bg-white",
         // A filled page is exactly one viewport tall and scrolls nothing at
         // the document level, so no OS scrollbar is drawn over the window
         // edge. Narrow screens keep scrolling the page, which is what a
@@ -44,39 +48,38 @@ export function AppShell({
         fill && "md:h-dvh md:min-h-0 md:overflow-hidden",
       )}
     >
-      <Sidebar
-        admin={admin}
-        mobileOpen={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-      />
+      <AppSidebar admin={admin} />
 
-      <div
+      <SidebarInset
         className={cn(
-          "min-w-0 lg:pl-64",
-          fill && "md:flex md:h-full md:flex-col",
+          "min-w-0",
+          fill && "md:h-full md:min-h-0 md:overflow-hidden",
         )}
       >
         <Topbar
+          showThemeToggle={showThemeToggle}
           actions={actions}
           breadcrumbSegmentLabels={breadcrumbSegmentLabels}
           currentBreadcrumbLabel={currentBreadcrumbLabel}
-          onOpenNav={() => setMobileOpen(true)}
         />
         {tabs && (
           <div
             className={cn(
-              "border-b border-zinc-200 bg-white px-4 sm:px-6",
+              "border-b border-border bg-background px-4 sm:px-6",
               fill && "md:shrink-0",
             )}
           >
-            <nav aria-label="Page sections" className="flex items-center gap-1">
+            <nav
+              aria-label="Page sections"
+              className="flex min-w-0 items-center overflow-x-auto overflow-y-hidden"
+            >
               {tabs}
             </nav>
           </div>
         )}
-        <main
+        <div
           className={cn(
-            "min-h-[calc(100dvh-4rem)] w-full max-w-none min-w-0 bg-zinc-50/60",
+            "min-h-[calc(100dvh-4rem)] w-full max-w-none min-w-0 bg-muted/40 dark:bg-transparent",
             !fullBleed && "px-4 py-6 sm:px-6 sm:py-7",
             // Lets a page hand its remaining height to one scrolling child,
             // such as a directory table that should reach the viewport floor.
@@ -84,8 +87,8 @@ export function AppShell({
           )}
         >
           {children}
-        </main>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

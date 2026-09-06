@@ -1,4 +1,19 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@reui/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
+import ReuiLink from "next/link";
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -12,13 +27,10 @@ import {
   CourseDetailView,
 } from "@/components/courses/course-detail-view";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import {
   acceptCourseImportTarget,
   rejectCourseImportTarget,
@@ -35,12 +47,6 @@ import {
 } from "@/lib/coursemap/course-snapshot-diff";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import type { Tone } from "@/lib/ui";
-
-const dateFormatter = new Intl.DateTimeFormat("en-AU", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Australia/Sydney",
-});
 
 function readable(value: string) {
   const words = value.replaceAll("_", " ");
@@ -153,61 +159,101 @@ function ReviewItems({ detail }: { detail: CourseImportTargetDetail }) {
     <div className="space-y-3">
       {detail.reviewItems.map((item) => (
         <Card key={item.id}>
-          <CardHeader
-            action={
+          <CardHeader>
+            <CardTitle>
+              <h2>{item.summary}</h2>
+            </CardTitle>
+            {Boolean(
+              `${fieldLabel(item.fieldPath)} · ${confidence(item.confidence)}`,
+            ) && (
+              <CardDescription>{`${fieldLabel(item.fieldPath)} · ${confidence(item.confidence)}`}</CardDescription>
+            )}
+            {Boolean(
               <div className="flex flex-wrap gap-1.5">
-                {item.isBlocking ? <Badge tone="danger">Blocking</Badge> : null}
+                {item.isBlocking ? (
+                  <Badge variant={"destructive-light"}>Blocking</Badge>
+                ) : null}
                 <Badge
-                  tone={
-                    item.importance === "critical" || item.importance === "high"
-                      ? "warning"
-                      : "neutral"
+                  variant={
+                    badgeVariantForTone[
+                      item.importance === "critical" ||
+                      item.importance === "high"
+                        ? "warning"
+                        : "neutral"
+                    ]
                   }
                 >
                   {readable(item.importance)}
                 </Badge>
-                <Badge tone={statusTone(item.status)}>
+                <Badge variant={badgeVariantForTone[statusTone(item.status)]}>
                   {readable(item.status)}
                 </Badge>
-              </div>
-            }
-            description={`${fieldLabel(item.fieldPath)} · ${confidence(item.confidence)}`}
-            title={item.summary}
-          />
+              </div>,
+            ) && (
+              <CardAction>
+                {
+                  <div className="flex flex-wrap gap-1.5">
+                    {item.isBlocking ? (
+                      <Badge variant={"destructive-light"}>Blocking</Badge>
+                    ) : null}
+                    <Badge
+                      variant={
+                        badgeVariantForTone[
+                          item.importance === "critical" ||
+                          item.importance === "high"
+                            ? "warning"
+                            : "neutral"
+                        ]
+                      }
+                    >
+                      {readable(item.importance)}
+                    </Badge>
+                    <Badge
+                      variant={badgeVariantForTone[statusTone(item.status)]}
+                    >
+                      {readable(item.status)}
+                    </Badge>
+                  </div>
+                }
+              </CardAction>
+            )}
+          </CardHeader>
           <CardContent className="space-y-3">
             {item.sourceExcerpt ? (
               <div>
-                <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                   Source evidence
                 </p>
-                <blockquote className="mt-1 border-l-2 border-zinc-300 pl-3 text-xs leading-5 whitespace-pre-wrap text-zinc-600">
+                <blockquote className="mt-1 border-l-2 border-input pl-3 text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
                   {item.sourceExcerpt}
                 </blockquote>
               </div>
             ) : null}
             {item.oldValue !== null || item.newValue !== null ? (
               <div className="grid gap-3 md:grid-cols-2">
-                <div className="min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
-                  <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                <div className="min-w-0 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                  <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                     Saved value
                   </p>
-                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-zinc-700">
+                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
                     {comparisonValue(item.oldValue)}
                   </pre>
                 </div>
-                <div className="min-w-0 rounded-lg border border-brand-200 bg-brand-50/50 px-3 py-2">
-                  <p className="text-[10px] font-medium tracking-wide text-brand-600 uppercase">
+                <div className="min-w-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
+                  <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
                     Imported value
                   </p>
-                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-zinc-800">
+                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-foreground/90">
                     {comparisonValue(item.newValue)}
                   </pre>
                 </div>
               </div>
             ) : null}
             {item.resolutionNote ? (
-              <p className="text-xs leading-5 text-zinc-600">
-                <span className="font-medium text-zinc-800">Resolution:</span>{" "}
+              <p className="text-xs leading-5 text-muted-foreground">
+                <span className="font-medium text-foreground/90">
+                  Resolution:
+                </span>{" "}
                 {item.resolutionNote}
               </p>
             ) : null}
@@ -245,12 +291,12 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
       <section className="space-y-3" aria-labelledby="review-checks-title">
         <div>
           <h2
-            className="text-sm font-semibold text-zinc-950"
+            className="text-sm font-semibold text-foreground"
             id="review-checks-title"
           >
             Checks requiring confirmation
           </h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             These are extraction warnings or safety checks, not additional
             course fields. Blocking checks must be considered before accepting
             the candidate as a draft.
@@ -263,18 +309,21 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <h2
-              className="text-sm font-semibold text-zinc-950"
+              className="text-sm font-semibold text-foreground"
               id="snapshot-changes-title"
             >
               Course differences
             </h2>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               Imported values compared with {previousLabel.toLowerCase()}.
             </p>
           </div>
-          <Badge tone={changes.length === 0 ? "neutral" : "brand"}>
-            {changes.length} review{" "}
-            {changes.length === 1 ? "change" : "changes"}
+          <Badge
+            variant={
+              badgeVariantForTone[changes.length === 0 ? "neutral" : "brand"]
+            }
+          >
+            {changes.length} review{changes.length === 1 ? "change" : "changes"}
           </Badge>
         </div>
 
@@ -296,61 +345,63 @@ function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
           <div className="space-y-3">
             {groupedChanges.map(([section, sectionChanges], sectionIndex) => (
               <details
-                className="group overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-xs"
+                className="group overflow-hidden rounded-xl border border-border bg-card shadow-xs"
                 key={section}
                 open={sectionIndex === 0}
               >
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-zinc-950 marker:content-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-foreground marker:content-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                   <span>{section}</span>
                   <span className="flex items-center gap-2">
-                    <Badge tone="neutral">
+                    <Badge variant={"outline"}>
                       {sectionChanges.length}{" "}
                       {sectionChanges.length === 1 ? "change" : "changes"}
                     </Badge>
                     <span
                       aria-hidden="true"
-                      className="text-zinc-400 transition-transform group-open:rotate-90"
+                      className="text-muted-foreground/80 transition-transform group-open:rotate-90"
                     >
                       ›
                     </span>
                   </span>
                 </summary>
-                <div className="divide-y divide-zinc-100 border-t border-zinc-100">
+                <div className="divide-y divide-border/60 border-t border-border/60">
                   {sectionChanges.map((change) => (
                     <div
                       className="space-y-3 p-4 sm:p-5"
                       key={change.fieldPath}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-zinc-900">
+                        <p className="text-xs font-medium text-foreground">
                           {fieldLabel(change.fieldPath)}
                         </p>
                         <Badge
-                          tone={
-                            change.kind === "added"
-                              ? "success"
-                              : change.kind === "removed"
-                                ? "danger"
-                                : "warning"
+                          variant={
+                            badgeVariantForTone[
+                              change.kind === "added"
+                                ? "success"
+                                : change.kind === "removed"
+                                  ? "danger"
+                                  : "warning"
+                            ]
                           }
                         >
                           {readable(change.kind)}
                         </Badge>
                       </div>
                       <div className="grid gap-3 md:grid-cols-2">
-                        <div className="min-w-0 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
-                          <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                        <div className="min-w-0 rounded-lg border border-border bg-muted/50 px-3 py-2">
+                          <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                             {previousLabel}
                           </p>
-                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-zinc-700">
+                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
                             {comparisonValue(change.before)}
                           </pre>
                         </div>
-                        <div className="min-w-0 rounded-lg border border-brand-200 bg-brand-50/50 px-3 py-2">
-                          <p className="text-[10px] font-medium tracking-wide text-brand-600 uppercase">
+                        <div className="min-w-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
+                          <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
                             Imported candidate
                           </p>
-                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-zinc-800">
+                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-foreground/90">
                             {comparisonValue(change.after)}
                           </pre>
                         </div>
@@ -426,7 +477,7 @@ export function CourseImportTargetReview({
                   onConfirm={() => decide("reject")}
                   title={`Reject ${detail.target.courseCode}?`}
                   trigger={
-                    <Button size="sm" variant="danger">
+                    <Button size="sm" variant="destructive" type="button">
                       <X aria-hidden="true" size={15} />
                       Reject
                     </Button>
@@ -438,7 +489,7 @@ export function CourseImportTargetReview({
                   onConfirm={() => decide("accept")}
                   title={`Accept ${detail.target.courseCode} as draft?`}
                   trigger={
-                    <Button size="sm" variant="primary">
+                    <Button size="sm" variant="default" type="button">
                       <Check aria-hidden="true" size={15} />
                       Accept as draft
                     </Button>
@@ -447,97 +498,38 @@ export function CourseImportTargetReview({
               </>
             ) : null}
             {accepted && courseWorkspaceHref ? (
-              <ButtonLink
-                href={courseWorkspaceHref}
-                size="sm"
-                variant="primary"
-              >
-                <Pencil aria-hidden="true" size={15} />
-                Open course workspace
-              </ButtonLink>
+              <Button asChild size="sm" variant="default">
+                <ReuiLink href={courseWorkspaceHref}>
+                  <Pencil aria-hidden="true" size={15} />
+                  Open course workspace
+                </ReuiLink>
+              </Button>
             ) : accepted ? (
               <Button
                 disabled
                 size="sm"
                 title="The permanent course identity is unavailable"
+                variant="outline"
+                type="button"
               >
-                <Pencil aria-hidden="true" size={15} /> Course workspace
+                <Pencil aria-hidden="true" size={15} />
+                Course workspace
               </Button>
             ) : null}
           </div>
         ) : undefined
       }
       admin
+      fullBleed
       currentBreadcrumbLabel={detail.target.courseCode}
     >
       <CourseImportAutoRefresh active={active} />
-      <div className="mx-auto w-full max-w-7xl space-y-5 pb-10">
-        <h1 className="sr-only">Review {detail.target.courseCode} import</h1>
+      <div className="w-full px-4 pb-10 sm:px-6">
+        <h1 className="sr-only">Review{detail.target.courseCode} import</h1>
 
-        <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-lg font-semibold text-zinc-950">
-            {detail.target.courseCode}
-          </span>
-          <Badge tone="neutral">Run #{detail.run.runNumber}</Badge>
-          <Badge tone="neutral">{detail.run.academicYear}</Badge>
-          <Badge tone={statusTone(detail.target.processingStatus)}>
-            {readable(detail.target.processingStatus)}
-          </Badge>
-          <Badge tone={statusTone(detail.target.reviewStatus)}>
-            {readable(detail.target.reviewStatus)}
-          </Badge>
-          {detail.candidateSnapshot?.overall_confidence !== null &&
-          detail.candidateSnapshot?.overall_confidence !== undefined ? (
-            <Badge
-              tone={courseImportConfidenceTone(
-                detail.candidateSnapshot.overall_confidence,
-                openBlockingReviewCount,
-              )}
-            >
-              {Math.round(detail.candidateSnapshot.overall_confidence * 100)}%
-              confidence
-            </Badge>
-          ) : null}
-        </header>
-
-        {message ? (
-          <Alert tone={message.tone}>
-            <AlertDescription>{message.text}</AlertDescription>
-          </Alert>
-        ) : null}
-        {detail.target.errorSummary ? (
-          <Alert tone="danger">
-            <CircleAlert aria-hidden="true" />
-            <AlertDescription>
-              {detail.target.errorCode ? `${detail.target.errorCode}: ` : ""}
-              {detail.target.errorSummary}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {active ? (
-          <Alert tone="brand">
-            <Clock3 aria-hidden="true" />
-            <AlertDescription>
-              This course is still running. Saved stages and artefacts update
-              automatically.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {openBlockingReviewCount > 0 ? (
-          <Alert tone="warning">
-            <CircleAlert aria-hidden="true" />
-            <AlertDescription>
-              {openBlockingReviewCount} open blocking review{" "}
-              {openBlockingReviewCount === 1 ? "item needs" : "items need"}{" "}
-              administrator confirmation. Review the source and candidate before
-              accepting this as the draft. Publication remains a separate
-              action.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        <Tabs defaultValue="pipeline">
-          <div className="overflow-x-auto pb-1">
-            <TabsList className="h-auto min-w-max">
+        <Tabs defaultValue="pipeline" className="gap-5">
+          <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6">
+            <TabsList aria-label="Import review sections" variant="line">
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
               <TabsTrigger value="changes">Review</TabsTrigger>
               <TabsTrigger value="source">Source and artefacts</TabsTrigger>
@@ -546,7 +538,95 @@ export function CourseImportTargetReview({
             </TabsList>
           </div>
 
-          <TabsContent value="pipeline">
+          {message ? (
+            <Alert
+              variant={
+                (
+                  {
+                    neutral: "default",
+                    brand: "info",
+                    danger: "destructive",
+                    success: "success",
+                    warning: "warning",
+                  } as const
+                )[message.tone]
+              }
+            >
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          ) : null}
+          {detail.target.errorSummary ? (
+            <Alert variant={"destructive"}>
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription>
+                {detail.target.errorCode ? `${detail.target.errorCode}: ` : ""}
+                {detail.target.errorSummary}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {active ? (
+            <Alert variant={"info"}>
+              <Clock3 aria-hidden="true" />
+              <AlertDescription>
+                This course is still running. Saved stages and artefacts update
+                automatically.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {openBlockingReviewCount > 0 ? (
+            <Alert variant={"warning"}>
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription>
+                {openBlockingReviewCount} open blocking review{" "}
+                {openBlockingReviewCount === 1 ? "item needs" : "items need"}{" "}
+                administrator confirmation. Review the source and candidate
+                before accepting this as the draft. Publication remains a
+                separate action.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          <TabsContent value="pipeline" className="space-y-5">
+            <header className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-lg font-semibold text-foreground">
+                {detail.target.courseCode}
+              </span>
+              <Badge variant={"outline"}>Run #{detail.run.runNumber}</Badge>
+              <Badge variant={"outline"}>{detail.run.academicYear}</Badge>
+              <Badge
+                variant={
+                  badgeVariantForTone[
+                    statusTone(detail.target.processingStatus)
+                  ]
+                }
+              >
+                {readable(detail.target.processingStatus)}
+              </Badge>
+              <Badge
+                variant={
+                  badgeVariantForTone[statusTone(detail.target.reviewStatus)]
+                }
+              >
+                {readable(detail.target.reviewStatus)}
+              </Badge>
+              {detail.candidateSnapshot?.overall_confidence !== null &&
+              detail.candidateSnapshot?.overall_confidence !== undefined ? (
+                <Badge
+                  variant={
+                    badgeVariantForTone[
+                      courseImportConfidenceTone(
+                        detail.candidateSnapshot.overall_confidence,
+                        openBlockingReviewCount,
+                      )
+                    ]
+                  }
+                >
+                  {Math.round(
+                    detail.candidateSnapshot.overall_confidence * 100,
+                  )}
+                  % confidence
+                </Badge>
+              ) : null}
+            </header>
             <CourseImportPipeline
               extractions={detail.extractions}
               stages={detail.stages}
@@ -557,55 +637,14 @@ export function CourseImportTargetReview({
           </TabsContent>
           <TabsContent value="source">
             <div className="space-y-4">
-              {detail.sourcePage ? (
-                <dl className="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <dt className="text-zinc-500">ANU page</dt>
-                    <dd className="mt-1 break-all">
-                      <a
-                        className="text-brand-700 underline underline-offset-2"
-                        href={detail.sourcePage.canonical_url}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {detail.sourcePage.canonical_url}
-                      </a>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500">Fetched</dt>
-                    <dd className="mt-1 tabular-nums">
-                      {dateFormatter.format(
-                        new Date(detail.sourcePage.fetched_at),
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500">HTTP status</dt>
-                    <dd className="mt-1 tabular-nums">
-                      {detail.sourcePage.http_status ?? "Not recorded"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-zinc-500">Source hash</dt>
-                    <dd
-                      className="mt-1 truncate font-mono"
-                      title={detail.sourcePage.content_sha256}
-                    >
-                      {detail.sourcePage.content_sha256}
-                    </dd>
-                  </div>
-                </dl>
-              ) : null}
               <CourseImportArtifactViewer artifacts={detail.artifacts} />
             </div>
           </TabsContent>
           <TabsContent value="database">
             {detail.candidateSnapshot ? (
               <div className="space-y-3">
-                <p className="text-xs leading-5 text-zinc-600">
-                  These are the exact candidate rows saved in Postgres. Empty
-                  tables are shown so missing relationships are easy to spot.
+                <p className="text-xs leading-5 text-muted-foreground">
+                  These are the exact candidate rows saved in Postgres.
                 </p>
                 <CourseImportDatabaseRows
                   emptyLabel="0 rows"
@@ -626,8 +665,8 @@ export function CourseImportTargetReview({
           </TabsContent>
           <TabsContent value="preview">
             {previewCourse ? (
-              <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-                <Alert className="m-4" tone="neutral">
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+                <Alert className="m-4" variant={"default"}>
                   <AlertDescription>
                     This is the full student-facing course view using the
                     candidate data. Planning actions are disabled and nothing is
@@ -635,7 +674,7 @@ export function CourseImportTargetReview({
                   </AlertDescription>
                 </Alert>
                 <Tabs className="gap-0" defaultValue="overview">
-                  <div className="border-y border-zinc-200 px-4 sm:px-5">
+                  <div className="border-y border-border px-4 sm:px-5">
                     <CourseDetailTabsList />
                   </div>
                   <div className="p-4 sm:p-6">

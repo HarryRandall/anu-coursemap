@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  importOutcome,
   importSortOrder,
   importStatusFilter,
   isImportActive,
@@ -122,4 +123,22 @@ test("sorting maps to a real column and direction", () => {
     column: "structure_code",
     ascending: false,
   });
+});
+
+test("one import outcome preserves worker failures and settled review decisions", () => {
+  for (const [processing, review, expected] of [
+    ["failed", "pending", "failed"],
+    ["cancelled", "needs_review", "cancelled"],
+    ["queued", "not_ready", "queued"],
+    ["processing", "pending", "processing"],
+    ["running", "needs_review", "processing"],
+    ["ready_for_review", "accepted", "accepted"],
+    ["succeeded", "rejected", "rejected"],
+    ["ready_for_review", "pending", "needs-review"],
+    ["succeeded", "needs_review", "needs-review"],
+    ["unchanged", "not_required", "unchanged"],
+    ["succeeded", "unchanged", "unchanged"],
+    ["succeeded", "not_required", "succeeded"],
+  ])
+    assert.equal(importOutcome(processing, review), expected);
 });

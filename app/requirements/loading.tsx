@@ -1,37 +1,62 @@
+import { Card } from "@reui/ui/card";
+import { Skeleton } from "@reui/ui/skeleton";
 import { AppShell } from "@/components/shell";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
+/** Mirrors the requirements layout: rule cards on the left, summary rail on the right. */
 export default function RequirementsLoading() {
   return (
     <AppShell>
-      <div aria-busy="true" className="mx-auto max-w-5xl space-y-5">
+      <div aria-busy="true" className="mx-auto w-full max-w-7xl">
         <span className="sr-only">Loading degree requirements</span>
-        <Card className="space-y-4 p-5">
-          <div className="space-y-2">
-            <Skeleton className="h-3.5 w-40" />
-            <Skeleton className="h-3 w-64 max-w-full" />
-          </div>
-          <Skeleton className="h-2.5 w-full rounded-full" />
-        </Card>
-        <Card>
-          <div className="space-y-2 border-b border-zinc-100 px-5 py-4">
-            <Skeleton className="h-3.5 w-36" />
-            <Skeleton className="h-3 w-56 max-w-full" />
-          </div>
-          <div className="divide-y divide-zinc-100">
-            {Array.from({ length: 4 }, (_, row) => (
-              <div key={row} className="flex items-center gap-3 px-5 py-3">
-                <Skeleton className="size-8 shrink-0 rounded-lg" />
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <Skeleton className="h-3 w-3/5" />
-                  <Skeleton className="h-2.5 w-2/5" />
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="space-y-5">
+            <Card>
+              <div className="flex items-center gap-3 border-b border-border/60 px-5 py-4">
+                <Skeleton className="size-9 shrink-0 rounded-lg" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3.5 w-48" />
+                  <Skeleton className="h-3 w-32" />
                 </div>
-                <Skeleton className="h-5 w-16 rounded-full" />
               </div>
-            ))}
+              <div className="space-y-3 p-5">
+                {Array.from({ length: 4 }, (_, row) => (
+                  <div
+                    key={row}
+                    className="space-y-3 rounded-lg border border-border p-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="size-4 rounded-full" />
+                      <Skeleton className="h-3.5 w-2/3" />
+                      <Skeleton className="ml-auto h-5 w-20 rounded-full" />
+                    </div>
+                    <Skeleton className="h-1.5 w-full rounded-full" />
+                    <Skeleton className="h-3 w-40" />
+                  </div>
+                ))}
+              </div>
+            </Card>
           </div>
-        </Card>
+          <div className="space-y-4">
+            <Card className="space-y-4 p-5">
+              <Skeleton className="h-3.5 w-36" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-2 w-full rounded-full" />
+              <div className="grid grid-cols-3 gap-2">
+                <Skeleton className="h-8" />
+                <Skeleton className="h-8" />
+                <Skeleton className="h-8" />
+              </div>
+            </Card>
+            <Card className="space-y-3 p-5">
+              <Skeleton className="h-3.5 w-28" />
+              <div className="grid grid-cols-2 gap-2">
+                {Array.from({ length: 4 }, (_, index) => (
+                  <Skeleton key={index} className="h-9" />
+                ))}
+              </div>
+            </Card>
+          </div>
+        </div>
       </div>
     </AppShell>
   );

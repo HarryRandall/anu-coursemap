@@ -1,8 +1,12 @@
-import { Card } from "@/components/ui/card";
-import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";
+"use client";
+
+import Link from "next/link";
+import { Card, CardContent } from "@reui/ui/card";
 import { cn } from "@/lib/cn";
+import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";
 import { STANDARD_TERM_UNITS } from "@/lib/planner";
 
+/** Six-unit tiles show the shape of each semester, including partial units. */
 export function TermLoadChart({
   terms,
   currentTermId,
@@ -10,81 +14,116 @@ export function TermLoadChart({
   terms: readonly DashboardTermPoint[];
   currentTermId?: string;
 }) {
-  const yMax = Math.max(
-    STANDARD_TERM_UNITS * 1.25,
-    ...terms.map((term) => term.units * 1.1),
-  );
-  const standardPct = (STANDARD_TERM_UNITS / yMax) * 100;
-
+  const years = [...new Set(terms.map((term) => term.year))];
   return (
-    <Card className="flex min-h-72 flex-col p-5">
-      <div>
-        <h2 className="text-sm font-semibold text-zinc-900">Semester load</h2>
-        <p className="mt-0.5 text-[11px] text-zinc-500">
-          Dashed line marks the standard {STANDARD_TERM_UNITS}u load
-        </p>
-      </div>
-      {terms.length === 0 ? (
-        <p className="flex flex-1 items-center justify-center text-sm text-zinc-500">
-          Add courses to see your semester load.
-        </p>
-      ) : (
-        <>
-          <div className="relative mt-4 flex-1">
-            <div
-              aria-hidden="true"
-              className="absolute right-0 left-0 border-t border-dashed border-zinc-300"
-              style={{ bottom: `${standardPct}%` }}
-            >
-              <span className="absolute -top-2 right-0 bg-white pl-1 text-[9px] font-medium text-zinc-400">
-                {STANDARD_TERM_UNITS}u
-              </span>
-            </div>
-            <div className="flex h-full min-h-32 items-end gap-2">
-              {terms.map((term) => {
-                const overloaded = term.units > STANDARD_TERM_UNITS;
-                const current = term.id === currentTermId;
-                return (
-                  <div
-                    key={term.id}
-                    title={`${term.label}: ${term.units} units`}
-                    className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1"
-                  >
-                    <p className="text-[10px] font-semibold text-zinc-600 tabular-nums">
-                      {term.units}
-                    </p>
-                    <span
-                      className={cn(
-                        "w-full max-w-8 rounded-t-md",
-                        overloaded && "bg-amber-500",
-                        !overloaded && current && "bg-brand-600",
-                        !overloaded && !current && "bg-brand-300",
-                      )}
-                      style={{
-                        height: `${Math.max((term.units / yMax) * 100, term.units > 0 ? 4 : 0)}%`,
-                      }}
-                      aria-label={`${term.label}: ${term.units} units`}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="mt-1 flex gap-2">
-            {terms.map((term) => (
-              <p
-                key={term.id}
-                className={cn(
-                  "min-w-0 flex-1 truncate text-center text-[10px] font-medium",
-                  term.id === currentTermId ? "text-zinc-700" : "text-zinc-400",
-                )}
-              >
-                {term.label}
-              </p>
+    <Card className="py-0">
+      <CardContent className="flex flex-col gap-4 p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">Your degree at a glance</h2>
+          <span className="text-xs text-muted-foreground">
+            Each tile = 6 units
+          </span>
+        </div>
+        {terms.length === 0 ? (
+          <p className="py-8 text-sm text-muted-foreground">
+            Add courses to see your degree take shape.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3">
+            {years.map((year) => (
+              <section key={year} className="min-w-0">
+                <h3 className="mb-3 text-xs font-semibold text-muted-foreground">
+                  {year}
+                </h3>
+                <div className="flex flex-col gap-4">
+                  {terms
+                    .filter((term) => term.year === year)
+                    .map((term) => (
+                      <Link
+                        key={term.id}
+                        href="/plan"
+                        aria-label={`${term.label}: ${term.completed} completed, ${term.planned} planned units. Open plan.`}
+                        className="group flex flex-col gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                      >
+                        <div className="flex items-center justify-between gap-1 text-[11px]">
+                          <span
+                            className={cn(
+                              "text-muted-foreground",
+                              term.id === currentTermId &&
+                                "font-semibold text-sky-600 dark:text-sky-400",
+                            )}
+                          >
+                            {term.label}
+                            {term.id === currentTermId ? " · Now" : ""}
+                          </span>
+                          <span className="text-muted-foreground tabular-nums">
+                            {term.units}u
+                          </span>
+                        </div>
+                        <div
+                          className="grid grid-cols-4 gap-1.5"
+                          aria-hidden="true"
+                        >
+                          {Array.from(
+                            {
+                              length: Math.ceil(
+                                Math.max(STANDARD_TERM_UNITS, term.units) / 6,
+                              ),
+                            },
+                            (_, index) => {
+                              const completed = Math.max(
+                                0,
+                                Math.min(6, term.completed - index * 6),
+                              );
+                              const planned = Math.max(
+                                0,
+                                Math.min(
+                                  6 - completed,
+                                  term.units - index * 6 - completed,
+                                ),
+                              );
+                              return (
+                                <span
+                                  key={index}
+                                  className="flex h-5 overflow-hidden rounded-sm bg-muted ring-1 ring-border/50 transition-colors ring-inset group-hover:bg-muted/70"
+                                >
+                                  <span
+                                    className="h-full bg-emerald-500"
+                                    style={{
+                                      width: `${(completed / 6) * 100}%`,
+                                    }}
+                                  />
+                                  <span
+                                    className="h-full bg-violet-500"
+                                    style={{ width: `${(planned / 6) * 100}%` }}
+                                  />
+                                </span>
+                              );
+                            },
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              </section>
             ))}
           </div>
-        </>
-      )}
+        )}
+        <div className="flex flex-wrap gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <span className="size-2 rounded-sm bg-emerald-500" />
+            Completed
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="size-2 rounded-sm bg-violet-500" />
+            Planned / enrolled
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="size-2 rounded-sm bg-muted ring-1 ring-border" />
+            Open capacity
+          </span>
+        </div>
+      </CardContent>
     </Card>
   );
 }

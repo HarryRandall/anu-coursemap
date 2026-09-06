@@ -1,4 +1,15 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import { Field, FieldDescription } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { Textarea } from "@reui/ui/textarea";
+import { Tabs, TabsContent } from "@reui/ui/tabs";
+import ReuiLink from "next/link";
 
 import {
   Archive,
@@ -34,13 +45,11 @@ import {
   CourseDetailView,
 } from "@/components/courses/course-detail-view";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/field";
+
 import { JsonCode } from "@/components/ui/json-code";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
 import { parseCourseSnapshotProjection } from "@/lib/course-import/snapshot-projection-contract";
 import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";
@@ -410,7 +419,7 @@ function Panel({ children, label }: { children: ReactNode; label: string }) {
   return (
     <section
       aria-label={label}
-      className="overflow-hidden rounded-xl border border-zinc-200 bg-white"
+      className="overflow-hidden rounded-xl border border-border bg-card"
     >
       {children}
     </section>
@@ -419,11 +428,11 @@ function Panel({ children, label }: { children: ReactNode; label: string }) {
 
 function FieldValue({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="grid gap-1 border-b border-zinc-100 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
-      <dt className="text-sm font-medium text-zinc-500">{label}</dt>
-      <dd className="min-w-0 text-sm leading-6 text-zinc-900">
+    <div className="grid gap-1 border-b border-border/60 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
+      <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm leading-6 text-foreground">
         {value === null || value === undefined || value === "" ? (
-          <span className="text-zinc-400">Not provided</span>
+          <span className="text-muted-foreground/80">Not provided</span>
         ) : (
           value
         )}
@@ -478,231 +487,362 @@ function SnapshotFieldsEditor({
   return (
     <form className="space-y-6 p-5 sm:p-6" onSubmit={onSubmit}>
       <div>
-        <h2 className="text-sm font-semibold text-zinc-950">Identity</h2>
+        <h2 className="text-sm font-semibold text-foreground">Identity</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field className="sm:col-span-2" label="Course title">
-            <Input
-              onChange={(event) =>
-                onDraftChange({ ...draft, title: event.target.value })
-              }
-              required
-              value={draft.title}
-            />
+          <Field className="sm:col-span-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Course title"}</span>
+              <Input
+                onChange={(event) =>
+                  onDraftChange({ ...draft, title: event.target.value })
+                }
+                required
+                value={draft.title}
+              />
+            </label>
           </Field>
-          <Field label="Course level">
-            <Input
-              min="0"
-              onChange={(event) =>
-                onDraftChange({
-                  ...draft,
-                  level: Number(event.target.value),
-                })
-              }
-              required
-              step="1"
-              type="number"
-              value={draft.level}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Course level"}</span>
+              <Input
+                min="0"
+                onChange={(event) =>
+                  onDraftChange({
+                    ...draft,
+                    level: Number(event.target.value),
+                  })
+                }
+                required
+                step="1"
+                type="number"
+                value={draft.level}
+              />
+            </label>
           </Field>
-          <Field label="Subject code">
-            <Input
-              maxLength={4}
-              onChange={(event) =>
-                onDraftChange({
-                  ...draft,
-                  subjectCode: event.target.value.toUpperCase(),
-                })
-              }
-              pattern="[A-Z]{4}"
-              required
-              value={draft.subjectCode}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Subject code"}</span>
+              <Input
+                maxLength={4}
+                onChange={(event) =>
+                  onDraftChange({
+                    ...draft,
+                    subjectCode: event.target.value.toUpperCase(),
+                  })
+                }
+                pattern="[A-Z]{4}"
+                required
+                value={draft.subjectCode}
+              />
+            </label>
           </Field>
-          <Field label="Subject name">{textField("subjectName")}</Field>
-          <Field label="Academic career">
-            <Select
-              aria-label="Academic career"
-              onChange={(academicCareer) =>
-                onDraftChange({
-                  ...draft,
-                  academicCareer: academicCareer || null,
-                })
-              }
-              options={academicCareerOptions}
-              value={draft.academicCareer ?? ""}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Subject name"}</span>
+              {textField("subjectName")}
+            </label>
           </Field>
-          <Field label="School">{textField("school")}</Field>
-          <Field label="College">{textField("college")}</Field>
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Academic career"}</span>
+              <OptionPicker
+                value={"coursemap:" + String(draft.academicCareer ?? "")}
+                onValueChange={(nextValue) => {
+                  const option = academicCareerOptions.find(
+                    (option) =>
+                      "coursemap:" + String(option.value) === nextValue,
+                  );
+                  if (option)
+                    ((academicCareer) =>
+                      onDraftChange({
+                        ...draft,
+                        academicCareer: academicCareer || null,
+                      }))(option.value);
+                }}
+                aria-label={"Academic career"}
+                onPointerDown={(event) => event.stopPropagation()}
+                placeholder={"Select..."}
+                items={academicCareerOptions.map((option) => ({
+                  value: "coursemap:" + String(option.value),
+                  label: option.label,
+                }))}
+              />
+            </label>
+          </Field>
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"School"}</span>
+              {textField("school")}
+            </label>
+          </Field>
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"College"}</span>
+              {textField("college")}
+            </label>
+          </Field>
         </div>
       </div>
 
-      <div className="border-t border-zinc-100 pt-6">
-        <h2 className="text-sm font-semibold text-zinc-950">
+      <div className="border-t border-border/60 pt-6">
+        <h2 className="text-sm font-semibold text-foreground">
           Units and availability
         </h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Unit value kind">
-            <Select
-              aria-label="Unit value kind"
-              onChange={(unitValueKind) =>
-                onDraftChange({ ...draft, unitValueKind })
-              }
-              options={[
-                { value: "fixed", label: "Fixed" },
-                { value: "range", label: "Range" },
-                { value: "variable", label: "Variable options" },
-                { value: "unknown", label: "Unknown" },
-              ]}
-              value={draft.unitValueKind}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Unit value kind"}</span>
+              <OptionPicker
+                value={"coursemap:" + String(draft.unitValueKind)}
+                onValueChange={(nextValue) => {
+                  const option = (
+                    [
+                      { value: "fixed", label: "Fixed" },
+                      { value: "range", label: "Range" },
+                      { value: "variable", label: "Variable options" },
+                      { value: "unknown", label: "Unknown" },
+                    ] as const
+                  ).find(
+                    (option) =>
+                      "coursemap:" + String(option.value) === nextValue,
+                  );
+                  if (option)
+                    ((unitValueKind) =>
+                      onDraftChange({ ...draft, unitValueKind }))(option.value);
+                }}
+                aria-label={"Unit value kind"}
+                onPointerDown={(event) => event.stopPropagation()}
+                placeholder={"Select..."}
+                items={[
+                  { value: "fixed", label: "Fixed" },
+                  { value: "range", label: "Range" },
+                  { value: "variable", label: "Variable options" },
+                  { value: "unknown", label: "Unknown" },
+                ].map((option) => ({
+                  value: "coursemap:" + String(option.value),
+                  label: option.label,
+                }))}
+              />
+            </label>
           </Field>
-          <Field label="Fixed units">
-            <Input
-              min="0"
-              onChange={(event) =>
-                onDraftChange({
-                  ...draft,
-                  units: nullableNumber(event.target.value),
-                })
-              }
-              step="0.5"
-              type="number"
-              value={nullableInputValue(draft.units)}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Fixed units"}</span>
+              <Input
+                min="0"
+                onChange={(event) =>
+                  onDraftChange({
+                    ...draft,
+                    units: nullableNumber(event.target.value),
+                  })
+                }
+                step="0.5"
+                type="number"
+                value={nullableInputValue(draft.units)}
+              />
+            </label>
           </Field>
-          <Field label="EFTSL">
-            <Input
-              min="0"
-              onChange={(event) =>
-                onDraftChange({
-                  ...draft,
-                  eftsl: nullableNumber(event.target.value),
-                })
-              }
-              step="0.00001"
-              type="number"
-              value={nullableInputValue(draft.eftsl)}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"EFTSL"}</span>
+              <Input
+                min="0"
+                onChange={(event) =>
+                  onDraftChange({
+                    ...draft,
+                    eftsl: nullableNumber(event.target.value),
+                  })
+                }
+                step="0.00001"
+                type="number"
+                value={nullableInputValue(draft.eftsl)}
+              />
+            </label>
           </Field>
-          <Field label="Minimum units">
-            <Input
-              min="0"
-              onChange={(event) =>
-                onDraftChange({
-                  ...draft,
-                  minimumUnits: nullableNumber(event.target.value),
-                })
-              }
-              step="0.5"
-              type="number"
-              value={nullableInputValue(draft.minimumUnits)}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Minimum units"}</span>
+              <Input
+                min="0"
+                onChange={(event) =>
+                  onDraftChange({
+                    ...draft,
+                    minimumUnits: nullableNumber(event.target.value),
+                  })
+                }
+                step="0.5"
+                type="number"
+                value={nullableInputValue(draft.minimumUnits)}
+              />
+            </label>
           </Field>
-          <Field label="Maximum units">
-            <Input
-              min="0"
-              onChange={(event) =>
-                onDraftChange({
-                  ...draft,
-                  maximumUnits: nullableNumber(event.target.value),
-                })
-              }
-              step="0.5"
-              type="number"
-              value={nullableInputValue(draft.maximumUnits)}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Maximum units"}</span>
+              <Input
+                min="0"
+                onChange={(event) =>
+                  onDraftChange({
+                    ...draft,
+                    maximumUnits: nullableNumber(event.target.value),
+                  })
+                }
+                step="0.5"
+                type="number"
+                value={nullableInputValue(draft.maximumUnits)}
+              />
+            </label>
           </Field>
-          <Field label="Offering status">
-            <Select
-              aria-label="Offering status"
-              onChange={(offeringStatus) =>
-                onDraftChange({ ...draft, offeringStatus })
-              }
-              options={[
-                { value: "offered", label: "Offered" },
-                { value: "not_offered", label: "Not offered" },
-                { value: "unknown", label: "Unknown" },
-              ]}
-              value={draft.offeringStatus}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Offering status"}</span>
+              <OptionPicker
+                value={"coursemap:" + String(draft.offeringStatus)}
+                onValueChange={(nextValue) => {
+                  const option = (
+                    [
+                      { value: "offered", label: "Offered" },
+                      { value: "not_offered", label: "Not offered" },
+                      { value: "unknown", label: "Unknown" },
+                    ] as const
+                  ).find(
+                    (option) =>
+                      "coursemap:" + String(option.value) === nextValue,
+                  );
+                  if (option)
+                    ((offeringStatus) =>
+                      onDraftChange({ ...draft, offeringStatus }))(
+                      option.value,
+                    );
+                }}
+                aria-label={"Offering status"}
+                onPointerDown={(event) => event.stopPropagation()}
+                placeholder={"Select..."}
+                items={[
+                  { value: "offered", label: "Offered" },
+                  { value: "not_offered", label: "Not offered" },
+                  { value: "unknown", label: "Unknown" },
+                ].map((option) => ({
+                  value: "coursemap:" + String(option.value),
+                  label: option.label,
+                }))}
+              />
+            </label>
           </Field>
         </div>
       </div>
 
-      <div className="border-t border-zinc-100 pt-6">
-        <h2 className="text-sm font-semibold text-zinc-950">
+      <div className="border-t border-border/60 pt-6">
+        <h2 className="text-sm font-semibold text-foreground">
           Teaching information
         </h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="Convenor">{textField("convenerText")}</Field>
-          <Field label="Delivery summary">{textField("deliverySummary")}</Field>
-          <Field className="sm:col-span-2" label="Introduction">
-            {textField("introduction", { multiline: true })}
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Convenor"}</span>
+              {textField("convenerText")}
+            </label>
           </Field>
-          <Field className="sm:col-span-2" label="Description">
-            {textField("description", { multiline: true })}
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Delivery summary"}</span>
+              {textField("deliverySummary")}
+            </label>
           </Field>
-          <Field className="sm:col-span-2" label="Workload">
-            {textField("workloadText", { multiline: true })}
+          <Field className="sm:col-span-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Introduction"}</span>
+              {textField("introduction", { multiline: true })}
+            </label>
           </Field>
-          <Field label="Workload hours">
-            <Input
-              min="0"
-              onChange={(event) =>
-                onDraftChange({
-                  ...draft,
-                  workloadHours: nullableNumber(event.target.value),
-                })
-              }
-              step="0.5"
-              type="number"
-              value={nullableInputValue(draft.workloadHours)}
-            />
+          <Field className="sm:col-span-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Description"}</span>
+              {textField("description", { multiline: true })}
+            </label>
           </Field>
-          <Field
-            hint="This is source provenance and cannot be changed manually."
-            label="Source updated"
-          >
-            <Input disabled value={formatDate(draft.sourceUpdatedAt)} />
+          <Field className="sm:col-span-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Workload"}</span>
+              {textField("workloadText", { multiline: true })}
+            </label>
           </Field>
-          <Field className="sm:col-span-2" label="Inherent requirements">
-            {textField("inherentRequirements", { multiline: true })}
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Workload hours"}</span>
+              <Input
+                min="0"
+                onChange={(event) =>
+                  onDraftChange({
+                    ...draft,
+                    workloadHours: nullableNumber(event.target.value),
+                  })
+                }
+                step="0.5"
+                type="number"
+                value={nullableInputValue(draft.workloadHours)}
+              />
+            </label>
           </Field>
-          <Field className="sm:col-span-2" label="Prescribed texts">
-            {textField("prescribedTexts", { multiline: true })}
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Source updated"}</span>
+              <Input disabled value={formatDate(draft.sourceUpdatedAt)} />
+              <FieldDescription>
+                {"This is source provenance and cannot be changed manually."}
+              </FieldDescription>
+            </label>
+          </Field>
+          <Field className="sm:col-span-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">
+                {"Inherent requirements"}
+              </span>
+              {textField("inherentRequirements", { multiline: true })}
+            </label>
+          </Field>
+          <Field className="sm:col-span-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Prescribed texts"}</span>
+              {textField("prescribedTexts", { multiline: true })}
+            </label>
           </Field>
         </div>
       </div>
 
-      <div className="border-t border-zinc-100 pt-6">
+      <div className="border-t border-border/60 pt-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-950">
+            <h2 className="text-sm font-semibold text-foreground">
               Advanced collections
             </h2>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-zinc-500">
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
               This complete relational projection contains unit options, fees,
               areas, attributes, related courses, offerings and sessions,
               outcomes, assessments and rule trees. Keys and links are checked
               before the draft can be saved.
             </p>
           </div>
-          <Badge tone={error ? "danger" : "success"}>
+          <Badge variant={badgeVariantForTone[error ? "danger" : "success"]}>
             {error ? "Invalid JSON" : "Structure valid"}
           </Badge>
         </div>
-        <Field className="mt-4" label="Relational projection JSON">
-          <Textarea
-            aria-invalid={Boolean(error)}
-            className="min-h-[34rem] font-mono text-xs leading-5"
-            onChange={(event) => onCollectionsChange(event.target.value)}
-            spellCheck={false}
-            value={collectionsJson}
-          />
+        <Field className="mt-4">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">
+              {"Relational projection JSON"}
+            </span>
+            <Textarea
+              aria-invalid={Boolean(error)}
+              className="min-h-[34rem] font-mono text-xs leading-5"
+              onChange={(event) => onCollectionsChange(event.target.value)}
+              spellCheck={false}
+              value={collectionsJson}
+            />
+          </label>
         </Field>
         {error ? (
-          <Alert className="mt-3" tone="danger">
+          <Alert className="mt-3" variant={"destructive"}>
             <CircleAlert aria-hidden="true" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -711,13 +851,13 @@ function SnapshotFieldsEditor({
             {collectionSummary(advancedCollections(preview)).map(
               ([label, count]) => (
                 <div
-                  className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2"
+                  className="rounded-lg border border-border bg-muted/50 px-3 py-2"
                   key={label}
                 >
-                  <p className="text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
+                  <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
                     {label}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-zinc-950 tabular-nums">
+                  <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">
                     {count}
                   </p>
                 </div>
@@ -727,12 +867,14 @@ function SnapshotFieldsEditor({
         ) : null}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-zinc-100 pt-4">
-        <Button onClick={onCancel}>Cancel</Button>
+      <div className="flex justify-end gap-2 border-t border-border/60 pt-4">
+        <Button onClick={onCancel} variant="outline" type="button">
+          Cancel
+        </Button>
         <Button
           disabled={saving || Boolean(error)}
           type="submit"
-          variant="primary"
+          variant="default"
         >
           <Save aria-hidden="true" size={15} />
           {saving ? "Saving..." : "Save new draft snapshot"}
@@ -779,40 +921,58 @@ function RequisitePanel({
         />
       ) : rules.length ? (
         <>
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-border/60">
             {rules.map((rule) => (
               <div className="px-5 py-5 sm:px-6" key={rule.key}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-sm font-semibold text-zinc-950">
+                  <h2 className="text-sm font-semibold text-foreground">
                     {readable(rule.ruleKind)}
                   </h2>
                   <Badge
-                    tone={rule.hardness === "hard" ? "warning" : "neutral"}
+                    variant={
+                      badgeVariantForTone[
+                        rule.hardness === "hard" ? "warning" : "neutral"
+                      ]
+                    }
                   >
                     {readable(rule.hardness)}
                   </Badge>
                 </div>
-                <p className="mt-3 border-l-2 border-zinc-300 pl-4 text-sm leading-7 whitespace-pre-wrap text-zinc-700">
+                <p className="mt-3 border-l-2 border-input pl-4 text-sm leading-7 whitespace-pre-wrap text-foreground/80">
                   {rule.sourceText}
                 </p>
               </div>
             ))}
           </div>
           <CourseSnapshotRuleViewer kind={kind} projection={projection} />
-          <div className="flex items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3 sm:px-6">
-            <p className="text-xs text-zinc-500">
+          <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
+            <p className="text-xs text-muted-foreground">
               Edit the source wording and complete relational tree together.
             </p>
-            <Button disabled={!canEdit} onClick={onEdit} size="sm">
-              <Pencil aria-hidden="true" size={14} /> Edit rule tree
+            <Button
+              disabled={!canEdit}
+              onClick={onEdit}
+              size="sm"
+              variant="outline"
+              type="button"
+            >
+              <Pencil aria-hidden="true" size={14} />
+              Edit rule tree
             </Button>
           </div>
         </>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-7 sm:px-6">
-          <p className="text-sm text-zinc-500">{empty}</p>
-          <Button disabled={!canEdit} onClick={onEdit} size="sm">
-            <Pencil aria-hidden="true" size={14} /> Add rule tree
+          <p className="text-sm text-muted-foreground">{empty}</p>
+          <Button
+            disabled={!canEdit}
+            onClick={onEdit}
+            size="sm"
+            variant="outline"
+            type="button"
+          >
+            <Pencil aria-hidden="true" size={14} />
+            Add rule tree
           </Button>
         </div>
       )}
@@ -892,10 +1052,6 @@ export function CourseReview({
   const changes = projection
     ? projectionChanges(projection, record.publishedProjection)
     : [];
-
-  function chooseYear(year: number) {
-    router.push(`/admin/courses/${record.publicId}?year=${year}`);
-  }
 
   function chooseSnapshot(snapshotId: number) {
     const suffix =
@@ -1055,17 +1211,20 @@ export function CourseReview({
                     ? "Create a new snapshot from the current course data"
                     : "An active snapshot and course write permission are required"
                 }
+                variant="outline"
+                type="button"
               >
-                <Pencil aria-hidden="true" size={15} /> Edit fields
+                <Pencil aria-hidden="true" size={15} />
+                Edit fields
               </Button>
             ) : null}
             {record.publishedSnapshotId ? (
-              <ButtonLink
-                href={`/courses/${record.code}?year=${record.year}`}
-                size="sm"
-              >
-                <ExternalLink aria-hidden="true" size={15} /> Student page
-              </ButtonLink>
+              <Button asChild size="sm" variant="outline">
+                <ReuiLink href={`/courses/${record.code}?year=${record.year}`}>
+                  <ExternalLink aria-hidden="true" size={15} />
+                  Student page
+                </ReuiLink>
+              </Button>
             ) : null}
             {needsExplicitConfirmation && isDraft && !viewingHistorical ? (
               <ConfirmDialog
@@ -1074,7 +1233,12 @@ export function CourseReview({
                 onConfirm={confirmReviewedSnapshot}
                 title={`Confirm review of ${record.code}?`}
                 trigger={
-                  <Button disabled={!canWrite || confirming} size="sm">
+                  <Button
+                    disabled={!canWrite || confirming}
+                    size="sm"
+                    variant="outline"
+                    type="button"
+                  >
                     <CheckCircle2 aria-hidden="true" size={15} />
                     {confirming ? "Confirming..." : "Confirm review"}
                   </Button>
@@ -1098,7 +1262,8 @@ export function CourseReview({
                           ? "Publish the current draft"
                           : "A sealed current draft and course write permission are required"
                     }
-                    variant="primary"
+                    variant="default"
+                    type="button"
                   >
                     <Check aria-hidden="true" size={15} />
                     {publishing ? "Publishing..." : "Publish draft"}
@@ -1116,7 +1281,8 @@ export function CourseReview({
                 <Button
                   disabled={!canWrite || !isActive || archiving}
                   size="sm"
-                  variant="danger"
+                  variant="destructive"
+                  type="button"
                 >
                   <Archive aria-hidden="true" size={15} />
                   {archiving ? "Archiving..." : "Archive"}
@@ -1134,60 +1300,22 @@ export function CourseReview({
             Review {record.code} {projection?.snapshot.title}
           </h1>
 
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <div className="w-28">
-              <Select
-                aria-label="Academic year"
-                onChange={chooseYear}
-                options={record.availableYears.map((year) => ({
-                  label: String(year.year),
-                  value: year.year,
-                }))}
-                value={record.year}
-              />
-            </div>
-            {record.snapshotHistory.length > 1 &&
-            record.currentSnapshotId !== null ? (
-              <div className="w-56">
-                <Select
-                  aria-label="Saved snapshot"
-                  onChange={chooseSnapshot}
-                  options={record.snapshotHistory.map((snapshot) => ({
-                    label: `Snapshot ${snapshot.snapshotNumber} · ${readable(snapshot.origin)}`,
-                    value: snapshot.id,
-                  }))}
-                  value={record.currentSnapshotId}
-                />
-              </div>
-            ) : null}
-            <Badge tone={isActive ? "success" : "neutral"}>
-              {readable(record.lifecycleStatus)}
-            </Badge>
-            {isDraft ? <Badge tone="brand">Draft</Badge> : null}
-            {viewingHistorical ? (
-              <Badge tone="neutral">Historical snapshot</Badge>
-            ) : null}
-            {record.publishedSnapshotId ? (
-              <Badge tone="success">Published snapshot available</Badge>
-            ) : (
-              <Badge tone="neutral">Not published</Badge>
-            )}
-            {record.snapshot?.overall_confidence !== null &&
-            record.snapshot?.overall_confidence !== undefined ? (
-              <Badge
-                tone={reviewConfidenceTone(
-                  record.snapshot.overall_confidence,
-                  needsExplicitConfirmation,
-                )}
-              >
-                {Math.round(record.snapshot.overall_confidence * 100)}%
-                confidence
-              </Badge>
-            ) : null}
-          </div>
-
           {message ? (
-            <Alert className="mb-4" role="status" tone={message.tone}>
+            <Alert
+              className="mb-4"
+              role="status"
+              variant={
+                (
+                  {
+                    neutral: "default",
+                    brand: "info",
+                    danger: "destructive",
+                    success: "success",
+                    warning: "warning",
+                  } as const
+                )[message.tone]
+              }
+            >
               {message.tone === "success" ? (
                 <CheckCircle2 aria-hidden="true" />
               ) : (
@@ -1197,7 +1325,7 @@ export function CourseReview({
             </Alert>
           ) : null}
           {!isActive ? (
-            <Alert className="mb-4" tone="warning">
+            <Alert className="mb-4" variant={"warning"}>
               <Archive aria-hidden="true" />
               <AlertDescription>
                 This course year is archived. Its snapshots remain available for
@@ -1206,15 +1334,16 @@ export function CourseReview({
             </Alert>
           ) : null}
           {viewingHistorical ? (
-            <Alert className="mb-4" tone="neutral">
+            <Alert className="mb-4" variant={"default"}>
               <AlertDescription>
                 You are inspecting an immutable historical snapshot. Select the
                 active snapshot above to edit or publish.
               </AlertDescription>
             </Alert>
           ) : null}
-          {record.snapshot?.has_critical_uncertainty ? (
-            <Alert className="mb-4" tone="warning">
+          {record.snapshot?.has_critical_uncertainty &&
+          (activeTab === "pipeline" || activeTab === "source") ? (
+            <Alert className="mb-4" variant={"warning"}>
               <CircleAlert aria-hidden="true" />
               <AlertDescription>
                 This imported draft has critical uncertainty. Review every field
@@ -1235,19 +1364,86 @@ export function CourseReview({
           ) : null}
 
           <TabsContent className="mt-0" value="course">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              {record.snapshotHistory.length > 1 &&
+              record.currentSnapshotId !== null ? (
+                <div className="w-56">
+                  <OptionPicker
+                    value={"coursemap:" + String(record.currentSnapshotId)}
+                    onValueChange={(nextValue) => {
+                      const option = record.snapshotHistory
+                        .map((snapshot) => ({
+                          label: `Snapshot ${snapshot.snapshotNumber} · ${readable(snapshot.origin)}`,
+                          value: snapshot.id,
+                        }))
+                        .find(
+                          (option) =>
+                            "coursemap:" + String(option.value) === nextValue,
+                        );
+                      if (option) chooseSnapshot(option.value);
+                    }}
+                    aria-label={"Saved snapshot"}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    placeholder={"Select..."}
+                    items={record.snapshotHistory
+                      .map((snapshot) => ({
+                        label: `Snapshot ${snapshot.snapshotNumber} · ${readable(snapshot.origin)}`,
+                        value: snapshot.id,
+                      }))
+                      .map((option) => ({
+                        value: "coursemap:" + String(option.value),
+                        label: option.label,
+                      }))}
+                  />
+                </div>
+              ) : null}
+              <Badge
+                variant={badgeVariantForTone[isActive ? "success" : "neutral"]}
+              >
+                {readable(record.lifecycleStatus)}
+              </Badge>
+              {isDraft ? <Badge variant={"primary-light"}>Draft</Badge> : null}
+              {viewingHistorical ? (
+                <Badge variant={"outline"}>Historical snapshot</Badge>
+              ) : null}
+              {record.publishedSnapshotId ? (
+                <Badge variant={"success-light"}>
+                  Published snapshot available
+                </Badge>
+              ) : (
+                <Badge variant={"outline"}>Not published</Badge>
+              )}
+              {record.snapshot?.overall_confidence !== null &&
+              record.snapshot?.overall_confidence !== undefined ? (
+                <Badge
+                  variant={
+                    badgeVariantForTone[
+                      reviewConfidenceTone(
+                        record.snapshot.overall_confidence,
+                        needsExplicitConfirmation,
+                      )
+                    ]
+                  }
+                >
+                  {Math.round(record.snapshot.overall_confidence * 100)}%
+                  confidence
+                </Badge>
+              ) : null}
+            </div>
+
             <div className="space-y-4">
               <Panel label="Published comparison">
-                <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
-                  <h2 className="text-sm font-semibold text-zinc-950">
+                <div className="border-b border-border px-5 py-4 sm:px-6">
+                  <h2 className="text-sm font-semibold text-foreground">
                     Published comparison
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     A short summary of the current snapshot compared with the
                     student-facing version. Field evidence appears below when
                     the import recorded it.
                   </p>
                 </div>
-                <div className="grid grid-cols-2 border-b border-zinc-200 sm:grid-cols-4">
+                <div className="grid grid-cols-2 border-b border-border sm:grid-cols-4">
                   {[
                     ["Course year", String(record.year)],
                     [
@@ -1265,36 +1461,39 @@ export function CourseReview({
                     ["Differences", String(changes.length)],
                   ].map(([label, value], index) => (
                     <div
-                      className={`px-4 py-4 sm:px-6 ${index ? "border-l border-zinc-200" : ""}`}
+                      className={`px-4 py-4 sm:px-6 ${index ? "border-l border-border" : ""}`}
                       key={label}
                     >
-                      <p className="text-xs font-medium text-zinc-500">
+                      <p className="text-xs font-medium text-muted-foreground">
                         {label}
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-zinc-950">
+                      <p className="mt-1 text-sm font-semibold text-foreground">
                         {value}
                       </p>
                     </div>
                   ))}
                 </div>
-                <div className="divide-y divide-zinc-100 px-5 sm:px-6">
+                <div className="divide-y divide-border/60 px-5 sm:px-6">
                   {changes.length ? (
                     changes.map((change) => (
-                      <div className="py-3 text-sm text-zinc-700" key={change}>
-                        <span className="inline-flex rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">
+                      <div
+                        className="py-3 text-sm text-foreground/80"
+                        key={change}
+                      >
+                        <span className="inline-flex rounded-md bg-muted px-2 py-1 text-xs font-medium text-foreground/80">
                           {change}
                         </span>
                       </div>
                     ))
                   ) : (
-                    <p className="py-7 text-sm text-zinc-500">
+                    <p className="py-7 text-sm text-muted-foreground">
                       The draft matches the currently published projection.
                     </p>
                   )}
                 </div>
                 {record.evidence.length ? (
-                  <details className="border-t border-zinc-200">
-                    <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 sm:px-6">
+                  <details className="border-t border-border">
+                    <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-foreground/80 hover:bg-accent/50 sm:px-6">
                       Field evidence ({record.evidence.length})
                     </summary>
                     <JsonCode
@@ -1305,11 +1504,11 @@ export function CourseReview({
                 ) : null}
               </Panel>
               <Panel label="Course fields">
-                <div className="border-b border-zinc-200 px-5 py-4 sm:px-6">
-                  <h2 className="text-sm font-semibold text-zinc-950">
+                <div className="border-b border-border px-5 py-4 sm:px-6">
+                  <h2 className="text-sm font-semibold text-foreground">
                     Course fields
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
                     Review the saved values or create a manual draft from the
                     complete relational course record.
                   </p>
@@ -1387,12 +1586,13 @@ export function CourseReview({
                         />
                       </dl>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 px-5 py-3 sm:px-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
                       <div className="flex flex-wrap gap-2">
                         {collectionSummary(advancedCollections(projection)).map(
                           ([label, count]) => (
-                            <Badge key={label} tone="neutral">
-                              {count} {label.toLowerCase()}
+                            <Badge key={label} variant={"outline"}>
+                              {count}
+                              {label.toLowerCase()}
                             </Badge>
                           ),
                         )}
@@ -1401,14 +1601,16 @@ export function CourseReview({
                         disabled={!canEdit}
                         onClick={startEditing}
                         size="sm"
+                        variant="outline"
+                        type="button"
                       >
-                        <Pencil aria-hidden="true" size={14} /> Edit complete
-                        snapshot
+                        <Pencil aria-hidden="true" size={14} />
+                        Edit complete snapshot
                       </Button>
                     </div>
                   </>
                 ) : (
-                  <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                  <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
                     This course year does not have a draft or published
                     snapshot.
                   </p>
@@ -1416,15 +1618,15 @@ export function CourseReview({
               </Panel>
               <Panel label="Relational projection">
                 <details>
-                  <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-zinc-950 marker:content-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none sm:px-6">
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-foreground marker:content-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:px-6">
                     <FileCode2
                       aria-hidden="true"
-                      className="text-zinc-400"
+                      className="text-muted-foreground/80"
                       size={17}
                     />
                     Relational projection
                   </summary>
-                  <p className="border-t border-zinc-100 px-5 py-3 text-xs leading-5 text-zinc-500 sm:px-6">
+                  <p className="border-t border-border/60 px-5 py-3 text-xs leading-5 text-muted-foreground sm:px-6">
                     Assembled from the saved snapshot and child rows. This is an
                     inspection view, not a stored import JSON blob.
                   </p>
@@ -1439,79 +1641,7 @@ export function CourseReview({
 
           <TabsContent className="mt-0" value="source">
             <div className="space-y-4">
-              <Panel label="Source">
-                {record.sourcePage ? (
-                  <>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
-                      <div>
-                        <h2 className="text-base font-semibold text-zinc-950">
-                          ANU source page
-                        </h2>
-                        <p className="mt-1 text-sm text-zinc-500">
-                          Manual snapshots keep this immutable source reference.
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {record.importTarget ? (
-                          <ButtonLink
-                            href={`/admin/courses/imports/${record.importTarget.targetId}`}
-                            size="sm"
-                          >
-                            <FileCode2 aria-hidden="true" size={15} /> Import
-                            review
-                          </ButtonLink>
-                        ) : null}
-                        <ButtonLink
-                          href={record.sourcePage.canonical_url}
-                          rel="noreferrer"
-                          size="sm"
-                          target="_blank"
-                        >
-                          <ExternalLink aria-hidden="true" size={15} /> Open ANU
-                          page
-                        </ButtonLink>
-                      </div>
-                    </div>
-                    <div className="px-5 sm:px-6">
-                      <dl>
-                        <FieldValue
-                          label="Retrieved"
-                          value={formatDate(record.sourcePage.fetched_at)}
-                        />
-                        <FieldValue
-                          label="Last modified"
-                          value={formatDate(
-                            record.sourcePage.source_last_modified,
-                          )}
-                        />
-                        <FieldValue
-                          label="Content hash"
-                          value={
-                            <span className="font-mono text-xs break-all">
-                              {record.sourcePage.content_sha256}
-                            </span>
-                          }
-                        />
-                        <FieldValue
-                          label="Canonical URL"
-                          value={
-                            <span className="break-all">
-                              {record.sourcePage.canonical_url}
-                            </span>
-                          }
-                        />
-                      </dl>
-                    </div>
-                  </>
-                ) : (
-                  <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
-                    No immutable source page is attached to this snapshot.
-                  </p>
-                )}
-              </Panel>
-              {record.importTarget ? (
-                <CourseImportArtifactViewer artifacts={record.artifacts} />
-              ) : null}
+              <CourseImportArtifactViewer artifacts={record.artifacts} />
             </div>
           </TabsContent>
 
@@ -1575,7 +1705,7 @@ export function CourseReview({
           <TabsContent className="mt-0" value="student">
             {previewCourse ? (
               <Tabs className="gap-0" defaultValue="overview">
-                <div className="border-b border-zinc-200">
+                <div className="border-b border-border">
                   <CourseDetailTabsList />
                 </div>
                 <div className="pt-6">
@@ -1591,7 +1721,7 @@ export function CourseReview({
               </Tabs>
             ) : (
               <Panel label="Course preview">
-                <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
                   A snapshot is required before the course preview is available.
                 </p>
               </Panel>

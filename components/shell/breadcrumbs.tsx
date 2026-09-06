@@ -176,7 +176,7 @@ export function Breadcrumbs({
             {index > 0 && (
               <ChevronRight
                 aria-hidden="true"
-                className={`block size-3.5 shrink-0 text-zinc-300 ${currentLabel ? "hidden sm:block" : ""}`}
+                className={`block size-3.5 shrink-0 text-muted-foreground/40 ${currentLabel ? "hidden sm:block" : ""}`}
               />
             )}
             <li
@@ -185,22 +185,22 @@ export function Breadcrumbs({
               {crumb.href ? (
                 <Link
                   href={crumb.href}
-                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-medium text-zinc-500 transition hover:text-zinc-800"
+                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-medium text-muted-foreground transition hover:text-foreground"
                 >
                   {crumb.icon ? (
                     <crumb.icon
                       aria-hidden="true"
-                      className="block size-3.5 shrink-0 text-zinc-400"
+                      className="block size-3.5 shrink-0 text-muted-foreground/70"
                     />
                   ) : null}
                   <span className="truncate">{crumb.label}</span>
                 </Link>
               ) : (
-                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-semibold text-zinc-900">
+                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-semibold text-foreground">
                   {crumb.icon ? (
                     <crumb.icon
                       aria-hidden="true"
-                      className="block size-3.5 shrink-0 text-zinc-500"
+                      className="block size-3.5 shrink-0 text-muted-foreground"
                     />
                   ) : null}
                   <span className="truncate">{crumb.label}</span>

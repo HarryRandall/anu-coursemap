@@ -1,8 +1,9 @@
+import { Card, CardHeader, CardTitle, CardDescription } from "@reui/ui/card";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { Suspense } from "react";
 import { UserDirectory } from "@/components/admin/user-directory";
 import { AppShell } from "@/components/shell";
-import { Card, CardHeader } from "@/components/ui/card";
+
 import { FilterBar } from "@/components/ui/filter-bar";
 import { loadAdminUserManagement } from "@/lib/admin/users";
 import { getAuthContext } from "@/lib/auth/viewer";
@@ -19,15 +20,13 @@ function Notice({
 }) {
   return (
     <Card>
-      <CardHeader
-        title={title}
-        description={description}
-        icon={
+      <CardHeader>
+        {
           <span
             className={
               warning
-                ? "grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700"
-                : "grid size-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-700"
+                ? "grid size-9 shrink-0 place-items-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                : "grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"
             }
           >
             {warning ? (
@@ -37,7 +36,13 @@ function Notice({
             )}
           </span>
         }
-      />
+        <CardTitle>
+          <h2>{title}</h2>
+        </CardTitle>
+        {Boolean(description) && (
+          <CardDescription>{description}</CardDescription>
+        )}
+      </CardHeader>
     </Card>
   );
 }
@@ -107,7 +112,7 @@ export default async function AdminUsersPage({
   });
 
   return (
-    <AppShell admin>
+    <AppShell admin fill>
       <h1 className="sr-only">Users and access</h1>
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-5">
         <Suspense fallback={<div className="h-10" />}>
@@ -131,6 +136,7 @@ export default async function AdminUsersPage({
           roles={data.roles}
           assignments={data.assignments}
           currentUserId={viewer.id}
+          filtered={Boolean(query || role)}
         />
       </div>
     </AppShell>

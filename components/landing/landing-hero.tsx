@@ -1,6 +1,7 @@
+import { Button } from "@reui/ui/button";
+import { Input } from "@reui/ui/input";
+import ReuiLink from "next/link";
 import { ArrowRight, Search } from "lucide-react";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Input } from "@/components/ui/field";
 
 const popularSearches = ["COMP2100", "Machine learning", "MATH1013"] as const;
 
@@ -38,7 +39,7 @@ export function LandingHero({ canOpenPlan }: { canOpenPlan: boolean }) {
         </label>
         <Button
           type="submit"
-          variant="primary"
+          variant="default"
           size="lg"
           className="!rounded-3xl sm:min-w-44"
         >
@@ -49,27 +50,27 @@ export function LandingHero({ canOpenPlan }: { canOpenPlan: boolean }) {
       <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
         <span className="text-xs text-zinc-500">Popular:</span>
         {popularSearches.map((query) => (
-          <ButtonLink
+          <Button
+            asChild
             key={query}
-            href={`/courses?q=${encodeURIComponent(query)}`}
-            variant="secondary"
+            variant="outline"
             size="sm"
             className="min-h-9 !rounded-full px-3.5 text-xs"
           >
-            {query}
-          </ButtonLink>
+            <ReuiLink href={`/courses?q=${encodeURIComponent(query)}`}>
+              {query}
+            </ReuiLink>
+          </Button>
         ))}
       </div>
 
       <div className="mt-6 flex justify-center">
-        <ButtonLink
-          href={canOpenPlan ? "/plan" : "/signup"}
-          variant="ghost"
-          className="min-h-11 text-zinc-600"
-        >
-          {canOpenPlan ? "Continue planning" : "Create a free account"}
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </ButtonLink>
+        <Button asChild variant="ghost" className="min-h-11 text-zinc-600">
+          <ReuiLink href={canOpenPlan ? "/plan" : "/signup"}>
+            {canOpenPlan ? "Continue planning" : "Create a free account"}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </ReuiLink>
+        </Button>
       </div>
     </section>
   );

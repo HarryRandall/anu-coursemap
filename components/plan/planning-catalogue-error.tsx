@@ -1,8 +1,9 @@
+import { Alert, AlertDescription, AlertTitle } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
+import ReuiLink from "next/link";
 import { CircleAlert } from "lucide-react";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 
 export function PlanningCatalogueError({
   pageTitle,
@@ -15,7 +16,7 @@ export function PlanningCatalogueError({
     <AppShell>
       <h1 className="sr-only">{pageTitle}</h1>
       <Card className="mx-auto max-w-xl p-4 sm:p-5">
-        <Alert tone="warning" role="alert">
+        <Alert role="alert" variant={"warning"}>
           <CircleAlert aria-hidden="true" />
           <AlertTitle>Planning catalogue temporarily unavailable</AlertTitle>
           <AlertDescription>
@@ -24,9 +25,9 @@ export function PlanningCatalogueError({
           </AlertDescription>
         </Alert>
         <div className="mt-4">
-          <ButtonLink href={retryHref} size="sm" variant="primary">
-            Try again
-          </ButtonLink>
+          <Button asChild size="sm" variant="default">
+            <ReuiLink href={retryHref}>Try again</ReuiLink>
+          </Button>
         </div>
       </Card>
     </AppShell>

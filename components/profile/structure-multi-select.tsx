@@ -1,7 +1,8 @@
 "use client";
+import { Checkbox } from "@reui/ui/checkbox";
 
 import { useId } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { cn } from "@/lib/cn";
 
 type StructureOption = {
@@ -29,15 +30,19 @@ export function StructureMultiSelect({
 
   return (
     <fieldset className={cn("min-w-0", className)}>
-      <legend className="text-xs font-medium text-zinc-700">{label}</legend>
-      <p className="mt-1 text-xs leading-relaxed text-zinc-500">{hint}</p>
-      <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-zinc-200 bg-white p-1 shadow-xs">
+      <legend className="text-xs font-medium text-foreground/80">
+        {label}
+      </legend>
+      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+        {hint}
+      </p>
+      <div className="mt-2 max-h-48 overflow-y-auto rounded-md border border-border bg-card p-1 shadow-xs">
         {options.map((option, index) => {
           const optionId = `${id}-${index}`;
           const checked = selected.has(option.code);
           return (
             <label
-              className="flex min-h-11 cursor-pointer items-center gap-3 rounded px-2.5 py-2 hover:bg-zinc-50"
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded px-2.5 py-2 hover:bg-accent/50"
               htmlFor={optionId}
               key={option.code}
             >
@@ -53,10 +58,10 @@ export function StructureMultiSelect({
                 }}
               />
               <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-zinc-900">
+                <span className="block truncate text-sm font-medium text-foreground">
                   {option.name}
                 </span>
-                <span className="block font-mono text-xs text-zinc-500">
+                <span className="block font-mono text-xs text-muted-foreground">
                   {option.code}
                 </span>
               </span>

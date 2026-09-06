@@ -1,4 +1,11 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import ReuiLink from "next/link";
 
 import {
   Check,
@@ -18,10 +25,7 @@ import type {
 } from "@/lib/coursemap/admin-catalogue";
 import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
 import { AppShell } from "@/components/shell";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+
 import { AcademicStructureManualSnapshotEditor } from "@/components/admin/academic-structures/manual-snapshot-editor";
 
 function formatDate(value: string | null) {
@@ -40,10 +44,12 @@ function formatDate(value: string | null) {
 
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="grid gap-1 border-b border-zinc-100 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
-      <dt className="text-sm font-medium text-zinc-500">{label}</dt>
-      <dd className="min-w-0 text-sm leading-6 text-zinc-900">
-        {value || <span className="text-zinc-400">Not provided</span>}
+    <div className="grid gap-1 border-b border-border/60 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
+      <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm leading-6 text-foreground">
+        {value || (
+          <span className="text-muted-foreground/80">Not provided</span>
+        )}
       </dd>
     </div>
   );
@@ -58,7 +64,7 @@ function conditionText(condition: AdminStructureReviewCondition) {
       <>
         Complete{" "}
         <Link
-          className="font-mono font-semibold text-brand-700 hover:text-brand-900"
+          className="font-mono font-semibold text-primary hover:text-primary"
           href={`/admin/courses/${condition.courseCode}`}
         >
           {condition.courseCode}
@@ -71,7 +77,7 @@ function conditionText(condition: AdminStructureReviewCondition) {
       <>
         Complete{" "}
         <Link
-          className="font-mono font-semibold text-brand-700 hover:text-brand-900"
+          className="font-mono font-semibold text-primary hover:text-primary"
           href={adminAcademicStructureDetailPath({
             kind: condition.targetStructureKind,
             publicId: condition.targetStructureCode,
@@ -101,29 +107,31 @@ function conditionText(condition: AdminStructureReviewCondition) {
 
 function GroupCard({ group }: { group: AdminStructureReviewGroup }) {
   return (
-    <section className="border-b border-zinc-100 px-5 py-4 last:border-b-0 sm:px-6">
+    <section className="border-b border-border/60 px-5 py-4 last:border-b-0 sm:px-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-zinc-950">{group.name}</h3>
-        <span className="font-mono text-xs text-zinc-500">{group.code}</span>
+        <h3 className="text-sm font-semibold text-foreground">{group.name}</h3>
+        <span className="font-mono text-xs text-muted-foreground">
+          {group.code}
+        </span>
       </div>
-      <p className="mt-1 text-xs text-zinc-500">
+      <p className="mt-1 text-xs text-muted-foreground">
         {group.operator === "all_of" ? "Complete all of" : "Complete any of"}
         {group.minimumUnits ? ` · at least ${group.minimumUnits} units` : ""}
         {group.minimumCount ? ` · at least ${group.minimumCount} items` : ""}
       </p>
       {group.description ? (
-        <p className="mt-2 text-sm leading-6 text-zinc-700">
+        <p className="mt-2 text-sm leading-6 text-foreground/80">
           {group.description}
         </p>
       ) : null}
       {group.conditions.length ? (
-        <ul className="mt-3 space-y-1.5 border-l border-zinc-200 pl-4 text-sm text-zinc-700">
+        <ul className="mt-3 space-y-1.5 border-l border-border pl-4 text-sm text-foreground/80">
           {group.conditions.map((condition) => (
             <li key={condition.id}>{conditionText(condition)}</li>
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-zinc-500">
+        <p className="mt-3 text-sm text-muted-foreground">
           No conditions were imported for this group.
         </p>
       )}
@@ -192,17 +200,13 @@ export function ProgrammeReview({
   }
 
   const tabs = (
-    <TabsList className="h-auto min-w-max justify-start gap-0 rounded-none bg-transparent p-0">
+    <TabsList variant="line">
       {[
         { label: "Details", value: "details" },
         { label: "Requirements", value: "requirements" },
         { label: "Source", value: "source" },
       ].map((item) => (
-        <TabsTrigger
-          className="h-12 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-zinc-500 shadow-none hover:text-zinc-950 data-[state=active]:border-brand-600 data-[state=active]:bg-transparent data-[state=active]:text-zinc-950 data-[state=active]:shadow-none"
-          key={item.value}
-          value={item.value}
-        >
+        <TabsTrigger key={item.value} value={item.value}>
           {item.label}
         </TabsTrigger>
       ))}
@@ -222,8 +226,14 @@ export function ProgrammeReview({
           canEdit || (isDraft && canPublish) ? (
             <div className="flex items-center gap-2">
               {canEdit ? (
-                <Button onClick={() => setEditing(true)} size="sm">
-                  <Pencil aria-hidden="true" size={15} /> Edit draft
+                <Button
+                  onClick={() => setEditing(true)}
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                >
+                  <Pencil aria-hidden="true" size={15} />
+                  Edit draft
                 </Button>
               ) : null}
               {isDraft && canPublish ? (
@@ -236,7 +246,8 @@ export function ProgrammeReview({
                       ? "Verify the imported requirements before publishing."
                       : undefined
                   }
-                  variant="primary"
+                  variant="default"
+                  type="button"
                 >
                   <Check aria-hidden="true" size={15} />
                   {publishing ? "Publishing..." : "Publish"}
@@ -255,7 +266,20 @@ export function ProgrammeReview({
           </h1>
 
           {message ? (
-            <Alert role="status" tone={message.tone}>
+            <Alert
+              role="status"
+              variant={
+                (
+                  {
+                    neutral: "default",
+                    brand: "info",
+                    danger: "destructive",
+                    success: "success",
+                    warning: "warning",
+                  } as const
+                )[message.tone]
+              }
+            >
               {message.tone === "success" ? (
                 <CheckCircle2 aria-hidden="true" />
               ) : (
@@ -266,8 +290,8 @@ export function ProgrammeReview({
           ) : null}
 
           <TabsContent className="mt-0" value="details">
-            <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-              <div className="grid grid-cols-2 border-b border-zinc-200 sm:grid-cols-4">
+            <section className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="grid grid-cols-2 border-b border-border sm:grid-cols-4">
                 {[
                   ["Catalogue", String(record.year)],
                   ["Kind", record.kind],
@@ -285,11 +309,13 @@ export function ProgrammeReview({
                   ],
                 ].map(([label, value], index) => (
                   <div
-                    className={`px-4 py-3.5 sm:px-5 ${index ? "border-l border-zinc-200" : ""}`}
+                    className={`px-4 py-3.5 sm:px-5 ${index ? "border-l border-border" : ""}`}
                     key={label}
                   >
-                    <p className="text-xs font-medium text-zinc-500">{label}</p>
-                    <p className="mt-1 text-sm font-semibold text-zinc-950 capitalize">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {label}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-foreground capitalize">
                       {value}
                     </p>
                   </div>
@@ -312,12 +338,18 @@ export function ProgrammeReview({
           </TabsContent>
 
           <TabsContent className="mt-0" value="requirements">
-            <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
-                <h2 className="text-base font-semibold text-zinc-950">
+            <section className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+                <h2 className="text-base font-semibold text-foreground">
                   Requirements
                 </h2>
-                <Badge tone={record.groups.length ? "neutral" : "warning"}>
+                <Badge
+                  variant={
+                    badgeVariantForTone[
+                      record.groups.length ? "neutral" : "warning"
+                    ]
+                  }
+                >
                   {record.groups.length}{" "}
                   {record.groups.length === 1 ? "group" : "groups"}
                 </Badge>
@@ -327,7 +359,7 @@ export function ProgrammeReview({
                   <GroupCard group={group} key={group.id} />
                 ))
               ) : (
-                <p className="px-5 py-8 text-sm text-zinc-500 sm:px-6">
+                <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
                   No requirement groups were imported for this version.
                 </p>
               )}
@@ -335,20 +367,28 @@ export function ProgrammeReview({
           </TabsContent>
 
           <TabsContent className="mt-0" value="source">
-            <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-5 py-4 sm:px-6">
-                <h2 className="text-base font-semibold text-zinc-950">
+            <section className="overflow-hidden rounded-xl border border-border bg-card">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+                <h2 className="text-base font-semibold text-foreground">
                   Source
                 </h2>
                 {record.source ? (
-                  <ButtonLink
-                    href={record.source.canonicalUrl}
-                    rel="noreferrer"
+                  <Button
+                    asChild
+
                     size="sm"
-                    target="_blank"
+
+                    variant="outline"
                   >
-                    <ExternalLink aria-hidden="true" size={15} /> Open ANU page
-                  </ButtonLink>
+                    <ReuiLink
+                      rel="noreferrer"
+                      target="_blank"
+                      href={record.source.canonicalUrl}
+                    >
+                      <ExternalLink aria-hidden="true" size={15} />
+                      Open ANU page
+                    </ReuiLink>
+                  </Button>
                 ) : null}
               </div>
               <div className="px-5 sm:px-6">
@@ -380,7 +420,7 @@ export function ProgrammeReview({
                     />
                   </dl>
                 ) : (
-                  <p className="py-8 text-sm text-zinc-500">
+                  <p className="py-8 text-sm text-muted-foreground">
                     No source document is attached to this version.
                   </p>
                 )}

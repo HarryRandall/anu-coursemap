@@ -1,9 +1,10 @@
 "use client";
+import { Button } from "@reui/ui/button";
 
 import { LoaderCircle, WandSparkles } from "lucide-react";
 import { useState } from "react";
 import { useCoursemap } from "@/app/providers";
-import { Button } from "@/components/ui/button";
+
 import { cn } from "@/lib/cn";
 import type { Attempt } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
@@ -48,8 +49,8 @@ export function FixIssueButton({
   return (
     <Button
       type="button"
-      variant="subtle"
-      size={size}
+      variant="secondary"
+      size={size === "md" ? "default" : size}
       className={cn("min-h-9", className)}
       disabled={busy}
       aria-label={`Fix it for me: ${proposal.summary}`}

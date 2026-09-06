@@ -33,7 +33,7 @@ const requirementsViewPath = new URL(
 
 test("makes the pipeline the first and default structure review tab", async () => {
   const source = await readFile(targetReviewPath, "utf8");
-  assert.match(source, /<Tabs defaultValue="pipeline">/);
+  assert.match(source, /<Tabs defaultValue="pipeline"(?:\s[^>]*)?>/);
   const pipeline = source.indexOf(
     '<TabsTrigger value="pipeline">Pipeline</TabsTrigger>',
   );
@@ -91,8 +91,8 @@ test("shows complete candidate relational areas and concrete database tables", a
   }
   assert.match(rowsSource, /fee_year: row\.feeYear/);
   assert.match(rowsSource, /requirement_group_id:/);
-  assert.match(rowsSource, /<ImportDatabaseRowTable/);
-  assert.match(tableSource, /<TableCaption>/);
+  assert.match(rowsSource, /<DatabaseRowsViewer/);
+  assert.match(tableSource, /<TableCaption className="sr-only">/);
   assert.match(tableSource, /table\.columns\.map/);
   assert.match(tableSource, /JSON\.stringify\(value\)/);
   assert.match(tableSource, /className="h-12"/);
@@ -118,7 +118,7 @@ test("renders JSON artefacts and database projections with the light viewer", as
   assert.match(source, /projectedAcademicStructureDatabaseTables\(parsed\)/);
   assert.match(source, /\/api\/admin\/academic-structure-imports\/artifacts\//);
   assert.match(source, /const grouped = useMemo/);
-  assert.match(source, /<Select/);
+  assert.match(source, /<OptionPicker/);
   assert.match(source, /Attempt \$\{artifact\.attemptNumber\}/);
   assert.doesNotMatch(source, /` · attempt \$\{artifact\.attemptNumber\}`/);
   assert.doesNotMatch(source, /bg-black|bg-zinc-950/);

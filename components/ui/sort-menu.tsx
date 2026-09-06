@@ -1,4 +1,7 @@
 "use client";
+import { Button } from "@reui/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@reui/ui/popover";
 
 import { useState } from "react";
 import {
@@ -6,14 +9,8 @@ import {
   ArrowUpDown,
   ArrowUpNarrowWide,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import { OptionMenu } from "@/components/ui/option-menu";
-import { Tooltip } from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 export type SortOption<T extends string> = {
   value: T;
@@ -51,18 +48,22 @@ export function SortMenu<T extends string>({
 
   return (
     <Popover onOpenChange={setOpen} open={open}>
-      <Tooltip content={label}>
-        <PopoverTrigger asChild>
-          <Button
-            aria-label={label}
-            aria-pressed={sorted}
-            className="size-10 shrink-0"
-            size="icon"
-            variant={sorted ? "subtle" : "secondary"}
-          >
-            <Icon aria-hidden="true" size={16} />
-          </Button>
-        </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              aria-label={label}
+              aria-pressed={sorted}
+              className="size-10 shrink-0"
+              size="icon"
+              variant={sorted ? "secondary" : "outline"}
+              type="button"
+            >
+              <Icon aria-hidden="true" size={16} />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
       </Tooltip>
       <PopoverContent align="end" className="w-56 p-1.5">
         <OptionMenu

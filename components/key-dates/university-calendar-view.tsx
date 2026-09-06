@@ -1,6 +1,10 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Badge } from "@reui/components/badge";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   ClipboardCheck,
@@ -9,79 +13,114 @@ import {
   MapPin,
   PenLine,
   TreePalm,
-  type LucideIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
+import { OptionPicker } from "@/components/ui/option-picker";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { cn } from "@/lib/cn";
 import {
   UNIVERSITY_CALENDAR_CATEGORIES,
   groupUniversityCalendarEventsByMonth,
-  type UniversityCalendarCategory,
   type UniversityCalendarEvent,
 } from "@/lib/coursemap/university-calendar";
 
-const MONTHS_PER_PAGE = 3;
-
-const weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const monthShortNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-const categoryPresentation: Record<
-  UniversityCalendarCategory,
-  {
-    icon: LucideIcon;
-    tone: "brand" | "danger" | "warning" | "success" | "info" | "neutral";
-  }
-> = {
-  teaching: { icon: BookOpen, tone: "brand" },
-  examinations: { icon: PenLine, tone: "danger" },
-  enrolment: { icon: ClipboardCheck, tone: "warning" },
-  graduation: { icon: GraduationCap, tone: "success" },
-  holiday: { icon: TreePalm, tone: "info" },
-  campus: { icon: MapPin, tone: "neutral" },
+const categoryIcons = {
+  teaching: BookOpen,
+  examinations: PenLine,
+  enrolment: ClipboardCheck,
+  graduation: GraduationCap,
+  holiday: TreePalm,
+  campus: MapPin,
 };
-
-const categoryLabels = new Map(
-  UNIVERSITY_CALENDAR_CATEGORIES.map((category) => [
-    category.value,
-    category.label,
-  ]),
-);
-
-function keyDatesHref(year: number) {
-  return `/key-dates?year=${year}`;
-}
-
-function eventDateParts(date: string) {
-  const parsed = new Date(`${date}T00:00:00Z`);
-  return {
-    day: Number(date.slice(8, 10)),
-    month: monthShortNames[Number(date.slice(5, 7)) - 1],
-    weekday: weekdayNames[parsed.getUTCDay()],
-  };
-}
-
-function CategoryBadge({ category }: { category: UniversityCalendarCategory }) {
-  const { icon: Icon, tone } = categoryPresentation[category];
+function CategoryBadge({ event }: { event: UniversityCalendarEvent }) {
+  const Icon = categoryIcons[event.category];
   return (
-    <Badge tone={tone}>
+    <Badge variant={badgeVariantForTone[tones[event.category]]}>
       <Icon size={12} aria-hidden="true" />
-      {categoryLabels.get(category)}
+      {categoryLabel(event)}
     </Badge>
+  );
+}
+const tones = {
+  teaching: "brand",
+  examinations: "danger",
+  enrolment: "warning",
+  graduation: "success",
+  holiday: "info",
+  campus: "neutral",
+} as const;
+function categoryLabel(event: UniversityCalendarEvent) {
+  return UNIVERSITY_CALENDAR_CATEGORIES.find(
+    (item) => item.value === event.category,
+  )?.label;
+}
+function dateLabel(date: string, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat("en-AU", {
+    ...options,
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00Z`));
+}
+function Countdown({ date, today }: { date: string; today: string }) {
+  const days = Math.round((Date.parse(date) - Date.parse(today)) / 86400000);
+  return (
+    <span>
+      {days === 0
+        ? "Today"
+        : days === 1
+          ? "Tomorrow"
+          : days > 0
+            ? `In ${days} days`
+            : `${Math.abs(days)} days ago`}
+    </span>
+  );
+}
+function EventRows({
+  events,
+  todayIso,
+}: {
+  events: UniversityCalendarEvent[];
+  todayIso: string;
+}) {
+  return (
+    <ol className="divide-y divide-border/60">
+      {events.map((event) => (
+        <li
+          key={event.id}
+          className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-4 px-4 py-5 sm:px-6 md:grid-cols-[5rem_minmax(0,1fr)_auto]"
+        >
+          <time
+            dateTime={event.date}
+            className="flex flex-col text-muted-foreground"
+          >
+            <span className="text-xs">
+              {dateLabel(event.date, { weekday: "short" })}
+            </span>
+            <span
+              className={cn(
+                "text-2xl font-semibold tracking-tight text-foreground tabular-nums",
+                event.date === todayIso && "text-primary",
+              )}
+            >
+              {event.date.slice(8)}
+            </span>
+          </time>
+          <div>
+            <p className="text-sm leading-relaxed font-medium text-foreground">
+              {event.title}
+            </p>
+            <div className="mt-1 text-xs text-muted-foreground md:hidden">
+              <CategoryBadge event={event} />
+            </div>
+            {event.date === todayIso && (
+              <span className="text-xs font-medium text-primary">Today</span>
+            )}
+          </div>
+          <div className="hidden justify-self-end md:block">
+            <CategoryBadge event={event} />
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -98,167 +137,195 @@ export function UniversityCalendarView({
   todayIso: string;
   year: number;
 }) {
-  const months = useMemo(
-    () => groupUniversityCalendarEventsByMonth(allEvents),
-    [allEvents],
+  const params = useSearchParams();
+  const router = useRouter();
+  const defaultPeriod =
+    year < Number(todayIso.slice(0, 4)) ? "past" : "upcoming";
+  const rawPeriod = params.get("period");
+  const period =
+    rawPeriod === "past" || rawPeriod === "all" || rawPeriod === "upcoming"
+      ? rawPeriod
+      : defaultPeriod;
+  const query = (params.get("q") ?? "").trim().toLowerCase();
+  const category = params.get("category") ?? "";
+  const events = allEvents.filter(
+    (event) =>
+      (!category || event.category === category) &&
+      event.title.toLowerCase().includes(query),
   );
-  const [visibleMonthCount, setVisibleMonthCount] = useState(() =>
-    Math.min(MONTHS_PER_PAGE, months.length),
-  );
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const hasMore = visibleMonthCount < months.length;
-
-  const loadMore = useCallback(() => {
-    setVisibleMonthCount((current) =>
-      Math.min(current + MONTHS_PER_PAGE, months.length),
-    );
-  }, [months.length]);
-
-  useEffect(() => {
-    const target = loadMoreRef.current;
-    if (!target || !hasMore || typeof IntersectionObserver === "undefined") {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) loadMore();
-      },
-      { rootMargin: "400px 0px" },
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [hasMore, loadMore, visibleMonthCount]);
+  const futureEvents = events.filter((event) => event.date >= todayIso);
+  const pastEvents = events.filter((event) => event.date < todayIso);
+  const visibleEvents =
+    period === "past"
+      ? pastEvents
+      : period === "upcoming"
+        ? futureEvents
+        : events;
+  const months = groupUniversityCalendarEventsByMonth(visibleEvents);
+  if (period === "past") months.reverse();
+  const upcoming = futureEvents.slice(0, 3);
+  function href(nextPeriod: string, nextYear = year) {
+    const next = new URLSearchParams(params.toString());
+    next.delete("view");
+    next.set("period", nextPeriod);
+    next.set("year", String(nextYear));
+    return `/key-dates?${next}`;
+  }
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-900">
-            {year}
-          </h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {allEvents.length} key dates
-          </p>
-        </div>
+    <div className="w-full space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-xl font-semibold tracking-tight">
+          University calendar
+        </h2>
+        <OptionPicker
+          aria-label="Calendar year"
+          className="w-24"
+          searchable={false}
+          items={availableYears.map((value) => ({
+            value: String(value),
+            label: String(value),
+          }))}
+          value={String(year)}
+          onValueChange={(value) => {
+            const nextYear = Number(value);
+            router.push(
+              href(
+                nextYear < Number(todayIso.slice(0, 4)) ? "past" : "upcoming",
+                nextYear,
+              ),
+              { scroll: false },
+            );
+          }}
+        />
+      </div>
+      <FilterBar
+        searchPlaceholder="Search dates, deadlines and events..."
+        filters={[
+          {
+            key: "category",
+            label: "Category",
+            allLabel: "All categories",
+            options: UNIVERSITY_CALENDAR_CATEGORIES,
+          },
+        ]}
+      />
 
-        {availableYears.length > 1 ? (
-          <nav aria-label="Calendar year" className="flex flex-wrap gap-1">
-            {availableYears.map((availableYear) => (
-              <Link
-                key={availableYear}
-                href={keyDatesHref(availableYear)}
-                aria-current={availableYear === year ? "page" : undefined}
+      {!query && !category && period !== "past" && upcoming.length > 0 && (
+        <section aria-label="Next key dates" className="space-y-3">
+          <h3 className="text-sm font-semibold">Coming up next</h3>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {upcoming.map((event, index) => (
+              <article
+                key={event.id}
                 className={cn(
-                  "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium",
-                  availableYear === year
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900",
+                  "rounded-xl border p-4",
+                  index === 0
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-border bg-card",
                 )}
               >
-                {availableYear}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
-      </div>
-
-      <div className="space-y-7">
-        {months.slice(0, visibleMonthCount).map((month) => (
-          <section
-            key={month.key}
-            id={`month-${month.key}`}
-            aria-labelledby={`month-heading-${month.key}`}
-            className="scroll-mt-4"
-          >
-            <div className="sticky top-0 z-10 flex items-baseline justify-between gap-3 border-b border-zinc-200 bg-zinc-50/95 py-2.5 backdrop-blur-sm">
-              <h3
-                id={`month-heading-${month.key}`}
-                className="text-sm font-semibold text-zinc-900"
-              >
-                {month.label}
-              </h3>
-              <span className="text-xs text-zinc-500">
-                {month.events.length}{" "}
-                {month.events.length === 1 ? "date" : "dates"}
-              </span>
-            </div>
-
-            <ol className="divide-y divide-zinc-100">
-              {month.events.map((event) => {
-                const {
-                  day,
-                  month: monthName,
-                  weekday,
-                } = eventDateParts(event.date);
-                const isToday = event.date === todayIso;
-
-                return (
-                  <li
-                    key={event.id}
-                    className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 py-3.5 sm:grid-cols-[6rem_minmax(0,1fr)_auto] sm:items-center"
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <CategoryBadge event={event} />
+                  <span className="text-xs text-muted-foreground">
+                    <Countdown date={event.date} today={todayIso} />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <time
+                    dateTime={event.date}
+                    className="text-xl font-semibold tracking-tight"
                   >
-                    <time
-                      dateTime={event.date}
-                      className={cn(
-                        "text-xs font-semibold tabular-nums",
-                        isToday ? "text-brand-700" : "text-zinc-500",
-                      )}
-                    >
-                      {isToday ? (
-                        "Today"
-                      ) : (
-                        <>
-                          <span className="block text-[10px] tracking-wide uppercase sm:inline sm:text-xs sm:tracking-normal sm:normal-case">
-                            {weekday}
-                          </span>{" "}
-                          <span>
-                            {day} {monthName}
-                          </span>
-                        </>
-                      )}
-                    </time>
-
-                    <div className="min-w-0">
-                      <p className="text-sm leading-snug font-medium text-zinc-900">
-                        {event.title}
-                      </p>
-                      <div className="mt-2 sm:hidden">
-                        <CategoryBadge category={event.category} />
-                      </div>
-                    </div>
-
-                    <div className="hidden justify-self-end sm:block">
-                      <CategoryBadge category={event.category} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
-        ))}
-      </div>
-
-      {hasMore ? (
-        <div
-          ref={loadMoreRef}
-          className="flex min-h-24 items-center justify-center py-6"
-        >
-          <Button variant="ghost" className="min-h-11" onClick={loadMore}>
-            Load more dates
-          </Button>
-        </div>
-      ) : (
-        <p className="py-8 text-center text-xs text-zinc-400">End of {year}</p>
+                    {dateLabel(event.date, { day: "numeric", month: "short" })}
+                  </time>
+                  <span className="text-xs text-muted-foreground">
+                    {dateLabel(event.date, { weekday: "short" })}
+                  </span>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed font-medium">
+                  {event.title}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
-      <p className="border-t border-zinc-200 pt-4 text-xs text-zinc-500">
+      <section aria-label="Monthly agenda" className="space-y-4">
+        <nav
+          aria-label="Date period"
+          className="flex flex-wrap gap-5 border-b border-border"
+        >
+          {(
+            [
+              ["upcoming", "Upcoming", futureEvents.length],
+              ["past", "Past dates", pastEvents.length],
+              ["all", "All dates", events.length],
+            ] as const
+          ).map(([value, label, count]) => (
+            <Link
+              key={value}
+              href={href(value)}
+              scroll={false}
+              aria-current={period === value ? "page" : undefined}
+              className={cn(
+                "-mb-px flex min-h-11 items-center gap-2 border-b-2 px-1 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring",
+                period === value
+                  ? "border-primary text-foreground"
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+              )}
+            >
+              {label}
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {count}
+              </span>
+            </Link>
+          ))}
+        </nav>
+        {months.length === 0 && (
+          <p
+            role="status"
+            className="rounded-xl border border-dashed border-border p-8 text-sm text-muted-foreground"
+          >
+            {period === "upcoming"
+              ? `No upcoming dates match in ${year}. Select Past dates or All dates to browse earlier events.`
+              : `No ${period === "past" ? "past " : ""}dates match in ${year}. Try another search or category.`}
+          </p>
+        )}
+        {months.map((item) => (
+          <section
+            key={item.key}
+            aria-labelledby={`month-heading-${item.key}`}
+            className="overflow-hidden rounded-xl border border-border bg-card lg:grid lg:grid-cols-[12rem_minmax(0,1fr)]"
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-6 py-4 lg:flex-col lg:items-start lg:justify-start lg:gap-2 lg:border-r lg:border-b-0 lg:py-6">
+              <h3
+                id={`month-heading-${item.key}`}
+                className="text-sm font-semibold"
+              >
+                {item.label}
+              </h3>
+              <span className="text-xs text-muted-foreground">
+                {item.events.length}{" "}
+                {item.events.length === 1 ? "date" : "dates"}
+              </span>
+            </div>
+            <EventRows
+              events={
+                period === "past" ? [...item.events].reverse() : item.events
+              }
+              todayIso={todayIso}
+            />
+          </section>
+        ))}
+      </section>
+      <p className="border-t border-border pt-4 text-xs text-muted-foreground">
         Source:{" "}
         <a
           href={sourceUrl}
           target="_blank"
           rel="noreferrer"
-          className="font-medium text-zinc-600 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900"
+          className="underline underline-offset-4"
         >
           ANU university calendar
           <ExternalLink size={11} aria-hidden="true" className="ml-1 inline" />

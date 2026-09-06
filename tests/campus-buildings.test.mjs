@@ -868,7 +868,7 @@ test("lists a selected building's rooms and turns a room into the destination", 
   assert.match(roomFinder, /fromSlug === room\.buildingSlug/);
   assert.match(roomFinder, /setFromSlug\(nextFromSlug\)/);
   assert.match(roomFinder, /setToSlug\(room\.buildingSlug\)/);
-  assert.match(roomFinder, /options=\{destinationOptions\}/);
+  assert.match(roomFinder, /destinationOptions\.map\(/);
   assert.match(roomFinder, /<IndoorDirections/);
   assert.match(roomFinder, /journey\.steps\.map/);
   assert.match(roomFinder, /onShowLevel=\{showIndoorLevel\}/);

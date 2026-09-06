@@ -1,9 +1,10 @@
 "use client";
+import { Checkbox } from "@reui/ui/checkbox";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LoaderCircle, Minus } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { setAdminRolePermission } from "@/lib/admin/actions";
 import { cn } from "@/lib/cn";
 
@@ -41,8 +42,8 @@ export function RolePermissionToggle({
           className={cn(
             "grid size-7 place-items-center rounded-md border",
             required
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-zinc-200 bg-zinc-50 text-zinc-400",
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300"
+              : "border-border bg-muted/50 text-muted-foreground/80",
           )}
         >
           {required ? (
@@ -73,7 +74,7 @@ export function RolePermissionToggle({
 
   return (
     <span>
-      <span className="relative grid size-11 place-items-center rounded-lg hover:bg-zinc-100">
+      <span className="relative grid size-11 place-items-center rounded-lg">
         <Checkbox
           checked={enabled}
           aria-busy={isPending}
@@ -84,7 +85,7 @@ export function RolePermissionToggle({
           className={cn(
             "size-7",
             enabled &&
-              "border-emerald-300 bg-emerald-600 hover:border-emerald-400 hover:bg-emerald-700 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:hover:border-emerald-700 data-[state=checked]:hover:bg-emerald-700",
+              "border-emerald-300 bg-emerald-600 hover:border-emerald-400 hover:bg-emerald-700 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:hover:border-emerald-700 data-[state=checked]:hover:bg-emerald-700 dark:border-emerald-900",
           )}
         />
         {isPending ? (
@@ -92,7 +93,7 @@ export function RolePermissionToggle({
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 grid place-items-center"
           >
-            <span className="grid size-7 place-items-center rounded-[5px] bg-white/85 text-zinc-500">
+            <span className="grid size-7 place-items-center rounded-[5px] bg-card/80 text-muted-foreground">
               <LoaderCircle
                 size={14}
                 className="animate-spin motion-reduce:animate-none"

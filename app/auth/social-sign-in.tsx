@@ -1,7 +1,8 @@
 "use client";
+import { Button } from "@reui/ui/button";
+import { cn } from "@/lib/cn";
 
 import { useCoursemap } from "@/app/providers";
-import { Button } from "@/components/ui/button";
 
 type Provider = "Google" | "Microsoft";
 
@@ -58,11 +59,13 @@ export function SocialSignIn({ disabled }: { disabled?: boolean }) {
       <Button
         type="button"
         disabled={disabled}
-        fullWidth
         onClick={() => announce("Google")}
-        className="min-h-11 !rounded-xl text-[13px] font-semibold"
+        className={cn(
+          "min-h-11 !rounded-xl text-[13px] font-semibold",
+          "w-full",
+        )}
         size="lg"
-        variant="secondary"
+        variant="outline"
       >
         <GoogleLogo />
         Continue with Google
@@ -70,11 +73,13 @@ export function SocialSignIn({ disabled }: { disabled?: boolean }) {
       <Button
         type="button"
         disabled={disabled}
-        fullWidth
         onClick={() => announce("Microsoft")}
-        className="min-h-11 !rounded-xl text-[13px] font-semibold"
+        className={cn(
+          "min-h-11 !rounded-xl text-[13px] font-semibold",
+          "w-full",
+        )}
         size="lg"
-        variant="secondary"
+        variant="outline"
       >
         <MicrosoftLogo />
         Continue with Microsoft

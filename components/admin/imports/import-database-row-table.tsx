@@ -1,5 +1,4 @@
 import {
-  DataTableShell,
   Table,
   TableBody,
   TableCaption,
@@ -7,21 +6,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@reui/ui/table";
+import { DataTableShell } from "@/components/ui/data-table";
 import { normaliseImportDatabaseTable } from "@/lib/coursemap/import-database-table";
 
 function DatabaseCellValue({ value }: { value: unknown }) {
   if (value === undefined) {
-    return <span className="text-zinc-400">Not present</span>;
+    return <span className="text-muted-foreground/80">Not present</span>;
   }
   if (value === null) {
-    return <span className="font-mono text-zinc-400">null</span>;
+    return <span className="font-mono text-muted-foreground/80">null</span>;
   }
   if (typeof value === "object") {
     const serialised = JSON.stringify(value);
     return (
       <pre
-        className="block h-8 max-w-[28rem] min-w-48 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap text-zinc-700"
+        className="block h-8 max-w-[28rem] min-w-48 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap text-foreground/80"
         title={serialised}
       >
         {serialised}
@@ -37,7 +37,7 @@ function DatabaseCellValue({ value }: { value: unknown }) {
         {value}
       </span>
     ) : (
-      <span className="font-mono text-zinc-400">&quot;&quot;</span>
+      <span className="font-mono text-muted-foreground/80">&quot;&quot;</span>
     );
   }
   return (
@@ -59,7 +59,9 @@ export function ImportDatabaseRowTable({
   return (
     <DataTableShell className="rounded-none border-x-0 border-b-0 shadow-none">
       <Table className="min-w-max">
-        <TableCaption>{tableName} database rows</TableCaption>
+        <TableCaption className="sr-only">
+          {tableName} database rows
+        </TableCaption>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             {table.columns.map((column) => (

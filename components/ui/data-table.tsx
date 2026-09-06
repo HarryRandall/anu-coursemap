@@ -1,13 +1,13 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
-import { SearchX } from "lucide-react";
-import { cn } from "@/lib/cn";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@reui/ui/empty";
+import type { ReactNode } from "react";
+import { SearchX } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 export function DataTableShell({
   children,
@@ -23,7 +23,7 @@ export function DataTableShell({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-xs",
+        "relative overflow-hidden rounded-xl border border-border/80 bg-card shadow-xs",
         viewport && "min-h-0 md:flex md:flex-1 md:flex-col",
         className,
       )}
@@ -43,118 +43,11 @@ export function DataTableShell({
         {children}
       </div>
       {footer ? (
-        <div className="shrink-0 border-t border-zinc-200/80 bg-zinc-50/40 px-4 py-2.5">
+        <div className="shrink-0 border-t border-border/80 bg-muted/30 px-4 py-2.5">
           {footer}
         </div>
       ) : null}
     </div>
-  );
-}
-
-export function Table({
-  className,
-  ...rest
-}: ComponentPropsWithoutRef<"table">) {
-  return (
-    <table
-      data-slot="table"
-      className={cn(
-        "w-full caption-bottom border-collapse text-left text-sm",
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
-
-export function TableHeader({
-  className,
-  ...rest
-}: ComponentPropsWithoutRef<"thead">) {
-  return (
-    <thead
-      data-slot="table-header"
-      className={cn(
-        "border-b border-zinc-200/80 bg-zinc-50/80 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-zinc-50/95 [&_th]:backdrop-blur-sm",
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
-
-export function TableBody({
-  className,
-  ...rest
-}: ComponentPropsWithoutRef<"tbody">) {
-  return (
-    <tbody
-      data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-b-0", className)}
-      {...rest}
-    />
-  );
-}
-
-export function TableRow({
-  className,
-  ...rest
-}: ComponentPropsWithoutRef<"tr">) {
-  return (
-    <tr
-      data-slot="table-row"
-      className={cn(
-        // A fixed row height keeps the table scannable: rows stay uniform
-        // whether or not a cell carries a second line of detail.
-        "h-16 border-b border-zinc-100 transition-colors hover:bg-zinc-50/70 motion-reduce:transition-none",
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
-
-export function TableHead({
-  className,
-  scope = "col",
-  ...rest
-}: ComponentPropsWithoutRef<"th">) {
-  return (
-    <th
-      data-slot="table-head"
-      scope={scope}
-      className={cn(
-        "h-10 px-4 text-left align-middle text-[11px] font-medium tracking-wide whitespace-nowrap text-zinc-500 uppercase",
-        className,
-      )}
-      {...rest}
-    />
-  );
-}
-
-export function TableCell({
-  className,
-  ...rest
-}: ComponentPropsWithoutRef<"td">) {
-  return (
-    <td
-      data-slot="table-cell"
-      className={cn("px-4 py-3 align-middle text-sm text-zinc-800", className)}
-      {...rest}
-    />
-  );
-}
-
-export function TableCaption({
-  className,
-  ...rest
-}: ComponentPropsWithoutRef<"caption">) {
-  return (
-    <caption
-      data-slot="table-caption"
-      className={cn("sr-only", className)}
-      {...rest}
-    />
   );
 }
 
@@ -189,28 +82,28 @@ export function tableClasses(className?: string) {
 
 export function tableHeadClasses(className?: string) {
   return cn(
-    "border-b border-zinc-200/80 bg-zinc-50/80 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-zinc-50/95 [&_th]:backdrop-blur-sm",
+    "border-b border-border/80 bg-muted/50 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-muted/95 [&_th]:backdrop-blur-sm",
     className,
   );
 }
 
 export function tableHeaderCellClasses(className?: string) {
   return cn(
-    "h-10 px-4 text-left align-middle text-[11px] font-medium tracking-wide whitespace-nowrap text-zinc-500 uppercase",
+    "h-10 px-4 text-left align-middle text-[11px] font-medium tracking-wide whitespace-nowrap text-muted-foreground uppercase",
     className,
   );
 }
 
 export function tableRowClasses(className?: string) {
   return cn(
-    "border-b border-zinc-100 transition-colors duration-150 ease-out last:border-b-0 motion-reduce:transition-none",
+    "border-b border-border/60 transition-colors duration-150 ease-out last:border-b-0 motion-reduce:transition-none",
     className,
   );
 }
 
 export function tableCellClasses(className?: string) {
   return cn(
-    "px-4 py-3 align-middle text-sm whitespace-nowrap text-zinc-800",
+    "px-4 py-3 align-middle text-sm whitespace-nowrap text-foreground/90",
     className,
   );
 }

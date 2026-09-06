@@ -1,26 +1,23 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import { Checkbox } from "@reui/ui/checkbox";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
+import ReuiLink from "next/link";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  ArrowUpRight,
-  ExternalLink,
-  Eye,
-  History,
-  LoaderCircle,
-  RefreshCw,
-  TriangleAlert,
-} from "lucide-react";
+import { History, LoaderCircle, RefreshCw, TriangleAlert } from "lucide-react";
 import { readImportStream } from "@/components/admin/imports/import-stream";
+import { CourseImportAutoRefresh } from "@/components/admin/imports/course-import-auto-refresh";
 import { AppShell } from "@/components/shell";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { DirectorySelectionBar } from "@/components/admin/directory-selection-bar";
 import {
-  DataTableEmpty,
   DataTableShell,
   Table,
   TableBody,
@@ -29,11 +26,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@/components/admin/catalogue-table/catalogue-table";
+import { CatalogueIdentity } from "@/components/admin/catalogue-table/catalogue-table";
+import { CatalogueRowActions } from "@/components/admin/catalogue-table/catalogue-row-actions";
+import { CatalogueEmpty } from "@/components/admin/catalogue-table/catalogue-empty";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { SortMenu, type SortOption } from "@/components/ui/sort-menu";
-import { Tooltip } from "@/components/ui/tooltip";
+
 import { YearPicker, type YearSelection } from "@/components/ui/year-picker";
 import type {
   AcademicStructureDirectoryPage,
@@ -151,47 +151,15 @@ function shouldOpenLatestImport(record: AcademicStructureDirectoryRecord) {
   );
 }
 
-function structureDetails(record: AcademicStructureDirectoryRecord) {
-  if (record.kind === "programme") {
-    const details = [
-      record.durationYears === null ? null : `${record.durationYears} years`,
-      record.selectionRank === null
-        ? null
-        : `Rank ${record.selectionRank.toLocaleString("en-AU")}`,
-    ].filter(Boolean);
-    return details.length > 0 ? details.join(" · ") : "-";
-  }
-  return record.units === null ? "-" : `${record.units} units`;
-}
-
 function WorkflowStatus({
   record,
 }: {
   record: AcademicStructureDirectoryRecord;
 }) {
-  const details = [
-    record.draftSnapshotId !== null ? "Draft" : null,
-    record.publishedSnapshotId !== null ? "Published" : null,
-    !record.isAvailable ? "No longer listed" : null,
-  ].filter((value): value is string => value !== null);
-
   return (
-    <div className="min-w-32 space-y-1">
-      <Badge tone={statusTone(record.importStatus)}>
-        {statusLabel(record.importStatus)}
-      </Badge>
-      {details.length > 0 || record.latestImport ? (
-        <span className="block text-xs text-zinc-500">
-          {details.join(" · ")}
-          {record.latestImport ? (
-            <>
-              {details.length > 0 ? " · " : null}Run{" "}
-              {record.latestImport.runNumber}
-            </>
-          ) : null}
-        </span>
-      ) : null}
-    </div>
+    <Badge variant={badgeVariantForTone[statusTone(record.importStatus)]}>
+      {statusLabel(record.importStatus)}
+    </Badge>
   );
 }
 
@@ -410,7 +378,7 @@ export function StructureDirectoryList({
     : !queueEnabled
       ? "Background academic structure imports are not enabled in this deployment."
       : data.activeRun
-        ? `Wait for run ${data.activeRun.runNumber} to finish before starting another.`
+        ? `Wait for ${KIND_DETAILS[data.activeRun.structureKind].singular} import run ${data.activeRun.runNumber} to finish before starting another.`
         : !data.year.importEnabled
           ? "This academic year is not enabled for imports."
           : data.year.sourceAvailability === "unavailable"
@@ -423,18 +391,21 @@ export function StructureDirectoryList({
 
   return (
     <AppShell admin fill>
+      <CourseImportAutoRefresh active={Boolean(data.activeRun)} />
       <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4">
         <h1 className="sr-only">{labels.label}</h1>
 
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <ButtonLink href={importsPath} size="md">
-              <History aria-hidden="true" size={15} />
-              Imports
-            </ButtonLink>
+            <Button asChild size="default" variant="outline">
+              <ReuiLink href={importsPath}>
+                <History aria-hidden="true" size={15} />
+                Imports
+              </ReuiLink>
+            </Button>
             {data.year.sourceAvailability === "unavailable" ? (
               <span
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300"
                 title={
                   data.year.availabilityNote ??
                   `ANU lists no ${labels.singular} directory for ${data.year.year}.`
@@ -444,9 +415,9 @@ export function StructureDirectoryList({
                 No ANU data
               </span>
             ) : null}
-            {data.activeRun ? (
+            {data.activeRun?.structureKind === data.kind ? (
               <Link
-                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-900 hover:bg-brand-100"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15"
                 href={importsPath}
               >
                 <LoaderCircle
@@ -517,35 +488,47 @@ export function StructureDirectoryList({
             options={SORT_OPTIONS}
             value={currentSort}
           />
-          <Tooltip
-            content={
-              data.allYears
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className="inline-flex"
+                tabIndex={
+                  !canImport || refreshing || data.allYears ? 0 : undefined
+                }
+              >
+                <Button
+                  aria-label={`Refresh the ${labels.singular} directory`}
+                  className="size-10 shrink-0"
+                  disabled={!canImport || refreshing || data.allYears}
+                  onClick={() => setRefreshDialogOpen(true)}
+                  size="icon"
+                  variant="outline"
+                  type="button"
+                >
+                  <RefreshCw
+                    aria-hidden="true"
+                    className={
+                      refreshing
+                        ? "animate-spin motion-reduce:animate-none"
+                        : ""
+                    }
+                    size={16}
+                  />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {data.allYears
                 ? "Choose a single year to refresh its directory"
                 : refreshing
                   ? "Refreshing..."
-                  : `Refresh the ${labels.singular} directory`
-            }
-          >
-            <Button
-              aria-label={`Refresh the ${labels.singular} directory`}
-              className="size-10 shrink-0"
-              disabled={!canImport || refreshing || data.allYears}
-              onClick={() => setRefreshDialogOpen(true)}
-              size="icon"
-            >
-              <RefreshCw
-                aria-hidden="true"
-                className={
-                  refreshing ? "animate-spin motion-reduce:animate-none" : ""
-                }
-                size={16}
-              />
-            </Button>
+                  : `Refresh the ${labels.singular} directory`}
+            </TooltipContent>
           </Tooltip>
         </div>
 
         <DataTableShell
-          viewport
+          selectable={!data.allYears}
           footer={
             <Pagination
               alwaysShowControls
@@ -559,17 +542,28 @@ export function StructureDirectoryList({
           }
         >
           {data.records.length === 0 ? (
-            <DataTableEmpty
-              description={
-                data.year.availabilityCheckedAt
-                  ? "Clear the search or choose different filters."
-                  : `Refresh this year's directory to load ${labels.singular} codes and titles without importing details.`
+            <CatalogueEmpty
+              filtered={Boolean(
+                searchParams.q ||
+                searchParams.status ||
+                searchParams.availability,
+              )}
+              title={
+                data.allYears
+                  ? `No ${labels.plural} yet`
+                  : `No ${labels.plural} for ${data.year.year}`
               }
-              title={`No directory ${labels.plural}`}
+              description="Run a directory sync to load codes and titles from ANU."
+              clearHref={`${collectionPath}?year=${data.allYears ? "all" : data.year.year}`}
+              onSync={
+                !data.allYears && canImport && !refreshing
+                  ? () => setRefreshDialogOpen(true)
+                  : undefined
+              }
             />
           ) : (
-            <Table className="min-w-[820px]">
-              <TableCaption>
+            <Table>
+              <TableCaption className="sr-only">
                 {labels.label} directory and import status
               </TableCaption>
               <TableHeader>
@@ -592,20 +586,23 @@ export function StructureDirectoryList({
                       />
                     </TableHead>
                   )}
-                  <TableHead>{labels.singular}</TableHead>
-                  {data.allYears ? <TableHead>Year</TableHead> : null}
-                  <TableHead>Workflow</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>
+                    {labels.singular.charAt(0).toUpperCase() +
+                      labels.singular.slice(1)}
+                  </TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Units</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.records.map((record) => (
                   <TableRow
                     className={
-                      selectedSet.has(record.code)
-                        ? "bg-brand-50/50"
-                        : undefined
+                      selectedSet.has(record.code) ? "bg-primary/5" : undefined
                     }
                     key={record.id}
                   >
@@ -622,89 +619,82 @@ export function StructureDirectoryList({
                       </TableCell>
                     )}
                     <TableCell>
-                      <span className="block font-medium text-zinc-950">
-                        {record.title}
-                      </span>
-                      <span className="mt-0.5 block font-mono text-xs text-zinc-500">
-                        {record.code}
-                      </span>
+                      <CatalogueIdentity
+                        code={record.code}
+                        title={record.title}
+                        href={
+                          record.structurePublicId
+                            ? adminAcademicStructureDetailPath({
+                                kind: record.kind,
+                                publicId: record.structurePublicId,
+                                year: record.year,
+                              })
+                            : undefined
+                        }
+                        kind={record.kind}
+                        unavailable={!record.isAvailable}
+                      />
                     </TableCell>
-                    {data.allYears ? (
-                      <TableCell className="text-sm text-zinc-600 tabular-nums">
-                        {record.year}
-                      </TableCell>
-                    ) : null}
+                    <TableCell>{record.year}</TableCell>
                     <TableCell>
                       <WorkflowStatus record={record} />
                     </TableCell>
-                    <TableCell className="text-xs text-zinc-600">
-                      {[record.academicCareer, structureDetails(record)]
-                        .filter((value) => value !== "-" && value !== null)
-                        .join(" · ") || "-"}
-                    </TableCell>
+                    <TableCell>{record.units ?? "-"}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5">
-                        {record.draftSnapshotId !== null &&
-                        record.structurePublicId &&
-                        record.structureYearId ? (
-                          <ButtonLink
-                            href={adminAcademicStructureDetailPath({
-                              kind: record.kind,
-                              publicId: record.structurePublicId,
-                              year: data.year.year,
-                            })}
-                            size="sm"
-                            title={`View ${record.code} draft`}
-                          >
-                            <Eye aria-hidden="true" size={14} />
-                            Draft
-                          </ButtonLink>
-                        ) : null}
-                        {record.publishedSnapshotId !== null ? (
-                          <ButtonLink
-                            href={record.sourceUrl}
-                            rel="noreferrer"
-                            size="sm"
-                            target="_blank"
-                            title={`View ${record.code} published source`}
-                          >
-                            <ExternalLink aria-hidden="true" size={14} />
-                            Published
-                          </ButtonLink>
-                        ) : null}
-                        {shouldOpenLatestImport(record) &&
-                        record.latestImport ? (
-                          <Tooltip
-                            content={`Review import run ${record.latestImport.runNumber}`}
-                          >
-                            <ButtonLink
-                              aria-label={`Review ${record.code} import run ${record.latestImport.runNumber}`}
-                              href={adminAcademicStructureImportPath({
-                                kind: data.kind,
-                                targetId: record.latestImport.targetId,
-                              })}
-                              size="icon-sm"
-                            >
-                              <ArrowUpRight aria-hidden="true" size={15} />
-                            </ButtonLink>
-                          </Tooltip>
-                        ) : null}
-                        {record.draftSnapshotId === null &&
-                        record.publishedSnapshotId === null &&
-                        !shouldOpenLatestImport(record) ? (
-                          <Tooltip content="Open ANU source">
-                            <a
-                              aria-label={`Open ${record.code} at ANU`}
-                              className="inline-grid size-8 cursor-pointer place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                              href={record.sourceUrl}
-                              rel="noreferrer"
-                              target="_blank"
-                            >
-                              <ExternalLink aria-hidden="true" size={15} />
-                            </a>
-                          </Tooltip>
-                        ) : null}
-                      </div>
+                      <CatalogueRowActions
+                        code={record.code}
+                        {...(canImport &&
+                        !data.allYears &&
+                        queueEnabled &&
+                        !data.activeRun &&
+                        data.year.importEnabled &&
+                        data.year.sourceAvailability !== "unavailable" &&
+                        record.isAvailable
+                          ? {
+                              onSelectForImport: () =>
+                                toggleStructure(record.code, true),
+                            }
+                          : {})}
+                        links={[
+                          ...(record.structurePublicId && record.structureYearId
+                            ? [
+                                {
+                                  label:
+                                    record.draftSnapshotId !== null
+                                      ? "Preview draft"
+                                      : "Open details",
+                                  href: adminAcademicStructureDetailPath({
+                                    kind: record.kind,
+                                    publicId: record.structurePublicId,
+                                    year: record.year,
+                                  }),
+                                },
+                              ]
+                            : []),
+                          ...(shouldOpenLatestImport(record) &&
+                          record.latestImport
+                            ? [
+                                {
+                                  label: "Review latest import",
+                                  href: adminAcademicStructureImportPath({
+                                    kind: data.kind,
+                                    targetId: record.latestImport.targetId,
+                                  }),
+                                },
+                              ]
+                            : []),
+                          {
+                            label: "View ANU source",
+                            href: record.sourceUrl,
+                            icon: "source",
+                          },
+                          {
+                            label: "Import history",
+                            href: `${importsPath}?q=${encodeURIComponent(record.code)}`,
+                            icon: "history",
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,4 +1,28 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@reui/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@reui/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
+import ReuiLink from "next/link";
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
@@ -18,23 +42,10 @@ import {
 import { AcademicStructureImportPipeline } from "@/components/admin/imports/academic-structure-import-pipeline";
 import { CourseImportAutoRefresh } from "@/components/admin/imports/course-import-auto-refresh";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  DataTableEmpty,
-  DataTableShell,
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
+
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
 import {
@@ -43,12 +54,6 @@ import {
   rejectAcademicStructureImportTarget,
 } from "@/lib/coursemap/academic-structure-import-review-actions";
 import type { Tone } from "@/lib/ui";
-
-const dateFormatter = new Intl.DateTimeFormat("en-AU", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Australia/Sydney",
-});
 
 function readable(value: string) {
   const words = value.replaceAll("_", " ");
@@ -76,7 +81,7 @@ function statusTone(status: string): Tone {
 
 function displayValue(value: unknown): ReactNode {
   if (value === null || value === undefined || value === "") {
-    return <span className="text-zinc-400">Not recorded</span>;
+    return <span className="text-muted-foreground/80">Not recorded</span>;
   }
   if (typeof value === "boolean") return value ? "Yes" : "No";
   return String(value);
@@ -94,8 +99,8 @@ function formatFee(amount: number | null, currency: string | null) {
 function MetadataItem({ label, value }: { label: string; value: unknown }) {
   return (
     <div>
-      <dt className="text-zinc-500">{label}</dt>
-      <dd className="mt-1 text-zinc-800">{displayValue(value)}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-foreground/90">{displayValue(value)}</dd>
     </div>
   );
 }
@@ -190,7 +195,7 @@ function RequirementTree({
   }) {
     if (visited.has(group.id)) {
       return (
-        <Alert tone="danger">
+        <Alert variant={"destructive"}>
           <CircleAlert aria-hidden="true" />
           <AlertDescription>
             The saved requirement groups contain a cycle at {group.group_key}.
@@ -209,39 +214,47 @@ function RequirementTree({
           : `Complete at least ${group.minimum_count ?? "the stated number"}`;
 
     return (
-      <Card className="border-zinc-200 shadow-none">
-        <CardHeader
-          action={<Badge tone="neutral">{operator}</Badge>}
-          description={group.description ?? undefined}
-          title={group.title ?? "Requirement group"}
-        />
+      <Card className="border-border shadow-none">
+        <CardHeader>
+          <CardTitle>
+            <h2>{group.title ?? "Requirement group"}</h2>
+          </CardTitle>
+          {Boolean(group.description ?? undefined) && (
+            <CardDescription>{group.description ?? undefined}</CardDescription>
+          )}
+          {Boolean(<Badge variant={"outline"}>{operator}</Badge>) && (
+            <CardAction>
+              {<Badge variant={"outline"}>{operator}</Badge>}
+            </CardAction>
+          )}
+        </CardHeader>
         <CardContent className="space-y-3">
           {groupConditions.map((condition) => {
             const conditionOptions = optionsByCondition.get(condition.id) ?? [];
             const units = conditionUnits(condition);
             return (
               <div
-                className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-3"
+                className="rounded-lg border border-border bg-muted/30 p-3"
                 key={condition.id}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="brand">
+                  <Badge variant={"primary-light"}>
                     {readable(condition.condition_kind)}
                   </Badge>
-                  <p className="text-xs font-medium text-zinc-900">
+                  <p className="text-xs font-medium text-foreground">
                     {conditionSummary(condition)}
                   </p>
                   {condition.minimum_courses ? (
-                    <Badge tone="neutral">
-                      At least {condition.minimum_courses} courses
+                    <Badge variant={"outline"}>
+                      At least {condition.minimum_courses}courses
                     </Badge>
                   ) : null}
-                  {units ? <Badge tone="neutral">{units}</Badge> : null}
+                  {units ? <Badge variant={"outline"}>{units}</Badge> : null}
                 </div>
                 {conditionOptions.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {conditionOptions.map((option) => (
-                      <Badge key={option.id} tone="neutral">
+                      <Badge key={option.id} variant={"outline"}>
                         <span className="font-mono">{option.option_code}</span>
                         {option.structure_kind
                           ? ` · ${readable(option.structure_kind)}`
@@ -250,11 +263,11 @@ function RequirementTree({
                     ))}
                   </div>
                 ) : null}
-                <details className="mt-2 text-xs text-zinc-500">
-                  <summary className="min-h-8 cursor-pointer py-1 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="min-h-8 cursor-pointer py-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                     Source wording
                   </summary>
-                  <blockquote className="border-l-2 border-zinc-300 pl-3 leading-5 whitespace-pre-wrap">
+                  <blockquote className="border-l-2 border-input pl-3 leading-5 whitespace-pre-wrap">
                     {condition.source_text}
                   </blockquote>
                   <p className="mt-1 font-mono text-[10px]">
@@ -292,7 +305,7 @@ function RequirementTree({
         <Group group={root} key={root.id} visited={new Set()} />
       ))}
       {unmodelled.length ? (
-        <Alert tone="warning">
+        <Alert variant={"warning"}>
           <CircleAlert aria-hidden="true" />
           <AlertDescription>
             <p className="font-medium">
@@ -339,11 +352,23 @@ function CandidatePreview({
   return (
     <div className="space-y-5">
       <Card>
-        <CardHeader
-          action={
+        <CardHeader>
+          <CardTitle>
+            <h2>{snapshot.name}</h2>
+          </CardTitle>
+          {Boolean(
+            `${readable(detail.run.structureKind)} · ${detail.run.academicYear}`,
+          ) && (
+            <CardDescription>{`${readable(detail.run.structureKind)} · ${detail.run.academicYear}`}</CardDescription>
+          )}
+          {Boolean(
             <div className="flex flex-wrap gap-1.5">
               <Badge
-                tone={snapshot.critical_uncertainty ? "warning" : "success"}
+                variant={
+                  badgeVariantForTone[
+                    snapshot.critical_uncertainty ? "warning" : "success"
+                  ]
+                }
               >
                 {snapshot.critical_uncertainty
                   ? "Critical uncertainty"
@@ -351,16 +376,48 @@ function CandidatePreview({
               </Badge>
               {snapshot.overall_confidence !== null ? (
                 <Badge
-                  tone={snapshot.critical_uncertainty ? "warning" : "brand"}
+                  variant={
+                    badgeVariantForTone[
+                      snapshot.critical_uncertainty ? "warning" : "brand"
+                    ]
+                  }
                 >
                   {Math.round(snapshot.overall_confidence * 100)}% confidence
                 </Badge>
               ) : null}
-            </div>
-          }
-          description={`${readable(detail.run.structureKind)} · ${detail.run.academicYear}`}
-          title={snapshot.name}
-        />
+            </div>,
+          ) && (
+            <CardAction>
+              {
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge
+                    variant={
+                      badgeVariantForTone[
+                        snapshot.critical_uncertainty ? "warning" : "success"
+                      ]
+                    }
+                  >
+                    {snapshot.critical_uncertainty
+                      ? "Critical uncertainty"
+                      : "No critical uncertainty"}
+                  </Badge>
+                  {snapshot.overall_confidence !== null ? (
+                    <Badge
+                      variant={
+                        badgeVariantForTone[
+                          snapshot.critical_uncertainty ? "warning" : "brand"
+                        ]
+                      }
+                    >
+                      {Math.round(snapshot.overall_confidence * 100)}%
+                      confidence
+                    </Badge>
+                  ) : null}
+                </div>
+              }
+            </CardAction>
+          )}
+        </CardHeader>
         <CardContent className="space-y-4">
           <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
             <MetadataItem label="Code" value={detail.target.code} />
@@ -387,24 +444,30 @@ function CandidatePreview({
           </dl>
           {snapshot.introduction ? (
             <div>
-              <p className="text-xs font-medium text-zinc-500">Introduction</p>
-              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-zinc-700">
+              <p className="text-xs font-medium text-muted-foreground">
+                Introduction
+              </p>
+              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-foreground/80">
                 {snapshot.introduction}
               </p>
             </div>
           ) : null}
           {snapshot.description ? (
             <div>
-              <p className="text-xs font-medium text-zinc-500">Description</p>
-              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-zinc-700">
+              <p className="text-xs font-medium text-muted-foreground">
+                Description
+              </p>
+              <p className="mt-1 text-sm leading-6 whitespace-pre-wrap text-foreground/80">
                 {snapshot.description}
               </p>
             </div>
           ) : null}
           {snapshot.contact_text ? (
             <div>
-              <p className="text-xs font-medium text-zinc-500">Contact</p>
-              <p className="mt-1 text-sm whitespace-pre-wrap text-zinc-700">
+              <p className="text-xs font-medium text-muted-foreground">
+                Contact
+              </p>
+              <p className="mt-1 text-sm whitespace-pre-wrap text-foreground/80">
                 {snapshot.contact_text}
               </p>
             </div>
@@ -414,16 +477,24 @@ function CandidatePreview({
 
       {fields.length ? (
         <Card>
-          <CardHeader
-            description="All labelled values retained from the ANU summary."
-            title="Source summary"
-          />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Source summary"}</h2>
+            </CardTitle>
+            {Boolean("All labelled values retained from the ANU summary.") && (
+              <CardDescription>
+                {"All labelled values retained from the ANU summary."}
+              </CardDescription>
+            )}
+          </CardHeader>
           <CardContent>
             <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
               {fields.map((item) => (
                 <div key={item.id}>
-                  <dt className="text-zinc-500">{item.label}</dt>
-                  <dd className="mt-1 text-zinc-800">{item.field_value}</dd>
+                  <dt className="text-muted-foreground">{item.label}</dt>
+                  <dd className="mt-1 text-foreground/90">
+                    {item.field_value}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -434,21 +505,31 @@ function CandidatePreview({
       {sections.length ? (
         <section className="space-y-3" aria-labelledby="candidate-sections">
           <h2
-            className="text-sm font-semibold text-zinc-950"
+            className="text-sm font-semibold text-foreground"
             id="candidate-sections"
           >
             Page sections
           </h2>
           {sections.map((section) => (
             <Card key={section.id}>
-              <CardHeader
-                description={
-                  <span className="font-mono">{section.source_locator}</span>
-                }
-                title={section.heading}
-              />
+              <CardHeader>
+                <CardTitle>
+                  <h2>{section.heading}</h2>
+                </CardTitle>
+                {Boolean(
+                  <span className="font-mono">{section.source_locator}</span>,
+                ) && (
+                  <CardDescription>
+                    {
+                      <span className="font-mono">
+                        {section.source_locator}
+                      </span>
+                    }
+                  </CardDescription>
+                )}
+              </CardHeader>
               <CardContent>
-                <pre className="overflow-auto text-sm leading-6 whitespace-pre-wrap text-zinc-700">
+                <pre className="overflow-auto text-sm leading-6 whitespace-pre-wrap text-foreground/80">
                   {section.markdown}
                 </pre>
               </CardContent>
@@ -459,9 +540,13 @@ function CandidatePreview({
 
       {outcomes.length ? (
         <Card>
-          <CardHeader title="Learning outcomes" />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Learning outcomes"}</h2>
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-zinc-700">
+            <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-foreground/80">
               {outcomes.map((outcome) => (
                 <li key={outcome.id}>{outcome.outcome_text}</li>
               ))}
@@ -472,7 +557,7 @@ function CandidatePreview({
 
       <section className="space-y-3" aria-labelledby="candidate-requirements">
         <h2
-          className="text-sm font-semibold text-zinc-950"
+          className="text-sm font-semibold text-foreground"
           id="candidate-requirements"
         >
           Requirements
@@ -481,13 +566,18 @@ function CandidatePreview({
       </section>
 
       <section className="space-y-3" aria-labelledby="candidate-fees">
-        <h2 className="text-sm font-semibold text-zinc-950" id="candidate-fees">
+        <h2
+          className="text-sm font-semibold text-foreground"
+          id="candidate-fees"
+        >
           Fees
         </h2>
         {fees.length ? (
           <DataTableShell>
             <Table className="min-w-[780px]">
-              <TableCaption>Imported fee records</TableCaption>
+              <TableCaption className="sr-only">
+                Imported fee records
+              </TableCaption>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Audience</TableHead>
@@ -510,7 +600,7 @@ function CandidatePreview({
                       {formatFee(fee.amount, fee.currency)}
                     </TableCell>
                     <TableCell>{readable(fee.basis)}</TableCell>
-                    <TableCell className="max-w-72 text-xs text-zinc-600">
+                    <TableCell className="max-w-72 text-xs text-muted-foreground">
                       {fee.source_label ?? fee.source_text}
                     </TableCell>
                   </TableRow>
@@ -530,7 +620,7 @@ function CandidatePreview({
 
       <section className="space-y-3" aria-labelledby="candidate-relationships">
         <h2
-          className="text-sm font-semibold text-zinc-950"
+          className="text-sm font-semibold text-foreground"
           id="candidate-relationships"
         >
           Relationships
@@ -538,7 +628,7 @@ function CandidatePreview({
         {relationships.length ? (
           <DataTableShell>
             <Table className="min-w-[720px]">
-              <TableCaption>
+              <TableCaption className="sr-only">
                 Imported academic structure relationships
               </TableCaption>
               <TableHeader>
@@ -575,24 +665,24 @@ function CandidatePreview({
       </section>
 
       {evidence.length ? (
-        <details className="group rounded-xl border border-zinc-200 bg-white shadow-xs">
-          <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-zinc-950 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+        <details className="group rounded-xl border border-border bg-card shadow-xs">
+          <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             Evidence and confidence
-            <Badge tone="neutral">{evidence.length} records</Badge>
+            <Badge variant={"outline"}>{evidence.length} records</Badge>
           </summary>
-          <div className="divide-y divide-zinc-100 border-t border-zinc-100">
+          <div className="divide-y divide-border/60 border-t border-border/60">
             {evidence.map((item) => (
               <div className="p-4 text-xs" key={item.id}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono font-medium text-zinc-800">
+                  <span className="font-mono font-medium text-foreground/90">
                     {item.field_key}
                   </span>
-                  <Badge tone="neutral">{item.method}</Badge>
-                  <Badge tone="brand">
+                  <Badge variant={"outline"}>{item.method}</Badge>
+                  <Badge variant={"primary-light"}>
                     {Math.round(item.confidence * 100)}%
                   </Badge>
                 </div>
-                <blockquote className="mt-2 border-l-2 border-zinc-300 pl-3 leading-5 text-zinc-600">
+                <blockquote className="mt-2 border-l-2 border-input pl-3 leading-5 text-muted-foreground">
                   {item.evidence_excerpt}
                 </blockquote>
               </div>
@@ -639,7 +729,11 @@ function ReviewItems({
   return (
     <div className="space-y-5">
       <Card>
-        <CardHeader title="Decision context" />
+        <CardHeader>
+          <CardTitle>
+            <h2>{"Decision context"}</h2>
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
             <MetadataItem
@@ -668,21 +762,31 @@ function ReviewItems({
 
       {snapshotFields.length ? (
         <Card>
-          <CardHeader
-            description="A compact comparison of the main snapshot fields. Full relational data is in Candidate and Database rows."
-            title="Changed snapshot fields"
-          />
-          <div className="divide-y divide-zinc-100 border-t border-zinc-100">
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Changed snapshot fields"}</h2>
+            </CardTitle>
+            {Boolean(
+              "A compact comparison of the main snapshot fields. Full relational data is in Candidate and Database rows.",
+            ) && (
+              <CardDescription>
+                {
+                  "A compact comparison of the main snapshot fields. Full relational data is in Candidate and Database rows."
+                }
+              </CardDescription>
+            )}
+          </CardHeader>
+          <div className="divide-y divide-border/60 border-t border-border/60">
             {snapshotFields.map(([label, before, after]) => (
               <div
                 className="grid gap-2 px-5 py-3 text-xs sm:grid-cols-[10rem_1fr_1fr]"
                 key={String(label)}
               >
-                <span className="font-medium text-zinc-800">{label}</span>
-                <span className="text-zinc-500">
+                <span className="font-medium text-foreground/90">{label}</span>
+                <span className="text-muted-foreground">
                   Before: {displayValue(before)}
                 </span>
-                <span className="text-zinc-800">
+                <span className="text-foreground/90">
                   Candidate: {displayValue(after)}
                 </span>
               </div>
@@ -694,19 +798,21 @@ function ReviewItems({
       <section className="space-y-3" aria-labelledby="review-items-title">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2
-            className="text-sm font-semibold text-zinc-950"
+            className="text-sm font-semibold text-foreground"
             id="review-items-title"
           >
             Review items
           </h2>
           <Badge
-            tone={
-              items.some((item) => item.status === "open")
-                ? "warning"
-                : "neutral"
+            variant={
+              badgeVariantForTone[
+                items.some((item) => item.status === "open")
+                  ? "warning"
+                  : "neutral"
+              ]
             }
           >
-            {items.filter((item) => item.status === "open").length} open
+            {items.filter((item) => item.status === "open").length}open
           </Badge>
         </div>
         {items.length === 0 ? (
@@ -717,40 +823,44 @@ function ReviewItems({
             />
           </DataTableShell>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
             {items.map((item) => (
               <details
-                className="group border-b border-zinc-100 last:border-b-0"
+                className="group border-b border-border/60 last:border-b-0"
                 key={item.id}
               >
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
                   <span className="min-w-0">
-                    <span className="block truncate text-xs font-medium text-zinc-900">
+                    <span className="block truncate text-xs font-medium text-foreground">
                       {item.message}
                     </span>
-                    <span className="mt-0.5 block font-mono text-[10px] text-zinc-500">
+                    <span className="mt-0.5 block font-mono text-[10px] text-muted-foreground">
                       {item.field_key === "$" ? "Whole import" : item.field_key}
                     </span>
                   </span>
                   <span className="flex shrink-0 gap-1.5">
-                    <Badge tone={statusTone(item.severity)}>
+                    <Badge
+                      variant={badgeVariantForTone[statusTone(item.severity)]}
+                    >
                       {readable(item.severity)}
                     </Badge>
-                    <Badge tone={statusTone(item.status)}>
+                    <Badge
+                      variant={badgeVariantForTone[statusTone(item.status)]}
+                    >
                       {readable(item.status)}
                     </Badge>
                   </span>
                 </summary>
-                <div className="border-t border-zinc-100 bg-zinc-50/50 px-4 py-3 text-xs leading-5 text-zinc-600">
+                <div className="border-t border-border/60 bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground">
                   <p>Kind: {readable(item.item_kind)}</p>
                   {item.source_text ? (
-                    <blockquote className="mt-2 border-l-2 border-zinc-300 pl-3 whitespace-pre-wrap">
+                    <blockquote className="mt-2 border-l-2 border-input pl-3 whitespace-pre-wrap">
                       {item.source_text}
                     </blockquote>
                   ) : null}
                   {item.resolution_note ? (
                     <p className="mt-2">
-                      <span className="font-medium text-zinc-800">
+                      <span className="font-medium text-foreground/90">
                         Resolution:
                       </span>{" "}
                       {item.resolution_note}
@@ -860,7 +970,7 @@ export function AcademicStructureImportTargetReview({
                   onConfirm={() => decide("reject")}
                   title={`Reject ${detail.target.code}?`}
                   trigger={
-                    <Button size="sm" variant="danger">
+                    <Button size="sm" variant="destructive" type="button">
                       <X aria-hidden="true" size={15} />
                       Reject
                     </Button>
@@ -872,7 +982,7 @@ export function AcademicStructureImportTargetReview({
                   onConfirm={() => decide("accept")}
                   title={`Accept ${detail.target.code} as draft?`}
                   trigger={
-                    <Button size="sm" variant="primary">
+                    <Button size="sm" variant="default" type="button">
                       <Check aria-hidden="true" size={15} />
                       Accept as draft
                     </Button>
@@ -881,10 +991,12 @@ export function AcademicStructureImportTargetReview({
               </>
             ) : null}
             {accepted && workspaceHref ? (
-              <ButtonLink href={workspaceHref} size="sm">
-                <ExternalLink aria-hidden="true" size={15} />
-                Edit draft
-              </ButtonLink>
+              <Button asChild size="sm" variant="outline">
+                <ReuiLink href={workspaceHref}>
+                  <ExternalLink aria-hidden="true" size={15} />
+                  Edit draft
+                </ReuiLink>
+              </Button>
             ) : null}
             {canPublish ? (
               <ConfirmDialog
@@ -893,7 +1005,7 @@ export function AcademicStructureImportTargetReview({
                 onConfirm={publish}
                 title={`Publish ${detail.target.code} for ${detail.run.academicYear}?`}
                 trigger={
-                  <Button size="sm" variant="primary">
+                  <Button size="sm" variant="default" type="button">
                     <Send aria-hidden="true" size={15} />
                     Publish draft
                   </Button>
@@ -908,6 +1020,8 @@ export function AcademicStructureImportTargetReview({
                     ? "Resolve blocking review items and critical uncertainty first"
                     : "The current draft is unavailable"
                 }
+                variant="outline"
+                type="button"
               >
                 <Send aria-hidden="true" size={15} />
                 Publish draft
@@ -917,67 +1031,16 @@ export function AcademicStructureImportTargetReview({
         ) : undefined
       }
       admin
+      fullBleed
       currentBreadcrumbLabel={detail.target.code}
     >
       <CourseImportAutoRefresh active={active} />
-      <div className="mx-auto w-full max-w-7xl space-y-5 pb-10">
-        <h1 className="sr-only">Review {detail.target.code} import</h1>
+      <div className="w-full px-4 pb-10 sm:px-6">
+        <h1 className="sr-only">Review{detail.target.code} import</h1>
 
-        <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-lg font-semibold text-zinc-950">
-            {detail.target.code}
-          </span>
-          {detail.target.title ? (
-            <span className="text-sm text-zinc-600">{detail.target.title}</span>
-          ) : null}
-          <Badge tone="neutral">{detail.run.academicYear}</Badge>
-          <Badge tone="neutral">Run #{detail.run.runNumber}</Badge>
-          <Badge tone={statusTone(detail.target.processingStatus)}>
-            {readable(detail.target.processingStatus)}
-          </Badge>
-          <Badge tone={statusTone(detail.target.reviewStatus)}>
-            {readable(detail.target.reviewStatus)}
-          </Badge>
-          {alreadyPublished ? <Badge tone="success">Published</Badge> : null}
-        </header>
-
-        {message ? (
-          <Alert tone={message.tone}>
-            <AlertDescription>{message.text}</AlertDescription>
-          </Alert>
-        ) : null}
-        {detail.target.errorSummary ? (
-          <Alert tone="danger">
-            <CircleAlert aria-hidden="true" />
-            <AlertDescription>
-              {detail.target.errorCode ? `${detail.target.errorCode}: ` : ""}
-              {detail.target.errorSummary}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {active ? (
-          <Alert tone="brand">
-            <Clock3 aria-hidden="true" />
-            <AlertDescription>
-              This structure is still processing. Saved stages and artefacts
-              update automatically.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {openErrors || detail.candidateSnapshot?.critical_uncertainty ? (
-          <Alert tone="warning">
-            <CircleAlert aria-hidden="true" />
-            <AlertDescription>
-              Review the open errors and critical uncertainty before
-              publication. You can still accept the candidate as a draft and
-              edit it in the structure workspace.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <Tabs defaultValue="pipeline">
-          <div className="overflow-x-auto pb-1">
-            <TabsList className="h-auto min-w-max">
+        <Tabs defaultValue="pipeline" className="gap-5">
+          <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6">
+            <TabsList aria-label="Import review sections" variant="line">
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
               <TabsTrigger value="candidate">Candidate</TabsTrigger>
               <TabsTrigger value="review">Review</TabsTrigger>
@@ -986,7 +1049,84 @@ export function AcademicStructureImportTargetReview({
             </TabsList>
           </div>
 
-          <TabsContent value="pipeline">
+          {message ? (
+            <Alert
+              variant={
+                (
+                  {
+                    neutral: "default",
+                    brand: "info",
+                    danger: "destructive",
+                    success: "success",
+                    warning: "warning",
+                  } as const
+                )[message.tone]
+              }
+            >
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          ) : null}
+          {detail.target.errorSummary ? (
+            <Alert variant={"destructive"}>
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription>
+                {detail.target.errorCode ? `${detail.target.errorCode}: ` : ""}
+                {detail.target.errorSummary}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {active ? (
+            <Alert variant={"info"}>
+              <Clock3 aria-hidden="true" />
+              <AlertDescription>
+                This structure is still processing. Saved stages and artefacts
+                update automatically.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {openErrors || detail.candidateSnapshot?.critical_uncertainty ? (
+            <Alert variant={"warning"}>
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription>
+                Review the open errors and critical uncertainty before
+                publication. You can still accept the candidate as a draft and
+                edit it in the structure workspace.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          <TabsContent value="pipeline" className="space-y-5">
+            <header className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-lg font-semibold text-foreground">
+                {detail.target.code}
+              </span>
+              {detail.target.title ? (
+                <span className="text-sm text-muted-foreground">
+                  {detail.target.title}
+                </span>
+              ) : null}
+              <Badge variant={"outline"}>{detail.run.academicYear}</Badge>
+              <Badge variant={"outline"}>Run #{detail.run.runNumber}</Badge>
+              <Badge
+                variant={
+                  badgeVariantForTone[
+                    statusTone(detail.target.processingStatus)
+                  ]
+                }
+              >
+                {readable(detail.target.processingStatus)}
+              </Badge>
+              <Badge
+                variant={
+                  badgeVariantForTone[statusTone(detail.target.reviewStatus)]
+                }
+              >
+                {readable(detail.target.reviewStatus)}
+              </Badge>
+              {alreadyPublished ? (
+                <Badge variant={"success-light"}>Published</Badge>
+              ) : null}
+            </header>
             <AcademicStructureImportPipeline
               extractions={detail.extractions}
               stages={detail.stages}
@@ -1000,42 +1140,6 @@ export function AcademicStructureImportTargetReview({
           </TabsContent>
           <TabsContent value="source">
             <div className="space-y-4">
-              {detail.sourcePage ? (
-                <dl className="grid gap-3 rounded-xl border border-zinc-200 bg-white p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <dt className="text-zinc-500">ANU page</dt>
-                    <dd className="mt-1 break-all">
-                      <a
-                        className="text-brand-700 underline underline-offset-2"
-                        href={detail.sourcePage.canonical_url}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {detail.sourcePage.canonical_url}
-                      </a>
-                    </dd>
-                  </div>
-                  <MetadataItem
-                    label="Fetched"
-                    value={dateFormatter.format(
-                      new Date(detail.sourcePage.fetched_at),
-                    )}
-                  />
-                  <MetadataItem
-                    label="HTTP status"
-                    value={detail.sourcePage.http_status}
-                  />
-                  <div>
-                    <dt className="text-zinc-500">Source hash</dt>
-                    <dd
-                      className="mt-1 truncate font-mono text-zinc-800"
-                      title={detail.sourcePage.content_sha256}
-                    >
-                      {detail.sourcePage.content_sha256}
-                    </dd>
-                  </div>
-                </dl>
-              ) : null}
               <AcademicStructureImportArtifactViewer
                 artifacts={detail.artifacts}
               />
@@ -1044,7 +1148,7 @@ export function AcademicStructureImportTargetReview({
           <TabsContent value="database">
             {detail.candidateSnapshot ? (
               <div className="space-y-3">
-                <p className="text-xs leading-5 text-zinc-600">
+                <p className="text-xs leading-5 text-muted-foreground">
                   These are the exact candidate and review rows saved in
                   Postgres, grouped by their real destination table names.
                 </p>

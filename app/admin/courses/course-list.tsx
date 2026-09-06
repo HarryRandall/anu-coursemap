@@ -1,25 +1,21 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import { Checkbox } from "@reui/ui/checkbox";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
+import ReuiLink from "next/link";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import {
-  ArrowUpRight,
-  ExternalLink,
-  Eye,
-  History,
-  LoaderCircle,
-  RefreshCw,
-  TriangleAlert,
-} from "lucide-react";
+import { History, LoaderCircle, RefreshCw, TriangleAlert } from "lucide-react";
 import { readImportStream } from "@/components/admin/imports/import-stream";
 import { AppShell } from "@/components/shell";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import {
-  DataTableEmpty,
   DataTableShell,
   Table,
   TableBody,
@@ -28,12 +24,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@/components/admin/catalogue-table/catalogue-table";
+import { CatalogueIdentity } from "@/components/admin/catalogue-table/catalogue-table";
+import { CatalogueRowActions } from "@/components/admin/catalogue-table/catalogue-row-actions";
+import { CatalogueEmpty } from "@/components/admin/catalogue-table/catalogue-empty";
 import { DirectorySelectionBar } from "@/components/admin/directory-selection-bar";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { SortMenu, type SortOption } from "@/components/ui/sort-menu";
-import { Tooltip } from "@/components/ui/tooltip";
+
 import { YearPicker, type YearSelection } from "@/components/ui/year-picker";
 import type {
   AcademicYearOption,
@@ -43,11 +42,6 @@ import type {
 } from "@/lib/coursemap/admin-course-imports";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Tone } from "@/lib/ui";
-
-function readable(value: string) {
-  const words = value.replaceAll("_", " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
 
 const SORT_OPTIONS: SortOption<CourseDirectorySort>[] = [
   { label: "Code, A to Z", value: "code-asc" },
@@ -159,27 +153,10 @@ function workflowLabel(status: string) {
 
 function WorkflowStatus({ record }: { record: CourseDirectoryRecord }) {
   const status = courseWorkflowStatus(record);
-  const details = [
-    record.draftSnapshotId !== null ? "Draft" : null,
-    record.publishedSnapshotId !== null ? "Published" : null,
-    record.units === null ? null : `${record.units} units`,
-  ].filter((value): value is string => value !== null);
-
   return (
-    <div className="min-w-36 space-y-1">
-      <Badge tone={workflowTone(status)}>{workflowLabel(status)}</Badge>
-      {details.length > 0 || record.latestImport ? (
-        <span className="block text-xs text-zinc-500">
-          {details.join(" · ")}
-          {record.latestImport ? (
-            <>
-              {details.length > 0 ? " · " : null}Imported{" "}
-              {readable(record.latestImport.processingStatus)}
-            </>
-          ) : null}
-        </span>
-      ) : null}
-    </div>
+    <Badge variant={badgeVariantForTone[workflowTone(status)]}>
+      {workflowLabel(status)}
+    </Badge>
   );
 }
 
@@ -396,13 +373,15 @@ export function AdminCourseDirectory({
 
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <ButtonLink href="/admin/courses/imports" size="md">
-              <History aria-hidden="true" size={15} />
-              Imports
-            </ButtonLink>
+            <Button asChild size="default" variant="outline">
+              <ReuiLink href="/admin/courses/imports">
+                <History aria-hidden="true" size={15} />
+                Imports
+              </ReuiLink>
+            </Button>
             {data.year.sourceAvailability === "unavailable" ? (
               <span
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300"
                 title={
                   data.year.availabilityNote ??
                   `ANU lists no course directory for ${data.year.year}.`
@@ -414,7 +393,7 @@ export function AdminCourseDirectory({
             ) : null}
             {data.activeRun ? (
               <Link
-                className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-900 hover:bg-brand-100"
+                className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/15"
                 href="/admin/courses/imports"
               >
                 <LoaderCircle
@@ -474,35 +453,47 @@ export function AdminCourseDirectory({
             options={SORT_OPTIONS}
             value={currentSort}
           />
-          <Tooltip
-            content={
-              data.allYears
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className="inline-flex"
+                tabIndex={
+                  !canImport || refreshing || data.allYears ? 0 : undefined
+                }
+              >
+                <Button
+                  aria-label={"Refresh the course directory"}
+                  className="size-10 shrink-0"
+                  disabled={!canImport || refreshing || data.allYears}
+                  onClick={() => setRefreshDialogOpen(true)}
+                  size="icon"
+                  variant="outline"
+                  type="button"
+                >
+                  <RefreshCw
+                    aria-hidden="true"
+                    className={
+                      refreshing
+                        ? "animate-spin motion-reduce:animate-none"
+                        : ""
+                    }
+                    size={16}
+                  />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {data.allYears
                 ? "Choose a single year to refresh its directory"
                 : refreshing
                   ? "Refreshing..."
-                  : "Refresh the course directory"
-            }
-          >
-            <Button
-              aria-label={"Refresh the course directory"}
-              className="size-10 shrink-0"
-              disabled={!canImport || refreshing || data.allYears}
-              onClick={() => setRefreshDialogOpen(true)}
-              size="icon"
-            >
-              <RefreshCw
-                aria-hidden="true"
-                className={
-                  refreshing ? "animate-spin motion-reduce:animate-none" : ""
-                }
-                size={16}
-              />
-            </Button>
+                  : "Refresh the course directory"}
+            </TooltipContent>
           </Tooltip>
         </div>
 
         <DataTableShell
-          viewport
+          selectable={!data.allYears}
           footer={
             <Pagination
               alwaysShowControls
@@ -516,17 +507,26 @@ export function AdminCourseDirectory({
           }
         >
           {data.records.length === 0 ? (
-            <DataTableEmpty
-              description={
-                data.year.directoryRefreshedAt
-                  ? "Clear the search or choose a different status."
-                  : "Refresh this year's directory to load course codes and titles without importing details."
+            <CatalogueEmpty
+              filtered={Boolean(searchParams.q || searchParams.status)}
+              title={
+                data.allYears
+                  ? `No ${"courses"} yet`
+                  : `No ${"courses"} for ${data.year.year}`
               }
-              title="No directory courses"
+              description="Run a directory sync to load codes and titles from ANU."
+              clearHref={`${"/admin/courses"}?year=${data.allYears ? "all" : data.year.year}`}
+              onSync={
+                !data.allYears && canImport && !refreshing
+                  ? () => setRefreshDialogOpen(true)
+                  : undefined
+              }
             />
           ) : (
-            <Table className="min-w-[920px]">
-              <TableCaption>Course directory and workflow status</TableCaption>
+            <Table>
+              <TableCaption className="sr-only">
+                Course directory and workflow status
+              </TableCaption>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {data.allYears ? null : (
@@ -547,19 +547,19 @@ export function AdminCourseDirectory({
                     </TableHead>
                   )}
                   <TableHead>Course</TableHead>
-                  {data.allYears ? <TableHead>Year</TableHead> : null}
-                  <TableHead>Workflow</TableHead>
-                  <TableHead>Details</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Year</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Units</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.records.map((record) => (
                   <TableRow
                     className={
-                      selectedSet.has(record.code)
-                        ? "bg-brand-50/50"
-                        : undefined
+                      selectedSet.has(record.code) ? "bg-primary/5" : undefined
                     }
                     key={record.id}
                   >
@@ -575,67 +575,78 @@ export function AdminCourseDirectory({
                       </TableCell>
                     )}
                     <TableCell>
-                      <span className="block font-medium text-zinc-950">
-                        {record.title}
-                      </span>
-                      <span className="mt-0.5 block font-mono text-xs text-zinc-500">
-                        {record.code}
-                      </span>
+                      <CatalogueIdentity
+                        code={record.code}
+                        title={record.title}
+                        href={
+                          record.coursePublicId &&
+                          record.draftSnapshotId !== null
+                            ? `/admin/courses/${record.coursePublicId}?year=${record.year}`
+                            : record.publishedSnapshotId !== null
+                              ? `/courses/${record.code}?year=${record.year}`
+                              : undefined
+                        }
+                      />
                     </TableCell>
-                    {data.allYears ? (
-                      <TableCell className="text-sm text-zinc-600 tabular-nums">
-                        {record.year}
-                      </TableCell>
-                    ) : null}
+                    <TableCell>{record.year}</TableCell>
                     <TableCell>
                       <WorkflowStatus record={record} />
                     </TableCell>
-                    <TableCell className="text-xs text-zinc-600">
-                      {[
-                        record.academicCareer,
-                        record.session,
-                        record.modeOfDelivery,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "-"}
-                    </TableCell>
+                    <TableCell>{record.units ?? "-"}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5">
-                        {record.draftSnapshotId !== null &&
-                        record.coursePublicId &&
-                        record.courseYearId ? (
-                          <ButtonLink
-                            href={`/admin/courses/${record.coursePublicId}?year=${data.year.year}`}
-                            size="sm"
-                            title={`View ${record.code} draft`}
-                          >
-                            <Eye aria-hidden="true" size={14} />
-                            Draft
-                          </ButtonLink>
-                        ) : null}
-                        {record.publishedSnapshotId !== null ? (
-                          <ButtonLink
-                            href={`/courses/${record.code}?year=${data.year.year}`}
-                            size="sm"
-                            title={`View ${record.code} published course`}
-                          >
-                            <ExternalLink aria-hidden="true" size={14} />
-                            Published
-                          </ButtonLink>
-                        ) : null}
-                        {shouldOpenLatestImport(record) &&
-                        record.latestImport ? (
-                          <Tooltip content="Review latest import">
-                            <ButtonLink
-                              aria-label={`Review ${record.code} import`}
-                              href={`/admin/courses/imports/${record.latestImport.targetId}`}
-                              size="icon-sm"
-                            >
-                              <ArrowUpRight aria-hidden="true" size={15} />
-                            </ButtonLink>
-                          </Tooltip>
-                        ) : null}
-                      </div>
+                      <CatalogueRowActions
+                        code={record.code}
+                        {...(canImport &&
+                        !data.allYears &&
+                        queueEnabled &&
+                        !data.activeRun &&
+                        data.year.importEnabled &&
+                        data.year.sourceAvailability !== "unavailable"
+                          ? {
+                              onSelectForImport: () =>
+                                toggleCourse(record.code, true),
+                            }
+                          : {})}
+                        links={[
+                          ...(record.draftSnapshotId !== null &&
+                          record.coursePublicId &&
+                          record.courseYearId
+                            ? [
+                                {
+                                  label: "Preview draft",
+                                  href: `/admin/courses/${record.coursePublicId}?year=${record.year}`,
+                                },
+                              ]
+                            : []),
+                          ...(record.publishedSnapshotId !== null
+                            ? [
+                                {
+                                  label: "View published version",
+                                  href: `/courses/${record.code}?year=${record.year}`,
+                                },
+                              ]
+                            : []),
+                          ...(shouldOpenLatestImport(record) &&
+                          record.latestImport
+                            ? [
+                                {
+                                  label: "Review latest import",
+                                  href: `/admin/courses/imports/${record.latestImport.targetId}`,
+                                },
+                              ]
+                            : []),
+                          {
+                            label: "View ANU source",
+                            href: `https://programsandcourses.anu.edu.au/${record.year}/course/${record.code}`,
+                            icon: "source",
+                          },
+                          {
+                            label: "Import history",
+                            href: `/admin/courses/imports?q=${encodeURIComponent(record.code)}`,
+                            icon: "history",
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

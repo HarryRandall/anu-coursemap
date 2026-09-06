@@ -1,4 +1,5 @@
 "use client";
+import { useReturnFocus } from "@/hooks/use-return-focus";
 
 import {
   AlertTriangle,
@@ -19,10 +20,11 @@ import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/components/shell";
 import { CourseDrawer, CoursePicker } from "@/components/overlays";
+import { Alert, AlertDescription, AlertTitle } from "@reui/ui/alert";
+import { Button } from "@reui/ui/button";
 import { FixIssueButton } from "@/components/plan/fix-issue-button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/overlay";
+import { Dialog, DialogContent, DialogTitle } from "@reui/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@reui/ui/tooltip";
 import type { Attempt, Course, Term } from "@/lib/coursemap/types";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {
@@ -72,10 +74,11 @@ function StatusMark({
     return <XCircle size={size} className="shrink-0 text-rose-500" />;
   if (status === "blocked" || status === "approval")
     return <AlertTriangle size={size} className="shrink-0 text-amber-500" />;
-  return <Circle size={size} className="shrink-0 text-zinc-300" />;
+  return <Circle size={size} className="shrink-0 text-muted-foreground/40" />;
 }
 
 function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
+  const overloadFocus = useReturnFocus();
   const { demoMode, state, reorderAttempt, notify } = useCoursemap();
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [overloadTerm, setOverloadTerm] = useState<string | null>(null);
@@ -415,17 +418,17 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
       <div
         key={`drop-preview-${previewEntry.attempt.id}-${term.id}`}
         aria-hidden="true"
-        className="pointer-events-none flex min-h-[52px] origin-top animate-drop-slot-in items-center gap-2.5 rounded-lg bg-brand-50/70 px-2 py-2 text-left ring-1 ring-brand-200 ring-inset"
+        className="pointer-events-none flex min-h-[52px] origin-top animate-drop-slot-in items-center gap-2.5 rounded-lg bg-primary/10 px-2 py-2 text-left ring-1 ring-primary/30 ring-inset"
       >
-        <GripVertical size={13} className="shrink-0 text-brand-300" />
+        <GripVertical size={13} className="shrink-0 text-primary/50" />
         <StatusMark status={previewEntry.status} />
-        <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-brand-600">
+        <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-primary">
           {previewEntry.course.code}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
           {previewEntry.course.name}
         </span>
-        <span className="shrink-0 text-[11px] text-zinc-400">
+        <span className="shrink-0 text-[11px] text-muted-foreground">
           {unitsForAttempt(previewEntry.attempt, previewEntry.course)}u
         </span>
       </div>
@@ -437,22 +440,26 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         data-testid={`term-${term.id}`}
         data-drop-term={term.id}
         className={cn(
-          "flex min-h-44 flex-col rounded-xl bg-white p-2.5 ring-1 transition",
+          "flex min-h-44 flex-col rounded-xl bg-card p-2.5 ring-1 transition",
           dragging && dragPreview?.termId === term.id
-            ? "ring-2 ring-brand-300"
-            : "ring-zinc-200",
+            ? "ring-2 ring-primary/40"
+            : "ring-border",
         )}
       >
         <header className="flex items-center justify-between gap-2 px-1 pb-2">
-          <p className="text-[13px] font-semibold text-zinc-900">
+          <p className="text-[13px] font-semibold text-foreground">
             {term.name}
-            <span className="ml-2 font-normal text-zinc-400">{term.dates}</span>
+            <span className="ml-2 font-normal text-muted-foreground">
+              {term.dates}
+            </span>
           </p>
           <div className="flex items-center gap-1.5">
             <span
               className={cn(
                 "text-[11px] font-medium",
-                units > 24 ? "text-amber-600" : "text-zinc-400",
+                units > 24
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-muted-foreground",
               )}
             >
               {term.id === "unscheduled"
@@ -464,7 +471,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               type="button"
               onClick={() => requestAddCourse(term)}
               aria-label={`Add a course to ${term.name} ${term.year}`}
-              className="grid size-8 cursor-pointer place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
+              className="grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
             >
               <Plus size={14} />
             </button>
@@ -479,10 +486,10 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                 <div
                   key={entry.attempt.id}
                   aria-hidden="true"
-                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400"
+                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-lg border border-dashed border-border px-2 text-[11px] font-medium text-muted-foreground"
                   style={{ height: dragPointer?.rowHeight }}
                 >
-                  <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-zinc-200 bg-white">
+                  <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-border bg-card">
                     <Plus size={10} />
                   </span>
                   <span>Add course</span>
@@ -493,7 +500,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               <div
                 key={entry.attempt.id}
                 data-attempt-id={entry.attempt.id}
-                className="group relative grid min-h-[52px] grid-cols-[1.75rem_minmax(0,1fr)] rounded-lg transition-colors hover:bg-zinc-50"
+                className="group relative grid min-h-[52px] grid-cols-[1.75rem_minmax(0,1fr)] rounded-lg transition-colors hover:bg-muted/50"
               >
                 <button
                   type="button"
@@ -501,31 +508,37 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   onPointerDown={(event) =>
                     startPointerDrag(event, entry, term)
                   }
-                  className="grid cursor-grab touch-none place-items-center rounded-l-lg text-zinc-200 transition hover:text-zinc-500 active:cursor-grabbing"
+                  className="grid cursor-grab touch-none place-items-center rounded-l-lg text-muted-foreground/40 transition hover:text-muted-foreground active:cursor-grabbing"
                 >
                   <GripVertical size={13} aria-hidden="true" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedAttempt(entry.attempt.id)}
-                  aria-describedby={
-                    note ? `course-issue-${entry.attempt.id}` : undefined
-                  }
-                  className="min-w-0 cursor-pointer py-2 pr-2 text-left"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <StatusMark status={entry.status} />
-                    <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-zinc-500">
-                      {entry.course.code}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
-                      {entry.course.name}
-                    </span>
-                    <span className="shrink-0 text-[11px] text-zinc-400">
-                      {unitsForAttempt(entry.attempt, entry.course)}u
-                    </span>
-                  </span>
-                </button>
+                <Tooltip open={note ? undefined : false}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAttempt(entry.attempt.id)}
+                      className="min-w-0 cursor-pointer py-2 pr-2 text-left"
+                    >
+                      <span className="flex items-center gap-2.5">
+                        <StatusMark status={entry.status} />
+                        <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-muted-foreground">
+                          {entry.course.code}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
+                          {entry.course.name}
+                        </span>
+                        <span className="shrink-0 text-[11px] text-muted-foreground">
+                          {unitsForAttempt(entry.attempt, entry.course)}u
+                        </span>
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  {note ? (
+                    <TooltipContent align="start" side="bottom">
+                      {note}
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
                 {entry.status === "blocked" && (
                   <div className="col-span-2 flex justify-end px-2 pb-2">
                     <FixIssueButton
@@ -533,15 +546,6 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                       catalogue={planningCatalogue}
                     />
                   </div>
-                )}
-                {note && (
-                  <span
-                    id={`course-issue-${entry.attempt.id}`}
-                    role="tooltip"
-                    className="pointer-events-none invisible absolute top-[calc(100%+0.25rem)] left-8 z-40 max-w-72 translate-y-1 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-[11px] leading-relaxed font-medium text-white opacity-0 shadow-lg transition duration-150 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
-                  >
-                    {note}
-                  </span>
                 )}
               </div>
             );
@@ -557,9 +561,9 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
                   ? "Add an unscheduled course"
                   : `Add course in empty slot ${entries.length + index + 1} of ${STANDARD_COURSE_SLOTS} for ${term.name} ${term.year}`
               }
-              className="group flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-200 px-2 text-[11px] font-medium text-zinc-400 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-600"
+              className="group flex min-h-[52px] cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-border px-2 text-[11px] font-medium text-muted-foreground transition hover:border-muted-foreground/40 hover:bg-muted/50 hover:text-foreground"
             >
-              <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-zinc-200 bg-white transition group-hover:border-zinc-300">
+              <span className="grid size-[15px] shrink-0 place-items-center rounded-full border border-border bg-card transition group-hover:border-muted-foreground/40">
                 <Plus size={10} />
               </span>
               <span>Add course</span>
@@ -586,7 +590,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   return (
     <AppShell>
       {degree && (degree.duration === null || degree.units === null) ? (
-        <Alert className="mb-5" tone="warning">
+        <Alert className="mb-5">
           <AlertTriangle aria-hidden="true" />
           <AlertTitle>Programme planning data is incomplete</AlertTitle>
           <AlertDescription>
@@ -608,18 +612,18 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
               <section className="year-row" key={yearGroup.year}>
                 <div className="mb-2 flex items-end justify-between px-1">
                   <div className="flex items-baseline gap-2">
-                    <h2 className="text-sm font-semibold text-zinc-900">
+                    <h2 className="text-sm font-semibold text-foreground">
                       Year{" "}
                       {Math.max(
                         1,
                         yearGroup.year - state.profile.commencementYear + 1,
                       )}
                     </h2>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-muted-foreground">
                       {yearGroup.year}
                     </span>
                   </div>
-                  <span className="text-[11px] text-zinc-400">
+                  <span className="text-[11px] text-muted-foreground">
                     {unitsOf(yearEntries)} units
                   </span>
                 </div>
@@ -632,7 +636,7 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
 
           {unscheduled && (
             <section>
-              <h2 className="mb-2 px-1 text-sm font-semibold text-zinc-900">
+              <h2 className="mb-2 px-1 text-sm font-semibold text-foreground">
                 Later
               </h2>
               {renderLane(unscheduled)}
@@ -646,21 +650,24 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
           <div
             ref={floatingCardRef}
             aria-hidden="true"
-            className="absolute top-0 left-0 flex min-h-[52px] items-center gap-2.5 rounded-lg bg-white px-2 py-2 text-left opacity-95 shadow-lg ring-1 ring-zinc-200 will-change-transform"
+            className="absolute top-0 left-0 flex min-h-[52px] items-center gap-2.5 rounded-lg bg-card px-2 py-2 text-left opacity-95 shadow-lg ring-1 ring-border will-change-transform"
             style={{
               width: dragPointer.width,
               transform: `translate3d(${dragPointer.initialX - dragPointer.offsetX}px, ${dragPointer.initialY - dragPointer.offsetY}px, 0)`,
             }}
           >
-            <GripVertical size={13} className="shrink-0 text-zinc-400" />
+            <GripVertical
+              size={13}
+              className="shrink-0 text-muted-foreground"
+            />
             <StatusMark status={draggedStatus} />
-            <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-zinc-500">
+            <span className="w-[4.75rem] shrink-0 font-mono text-[11px] text-muted-foreground">
               {draggedCourse.code}
             </span>
-            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-800">
+            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
               {draggedCourse.name}
             </span>
-            <span className="shrink-0 text-[11px] text-zinc-400">
+            <span className="shrink-0 text-[11px] text-muted-foreground">
               {unitsForAttempt(draggedAttempt, draggedCourse)}u
             </span>
           </div>
@@ -676,53 +683,64 @@ function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         />
       )}
       {overloadTarget && (
-        <Modal
-          onClose={() => {
-            setOverloadTerm(null);
-            setPendingDrop(null);
-          }}
-          labelledBy="overload-warning-title"
-          className="max-w-md"
-        >
-          <div className="p-5 sm:p-6">
-            <div className="flex items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-200 ring-inset">
-                <AlertTriangle size={19} />
-              </span>
-              <h2
-                id="overload-warning-title"
-                className="text-lg font-bold tracking-tight text-zinc-900"
-              >
-                This semester is already full
-              </h2>
-            </div>
-            <p className="mt-2 text-[13px] leading-relaxed text-zinc-600">
-              {pendingDrop
-                ? `Moving this course to ${overloadTarget.name} ${overloadTarget.year} would exceed the standard four-course, 24-unit study load.`
-                : `Adding another course would take ${overloadTarget.name} ${overloadTarget.year} above the standard four-course, 24-unit study load.`}{" "}
-              Overloading may require approval.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2 border-t border-zinc-100 bg-zinc-50/70 px-5 py-3.5">
-            <Button variant="secondary" onClick={() => setOverloadTerm(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => {
-                if (pendingDrop) {
-                  applyDrop(pendingDrop);
-                } else {
-                  setPicker({ termId: overloadTarget.id, intent: "all" });
-                }
+        <Dialog
+          open
+          onOpenChange={(open) => {
+            if (!open)
+              (() => {
                 setOverloadTerm(null);
                 setPendingDrop(null);
-              }}
-            >
-              {pendingDrop ? "Move anyway" : "Continue to courses"}
-            </Button>
-          </div>
-        </Modal>
+              })();
+          }}
+        >
+          <DialogContent
+            {...overloadFocus}
+            showCloseButton={false}
+            aria-labelledby={"overload-warning-title"}
+            aria-describedby={undefined}
+            className={"max-w-md"}
+          >
+            <div className="p-5 sm:p-6">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30 ring-inset dark:text-amber-400">
+                  <AlertTriangle size={19} />
+                </span>
+                <DialogTitle asChild>
+                  <h2
+                    id="overload-warning-title"
+                    className="text-lg font-bold tracking-tight text-foreground"
+                  >
+                    This semester is already full
+                  </h2>
+                </DialogTitle>
+              </div>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                {pendingDrop
+                  ? `Moving this course to ${overloadTarget.name} ${overloadTarget.year} would exceed the standard four-course, 24-unit study load.`
+                  : `Adding another course would take ${overloadTarget.name} ${overloadTarget.year} above the standard four-course, 24-unit study load.`}{" "}
+                Overloading may require approval.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-border bg-muted/40 px-5 py-3.5">
+              <Button variant="outline" onClick={() => setOverloadTerm(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (pendingDrop) {
+                    applyDrop(pendingDrop);
+                  } else {
+                    setPicker({ termId: overloadTarget.id, intent: "all" });
+                  }
+                  setOverloadTerm(null);
+                  setPendingDrop(null);
+                }}
+              >
+                {pendingDrop ? "Move anyway" : "Continue to courses"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
       {selectedAttempt && (
         <CourseDrawer

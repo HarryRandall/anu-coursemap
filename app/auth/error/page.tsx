@@ -1,14 +1,16 @@
-import Link from "next/link";
-import { CircleAlert } from "lucide-react";
-import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
 import {
   Empty,
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
-} from "@/components/ui/empty";
+} from "@reui/ui/empty";
+import ReuiLink from "next/link";
+import Link from "next/link";
+import { CircleAlert } from "lucide-react";
+
 import { safeInternalRedirect } from "@/lib/auth/redirect";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -30,7 +32,7 @@ export default async function AuthErrorPage({
       <Card className="w-full max-w-md !rounded-2xl">
         <Empty className="px-7 py-7">
           <EmptyHeader>
-            <EmptyMedia variant="error">
+            <EmptyMedia variant="icon">
               <CircleAlert aria-hidden="true" />
             </EmptyMedia>
             <h1 className="text-xl font-bold tracking-tight text-zinc-950">
@@ -43,15 +45,14 @@ export default async function AuthErrorPage({
           </EmptyHeader>
           <EmptyContent>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
-              <ButtonLink
-                href={`/login?next=${encodeURIComponent(next)}`}
-                variant="primary"
-              >
-                Back to sign in
-              </ButtonLink>
-              <ButtonLink href="/courses" variant="secondary">
-                Browse courses
-              </ButtonLink>
+              <Button asChild variant="default">
+                <ReuiLink href={`/login?next=${encodeURIComponent(next)}`}>
+                  Back to sign in
+                </ReuiLink>
+              </Button>
+              <Button asChild variant="outline">
+                <ReuiLink href="/courses">Browse courses</ReuiLink>
+              </Button>
             </div>
             <Link
               href="/"

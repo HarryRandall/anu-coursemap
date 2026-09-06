@@ -1,9 +1,43 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createAcademicStructureImportDatabaseClient } from "../lib/structure-import/import-store.ts";
+import { createCourseImportDatabaseClient } from "../lib/course-import/import-store.ts";
 import { ACADEMIC_STRUCTURE_EXTRACTION_SCHEMA_VERSION } from "../lib/structure-import/contract.ts";
 import { academicStructureSemanticHash } from "../lib/structure-import/persist-snapshot.ts";
 import { academicStructurePersistenceInternals } from "../lib/structure-import/persist-snapshot.ts";
 import { projectAcademicStructureSnapshot } from "../lib/structure-import/project-snapshot.ts";
+
+test("development import workers honour the configured hosted database", async () => {
+  const overrides = {
+    NODE_ENV: "development",
+    COURSEMAP_DEMO_MODE: "false",
+    COURSEMAP_IMPORT_DATABASE_URL:
+      "postgres://postgres:example@db.example.supabase.co:5432/postgres",
+  };
+  const previous = Object.fromEntries(
+    Object.keys(overrides).map((key) => [key, process.env[key]]),
+  );
+  Object.assign(process.env, overrides);
+  try {
+    for (const createClient of [
+      createAcademicStructureImportDatabaseClient,
+      createCourseImportDatabaseClient,
+    ]) {
+      const sql = await createClient();
+      try {
+        assert.deepEqual(sql.options.host, ["db.example.supabase.co"]);
+        assert.equal(sql.options.ssl, "require");
+      } finally {
+        await sql.end();
+      }
+    }
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
 
 function extraction(overrides = {}) {
   return {

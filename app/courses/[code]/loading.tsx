@@ -1,12 +1,13 @@
+import { Card } from "@reui/ui/card";
+import { Skeleton } from "@reui/ui/skeleton";
 import { AppShell } from "@/components/shell";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import { cn } from "@/lib/cn";
 
 function SectionSkeleton({ rows }: { rows: number }) {
   return (
     <Card>
-      <div className="space-y-2 border-b border-zinc-100 px-5 py-4">
+      <div className="space-y-2 border-b border-border/60 px-5 py-4">
         <Skeleton className="h-3.5 w-40" />
         <Skeleton className="h-2.5 w-64 max-w-full" />
       </div>

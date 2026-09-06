@@ -1,11 +1,5 @@
 "use client";
-
-import Link from "next/link";
-import { Settings } from "lucide-react";
-import { useMemo, useSyncExternalStore, type ReactNode } from "react";
 import {
-  DataTableEmpty,
-  DataTableShell,
   Table,
   TableBody,
   TableCaption,
@@ -13,14 +7,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@reui/ui/table";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@reui/ui/dropdown-menu";
+
+import Link from "next/link";
+import { Settings } from "lucide-react";
+import { useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
+
 import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/cn";
 
@@ -144,7 +144,7 @@ export function AdminRecordTable<Row>({
       }
     >
       <Table>
-        <TableCaption>{caption}</TableCaption>
+        <TableCaption className="sr-only">{caption}</TableCaption>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             {visible.map((column) => (
@@ -162,7 +162,7 @@ export function AdminRecordTable<Row>({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="grid size-7 cursor-pointer place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-200/70 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+                    className="grid size-7 cursor-pointer place-items-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent/70 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     type="button"
                   >
                     <Settings aria-hidden="true" size={15} />
@@ -214,7 +214,7 @@ export function AdminRecordTable<Row>({
                       // A stretched link makes the whole row clickable while
                       // keeping one real anchor for keyboard and screen readers.
                       <Link
-                        className="rounded-xs outline-none after:absolute after:inset-0 after:content-[''] focus-visible:ring-2 focus-visible:ring-brand-400"
+                        className="rounded-xs outline-none after:absolute after:inset-0 after:content-[''] focus-visible:ring-2 focus-visible:ring-ring"
                         href={rowHref(row)}
                       >
                         {column.cell(row)}

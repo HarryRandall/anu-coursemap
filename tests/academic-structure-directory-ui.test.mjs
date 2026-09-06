@@ -229,7 +229,7 @@ test("each structure kind has separate collection and detail routes", async () =
       "utf8",
     ),
     readFile(
-      new URL("../components/shell/sidebar.tsx", import.meta.url),
+      new URL("../components/shell/app-sidebar.tsx", import.meta.url),
       "utf8",
     ),
     readFile(
@@ -281,7 +281,7 @@ test("each structure kind has separate collection and detail routes", async () =
   assert.match(component, /router\.push\(importsPath\)/u);
   assert.match(component, /adminAcademicStructureImportsPath\(data\.kind\)/u);
   assert.doesNotMatch(component, /\/admin\/imports\/(?:runs|structures)/u);
-  assert.match(component, /record\.latestImport\.runNumber/u);
+  assert.match(component, /record\.latestImport\.targetId/u);
   assert.match(component, /<ConfirmDialog/u);
   assert.match(
     component,
@@ -294,9 +294,10 @@ test("each structure kind has separate collection and detail routes", async () =
   );
   assert.match(component, /<SortMenu/u);
   assert.match(component, /chooseSort/u);
-  assert.match(component, /<TableHead>Workflow<\/TableHead>/u);
-  assert.match(component, /\bDraft\s*<\/ButtonLink>/u);
-  assert.match(component, /\bPublished\s*<\/ButtonLink>/u);
+  assert.match(component, /<TableHead>Status<\/TableHead>/u);
+  assert.match(component, /"Preview draft"/u);
+  assert.match(component, /<CatalogueRowActions/u);
+  assert.match(component, /year: record\.year/u);
   assert.doesNotMatch(component, /<TableHead>Availability<\/TableHead>/u);
   assert.doesNotMatch(component, /<Download/u);
   assert.match(component, /<FilterBar/u);

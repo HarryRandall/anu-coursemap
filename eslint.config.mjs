@@ -15,5 +15,9 @@ export default defineConfig([
     "next-env.d.ts",
     "out/**",
     "public/maplibre/**",
+    // Retained upstream source keeps its own conventions.
+    "components/reui/components/**",
+    "components/reui/hooks/**",
+    "components/reui/ui/**",
   ]),
 ]);

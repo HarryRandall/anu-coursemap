@@ -1,7 +1,8 @@
+import { badgeVariantForTone } from "@/lib/ui";
+import { Badge } from "@reui/components/badge";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+
 import {
-  DataTableEmpty,
   DataTableShell,
   Table,
   TableBody,
@@ -10,7 +11,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@/components/admin/catalogue-table/catalogue-table";
+import { CatalogueEmpty } from "@/components/admin/catalogue-table/catalogue-empty";
+import { CatalogueRowActions } from "@/components/admin/catalogue-table/catalogue-row-actions";
 import { GeneratedAvatar } from "@/components/ui/generated-avatar";
 import type { AdminRole, AdminUser, AdminUserRole } from "@/lib/admin/users";
 
@@ -32,11 +35,13 @@ export function UserDirectory({
   roles,
   assignments,
   currentUserId,
+  filtered = false,
 }: {
   users: AdminUser[];
   roles: AdminRole[];
   assignments: AdminUserRole[];
   currentUserId: string;
+  filtered?: boolean;
 }) {
   const rolesByKey = new Map(roles.map((role) => [role.key, role]));
   const rolesByUser = new Map<string, AdminRole>();
@@ -48,94 +53,107 @@ export function UserDirectory({
 
   return (
     <DataTableShell
+      selectable={false}
+      layout="users"
       footer={
-        <p className="text-xs text-zinc-500 tabular-nums">
+        <p className="flex h-8 items-center text-xs text-muted-foreground tabular-nums">
           {users.length.toLocaleString("en-AU")}{" "}
           {users.length === 1 ? "user" : "users"}
         </p>
       }
     >
-      <Table className="min-w-[680px] table-fixed">
-        <TableCaption>Coursemap users and roles</TableCaption>
-        <colgroup>
-          <col className="w-[42%]" />
-          <col className="w-[28%]" />
-          <col className="w-[15%]" />
-          <col className="w-[15%]" />
-        </colgroup>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>User</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Joined</TableHead>
-            <TableHead>Updated</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.length === 0 ? (
+      {users.length === 0 ? (
+        <CatalogueEmpty
+          filtered={filtered}
+          title="No users yet"
+          description="Users will appear here after they sign up."
+          clearHref="/admin/users"
+        />
+      ) : (
+        <Table>
+          <TableCaption className="sr-only">
+            Coursemap users and roles
+          </TableCaption>
+          <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={4} className="p-0">
-                <DataTableEmpty
-                  title="No users match this view"
-                  description="Clear the search or choose a different role."
-                />
-              </TableCell>
+              <TableHead>User</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Joined</TableHead>
+              <TableHead>Updated</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
-          ) : null}
-          {users.map((user) => {
-            const href = `/admin/users/${user.userId}`;
-            const userRole = rolesByUser.get(user.userId);
-            return (
-              <TableRow key={user.userId} className="group">
-                <TableCell className="p-0">
-                  <Link
-                    href={href}
-                    className="flex items-center gap-2.5 rounded-sm px-4 py-3 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none focus-visible:ring-inset"
-                  >
-                    <span className="shrink-0">
-                      <GeneratedAvatar
-                        name={user.displayName}
-                        email={user.email}
-                        className="size-7 text-[10px]"
-                      />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span className="truncate text-[13px] font-medium text-zinc-950 group-hover:text-brand-700">
-                          {user.displayName}
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => {
+              const href = `/admin/users/${user.userId}`;
+              const userRole = rolesByUser.get(user.userId);
+              return (
+                <TableRow key={user.userId} className="group">
+                  <TableCell className="p-0">
+                    <Link
+                      href={href}
+                      className="flex items-center gap-2.5 rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+                    >
+                      <span className="shrink-0">
+                        <GeneratedAvatar
+                          name={user.displayName}
+                          email={user.email}
+                          className="size-7 text-[10px]"
+                        />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="truncate text-[13px] font-medium text-foreground group-hover:text-primary">
+                            {user.displayName}
+                          </span>
+                          {user.userId === currentUserId ? (
+                            <Badge
+                              className="px-2 py-0.5"
+                              variant={"primary-light"}
+                            >
+                              You
+                            </Badge>
+                          ) : null}
                         </span>
-                        {user.userId === currentUserId ? (
-                          <Badge tone="brand" className="px-2 py-0.5">
-                            You
-                          </Badge>
-                        ) : null}
+                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                          {user.email ?? "No email"}
+                        </span>
                       </span>
-                      <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
-                        {user.email ?? "No email"}
-                      </span>
-                    </span>
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <div className="flex min-h-10 items-center gap-1.5">
-                    {userRole ? (
-                      <Badge tone={roleTone(userRole)}>{userRole.name}</Badge>
-                    ) : (
-                      <Badge tone="neutral">User</Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-xs text-zinc-500 tabular-nums">
-                  {formatDate(user.createdAt)}
-                </TableCell>
-                <TableCell className="font-mono text-xs text-zinc-500 tabular-nums">
-                  {formatDate(user.updatedAt)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex min-h-10 items-center gap-1.5">
+                      {userRole ? (
+                        <Badge
+                          variant={badgeVariantForTone[roleTone(userRole)]}
+                        >
+                          {userRole.name}
+                        </Badge>
+                      ) : (
+                        <Badge variant={"outline"}>User</Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {formatDate(user.createdAt)}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {formatDate(user.updatedAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <CatalogueRowActions
+                      label={user.displayName}
+                      links={[{ label: "View user", href }]}
+                    />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
     </DataTableShell>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@reui/ui/button";
 
 import {
   Circle,
@@ -12,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Fragment, useId } from "react";
-import { Button } from "@/components/ui/button";
+
 import { cn } from "@/lib/cn";
 
 /**
@@ -149,7 +150,7 @@ export function ToolPalette({
       {groups.map((group, index) => (
         <div className="flex items-center gap-1" key={group[0].tool}>
           {index > 0 ? (
-            <span aria-hidden="true" className="mx-1 h-5 w-px bg-zinc-200" />
+            <span aria-hidden="true" className="mx-1 h-5 w-px bg-accent" />
           ) : null}
           {group.map((definition) => (
             <Fragment key={definition.tool}>
@@ -161,7 +162,8 @@ export function ToolPalette({
                 onClick={() => onSelect(definition.tool)}
                 size="sm"
                 title={definition.hint}
-                variant={tool === definition.tool ? "subtle" : "ghost"}
+                variant={tool === definition.tool ? "secondary" : "ghost"}
+                type="button"
               >
                 <definition.icon aria-hidden="true" />
                 {definition.label}

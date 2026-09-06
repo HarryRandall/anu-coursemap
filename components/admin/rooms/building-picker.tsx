@@ -1,18 +1,21 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { LayoutGrid, MapPinned, Search } from "lucide-react";
-import { CampusMap } from "@/components/rooms/campus-map";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@reui/components/badge";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { Input } from "@/components/ui/field";
+} from "@reui/ui/empty";
+import { Input } from "@reui/ui/input";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LayoutGrid, MapPinned, Search } from "lucide-react";
+import { CampusMap } from "@/components/rooms/campus-map";
+
 import { cn } from "@/lib/cn";
 import { indoorMapStatusTone } from "@/components/admin/rooms/indoor-status";
 import {
@@ -85,13 +88,13 @@ export function BuildingPicker({
   }
 
   return (
-    <div className="grid min-h-[calc(100dvh-4rem)] bg-zinc-100 lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col border-b border-zinc-200 bg-white lg:border-r lg:border-b-0">
-        <div className="border-b border-zinc-200 p-4">
+    <div className="grid min-h-[calc(100dvh-4rem)] bg-muted lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
+      <aside className="flex min-h-0 flex-col border-b border-border bg-card lg:border-r lg:border-b-0">
+        <div className="border-b border-border p-4">
           <div className="relative">
             <Search
               aria-hidden="true"
-              className="absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400"
+              className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground/80"
               size={15}
             />
             <Input
@@ -103,7 +106,7 @@ export function BuildingPicker({
               value={query}
             />
           </div>
-          <p className="mt-2 text-xs text-zinc-500" role="status">
+          <p className="mt-2 text-xs text-muted-foreground" role="status">
             {terms.length > 0
               ? `${results.length} of ${buildings.length} buildings`
               : `${started.length} of ${buildings.length} buildings mapped`}
@@ -145,25 +148,31 @@ export function BuildingPicker({
                   <li key={place.id}>
                     <button
                       className={cn(
-                        "flex min-h-11 w-full items-start gap-2 rounded-md px-2.5 py-2 text-left outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400",
-                        place.slug === selectedSlug && "bg-brand-50",
+                        "flex min-h-11 w-full items-start gap-2 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                        place.slug === selectedSlug && "bg-primary/10",
                       )}
                       onClick={() => openBuilding(place.slug)}
                       onMouseEnter={() => setSelectedSlug(place.slug)}
                       type="button"
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-zinc-950">
+                        <span className="block truncate text-sm font-medium text-foreground">
                           {place.name}
                         </span>
-                        <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
+                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                           {summary
                             ? `${summary.levelCount} level${summary.levelCount === 1 ? "" : "s"} · ${summary.roomCount} room${summary.roomCount === 1 ? "" : "s"}${updatedAt ? ` · ${updatedAt}` : ""}`
                             : place.address}
                         </span>
                       </span>
                       {summary ? (
-                        <Badge tone={indoorMapStatusTone(summary.status)}>
+                        <Badge
+                          variant={
+                            badgeVariantForTone[
+                              indoorMapStatusTone(summary.status)
+                            ]
+                          }
+                        >
                           {summary.status}
                         </Badge>
                       ) : null}
@@ -174,7 +183,7 @@ export function BuildingPicker({
             </ul>
           )}
           {listed.length > RESULT_LIMIT ? (
-            <p className="px-2.5 py-2 text-[11px] text-zinc-500">
+            <p className="px-2.5 py-2 text-[11px] text-muted-foreground">
               {listed.length - RESULT_LIMIT} more. Keep typing to narrow it
               down.
             </p>
@@ -198,7 +207,7 @@ export function BuildingPicker({
           selectedSlug={selectedSlug}
           visibleLayerSlugs={visibleLayerSlugs}
         />
-        <p className="pointer-events-none absolute top-3 left-3 inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white/95 px-3 py-2 text-xs font-medium text-zinc-700 shadow-xs">
+        <p className="pointer-events-none absolute top-3 left-3 inline-flex items-center gap-2 rounded-md border border-border bg-card/80 px-3 py-2 text-xs font-medium text-foreground/80 shadow-xs">
           <LayoutGrid aria-hidden="true" size={14} />
           Click a building to open its floor plan
         </p>

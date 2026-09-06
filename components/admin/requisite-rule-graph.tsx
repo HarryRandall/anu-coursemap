@@ -110,7 +110,7 @@ const GraphButton = forwardRef<
   return (
     <button
       aria-label={label}
-      className="nodrag nopan grid size-9 shrink-0 cursor-pointer place-items-center rounded-md text-zinc-600 outline-none hover:bg-zinc-100 hover:text-zinc-950 focus-visible:ring-3 focus-visible:ring-brand-500/20"
+      className="nodrag nopan grid size-9 shrink-0 cursor-pointer place-items-center rounded-md text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20"
       onClick={onClick}
       ref={ref}
       type="button"
@@ -174,7 +174,7 @@ function JoinChip({
 }) {
   const label = operatorJoiner(group);
   const chip = cn(
-    "inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-md border px-2 text-[11px] font-semibold tracking-wide uppercase outline-none focus-visible:ring-3 focus-visible:ring-brand-500/20",
+    "inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-md border px-2 text-[11px] font-semibold tracking-wide uppercase outline-none focus-visible:ring-3 focus-visible:ring-ring/20",
     operatorChipClass(group.operator),
   );
 
@@ -244,7 +244,7 @@ function GroupNode({ data }: NodeProps<Node<GroupData, "ruleGroup">>) {
   const title = data.isRoot ? "Start" : operatorJoiner(data.group);
 
   return (
-    <div className="nopan nodrag inline-flex w-max items-center gap-1 rounded-md border border-zinc-200 bg-white py-1.5 pr-1.5 pl-2.5">
+    <div className="nopan nodrag inline-flex w-max items-center gap-1 rounded-md border border-border bg-card py-1.5 pr-1.5 pl-2.5">
       <Handle
         className={handleClasses}
         position={Position.Left}
@@ -252,13 +252,17 @@ function GroupNode({ data }: NodeProps<Node<GroupData, "ruleGroup">>) {
       />
       {empty && data.canEdit ? (
         <button
-          className="nodrag nopan inline-flex cursor-pointer items-center gap-2 rounded-md text-left text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-brand-500/20"
+          className="nodrag nopan inline-flex cursor-pointer items-center gap-2 rounded-md text-left text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/20"
           onClick={data.onAddFirst}
           onPointerDown={stopPanePan}
           type="button"
         >
           Add condition
-          <Plus aria-hidden="true" className="text-zinc-500" size={16} />
+          <Plus
+            aria-hidden="true"
+            className="text-muted-foreground"
+            size={16}
+          />
         </button>
       ) : (
         <>
@@ -317,8 +321,8 @@ function ConditionNode({ data }: NodeProps<Node<ConditionData, "condition">>) {
   return (
     <div
       className={cn(
-        "nopan nodrag inline-flex w-max items-center gap-1 rounded-md border bg-white py-1.5 pr-1.5 pl-2.5",
-        complete ? "border-zinc-200" : "border-amber-300",
+        "nopan nodrag inline-flex w-max items-center gap-1 rounded-md border bg-card py-1.5 pr-1.5 pl-2.5",
+        complete ? "border-border" : "border-amber-300 dark:border-amber-900",
       )}
     >
       <Handle
@@ -340,7 +344,7 @@ function ConditionNode({ data }: NodeProps<Node<ConditionData, "condition">>) {
       )}
       {data.canEdit ? (
         <span
-          className="line-clamp-2 max-w-44 px-1 text-sm leading-5 font-medium text-zinc-700 md:hidden"
+          className="line-clamp-2 max-w-44 px-1 text-sm leading-5 font-medium text-foreground/80 md:hidden"
           title={summary}
         >
           {summary}
@@ -571,7 +575,7 @@ export function RequisiteRuleGraph({
   }
 
   return (
-    <div className="h-[30rem] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50/60">
+    <div className="h-[30rem] overflow-hidden rounded-lg border border-border bg-muted/30">
       <ReactFlow
         deleteKeyCode={null}
         edges={graph.edges}

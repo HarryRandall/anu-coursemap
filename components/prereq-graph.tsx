@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Check, LockKeyhole } from "lucide-react";
 import { useMemo } from "react";
+import { Hint } from "@/components/ui/hint";
 import { cn } from "@/lib/cn";
 import type { CoursePrerequisiteEdge } from "@/lib/coursemap/course-types";
 
@@ -153,7 +154,7 @@ export function PrereqGraph({
           {columns.map((column, index) => (
             <p
               key={index}
-              className="pb-2 text-center text-[10px] font-bold tracking-wider text-zinc-400 uppercase"
+              className="pb-2 text-center text-[10px] font-bold tracking-wider text-muted-foreground/80 uppercase"
             >
               {column.label}
             </p>
@@ -186,8 +187,8 @@ export function PrereqGraph({
                     completedPath
                       ? "stroke-emerald-400"
                       : touches
-                        ? "stroke-brand-400"
-                        : "stroke-zinc-300"
+                        ? "stroke-primary/70"
+                        : "stroke-border"
                   }
                   strokeWidth={completedPath || touches ? 1.75 : 1.25}
                 />
@@ -209,7 +210,7 @@ export function PrereqGraph({
                   {column.codes.length === 0 && (
                     <div
                       style={{ top: (height - NODE_H) / 2, height: NODE_H }}
-                      className="absolute inset-x-0 mx-auto flex w-full max-w-36 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50/60 px-2 text-center text-[10px] font-medium text-zinc-400"
+                      className="absolute inset-x-0 mx-auto flex w-full max-w-36 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 px-2 text-center text-[10px] font-medium text-muted-foreground/80"
                     >
                       {column.label === "Unlocks"
                         ? "No imported unlocks yet"
@@ -224,16 +225,16 @@ export function PrereqGraph({
                     const isCompleted = completedCodes.has(item);
                     const isPlanned = plannedCodes.has(item);
                     const nodeClassName = cn(
-                      "absolute inset-x-0 mx-auto flex w-full max-w-36 items-center justify-center gap-1.5 rounded-lg px-2 font-mono text-[11px] font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400",
+                      "absolute inset-x-0 mx-auto flex w-full max-w-36 items-center justify-center gap-1.5 rounded-lg px-2 font-mono text-[11px] font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                       isCompleted
-                        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                        ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-900"
                         : isCurrent
-                          ? "bg-brand-600 text-white shadow-sm"
+                          ? "bg-primary text-white shadow-sm"
                           : !isAvailable
-                            ? "cursor-not-allowed bg-zinc-100 text-zinc-500 ring-1 ring-zinc-200"
+                            ? "cursor-not-allowed bg-muted text-muted-foreground ring-1 ring-border"
                             : isPlanned
-                              ? "bg-white text-zinc-700 ring-1 ring-zinc-200 hover:bg-zinc-50 hover:ring-zinc-300"
-                              : "bg-rose-50 text-rose-700 ring-1 ring-rose-200 hover:bg-rose-100 hover:ring-rose-300",
+                              ? "bg-card text-foreground/80 ring-1 ring-border hover:bg-accent/50 hover:ring-input"
+                              : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-900 hover:bg-rose-100 dark:hover:bg-rose-950/60 hover:ring-rose-300",
                     );
                     const content = (
                       <>
@@ -260,15 +261,15 @@ export function PrereqGraph({
                     }
                     if (!isAvailable) {
                       return (
-                        <span
+                        <Hint
                           key={item}
-                          style={style}
-                          title={`${item} has not been imported yet`}
-                          className={nodeClassName}
+                          label={`${item} has not been imported yet`}
                         >
-                          <LockKeyhole size={11} aria-hidden="true" />
-                          {content}
-                        </span>
+                          <span style={style} className={nodeClassName}>
+                            <LockKeyhole size={11} aria-hidden="true" />
+                            {content}
+                          </span>
+                        </Hint>
                       );
                     }
                     return (
@@ -290,7 +291,7 @@ export function PrereqGraph({
         </div>
       </div>
 
-      <p className="mt-4 text-center text-[11px] text-zinc-500">
+      <p className="mt-4 text-center text-[11px] text-muted-foreground">
         Imported courses are links. Locked courses are known references that
         have not been imported yet.
       </p>

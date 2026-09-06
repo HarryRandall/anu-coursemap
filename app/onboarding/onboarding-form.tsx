@@ -1,5 +1,10 @@
 "use client";
 
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
+import { Field, FieldDescription, FieldLabel } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,13 +15,19 @@ import {
   TriangleAlert,
   UserRound,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
+import {
+  useId,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+
 import { BrandMark } from "@/components/brand-mark";
 import { StructureMultiSelect } from "@/components/profile/structure-multi-select";
+import { SelectField } from "@/components/ui/select-field";
 import { cn } from "@/lib/cn";
 import { saveProfileAndPlan } from "@/lib/coursemap/actions";
 import type {
@@ -37,8 +48,13 @@ const steps = [
 ] as const;
 
 type StepId = (typeof steps)[number]["id"];
+type StudyLoad = "Full time" | "Part time";
 
 const STUDENT_NUMBER_PATTERN = /^u\d{7}$/;
+const STUDY_LOADS: { value: StudyLoad; label: string }[] = [
+  { value: "Full time", label: "Full time" },
+  { value: "Part time", label: "Part time" },
+];
 
 function yearsOfStudy(degree: ProgrammeOption | undefined) {
   const duration = nominalProgrammeDuration(
@@ -50,8 +66,15 @@ function yearsOfStudy(degree: ProgrammeOption | undefined) {
   return Array.from({ length: duration }, (_, index) => index + 1);
 }
 
+/**
+ * Three-step first-run flow that creates the student's primary plan. The flow
+ * is optional: students can skip to the dashboard and set up a plan later from
+ * the profile page.
+ */
 export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
   const router = useRouter();
+  const nameId = useId();
+  const studentNumberId = useId();
   const [stepId, setStepId] = useState<StepId>("about");
   const [name, setName] = useState("");
   const [studentNumber, setStudentNumber] = useState("");
@@ -68,9 +91,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
   const [minorCodes, setMinorCodes] = useState<string[]>([]);
   const [specialisationCodes, setSpecialisationCodes] = useState<string[]>([]);
   const [yearOfStudy, setYearOfStudy] = useState(1);
-  const [studyLoad, setStudyLoad] = useState<"Full time" | "Part time">(
-    "Full time",
-  );
+  const [studyLoad, setStudyLoad] = useState<StudyLoad>("Full time");
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -83,8 +104,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       catalogue.majors.filter(
         (item) =>
           item.catalogueYear === catalogueYear &&
-          (degree?.majorCodes.length ?? 0) > 0 &&
-          degree?.majorCodes.includes(item.code),
+          (degree?.majorCodes.includes(item.code) ?? false),
       ),
     [catalogue.majors, catalogueYear, degree?.majorCodes],
   );
@@ -93,8 +113,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       catalogue.minors.filter(
         (item) =>
           item.catalogueYear === catalogueYear &&
-          (degree?.minorCodes.length ?? 0) > 0 &&
-          degree?.minorCodes.includes(item.code),
+          (degree?.minorCodes.includes(item.code) ?? false),
       ),
     [catalogue.minors, catalogueYear, degree?.minorCodes],
   );
@@ -103,8 +122,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       catalogue.specialisations.filter(
         (item) =>
           item.catalogueYear === catalogueYear &&
-          (degree?.specialisationCodes.length ?? 0) > 0 &&
-          degree?.specialisationCodes.includes(item.code),
+          (degree?.specialisationCodes.includes(item.code) ?? false),
       ),
     [catalogue.specialisations, catalogueYear, degree?.specialisationCodes],
   );
@@ -114,6 +132,28 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
 
   const stepIndex = steps.findIndex((step) => step.id === stepId);
   const unavailable = !catalogueYear || catalogue.degrees.length === 0;
+
+  /** Changing the degree invalidates every structure chosen beneath it. */
+  const resetStructures = () => {
+    setMajorCode("");
+    setMinorCodes([]);
+    setSpecialisationCodes([]);
+    setYearOfStudy(1);
+  };
+
+  const selectCatalogueYear = (nextYear: number) => {
+    const nextDegree = catalogue.degrees.find(
+      (item) => item.catalogueYear === nextYear,
+    );
+    setCatalogueYear(nextYear);
+    setDegreeCode(nextDegree?.code ?? "");
+    resetStructures();
+  };
+
+  const selectDegree = (code: string) => {
+    setDegreeCode(code);
+    resetStructures();
+  };
 
   const goBack = () => {
     setMessage(null);
@@ -186,22 +226,27 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
   return (
     <main className="landing-mesh min-h-dvh px-4 py-8 sm:py-12">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="flex items-center gap-2.5 text-zinc-950">
-          <BrandMark className="size-10" />
-          <strong className="brand-wordmark text-lg">coursemap</strong>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <BrandMark className="size-10" />
+            <strong className="brand-wordmark text-lg">coursemap</strong>
+          </div>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/dashboard">Skip for now</Link>
+          </Button>
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-md ring-1 ring-zinc-200/70">
-          <div className="border-b border-zinc-100 bg-gradient-to-br from-brand-50 via-white to-sky-50/60 px-6 py-7 sm:px-9">
-            <span className="grid size-11 place-items-center rounded-2xl bg-brand-600 text-white shadow-sm">
+        <Card className="mt-8 overflow-hidden rounded-3xl p-0">
+          <div className="border-b bg-gradient-to-br from-primary/10 via-card to-card px-6 py-7 sm:px-9">
+            <span className="grid size-11 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
               <Sparkles size={20} aria-hidden="true" />
             </span>
-            <h1 className="mt-4 text-2xl font-bold tracking-tight text-zinc-950 sm:text-3xl">
+            <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
               Welcome to Coursemap
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-zinc-600">
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
               Three quick steps and your degree plan is ready. You can change
-              any of this later.
+              any of this later, or skip and set it up from your profile.
             </p>
 
             <ol
@@ -218,12 +263,13 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     aria-current={isCurrent ? "step" : undefined}
                     className={cn(
                       "flex min-h-9 items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
-                      isCurrent && "bg-brand-600 text-white shadow-sm",
+                      isCurrent &&
+                        "bg-primary text-primary-foreground shadow-sm",
                       isComplete &&
-                        "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset",
+                        "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/30 ring-inset dark:text-emerald-300",
                       !isCurrent &&
                         !isComplete &&
-                        "bg-white text-zinc-500 ring-1 ring-zinc-200 ring-inset",
+                        "bg-card text-muted-foreground ring-1 ring-border ring-inset",
                     )}
                   >
                     {isComplete ? (
@@ -232,7 +278,9 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                       <Icon className="size-3.5" aria-hidden="true" />
                     )}
                     {step.label}
-                    {isComplete && <span className="sr-only">(completed)</span>}
+                    {isComplete ? (
+                      <span className="sr-only">(completed)</span>
+                    ) : null}
                   </li>
                 );
               })}
@@ -241,7 +289,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
 
           {unavailable ? (
             <div className="p-6 sm:p-9">
-              <Alert tone="warning">
+              <Alert variant="warning">
                 <TriangleAlert aria-hidden="true" />
                 <AlertDescription>
                   A degree has not been published for the{" "}
@@ -253,104 +301,80 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
             </div>
           ) : (
             <form className="p-6 sm:p-9" onSubmit={submit}>
-              {stepId === "about" && (
+              {stepId === "about" ? (
                 <fieldset className="space-y-5">
-                  <legend className="text-base font-semibold text-zinc-900">
+                  <legend className="text-base font-semibold">
                     Tell us who is planning
                   </legend>
-                  <Field label="Your name">
+                  <Field>
+                    <FieldLabel htmlFor={nameId}>Your name</FieldLabel>
                     <Input
                       autoComplete="name"
                       autoFocus
+                      id={nameId}
                       onChange={(event) => setName(event.target.value)}
                       placeholder="Your name"
                       required
                       value={name}
-                      className="min-h-11"
                     />
                   </Field>
-                  <Field
-                    hint="Optional. Use the format u1234567."
-                    label="Student number"
-                  >
+                  <Field>
+                    <FieldLabel htmlFor={studentNumberId}>
+                      Student number
+                    </FieldLabel>
                     <Input
                       autoComplete="off"
+                      id={studentNumberId}
                       onChange={(event) => setStudentNumber(event.target.value)}
                       placeholder="u1234567"
                       value={studentNumber}
-                      className="min-h-11"
                     />
+                    <FieldDescription>
+                      Optional. Use the format u1234567.
+                    </FieldDescription>
                   </Field>
                 </fieldset>
-              )}
+              ) : null}
 
-              {stepId === "degree" && (
+              {stepId === "degree" ? (
                 <fieldset className="space-y-5">
-                  <legend className="text-base font-semibold text-zinc-900">
+                  <legend className="text-base font-semibold">
                     Choose your course of study
                   </legend>
-                  <Field
-                    hint="Your requirements follow the catalogue year you started under."
+                  <SelectField
+                    description="Your requirements follow the catalogue year you started under."
+                    items={catalogue.catalogueYears.map((item) => ({
+                      value: item.year,
+                      label: `${item.year} catalogue`,
+                    }))}
                     label="Rules year"
-                  >
-                    <Select
-                      aria-label="Rules year"
-                      className="min-h-11"
-                      onChange={(value) => {
-                        const nextYear = Number(value);
-                        const nextDegree = catalogue.degrees.find(
-                          (item) => item.catalogueYear === nextYear,
-                        );
-                        setCatalogueYear(nextYear);
-                        setDegreeCode(nextDegree?.code ?? "");
-                        setMajorCode("");
-                        setMinorCodes([]);
-                        setSpecialisationCodes([]);
-                        setYearOfStudy(1);
-                      }}
-                      options={catalogue.catalogueYears.map((item) => ({
-                        value: item.year,
-                        label: `${item.year} catalogue`,
-                      }))}
-                      value={catalogueYear}
-                    />
-                  </Field>
-                  <Field label="Degree">
-                    <Select
-                      aria-label="Degree"
-                      className="min-h-11"
-                      onChange={(value) => {
-                        setDegreeCode(value);
-                        setMajorCode("");
-                        setMinorCodes([]);
-                        setSpecialisationCodes([]);
-                        setYearOfStudy(1);
-                      }}
-                      options={degrees.map((item) => ({
+                    onValueChange={selectCatalogueYear}
+                    searchable={false}
+                    value={catalogueYear}
+                  />
+                  <SelectField
+                    items={degrees.map((item) => ({
+                      value: item.code,
+                      label: `${item.name} (${item.code})`,
+                    }))}
+                    label="Degree"
+                    onValueChange={selectDegree}
+                    value={degreeCode}
+                  />
+                  <SelectField
+                    description="Optional. You can pick this later."
+                    disabled={majors.length === 0}
+                    items={[
+                      { value: "", label: "Choose later" },
+                      ...majors.map((item) => ({
                         value: item.code,
                         label: `${item.name} (${item.code})`,
-                      }))}
-                      value={degreeCode}
-                    />
-                  </Field>
-                  <Field
-                    hint="Optional. You can pick this later."
+                      })),
+                    ]}
                     label="Major"
-                  >
-                    <Select
-                      aria-label="Major"
-                      className="min-h-11"
-                      onChange={setMajorCode}
-                      options={[
-                        { value: "", label: "Choose later" },
-                        ...majors.map((item) => ({
-                          value: item.code,
-                          label: `${item.name} (${item.code})`,
-                        })),
-                      ]}
-                      value={majorCode}
-                    />
-                  </Field>
+                    onValueChange={setMajorCode}
+                    value={majorCode}
+                  />
                   {minors.length > 0 ? (
                     <StructureMultiSelect
                       hint="Optional. Select every minor you want included in this plan."
@@ -370,45 +394,36 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     />
                   ) : null}
                 </fieldset>
-              )}
+              ) : null}
 
-              {stepId === "details" && (
+              {stepId === "details" ? (
                 <fieldset className="space-y-5">
-                  <legend className="text-base font-semibold text-zinc-900">
+                  <legend className="text-base font-semibold">
                     Nearly there
                   </legend>
                   <div className="grid gap-5 sm:grid-cols-2">
-                    <Field label="What year of your degree are you in?">
-                      <Select
-                        aria-label="Year of study"
-                        className="min-h-11"
-                        disabled={!planningDurationAvailable}
-                        onChange={setYearOfStudy}
-                        options={studyYears.map((year) => ({
-                          value: year,
-                          label: `Year ${year}`,
-                        }))}
-                        value={yearOfStudy}
-                      />
-                    </Field>
-                    <Field label="Study load">
-                      <Select
-                        aria-label="Study load"
-                        className="min-h-11"
-                        onChange={(value) =>
-                          setStudyLoad(value as "Full time" | "Part time")
-                        }
-                        options={[
-                          { value: "Full time", label: "Full time" },
-                          { value: "Part time", label: "Part time" },
-                        ]}
-                        value={studyLoad}
-                      />
-                    </Field>
+                    <SelectField
+                      disabled={!planningDurationAvailable}
+                      items={studyYears.map((year) => ({
+                        value: year,
+                        label: `Year ${year}`,
+                      }))}
+                      label="What year of your degree are you in?"
+                      onValueChange={setYearOfStudy}
+                      searchable={false}
+                      value={yearOfStudy}
+                    />
+                    <SelectField
+                      items={STUDY_LOADS}
+                      label="Study load"
+                      onValueChange={setStudyLoad}
+                      searchable={false}
+                      value={studyLoad}
+                    />
                   </div>
 
                   {degree?.durationYears === null || degree?.units === null ? (
-                    <Alert tone="warning">
+                    <Alert variant="warning">
                       <TriangleAlert aria-hidden="true" />
                       <AlertDescription>
                         {!planningDurationAvailable
@@ -420,123 +435,109 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     </Alert>
                   ) : null}
 
-                  <div className="rounded-2xl bg-zinc-50 p-4 ring-1 ring-zinc-100">
-                    <p className="text-xs font-bold tracking-wider text-zinc-400 uppercase">
+                  <div className="rounded-2xl bg-muted/50 p-4 ring-1 ring-border">
+                    <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                       Your plan
                     </p>
                     <dl className="mt-3 space-y-2 text-sm">
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-zinc-500">Planner</dt>
-                        <dd className="font-medium text-zinc-900">
-                          {name.trim() || "—"}
-                        </dd>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-zinc-500">Degree</dt>
-                        <dd className="text-right font-medium text-zinc-900">
-                          {degree ? `${degree.name} (${degree.code})` : "—"}
-                        </dd>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-zinc-500">Major</dt>
-                        <dd className="font-medium text-zinc-900">
-                          {major ? major.name : "Choose later"}
-                        </dd>
-                      </div>
+                      <SummaryRow label="Planner">
+                        {name.trim() || "Not set"}
+                      </SummaryRow>
+                      <SummaryRow label="Degree">
+                        {degree ? `${degree.name} (${degree.code})` : "Not set"}
+                      </SummaryRow>
+                      <SummaryRow label="Major">
+                        {major ? major.name : "Choose later"}
+                      </SummaryRow>
                       {minors.length > 0 ? (
-                        <div className="flex justify-between gap-4">
-                          <dt className="text-zinc-500">Minors</dt>
-                          <dd className="text-right font-medium text-zinc-900">
-                            {minorCodes.length > 0
-                              ? minors
-                                  .filter((item) =>
-                                    minorCodes.includes(item.code),
-                                  )
-                                  .map((item) => item.name)
-                                  .join(", ")
-                              : "Choose later"}
-                          </dd>
-                        </div>
+                        <SummaryRow label="Minors">
+                          {structureNames(minors, minorCodes)}
+                        </SummaryRow>
                       ) : null}
                       {specialisations.length > 0 ? (
-                        <div className="flex justify-between gap-4">
-                          <dt className="text-zinc-500">Specialisations</dt>
-                          <dd className="text-right font-medium text-zinc-900">
-                            {specialisationCodes.length > 0
-                              ? specialisations
-                                  .filter((item) =>
-                                    specialisationCodes.includes(item.code),
-                                  )
-                                  .map((item) => item.name)
-                                  .join(", ")
-                              : "Choose later"}
-                          </dd>
-                        </div>
+                        <SummaryRow label="Specialisations">
+                          {structureNames(specialisations, specialisationCodes)}
+                        </SummaryRow>
                       ) : null}
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-zinc-500">Rules year</dt>
-                        <dd className="font-medium text-zinc-900">
-                          {catalogueYear} catalogue
-                        </dd>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-zinc-500">Load</dt>
-                        <dd className="font-medium text-zinc-900">
-                          {planningDurationAvailable
-                            ? `Year ${yearOfStudy} · ${studyLoad}`
-                            : `Study year not available · ${studyLoad}`}
-                        </dd>
-                      </div>
+                      <SummaryRow label="Rules year">
+                        {catalogueYear} catalogue
+                      </SummaryRow>
+                      <SummaryRow label="Load">
+                        {planningDurationAvailable
+                          ? `Year ${yearOfStudy} · ${studyLoad}`
+                          : `Study year not available · ${studyLoad}`}
+                      </SummaryRow>
                     </dl>
                   </div>
                 </fieldset>
-              )}
+              ) : null}
 
-              {message && (
-                <Alert className="mt-5" role="alert" tone="warning">
+              {message ? (
+                <Alert className="mt-5" role="alert" variant="warning">
                   <TriangleAlert aria-hidden="true" />
                   <AlertDescription>{message}</AlertDescription>
                 </Alert>
-              )}
+              ) : null}
 
-              <div className="mt-7 flex items-center justify-between gap-3 border-t border-zinc-100 pt-6">
+              <div className="mt-7 flex items-center justify-between gap-3 border-t pt-6">
                 <Button
                   type="button"
                   variant="ghost"
-                  className={cn("min-h-11", stepIndex === 0 && "invisible")}
+                  className={cn(stepIndex === 0 && "invisible")}
                   onClick={goBack}
                   disabled={submitting}
                 >
-                  <ArrowLeft className="size-4" aria-hidden="true" /> Back
+                  <ArrowLeft aria-hidden="true" />
+                  Back
                 </Button>
                 {stepId === "details" ? (
                   <Button
                     type="submit"
-                    variant="primary"
-                    className="min-h-11 !rounded-xl px-6"
                     disabled={submitting || !planningDurationAvailable}
                   >
                     {submitting ? "Saving your plan…" : "Create my plan"}
                   </Button>
                 ) : (
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    className="min-h-11 !rounded-xl px-6"
-                  >
-                    Continue{" "}
-                    <ArrowRight className="size-4" aria-hidden="true" />
+                  <Button type="submit">
+                    Continue
+                    <ArrowRight aria-hidden="true" />
                   </Button>
                 )}
               </div>
             </form>
           )}
-        </div>
+        </Card>
 
-        <p className="mt-5 text-center text-xs text-zinc-500">
+        <p className="mt-5 text-center text-xs text-muted-foreground">
           Signed in as {email || "your account"}. Your plan is private to you.
         </p>
       </div>
     </main>
   );
+}
+
+function SummaryRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex justify-between gap-4">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium">{children}</dd>
+    </div>
+  );
+}
+
+function structureNames(
+  options: { code: string; name: string }[],
+  selected: string[],
+) {
+  if (selected.length === 0) return "Choose later";
+  return options
+    .filter((item) => selected.includes(item.code))
+    .map((item) => item.name)
+    .join(", ");
 }

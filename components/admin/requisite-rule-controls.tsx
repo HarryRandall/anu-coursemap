@@ -1,4 +1,14 @@
 "use client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@reui/ui/dropdown-menu";
 
 import {
   createElement,
@@ -32,16 +42,6 @@ import {
   type ReviewedOperator,
 } from "@/lib/coursemap/requisite-conditions";
 import { ConditionInlineEditor } from "@/components/admin/requisite-condition-fields";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const CONDITION_ICONS: Record<ReviewedConditionKind, LucideIcon> = {
   course: BookOpen,
@@ -89,10 +89,10 @@ export function RemoveButton({
     <button
       aria-label={label}
       className={cn(
-        "grid size-9 shrink-0 cursor-pointer place-items-center rounded-md transition-colors outline-none focus-visible:ring-3 focus-visible:ring-brand-500/20",
+        "grid size-9 shrink-0 cursor-pointer place-items-center rounded-md transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/20",
         variant === "danger"
-          ? "text-rose-600 hover:bg-rose-50 hover:!text-rose-700"
-          : "text-zinc-400 hover:bg-zinc-500/10 hover:!text-rose-600",
+          ? "text-rose-600 hover:bg-rose-50 hover:!text-rose-700 dark:text-rose-300 dark:hover:bg-rose-950/60 dark:hover:!text-rose-300"
+          : "text-muted-foreground/80 hover:bg-rose-50 hover:!text-rose-600 dark:text-rose-300 dark:hover:bg-rose-950/60 dark:hover:!text-rose-300",
         className,
       )}
       onClick={onClick}
@@ -112,18 +112,20 @@ export const GroupIcon = Split;
 
 export function operatorChipClass(operator: ReviewedOperator) {
   if (operator === "any_of") {
-    return "border-sky-200 bg-sky-50 text-sky-800 hover:border-sky-300 hover:bg-sky-100";
+    return "border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 hover:border-sky-300 hover:bg-sky-100 dark:hover:bg-sky-950/60";
   }
   if (operator === "at_least") {
-    return "border-amber-200 bg-amber-50 text-amber-900 hover:border-amber-300 hover:bg-amber-100";
+    return "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 hover:border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/60";
   }
-  return "border-brand-200 bg-brand-50 text-brand-800 hover:border-brand-300 hover:bg-brand-100";
+  return "border-primary/25 bg-primary/10 text-primary hover:border-primary/40 hover:bg-primary/15";
 }
 
 export function operatorTileClass(operator: ReviewedOperator) {
-  if (operator === "any_of") return "bg-sky-100 text-sky-800";
-  if (operator === "at_least") return "bg-amber-100 text-amber-800";
-  return "bg-brand-100 text-brand-800";
+  if (operator === "any_of")
+    return "bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300";
+  if (operator === "at_least")
+    return "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300";
+  return "bg-primary/15 text-primary";
 }
 
 export function ConditionIcon({
@@ -158,7 +160,7 @@ function DragHandle({
       aria-label={`Drag condition: ${summary}`}
       aria-pressed={drag.dragging}
       className={cn(
-        "grid size-9 shrink-0 cursor-grab touch-none place-items-center rounded-md text-zinc-400 transition-colors outline-none select-none hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-3 focus-visible:ring-brand-500/20 active:cursor-grabbing",
+        "grid size-9 shrink-0 cursor-grab touch-none place-items-center rounded-md text-muted-foreground/80 transition-colors outline-none select-none hover:bg-accent hover:text-foreground/80 focus-visible:ring-3 focus-visible:ring-ring/20 active:cursor-grabbing",
         className,
       )}
       onKeyDown={drag.onKeyDown}
@@ -186,8 +188,8 @@ export function ConditionChip({
   const summary = conditionSummary(condition);
   const complete = isConditionComplete(condition);
   const shell = cn(
-    "inline-flex min-h-10 w-full max-w-full items-start rounded-md border bg-white transition-colors shadow-xs",
-    complete ? "border-zinc-200" : "border-amber-300",
+    "inline-flex min-h-10 w-full max-w-full items-start rounded-md border bg-card transition-colors shadow-xs",
+    complete ? "border-border" : "border-amber-300 dark:border-amber-900",
     drag?.dragging && "opacity-40",
   );
 
@@ -230,7 +232,9 @@ export function ConditionChip({
         <ConditionInlineEditor
           className={cn(
             "min-w-0 flex-1",
-            complete ? "border-zinc-200" : "border-amber-300",
+            complete
+              ? "border-border"
+              : "border-amber-300 dark:border-amber-900",
           )}
           condition={condition}
           layout="stacked"
@@ -306,7 +310,7 @@ export function GroupOperatorMenu({
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-rose-600 data-[highlighted]:bg-rose-50 data-[highlighted]:text-rose-700 [&>svg]:text-rose-500"
+              className="text-rose-600 data-[highlighted]:bg-rose-50 data-[highlighted]:text-rose-700 dark:text-rose-300 [&>svg]:text-rose-500"
               onSelect={onRemove}
             >
               <Trash2 aria-hidden="true" />

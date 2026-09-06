@@ -1,6 +1,5 @@
-import { SearchX } from "lucide-react";
-import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -8,11 +7,13 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@reui/ui/empty";
+import ReuiLink from "next/link";
+import { SearchX } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <main className="grid min-h-dvh place-items-center bg-zinc-50 px-4 py-10">
+    <main className="grid min-h-dvh place-items-center bg-muted/50 px-4 py-10">
       <h1 className="sr-only">Page not found</h1>
       <Card className="w-full max-w-md">
         <Empty className="px-7 py-8">
@@ -27,10 +28,12 @@ export default function NotFound() {
           </EmptyHeader>
           <EmptyContent>
             <div className="flex flex-wrap justify-center gap-2">
-              <ButtonLink href="/dashboard" variant="primary">
-                Return home
-              </ButtonLink>
-              <ButtonLink href="/courses">Browse courses</ButtonLink>
+              <Button asChild variant="default">
+                <ReuiLink href="/dashboard">Return home</ReuiLink>
+              </Button>
+              <Button asChild variant="outline">
+                <ReuiLink href="/courses">Browse courses</ReuiLink>
+              </Button>
             </div>
           </EmptyContent>
         </Empty>

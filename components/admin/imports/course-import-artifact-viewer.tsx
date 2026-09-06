@@ -1,14 +1,21 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
 
 import { useMemo, useState } from "react";
 import { FileCode2, LoaderCircle } from "lucide-react";
-import { CourseImportDatabaseRows } from "@/components/admin/imports/course-import-database-rows";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { DatabaseRowsViewer } from "./database-rows-viewer";
+import { ArtefactViewport } from "./artefact-viewport";
+
+import navigationStyles from "./artefact-navigation.module.css";
+import { SourceCode } from "./source-code";
 import { JsonCode } from "@/components/ui/json-code";
-import { Select } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import type { CourseImportArtifact } from "@/lib/coursemap/admin-course-imports";
 import { projectedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
 
@@ -71,43 +78,55 @@ function PersistenceDecision({ value }: { value: unknown }) {
 
   return (
     <div className="space-y-4 p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50/60 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border bg-muted/30 p-4">
         <div>
-          <p className="text-xs font-medium text-zinc-500">Database action</p>
-          <p className="mt-1 text-sm font-semibold text-zinc-950">{decision}</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Database action
+          </p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {decision}
+          </p>
         </div>
-        <Badge tone={changeKind === "unchanged" ? "neutral" : "warning"}>
+        <Badge
+          variant={
+            badgeVariantForTone[
+              changeKind === "unchanged" ? "neutral" : "warning"
+            ]
+          }
+        >
           {changeKind.replaceAll("_", " ")}
         </Badge>
       </div>
       <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <dt className="text-zinc-500">Compared snapshot</dt>
-          <dd className="mt-1 font-mono text-zinc-800">
+          <dt className="text-muted-foreground">Compared snapshot</dt>
+          <dd className="mt-1 font-mono text-foreground/90">
             {String(value.comparedSnapshotId ?? "None")}
           </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Candidate snapshot</dt>
-          <dd className="mt-1 font-mono text-zinc-800">
+          <dt className="text-muted-foreground">Candidate snapshot</dt>
+          <dd className="mt-1 font-mono text-foreground/90">
             {String(value.candidateSnapshotId ?? "None")}
           </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Manual review required</dt>
-          <dd className="mt-1 text-zinc-800">
+          <dt className="text-muted-foreground">Manual review required</dt>
+          <dd className="mt-1 text-foreground/90">
             {yesNo(value.requiresManualReview)}
           </dd>
         </div>
         <div>
-          <dt className="text-zinc-500">Course changed during import</dt>
-          <dd className="mt-1 text-zinc-800">
+          <dt className="text-muted-foreground">
+            Course changed during import
+          </dt>
+          <dd className="mt-1 text-foreground/90">
             {yesNo(value.baselineChangedDuringImport)}
           </dd>
         </div>
       </dl>
-      <details className="group rounded-lg border border-zinc-200 bg-white">
-        <summary className="cursor-pointer px-4 py-3 text-xs font-medium text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none">
+      <details className="group rounded-lg border border-border bg-card">
+        <summary className="cursor-pointer px-4 py-3 text-xs font-medium text-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
           View complete persistence record
         </summary>
         <JsonCode label="Complete persistence decision" value={value} />
@@ -128,17 +147,10 @@ function ArtifactContent({
 
   if (artifact.kind === "database_projection" && parsed !== null) {
     return (
-      <div className="space-y-4 bg-zinc-50/40 p-4 sm:p-5">
-        <p className="text-xs leading-5 text-zinc-600">
-          These are the destination tables and row shapes prepared by the
-          import. Angle-bracketed values are identifiers assigned when the
-          candidate is saved.
-        </p>
-        <CourseImportDatabaseRows
-          emptyLabel="0 rows"
-          tables={projectedCourseDatabaseTables(parsed)}
-        />
-      </div>
+      <DatabaseRowsViewer
+        tables={projectedCourseDatabaseTables(parsed)}
+        label="Planned database rows"
+      />
     );
   }
   if (artifact.kind === "change_set" && parsed !== null) {
@@ -146,20 +158,23 @@ function ArtifactContent({
   }
   if (parsed !== null) {
     return (
-      <JsonCode
+      <ArtefactViewport
         label={`${labels[artifact.kind] ?? artifact.kind} content`}
-        value={parsed}
-      />
+      >
+        <JsonCode
+          label={`${labels[artifact.kind] ?? artifact.kind} JSON`}
+          value={parsed}
+          uncapped
+        />
+      </ArtefactViewport>
     );
   }
   return (
-    <pre
-      aria-label={`${labels[artifact.kind] ?? artifact.kind} content`}
-      className="max-h-[70vh] overflow-auto border-t border-zinc-200 bg-zinc-50/60 px-5 py-4 font-mono text-xs leading-5 whitespace-pre text-zinc-700 outline-none selection:bg-brand-100 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-inset"
-      tabIndex={0}
-    >
-      <code>{content}</code>
-    </pre>
+    <SourceCode
+      content={content}
+      kind={artifact.kind}
+      label={`${labels[artifact.kind] ?? artifact.kind} content`}
+    />
   );
 }
 
@@ -262,13 +277,16 @@ export function CourseImportArtifactViewer({
 
   if (ordered.length === 0) {
     return (
-      <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-zinc-300 bg-white px-6 text-center">
+      <div className="grid min-h-56 place-items-center rounded-xl border border-dashed border-input bg-card px-6 text-center">
         <div>
-          <FileCode2 aria-hidden="true" className="mx-auto text-zinc-300" />
-          <p className="mt-2 text-sm font-medium text-zinc-700">
+          <FileCode2
+            aria-hidden="true"
+            className="mx-auto text-muted-foreground/60"
+          />
+          <p className="mt-2 text-sm font-medium text-foreground/80">
             No artefacts saved yet
           </p>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             Artefacts appear as the background worker completes each stage.
           </p>
         </div>
@@ -278,6 +296,8 @@ export function CourseImportArtifactViewer({
 
   return (
     <Tabs
+      orientation="vertical"
+      className="min-w-0 flex-col gap-4 md:flex-row"
       onValueChange={(value) => {
         setActiveKind(value);
         const artifact = selectedArtifactForKind(value);
@@ -285,10 +305,30 @@ export function CourseImportArtifactViewer({
       }}
       value={selectedGroup?.kind ?? ""}
     >
-      <div className="overflow-x-auto pb-1">
-        <TabsList className="h-auto min-w-max">
+      <div className="shrink-0 md:w-52">
+        <div className="md:hidden">
+          <OptionPicker
+            value={selectedGroup?.kind ?? ""}
+            onValueChange={(kind) => {
+              setActiveKind(kind);
+              const artifact = selectedArtifactForKind(kind);
+              if (artifact) loadArtifact(artifact);
+            }}
+            aria-label="Choose artefact"
+            className="w-full"
+            items={grouped.map((group) => ({
+              value: group.kind,
+              label: labels[group.kind] ?? group.kind,
+            }))}
+          />
+        </div>
+        <TabsList
+          aria-label="Import artefacts"
+          className={`${navigationStyles.list} hidden h-auto w-full items-stretch gap-1 bg-transparent p-0 md:flex`}
+        >
           {grouped.map((group) => (
             <TabsTrigger
+              className="h-9 w-full shrink-0 justify-start rounded-md px-3 text-left text-[13px] hover:bg-accent data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               key={group.kind}
               onFocus={() => {
                 const artifact = selectedArtifactForKind(group.kind);
@@ -306,49 +346,60 @@ export function CourseImportArtifactViewer({
         </TabsList>
       </div>
       {selected && selectedGroup ? (
-        <TabsContent key={selectedGroup.kind} value={selectedGroup.kind}>
-          <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-            <div className="flex flex-wrap items-center gap-2 border-b border-zinc-200 px-4 py-3 text-xs text-zinc-500">
-              {selectedGroup.attempts.length > 1 ? (
-                <Select
-                  aria-label={`Choose ${labels[selected.kind] ?? selected.kind} attempt`}
-                  className="w-40"
-                  onChange={(artifactId) => {
-                    setSelectedAttempts((current) => ({
-                      ...current,
-                      [selectedGroup.kind]: artifactId,
-                    }));
-                    const artifact = selectedGroup.attempts.find(
-                      (candidate) => candidate.id === artifactId,
-                    );
-                    if (artifact) loadArtifact(artifact);
+        <TabsContent
+          className="min-w-0 flex-1"
+          key={selectedGroup.kind}
+          value={selectedGroup.kind}
+        >
+          <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+            {selectedGroup.attempts.length > 1 ? (
+              <div className="border-b border-border p-3">
+                <OptionPicker
+                  value={"coursemap:" + String(selected.id)}
+                  onValueChange={(nextValue) => {
+                    const option = selectedGroup.attempts
+                      .map((artifact, index) => ({
+                        value: artifact.id,
+                        label: `Attempt ${artifact.attemptNumber}${index === 0 ? " (latest)" : ""}`,
+                      }))
+                      .find(
+                        (option) =>
+                          "coursemap:" + String(option.value) === nextValue,
+                      );
+                    if (option)
+                      ((artifactId) => {
+                        setSelectedAttempts((current) => ({
+                          ...current,
+                          [selectedGroup.kind]: artifactId,
+                        }));
+                        const artifact = selectedGroup.attempts.find(
+                          (candidate) => candidate.id === artifactId,
+                        );
+                        if (artifact) loadArtifact(artifact);
+                      })(option.value);
                   }}
-                  options={selectedGroup.attempts.map((artifact, index) => ({
-                    value: artifact.id,
-                    label: `Attempt ${artifact.attemptNumber}${index === 0 ? " (latest)" : ""}`,
-                  }))}
-                  value={selected.id}
+                  className={"w-40"}
+                  aria-label={`Choose ${labels[selected.kind] ?? selected.kind} attempt`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={"Select..."}
+                  items={selectedGroup.attempts
+                    .map((artifact, index) => ({
+                      value: artifact.id,
+                      label: `Attempt ${artifact.attemptNumber}${index === 0 ? " (latest)" : ""}`,
+                    }))
+                    .map((option) => ({
+                      value: "coursemap:" + String(option.value),
+                      label: option.label,
+                    }))}
                 />
-              ) : (
-                <Badge tone="neutral">Attempt {selected.attemptNumber}</Badge>
-              )}
-              <span>{selected.mediaType}</span>
-              <span className="tabular-nums">
-                {selected.byteSize.toLocaleString("en-AU")} bytes
-              </span>
-              <span
-                className="min-w-0 truncate font-mono"
-                title={selected.contentSha256}
-              >
-                sha256:{selected.contentSha256.slice(0, 12)}
-              </span>
-            </div>
+              </div>
+            ) : null}
             {errors[selected.id] ? (
-              <Alert className="m-4" tone="danger">
+              <Alert className="m-4" variant={"destructive"}>
                 <AlertDescription>{errors[selected.id]}</AlertDescription>
               </Alert>
             ) : loading.includes(selected.id) && !content[selected.id] ? (
-              <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-zinc-500">
+              <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
                 <LoaderCircle
                   aria-hidden="true"
                   className="animate-spin motion-reduce:animate-none"
@@ -363,7 +414,11 @@ export function CourseImportArtifactViewer({
               />
             ) : (
               <div className="grid min-h-64 place-items-center">
-                <Button onClick={() => loadArtifact(selected)}>
+                <Button
+                  onClick={() => loadArtifact(selected)}
+                  variant="outline"
+                  type="button"
+                >
                   Load {labels[selected.kind] ?? selected.kind}
                 </Button>
               </div>

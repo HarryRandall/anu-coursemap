@@ -1,8 +1,5 @@
 "use client";
-
-import { Layers3, Pencil, Plus, Trash2 } from "lucide-react";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Button, IconButton } from "@/components/ui/button";
+import { Button } from "@reui/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -12,8 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Field, Input } from "@/components/ui/field";
+} from "@reui/ui/dialog";
+import { Field, FieldDescription } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+
+import { Layers3, Pencil, Plus, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
 import { cn } from "@/lib/cn";
 import type { CampusIndoorLevel } from "@/lib/rooms/indoor-map";
 
@@ -27,14 +29,16 @@ function FloorDetailsDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <IconButton
+        <Button
           className="size-11 sm:size-8"
-          label={`Edit ${level.name}`}
           size="icon-sm"
           variant="ghost"
+          aria-label={`Edit ${level.name}`}
+          title={`Edit ${level.name}`}
+          type="button"
         >
           <Pencil aria-hidden="true" />
-        </IconButton>
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader className="px-5 pt-5 pr-16">
@@ -45,22 +49,29 @@ function FloorDetailsDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 overflow-y-auto px-5 py-4">
-          <Field label="Name">
-            <Input
-              onChange={(event) => onUpdate({ name: event.target.value })}
-              value={level.name}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Name"}</span>
+              <Input
+                onChange={(event) => onUpdate({ name: event.target.value })}
+                value={level.name}
+              />
+            </label>
           </Field>
-          <Field label="Reference" hint="For example G, 1 or LG.">
-            <Input
-              onChange={(event) => onUpdate({ ref: event.target.value })}
-              value={level.ref}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Reference"}</span>
+              <Input
+                onChange={(event) => onUpdate({ ref: event.target.value })}
+                value={level.ref}
+              />
+              <FieldDescription>{"For example G, 1 or LG."}</FieldDescription>
+            </label>
           </Field>
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button className="h-11 sm:h-8" variant="primary">
+            <Button className="h-11 sm:h-8" variant="default" type="button">
               Done
             </Button>
           </DialogClose>
@@ -92,20 +103,26 @@ export function FloorsPanel({
   const ordered = [...levels].sort((left, right) => right.number - left.number);
 
   return (
-    <section className="flex min-h-0 flex-col bg-white lg:border-r lg:border-zinc-200">
-      <div className="border-b border-zinc-200 p-4 sm:p-5">
+    <section className="flex min-h-0 flex-col bg-card lg:border-r lg:border-border">
+      <div className="border-b border-border p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-950">
+            <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-foreground">
               <Layers3 aria-hidden="true" size={16} />
               Building floors
             </h2>
-            <p className="mt-1 text-xs leading-5 text-zinc-500">
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Add one entry for each physical floor. New floors use consistent
               spacing automatically.
             </p>
           </div>
-          <Button className="h-11 sm:h-8" onClick={onAdd} size="sm">
+          <Button
+            className="h-11 sm:h-8"
+            onClick={onAdd}
+            size="sm"
+            variant="outline"
+            type="button"
+          >
             <Plus aria-hidden="true" />
             Add floor
           </Button>
@@ -115,11 +132,17 @@ export function FloorsPanel({
       {ordered.length === 0 ? (
         <div className="grid flex-1 place-items-center p-6 text-center">
           <div>
-            <p className="text-sm font-medium text-zinc-900">No floors yet</p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="text-sm font-medium text-foreground">No floors yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
               Add the ground floor to start the map.
             </p>
-            <Button className="mt-4 h-11 sm:h-8" onClick={onAdd} size="sm">
+            <Button
+              className="mt-4 h-11 sm:h-8"
+              onClick={onAdd}
+              size="sm"
+              variant="outline"
+              type="button"
+            >
               <Plus aria-hidden="true" />
               Add ground floor
             </Button>
@@ -137,14 +160,14 @@ export function FloorsPanel({
                 className={cn(
                   "flex items-center gap-2 rounded-lg border p-2 transition-colors",
                   active
-                    ? "border-brand-200 bg-brand-50/70"
-                    : "border-zinc-200 bg-white hover:border-zinc-300",
+                    ? "border-primary/25 bg-primary/5"
+                    : "border-border bg-card hover:border-input",
                 )}
                 key={level.id}
               >
                 <button
                   aria-current={active ? "true" : undefined}
-                  className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md px-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-brand-400"
+                  className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-md px-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={() => onSelect(level.id)}
                   type="button"
                 >
@@ -152,17 +175,17 @@ export function FloorsPanel({
                     className={cn(
                       "grid size-9 shrink-0 place-items-center rounded-md text-sm font-semibold tabular-nums",
                       active
-                        ? "bg-brand-600 text-white"
-                        : "bg-zinc-100 text-zinc-700",
+                        ? "bg-primary text-white"
+                        : "bg-muted text-foreground/80",
                     )}
                   >
                     {level.ref || level.number}
                   </span>
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-medium text-zinc-950">
+                    <span className="block truncate text-sm font-medium text-foreground">
                       {level.name}
                     </span>
-                    <span className="block text-xs text-zinc-500">
+                    <span className="block text-xs text-muted-foreground">
                       Floor {level.number}
                     </span>
                   </span>
@@ -179,14 +202,16 @@ export function FloorsPanel({
                   onConfirm={() => onRemove(level.id)}
                   title={`Remove ${level.name}?`}
                   trigger={
-                    <IconButton
+                    <Button
                       className="size-11 sm:size-8"
-                      label={`Remove ${level.name}`}
                       size="icon-sm"
                       variant="ghost"
+                      aria-label={`Remove ${level.name}`}
+                      title={`Remove ${level.name}`}
+                      type="button"
                     >
                       <Trash2 aria-hidden="true" />
-                    </IconButton>
+                    </Button>
                   }
                 />
               </li>

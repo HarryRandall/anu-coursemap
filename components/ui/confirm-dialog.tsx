@@ -1,8 +1,5 @@
 "use client";
-
-import { TriangleAlert, X } from "lucide-react";
-import { useRef, useState, type ReactNode, type RefObject } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@reui/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -12,7 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@reui/ui/dialog";
+
+import { TriangleAlert, X } from "lucide-react";
+import { useRef, useState, type ReactNode, type RefObject } from "react";
 
 /**
  * Confirmation for an action with broad visibility or data impact. The
@@ -77,13 +77,13 @@ export function ConfirmDialog({
             ?.querySelector<HTMLButtonElement>("[data-confirm-cancel]")
             ?.focus();
         }}
-        overlayClassName="bg-zinc-950/25 backdrop-blur-[1px]"
+
         ref={contentRef}
         showCloseButton={false}
       >
         <DialogClose
           aria-label="Close"
-          className="absolute top-2.5 right-2.5 z-10 grid size-8 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
+          className="absolute top-2.5 right-2.5 z-10 grid size-8 place-items-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent hover:text-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           title="Close"
         >
           <X aria-hidden="true" size={17} />
@@ -93,7 +93,7 @@ export function ConfirmDialog({
             {destructive ? (
               <span
                 aria-hidden="true"
-                className="grid size-8 shrink-0 place-items-center rounded-md bg-rose-50 text-rose-600"
+                className="grid size-8 shrink-0 place-items-center rounded-md bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300"
               >
                 <TriangleAlert size={16} />
               </span>
@@ -103,14 +103,17 @@ export function ConfirmDialog({
             </DialogTitle>
           </div>
           <DialogDescription asChild>
-            <div className="text-sm leading-5 text-zinc-500">{description}</div>
+            <div className="text-sm leading-5 text-muted-foreground">
+              {description}
+            </div>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="border-t-0 bg-white px-5 pt-0 pb-4">
+        <DialogFooter className="border-t-0 bg-card px-5 pt-0 pb-4">
           <Button
             data-confirm-cancel
             onClick={() => changeOpen(false)}
             type="button"
+            variant="outline"
           >
             {cancelLabel}
           </Button>
@@ -118,7 +121,7 @@ export function ConfirmDialog({
             disabled={pending}
             onClick={confirm}
             type="button"
-            variant={destructive ? "danger" : "primary"}
+            variant={destructive ? "destructive" : "default"}
           >
             {pending ? "Working..." : confirmLabel}
           </Button>

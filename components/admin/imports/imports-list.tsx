@@ -1,9 +1,10 @@
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { badgeVariantForTone } from "@/lib/ui";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import ReuiLink from "next/link";
 import { AppShell } from "@/components/shell";
-import { Badge } from "@/components/ui/badge";
+
 import {
-  DataTableEmpty,
   DataTableShell,
   Table,
   TableBody,
@@ -12,11 +13,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@/components/admin/catalogue-table/catalogue-table";
+import { CatalogueIdentity } from "@/components/admin/catalogue-table/catalogue-table";
+import { CatalogueRowActions } from "@/components/admin/catalogue-table/catalogue-row-actions";
+import { CatalogueEmpty } from "@/components/admin/catalogue-table/catalogue-empty";
+
 import { Pagination } from "@/components/ui/pagination";
 import { ImportsToolbar } from "@/components/admin/imports/imports-toolbar";
 import {
   isImportActive,
+  importOutcome,
   type ImportListSort,
   type ImportSystem,
 } from "@/lib/coursemap/import-list-query";
@@ -30,19 +36,14 @@ const dateFormatter = new Intl.DateTimeFormat("en-AU", {
 });
 
 function readable(value: string) {
-  const words = value.replaceAll("_", " ");
+  const words = value.replaceAll("_", " ").replaceAll("-", " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-function processingTone(status: string): Tone {
-  if (status === "failed" || status === "cancelled") return "danger";
-  if (status === "queued" || status === "running") return "info";
-  return "success";
-}
-
-function reviewTone(status: string): Tone {
-  if (status === "rejected") return "danger";
-  if (status === "needs_review") return "warning";
+function outcomeTone(status: string): Tone {
+  if (["failed", "cancelled", "rejected"].includes(status)) return "danger";
+  if (["queued", "processing"].includes(status)) return "info";
+  if (status === "needs-review") return "warning";
   if (status === "accepted") return "success";
   return "neutral";
 }
@@ -121,7 +122,7 @@ export function ImportsList({
         />
 
         <DataTableShell
-          viewport
+          imports
           footer={
             <Pagination
               alwaysShowControls
@@ -135,30 +136,31 @@ export function ImportsList({
           }
         >
           {data.records.length === 0 ? (
-            <DataTableEmpty
-              description={
-                filtered
-                  ? "No imports match the current search and filters."
-                  : `Choose entries in the directory to import a ${noun}.`
-              }
-              title={filtered ? "No matching imports" : "No imports yet"}
-            />
+            <CatalogueEmpty
+              imports
+              filtered={filtered}
+              title="No imports yet"
+              description={`Choose entries in the directory to import a ${noun}.`}
+              clearHref={importsPath}
+            >
+              <Button asChild variant="outline">
+                <ReuiLink href={basePath}>Browse {plural}</ReuiLink>
+              </Button>
+            </CatalogueEmpty>
           ) : (
-            <Table className="min-w-[880px]">
-              <TableCaption>
+            <Table>
+              <TableCaption className="sr-only">
                 {heading}, {SORT_CAPTIONS[sort]}
               </TableCaption>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Code</TableHead>
-                  <TableHead>Title</TableHead>
+                  <TableHead>Import</TableHead>
                   <TableHead>Year</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Review</TableHead>
+                  <TableHead>Outcome</TableHead>
                   <TableHead>Change</TableHead>
                   <TableHead>Started</TableHead>
                   <TableHead className="w-12">
-                    <span className="sr-only">Open</span>
+                    <span className="sr-only">Actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -166,51 +168,71 @@ export function ImportsList({
                 {data.records.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell>
-                      <span className="font-mono text-xs font-semibold text-zinc-950">
-                        {record.code}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="block max-w-80 truncate text-xs text-zinc-800">
-                        {record.title}
-                      </span>
+                      <CatalogueIdentity
+                        code={record.code}
+                        title={record.title}
+                        kind={system === "course" ? "course" : noun}
+                        href={`${importsPath}/${record.id}`}
+                      />
                     </TableCell>
                     <TableCell className="text-xs tabular-nums">
                       {record.academicYear}
                     </TableCell>
                     <TableCell>
-                      <Badge tone={processingTone(record.processingStatus)}>
-                        {readable(record.processingStatus)}
+                      <Badge
+                        variant={
+                          badgeVariantForTone[
+                            outcomeTone(
+                              importOutcome(
+                                record.processingStatus,
+                                record.reviewStatus,
+                              ),
+                            )
+                          ]
+                        }
+                      >
+                        {readable(
+                          importOutcome(
+                            record.processingStatus,
+                            record.reviewStatus,
+                          ),
+                        )}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge tone={reviewTone(record.reviewStatus)}>
-                        {readable(record.reviewStatus)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-zinc-600">
+                    <TableCell className="text-xs text-muted-foreground">
                       {record.changeKind ? (
                         readable(record.changeKind)
                       ) : (
-                        <span className="text-zinc-400">None</span>
+                        <span className="text-muted-foreground/80">None</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <time
-                        className="text-xs text-zinc-600 tabular-nums"
+                        className="text-xs text-muted-foreground tabular-nums"
                         dateTime={record.createdAt}
                       >
                         {dateFormatter.format(new Date(record.createdAt))}
                       </time>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link
-                        aria-label={`Open the ${record.code} import`}
-                        className="inline-grid size-8 place-items-center rounded-md text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:outline-none"
-                        href={`${importsPath}/${record.id}`}
-                      >
-                        <ArrowUpRight aria-hidden="true" size={15} />
-                      </Link>
+                      <CatalogueRowActions
+                        code={record.code}
+                        links={[
+                          {
+                            label: "View import",
+                            href: `${importsPath}/${record.id}`,
+                          },
+                          {
+                            label: "Import history",
+                            href: `${importsPath}?q=${encodeURIComponent(record.code)}`,
+                            icon: "history",
+                          },
+                          {
+                            label: "Find in directory",
+                            href: `${basePath}?q=${encodeURIComponent(record.code)}&year=${record.academicYear}`,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

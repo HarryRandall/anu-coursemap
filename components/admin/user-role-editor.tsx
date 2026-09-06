@@ -1,18 +1,17 @@
 "use client";
+import { Card } from "@reui/ui/card";
+import { Button } from "@reui/ui/button";
+import { OptionPicker } from "@/components/ui/option-picker";
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LoaderCircle, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@reui/ui/collapsible";
 import { setAdminUserRole } from "@/lib/admin/actions";
 import type {
   AdminPermission,
@@ -66,115 +65,116 @@ export function UserRoleEditor({
     });
   };
 
+  const assignment = assignments[0];
   return (
-    <Card className="min-w-0 overflow-hidden">
-      <CardHeader className="flex-wrap items-center">
-        <div className="min-w-0">
-          <CardTitle>Account role</CardTitle>
-          <CardDescription>
-            Choose the level of access for this account.
-          </CardDescription>
+    <Card className="p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold">Role</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {isOwnAdmin
+              ? "Another admin must change your role."
+              : "Changes save automatically."}
+          </p>
         </div>
-
-        <CardAction className="w-full sm:w-auto">
-          {isPending ? (
-            <LoaderCircle
-              size={16}
-              className="shrink-0 animate-spin text-zinc-400 motion-reduce:animate-none"
-              aria-label="Saving role"
+        <OptionPicker
+          value={"coursemap:" + String(roleKey)}
+          onValueChange={(nextValue) => {
+            const option = roles
+              .toSorted((a, b) =>
+                a.key === "user"
+                  ? -1
+                  : b.key === "user"
+                    ? 1
+                    : a.name.localeCompare(b.name),
+              )
+              .map((role) => ({ value: role.key, label: role.name }))
+              .find(
+                (option) => "coursemap:" + String(option.value) === nextValue,
+              );
+            if (option) changeRole(option.value);
+          }}
+          disabled={isPending || isOwnAdmin}
+          className={"w-full sm:w-48"}
+          aria-label={`Role for ${user.displayName}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          placeholder={"Select..."}
+          items={roles
+            .toSorted((a, b) =>
+              a.key === "user"
+                ? -1
+                : b.key === "user"
+                  ? 1
+                  : a.name.localeCompare(b.name),
+            )
+            .map((role) => ({ value: role.key, label: role.name }))
+            .map((option) => ({
+              value: "coursemap:" + String(option.value),
+              label: option.label,
+            }))}
+        />
+      </div>
+      <Collapsible className="mt-2">
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="group -ml-2 text-xs text-muted-foreground"
+            type="button"
+          >
+            View permissions
+            <ChevronDown
+              aria-hidden="true"
+              className="size-3.5 group-data-[state=open]:rotate-180"
             />
-          ) : null}
-          <Select
-            value={roleKey}
-            onChange={changeRole}
-            disabled={isPending || isOwnAdmin}
-            aria-label={`Role for ${user.displayName}`}
-            className="h-9 min-w-44 font-medium"
-            options={roles
-              .toSorted((a, b) => {
-                if (a.key === "user") return -1;
-                if (b.key === "user") return 1;
-                return a.name.localeCompare(b.name);
-              })
-              .map((role) => ({ value: role.key, label: role.name }))}
-          />
-        </CardAction>
-      </CardHeader>
-
-      <CardContent className="border-t border-zinc-200/80 pt-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-            Permissions
-          </h3>
-          <span className="text-xs text-zinc-400 tabular-nums">
-            {effectivePermissions.length}
-          </span>
-        </div>
-
-        {effectivePermissions.length > 0 ? (
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {effectivePermissions.map((permission) => (
-              <li
-                key={permission.id}
-                className="flex min-w-0 gap-2.5 rounded-lg bg-zinc-50/80 px-3 py-2.5 ring-1 ring-zinc-200/70 ring-inset"
-              >
-                <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 ring-inset">
-                  <Check size={12} strokeWidth={2.5} aria-hidden="true" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-xs font-medium text-zinc-900">
-                    {permission.name}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] leading-4 text-zinc-500">
-                    {permission.description}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="flex items-center gap-3 rounded-lg bg-zinc-50/80 px-3 py-3 ring-1 ring-zinc-200/70 ring-inset">
-            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-zinc-500 shadow-xs ring-1 ring-zinc-200 ring-inset">
-              <UserRound size={16} aria-hidden="true" />
-            </span>
-            <span>
-              <span className="block text-xs font-medium text-zinc-900">
-                Standard Coursemap access
-              </span>
-              <span className="mt-0.5 block text-[11px] text-zinc-500">
-                This account can use the student planning experience.
-              </span>
-            </span>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="mt-3 border-t border-border pt-4">
+            {effectivePermissions.length ? (
+              <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+                {effectivePermissions.map((permission) => (
+                  <li key={permission.id}>
+                    <p className="text-sm font-medium">{permission.name}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {permission.description}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Standard student planning access.
+              </p>
+            )}
+            <p className="mt-5 text-xs text-muted-foreground">
+              Role assigned by{" "}
+              {assignment?.grantedByDisplayName ?? "system default"}
+              {assignment?.grantedAt
+                ? ` on ${new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(assignment.grantedAt))}`
+                : ""}
+              .
+            </p>
           </div>
-        )}
-      </CardContent>
-
-      {isOwnAdmin || isError ? (
-        <CardFooter className="flex-col items-start">
-          {isOwnAdmin ? (
-            <p className="flex items-center gap-1.5 text-[11px] text-zinc-500">
-              <ShieldCheck size={13} aria-hidden="true" />
-              Another admin must change your role.
-            </p>
-          ) : null}
-
-          {isError ? (
-            <p
-              role="alert"
-              aria-live="polite"
-              className="text-xs text-rose-700"
-            >
-              {feedback}
-            </p>
-          ) : null}
-        </CardFooter>
-      ) : null}
-
-      {!isError ? (
-        <p role="status" aria-live="polite" className="sr-only">
+        </CollapsibleContent>
+      </Collapsible>
+      {isError ? (
+        <p role="alert" className="mt-2 text-sm text-destructive">
           {feedback}
         </p>
-      ) : null}
+      ) : (
+        <p
+          role="status"
+          aria-live="polite"
+          className={
+            isPending || feedback
+              ? "mt-2 text-xs text-muted-foreground"
+              : "sr-only"
+          }
+        >
+          {isPending ? "Saving role..." : feedback}
+        </p>
+      )}
     </Card>
   );
 }

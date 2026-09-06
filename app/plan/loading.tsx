@@ -1,13 +1,13 @@
+import { Card } from "@reui/ui/card";
+import { Skeleton } from "@reui/ui/skeleton";
 import { AppShell } from "@/components/shell";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PlanLoading() {
   return (
     <AppShell>
       <div aria-busy="true">
         <span className="sr-only">Loading your course plan</span>
-        <div className="mb-4 space-y-3 rounded-2xl bg-white px-4 py-3.5 shadow-sm ring-1 ring-zinc-200/70 sm:px-5">
+        <div className="mb-4 space-y-3 rounded-2xl bg-card px-4 py-3.5 shadow-sm ring-1 ring-border sm:px-5">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="space-y-2">
               <Skeleton className="h-3 w-28" />

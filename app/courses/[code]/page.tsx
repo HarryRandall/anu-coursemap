@@ -1,8 +1,5 @@
-import { CloudOff } from "lucide-react";
-import { notFound } from "next/navigation";
-import { AppShell } from "@/components/shell";
-import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@reui/ui/button";
+import { Card } from "@reui/ui/card";
 import {
   Empty,
   EmptyContent,
@@ -10,7 +7,12 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@reui/ui/empty";
+import ReuiLink from "next/link";
+import { CloudOff } from "lucide-react";
+import { notFound } from "next/navigation";
+import { AppShell } from "@/components/shell";
+
 import {
   loadAcademicYearOptions,
   loadPublishedCourse,
@@ -67,7 +69,7 @@ export default async function CoursePage({
           <Card>
             <Empty>
               <EmptyHeader>
-                <EmptyMedia variant="error">
+                <EmptyMedia variant="icon">
                   <CloudOff aria-hidden="true" />
                 </EmptyMedia>
                 <EmptyTitle>
@@ -76,13 +78,13 @@ export default async function CoursePage({
                 <EmptyDescription>Please try again shortly.</EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
-                <ButtonLink
-                  href={`/courses/${encodeURIComponent(code)}?year=${academicYear}`}
-                  size="sm"
-                  variant="primary"
-                >
-                  Try again
-                </ButtonLink>
+                <Button asChild size="sm" variant="default">
+                  <ReuiLink
+                    href={`/courses/${encodeURIComponent(code)}?year=${academicYear}`}
+                  >
+                    Try again
+                  </ReuiLink>
+                </Button>
               </EmptyContent>
             </Empty>
           </Card>

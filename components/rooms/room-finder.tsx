@@ -1,4 +1,9 @@
 "use client";
+import { Button } from "@reui/ui/button";
+import { Checkbox } from "@reui/ui/checkbox";
+import { Field } from "@reui/ui/field";
+import { Popover, PopoverContent, PopoverTrigger } from "@reui/ui/popover";
+import { OptionPicker } from "@/components/ui/option-picker";
 
 import {
   useCallback,
@@ -21,16 +26,10 @@ import {
   Route,
 } from "lucide-react";
 import { CampusMap } from "@/components/rooms/campus-map";
-import { Button, IconButton } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field } from "@/components/ui/field";
+
 import { FilterBar } from "@/components/ui/filter-bar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Select } from "@/components/ui/select";
+
+import { Hint } from "@/components/ui/hint";
 import { cn } from "@/lib/cn";
 import { buildIndoorScene } from "@/lib/rooms/indoor-3d";
 import {
@@ -119,16 +118,16 @@ function IndoorDirections({
   return (
     <section
       aria-labelledby="indoor-directions-heading"
-      className="w-full rounded-md border border-zinc-200 bg-white p-2.5"
+      className="w-full rounded-md border border-border bg-card p-2.5"
     >
       <div className="flex items-center justify-between gap-2">
         <h2
           id="indoor-directions-heading"
-          className="text-xs font-semibold text-zinc-950"
+          className="text-xs font-semibold text-foreground"
         >
           Indoor directions
         </h2>
-        <span className="text-[11px] text-zinc-500">
+        <span className="text-[11px] text-muted-foreground">
           {Math.round(journey.distanceMetres)} m
         </span>
       </div>
@@ -175,8 +174,8 @@ function IndoorDirections({
               <button
                 aria-label={`${title}. ${detail}. Show this floor on the map.`}
                 className={cn(
-                  "flex min-h-11 w-full items-start gap-2 rounded-md px-2 py-1.5 text-left outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400",
-                  active && "bg-brand-50",
+                  "flex min-h-11 w-full items-start gap-2 rounded-md px-2 py-1.5 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                  active && "bg-primary/10",
                 )}
                 onClick={() => onShowLevel(levelId)}
                 type="button"
@@ -184,17 +183,17 @@ function IndoorDirections({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600",
-                    active && "bg-brand-100 text-brand-700",
+                    "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground",
+                    active && "bg-primary/15 text-primary",
                   )}
                 >
                   {icon}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-xs font-medium text-zinc-900">
+                  <span className="block text-xs font-medium text-foreground">
                     {title}
                   </span>
-                  <span className="mt-0.5 block text-[11px] leading-4 text-zinc-500">
+                  <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
                     {detail}
                   </span>
                 </span>
@@ -248,7 +247,7 @@ function LayerToggleRow({
   const checkboxId = `room-layer-${layer.id}`;
 
   return (
-    <div className="flex min-h-11 items-center gap-1 rounded-md hover:bg-zinc-50">
+    <div className="flex min-h-11 items-center gap-1 rounded-md hover:bg-accent/50">
       <label
         htmlFor={checkboxId}
         className="flex min-h-11 min-w-0 flex-1 cursor-pointer items-center gap-3 px-2"
@@ -263,24 +262,25 @@ function LayerToggleRow({
           className="size-2.5 shrink-0 rounded-full"
           style={{ backgroundColor: layer.colour }}
         />
-        <span className="truncate text-xs font-medium text-zinc-900">
+        <span className="truncate text-xs font-medium text-foreground">
           {layer.name}
         </span>
       </label>
       {layer.description ? (
         <Popover>
           <PopoverTrigger asChild>
-            <IconButton
-              label={`About ${layer.name}`}
+            <Button
               variant="ghost"
               size="icon-sm"
-              className="min-h-11 min-w-11 text-zinc-400"
+              className="min-h-11 min-w-11 text-muted-foreground/80"
+              aria-label={`About ${layer.name}`}
+              type="button"
             >
               <Info aria-hidden="true" size={14} />
-            </IconButton>
+            </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-64 p-3">
-            <p className="text-xs leading-5 text-zinc-600">
+            <p className="text-xs leading-5 text-muted-foreground">
               {layer.description}
             </p>
           </PopoverContent>
@@ -739,7 +739,7 @@ export function RoomFinder({
   }));
 
   return (
-    <div className="relative h-[calc(100dvh-4rem)] min-h-[28rem] overflow-hidden bg-zinc-100">
+    <div className="relative h-[calc(100dvh-4rem)] min-h-[28rem] overflow-hidden bg-muted">
       <h1 className="sr-only">Room finder</h1>
       <section
         aria-label="Campus map"
@@ -774,33 +774,33 @@ export function RoomFinder({
       {buildingsVisible && indoorScene && indoorLevels.length > 0 ? (
         <div
           aria-label="Building floors"
-          className="absolute top-3 right-3 z-10 flex flex-col gap-1 rounded-lg border border-zinc-200 bg-white/95 p-1 shadow-lg shadow-zinc-950/10 sm:top-auto sm:bottom-16"
+          className="absolute top-3 right-3 z-10 flex flex-col gap-1 rounded-lg border border-border bg-card/80 p-1 shadow-lg shadow-zinc-950/10 sm:top-auto sm:bottom-16"
           role="group"
         >
           {indoorLevels.map((level) => {
             const shown = level.id === shownLevelId;
             const onRoute = journey?.route.levelIds.includes(level.id) ?? false;
             return (
-              <button
-                aria-label={`Show ${level.name}`}
-                aria-current={shown ? "true" : undefined}
-                className={cn(
-                  "relative min-h-11 min-w-11 rounded-md text-xs font-semibold outline-none hover:bg-zinc-100 focus-visible:ring-2 focus-visible:ring-brand-400",
-                  shown && "bg-brand-600 text-white hover:bg-brand-600",
-                )}
-                key={level.id}
-                onClick={() => showIndoorLevel(level.id)}
-                title={level.name}
-                type="button"
-              >
-                {level.ref || level.number}
-                {onRoute && !shown ? (
-                  <span
-                    aria-label="on your route"
-                    className="absolute top-1 right-1 size-1.5 rounded-full bg-amber-500"
-                  />
-                ) : null}
-              </button>
+              <Hint key={level.id} label={level.name}>
+                <button
+                  aria-label={`Show ${level.name}`}
+                  aria-current={shown ? "true" : undefined}
+                  className={cn(
+                    "relative min-h-11 min-w-11 rounded-md text-xs font-semibold outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
+                    shown && "bg-primary text-white hover:bg-primary",
+                  )}
+                  onClick={() => showIndoorLevel(level.id)}
+                  type="button"
+                >
+                  {level.ref || level.number}
+                  {onRoute && !shown ? (
+                    <span
+                      aria-label="on your route"
+                      className="absolute top-1 right-1 size-1.5 rounded-full bg-amber-500"
+                    />
+                  ) : null}
+                </button>
+              </Hint>
             );
           })}
         </div>
@@ -812,7 +812,7 @@ export function RoomFinder({
       >
         <div
           ref={controlsRef}
-          className="pointer-events-auto max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-lg border border-zinc-200 bg-white p-3 shadow-lg shadow-zinc-950/10"
+          className="pointer-events-auto max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-lg border border-border bg-card p-3 shadow-lg shadow-zinc-950/10"
         >
           <div className="[&_input[type=search]]:min-h-11">
             <FilterBar
@@ -835,7 +835,7 @@ export function RoomFinder({
           {loadError ? (
             <p
               role="alert"
-              className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800"
+              className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300"
             >
               {loadError}
             </p>
@@ -843,14 +843,14 @@ export function RoomFinder({
             <div
               role="region"
               aria-label="Search results"
-              className="mt-2 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-sm"
+              className="mt-2 overflow-hidden rounded-md border border-border bg-card shadow-sm"
             >
               {searchResults.length > 0 || roomResults.length > 0 ? (
                 <>
                   <ul className="max-h-72 overflow-y-auto p-1">
                     {searchResults.length > 0 ? (
                       <li
-                        className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase"
+                        className="px-2.5 pt-1.5 pb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
                         role="presentation"
                       >
                         Buildings
@@ -863,21 +863,21 @@ export function RoomFinder({
                           <button
                             type="button"
                             className={cn(
-                              "flex min-h-12 w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400",
-                              isSelected && "bg-brand-50",
+                              "flex min-h-12 w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                              isSelected && "bg-primary/10",
                             )}
                             onClick={() => selectPlace(place.slug)}
                           >
                             <MapPin
                               aria-hidden="true"
-                              className="mt-0.5 shrink-0 text-brand-600"
+                              className="mt-0.5 shrink-0 text-primary"
                               size={15}
                             />
                             <span className="min-w-0">
-                              <span className="block truncate text-sm font-medium text-zinc-950">
+                              <span className="block truncate text-sm font-medium text-foreground">
                                 {place.name}
                               </span>
-                              <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                              <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                                 {place.address}
                               </span>
                             </span>
@@ -888,7 +888,7 @@ export function RoomFinder({
 
                     {roomResults.length > 0 ? (
                       <li
-                        className="px-2.5 pt-2.5 pb-1 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase"
+                        className="px-2.5 pt-2.5 pb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
                         role="presentation"
                       >
                         Rooms
@@ -898,24 +898,24 @@ export function RoomFinder({
                       <li key={room.roomId}>
                         <button
                           className={cn(
-                            "flex min-h-12 w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400",
-                            room.roomId === selectedRoomId && "bg-brand-50",
+                            "flex min-h-12 w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                            room.roomId === selectedRoomId && "bg-primary/10",
                           )}
                           onClick={() => selectRoom(room)}
                           type="button"
                         >
                           <PanelsTopLeft
                             aria-hidden="true"
-                            className="mt-0.5 shrink-0 text-brand-600"
+                            className="mt-0.5 shrink-0 text-primary"
                             size={15}
                           />
                           <span className="min-w-0">
-                            <span className="block truncate text-sm font-medium text-zinc-950">
+                            <span className="block truncate text-sm font-medium text-foreground">
                               {room.ref
                                 ? `${room.ref} · ${room.name}`
                                 : room.label}
                             </span>
-                            <span className="mt-0.5 block truncate text-xs text-zinc-500">
+                            <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                               {room.buildingName} ·{" "}
                               {room.levelRef || room.levelName}
                             </span>
@@ -925,14 +925,14 @@ export function RoomFinder({
                     ))}
                   </ul>
                   {filteredPlaces.length > SEARCH_RESULT_LIMIT ? (
-                    <p className="border-t border-zinc-100 px-3 py-2 text-[11px] text-zinc-500">
+                    <p className="border-t border-border/60 px-3 py-2 text-[11px] text-muted-foreground">
                       Showing the first {SEARCH_RESULT_LIMIT} matches. Keep
                       typing to narrow the search.
                     </p>
                   ) : null}
                 </>
               ) : (
-                <p className="px-3 py-3 text-xs text-zinc-600">
+                <p className="px-3 py-3 text-xs text-muted-foreground">
                   No ANU buildings or rooms match that search.
                 </p>
               )}
@@ -942,10 +942,15 @@ export function RoomFinder({
           <div className="mt-2 flex flex-wrap gap-2">
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="sm" className="min-h-11 flex-1">
+                <Button
+                  size="sm"
+                  className="min-h-11 flex-1"
+                  variant="outline"
+                  type="button"
+                >
                   <Layers3 aria-hidden="true" size={14} />
                   Layers
-                  <span className="text-zinc-400">
+                  <span className="text-muted-foreground/80">
                     {visibleMapLayerCount}/{mapLayers.length}
                   </span>
                 </Button>
@@ -954,7 +959,7 @@ export function RoomFinder({
                 align="start"
                 className="max-h-[min(40rem,calc(100dvh-2rem))] w-72 overflow-y-auto"
               >
-                <p className="text-xs font-semibold text-zinc-950">
+                <p className="text-xs font-semibold text-foreground">
                   Map detail
                 </p>
                 <div className="mt-2 space-y-0.5">
@@ -969,7 +974,7 @@ export function RoomFinder({
                 </div>
                 {placeLayers.length > 0 ? (
                   <>
-                    <p className="mt-5 border-t border-zinc-200 pt-4 text-xs font-semibold text-zinc-950">
+                    <p className="mt-5 border-t border-border pt-4 text-xs font-semibold text-foreground">
                       Place categories
                     </p>
                     <div className="mt-2 space-y-0.5">
@@ -989,24 +994,25 @@ export function RoomFinder({
 
             <Button
               size="sm"
-              variant={directionsOpen ? "subtle" : "secondary"}
+              variant={directionsOpen ? "secondary" : "outline"}
               className="min-h-11 flex-1"
               aria-expanded={directionsOpen}
               aria-controls="room-finder-directions"
               onClick={toggleDirections}
+              type="button"
             >
               <Route aria-hidden="true" size={14} />
               Directions
             </Button>
 
             {selectedRoom ? (
-              <div className="w-full rounded-md border border-brand-200 bg-brand-50 p-2.5">
-                <p className="text-xs font-semibold text-brand-900">
+              <div className="w-full rounded-md border border-primary/25 bg-primary/10 p-2.5">
+                <p className="text-xs font-semibold text-primary">
                   {selectedRoom.ref
                     ? `${selectedRoom.ref} · ${selectedRoom.name}`
                     : selectedRoom.label}
                 </p>
-                <p className="mt-0.5 text-[11px] text-brand-800">
+                <p className="mt-0.5 text-[11px] text-primary">
                   {selectedRoom.levelName}
                   {journey
                     ? ` · ${Math.round(journey.distanceMetres)} m inside`
@@ -1020,6 +1026,7 @@ export function RoomFinder({
                   }}
                   size="sm"
                   variant="ghost"
+                  type="button"
                 >
                   Clear this room
                 </Button>
@@ -1039,28 +1046,28 @@ export function RoomFinder({
             {selectedIndoorMap && roomGroups.length > 0 ? (
               <section
                 aria-labelledby="building-rooms-heading"
-                className="w-full overflow-hidden rounded-md border border-zinc-200 bg-white"
+                className="w-full overflow-hidden rounded-md border border-border bg-card"
               >
-                <div className="border-b border-zinc-100 px-3 py-2.5">
+                <div className="border-b border-border/60 px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2">
                     <h2
                       id="building-rooms-heading"
-                      className="text-xs font-semibold text-zinc-950"
+                      className="text-xs font-semibold text-foreground"
                     >
                       Rooms in {selectedPlace?.name}
                     </h2>
                     {selectedIndoorMap.status === "draft" ? (
-                      <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                      <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
                         Draft preview
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-0.5 text-[11px] leading-4 text-zinc-500">
+                  <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
                     Choose a findable room to use it as your destination.
                   </p>
                 </div>
 
-                <div className="divide-y divide-zinc-100">
+                <div className="divide-y divide-border/60">
                   {roomGroups.map(({ level, rooms }) => (
                     <section
                       aria-labelledby={`room-finder-level-${level.id}`}
@@ -1069,14 +1076,14 @@ export function RoomFinder({
                     >
                       <div className="flex min-h-8 items-center justify-between gap-2 px-2">
                         <h3
-                          className="text-[11px] font-semibold text-zinc-700"
+                          className="text-[11px] font-semibold text-foreground/80"
                           id={`room-finder-level-${level.id}`}
                         >
                           {level.ref
                             ? `${level.ref} · ${level.name}`
                             : level.name}
                         </h3>
-                        <span className="text-[10px] text-zinc-400">
+                        <span className="text-[10px] text-muted-foreground/80">
                           {rooms.length} room{rooms.length === 1 ? "" : "s"}
                         </span>
                       </div>
@@ -1090,26 +1097,26 @@ export function RoomFinder({
                                 <button
                                   aria-pressed={destination}
                                   className={cn(
-                                    "flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-brand-400",
-                                    destination && "bg-brand-50",
+                                    "flex min-h-11 w-full items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                                    destination && "bg-primary/10",
                                   )}
                                   onClick={() => selectRoom(room)}
                                   type="button"
                                 >
                                   <span className="min-w-0">
-                                    <span className="block truncate text-xs font-medium text-zinc-900">
+                                    <span className="block truncate text-xs font-medium text-foreground">
                                       {room.ref || room.name}
                                     </span>
                                     {room.ref && room.name ? (
-                                      <span className="mt-0.5 block truncate text-[11px] text-zinc-500">
+                                      <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                                         {room.name}
                                       </span>
                                     ) : null}
                                   </span>
                                   <span
                                     className={cn(
-                                      "shrink-0 text-[10px] font-medium text-zinc-400",
-                                      destination && "text-brand-700",
+                                      "shrink-0 text-[10px] font-medium text-muted-foreground/80",
+                                      destination && "text-primary",
                                     )}
                                   >
                                     {destination
@@ -1122,7 +1129,7 @@ export function RoomFinder({
                           })}
                         </ul>
                       ) : (
-                        <p className="px-2 py-1.5 text-[11px] text-zinc-500">
+                        <p className="px-2 py-1.5 text-[11px] text-muted-foreground">
                           No findable rooms on this floor.
                         </p>
                       )}
@@ -1137,44 +1144,83 @@ export function RoomFinder({
             <section
               id="room-finder-directions"
               aria-label="Walking directions"
-              className="mt-2 rounded-md border border-zinc-200 bg-zinc-50 p-3"
+              className="mt-2 rounded-md border border-border bg-muted/50 p-3"
             >
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
                 <div className="space-y-2.5">
-                  <Field label="From">
-                    <Select
-                      aria-label="Directions start"
-                      className="min-h-11"
-                      value={fromSlug}
-                      options={placeOptions}
-                      onChange={(slug) => changeRouteEndpoint("from", slug)}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"From"}</span>
+                      <OptionPicker
+                        value={"coursemap:" + String(fromSlug)}
+                        onValueChange={(nextValue) => {
+                          const option = placeOptions.find(
+                            (option) =>
+                              "coursemap:" + String(option.value) === nextValue,
+                          );
+                          if (option)
+                            ((slug) => changeRouteEndpoint("from", slug))(
+                              option.value,
+                            );
+                        }}
+                        className={"min-h-11"}
+                        aria-label={"Directions start"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        items={placeOptions.map((option) => ({
+                          value: "coursemap:" + String(option.value),
+                          label: option.label,
+                        }))}
+                      />
+                    </label>
                   </Field>
-                  <Field label="To">
-                    <Select
-                      aria-label="Directions destination"
-                      className="min-h-11"
-                      value={toSlug}
-                      options={destinationOptions}
-                      onChange={(slug) => changeRouteEndpoint("to", slug)}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"To"}</span>
+                      <OptionPicker
+                        value={"coursemap:" + String(toSlug)}
+                        onValueChange={(nextValue) => {
+                          const option = destinationOptions.find(
+                            (option) =>
+                              "coursemap:" + String(option.value) === nextValue,
+                          );
+                          if (option)
+                            ((slug) => changeRouteEndpoint("to", slug))(
+                              option.value,
+                            );
+                        }}
+                        className={"min-h-11"}
+                        aria-label={"Directions destination"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        items={destinationOptions.map((option) => ({
+                          value: "coursemap:" + String(option.value),
+                          label: option.label,
+                        }))}
+                      />
+                    </label>
                   </Field>
                 </div>
-                <IconButton
-                  label="Swap start and destination"
+                <Button
                   className="mb-0.5 min-h-11 min-w-11"
                   disabled={!fromSlug || !toSlug}
                   onClick={swapRouteEndpoints}
+                  variant="outline"
+                  aria-label={"Swap start and destination"}
+                  size="icon"
+                  type="button"
                 >
                   <ArrowRightLeft aria-hidden="true" size={15} />
-                </IconButton>
+                </Button>
               </div>
 
               <div className="mt-3 min-h-5 text-xs" aria-live="polite">
                 {fromSlug === toSlug ? (
-                  <p className="text-amber-700">Choose two different places.</p>
+                  <p className="text-amber-700 dark:text-amber-300">
+                    Choose two different places.
+                  </p>
                 ) : routeState.status === "loading" ? (
-                  <p className="inline-flex items-center gap-1.5 text-zinc-500">
+                  <p className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <LoaderCircle
                       aria-hidden="true"
                       className="animate-spin"
@@ -1183,9 +1229,11 @@ export function RoomFinder({
                     Finding a walking route...
                   </p>
                 ) : routeState.status === "error" ? (
-                  <p className="text-rose-700">{routeState.message}</p>
+                  <p className="text-rose-700 dark:text-rose-300">
+                    {routeState.message}
+                  </p>
                 ) : routeState.status === "success" ? (
-                  <p className="font-medium text-zinc-700">
+                  <p className="font-medium text-foreground/80">
                     {formatWalkingDuration(routeState.route.durationSeconds)} ·{" "}
                     {formatWalkingDistance(routeState.route.distanceMetres)}
                   </p>

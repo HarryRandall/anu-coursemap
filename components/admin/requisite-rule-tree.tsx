@@ -231,7 +231,7 @@ export function RequisiteRuleTree({
         <div className="pointer-events-none fixed inset-0 z-[120] cursor-grabbing select-none">
           <div
             aria-hidden="true"
-            className="absolute top-0 left-0 rounded-md bg-white opacity-95 shadow-xl ring-1 ring-zinc-200 will-change-transform"
+            className="absolute top-0 left-0 rounded-md bg-card opacity-95 shadow-xl ring-1 ring-border will-change-transform"
             inert
             ref={floatingCardRef}
             style={{
@@ -280,7 +280,7 @@ function OperatorControl({
 }) {
   const label = operatorJoiner(group);
   const chip = cn(
-    "inline-flex min-h-8 min-w-[3.75rem] cursor-pointer items-center justify-center gap-1 rounded-md border border-zinc-200 bg-white px-2 text-[11px] font-semibold tracking-wide text-zinc-600 uppercase shadow-xs transition-colors outline-none hover:border-zinc-300 hover:text-zinc-950 focus-visible:ring-3 focus-visible:ring-brand-500/20 max-md:min-w-[3.5rem] max-md:px-1.5",
+    "inline-flex min-h-8 min-w-[3.75rem] cursor-pointer items-center justify-center gap-1 rounded-md border border-border bg-card px-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase shadow-xs transition-colors outline-none hover:border-input hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20 max-md:min-w-[3.5rem] max-md:px-1.5",
   );
 
   if (!canEdit) {
@@ -304,7 +304,7 @@ function OperatorControl({
 
 function WhereLabel() {
   return (
-    <span className="relative z-10 inline-flex min-h-8 items-center text-xs font-medium text-zinc-500">
+    <span className="relative z-10 inline-flex min-h-8 items-center text-xs font-medium text-muted-foreground">
       Where
     </span>
   );
@@ -400,8 +400,8 @@ function GroupBlock({
         "transition-colors",
         !isRoot && "w-full max-w-full",
         isRoot
-          ? "rounded-xl border border-zinc-200 bg-zinc-50/60 p-4 max-md:p-2"
-          : "rounded-xl border border-zinc-200 bg-white p-4 shadow-xs max-md:p-2",
+          ? "rounded-xl border border-border bg-muted/30 p-4 max-md:p-2"
+          : "rounded-xl border border-border bg-card p-4 shadow-xs max-md:p-2",
       )}
       data-group-id={group.id}
       data-requisite-group=""
@@ -425,7 +425,7 @@ function GroupBlock({
             {group.children.length > 1 ? (
               <span
                 aria-hidden="true"
-                className="absolute top-11 bottom-6 left-10 w-px bg-zinc-200 max-md:left-[1.375rem]"
+                className="absolute top-11 bottom-6 left-10 w-px bg-accent max-md:left-[1.375rem]"
               />
             ) : null}
             <DropPreview drag={drag} groupId={group.id} index={0} />
@@ -464,7 +464,7 @@ function GroupBlock({
                       {drag.activeId === child.id && drag.dragPointer ? (
                         <span
                           aria-hidden="true"
-                          className="w-full rounded-md border border-dashed border-zinc-200 bg-white/50"
+                          className="w-full rounded-md border border-dashed border-border bg-card/80"
                           style={{ height: drag.dragPointer.height }}
                         />
                       ) : (
@@ -560,13 +560,13 @@ function DropPreview({
       style={{ minHeight: drag.dragPointer.height }}
     >
       <span aria-hidden="true" />
-      <span className="pointer-events-none my-1 flex origin-top animate-drop-slot-in items-center gap-2 rounded-md bg-brand-50/70 px-3 py-2 text-xs font-medium text-brand-700 ring-1 ring-brand-200 ring-inset motion-reduce:animate-none">
+      <span className="pointer-events-none my-1 flex origin-top animate-drop-slot-in items-center gap-2 rounded-md bg-primary/5 px-3 py-2 text-xs font-medium text-primary ring-1 ring-primary/25 ring-inset motion-reduce:animate-none">
         <GripVertical
           aria-hidden="true"
-          className="size-4 shrink-0 text-brand-300"
+          className="size-4 shrink-0 text-primary/50"
         />
         <ConditionIcon
-          className="shrink-0 text-brand-500"
+          className="shrink-0 text-primary"
           kind={drag.activeCondition.kind}
           size={15}
         />
@@ -616,9 +616,9 @@ function GroupActions({
   if (!canEdit) return null;
 
   return (
-    <div className="mt-3 flex w-full flex-wrap items-center gap-1 border-t border-zinc-200 pt-3">
+    <div className="mt-3 flex w-full flex-wrap items-center gap-1 border-t border-border pt-3">
       <button
-        className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2.5 text-sm font-medium text-emerald-600 transition-colors outline-none hover:bg-emerald-50 hover:text-emerald-700 focus-visible:ring-3 focus-visible:ring-emerald-500/20"
+        className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2.5 text-sm font-medium text-emerald-600 transition-colors outline-none hover:bg-emerald-50 hover:text-emerald-700 focus-visible:ring-3 focus-visible:ring-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300"
         onClick={onAddCondition}
         type="button"
       >
@@ -626,7 +626,7 @@ function GroupActions({
         Add condition
       </button>
       <button
-        className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2.5 text-sm font-medium text-zinc-500 transition-colors outline-none hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-3 focus-visible:ring-brand-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md px-2.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-accent hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-40"
         disabled={!canNest}
         onClick={onAddGroup}
         type="button"
@@ -661,7 +661,7 @@ function NestedGroupHeader({
     >
       <button
         aria-label={`Change this group: ${sentence}`}
-        className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-md px-2 text-left text-sm font-medium text-zinc-600 transition-colors outline-none hover:bg-zinc-50 hover:text-zinc-950 focus-visible:ring-3 focus-visible:ring-brand-500/20"
+        className="inline-flex min-h-9 cursor-pointer items-center gap-1 rounded-md px-2 text-left text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-accent/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20"
         type="button"
       >
         {sentence}
@@ -672,11 +672,13 @@ function NestedGroupHeader({
       </button>
     </GroupOperatorMenu>
   ) : (
-    <span className="text-sm font-medium text-zinc-600">{sentence}</span>
+    <span className="text-sm font-medium text-muted-foreground">
+      {sentence}
+    </span>
   );
 
   return (
-    <div className="mb-2 flex items-center gap-1 border-b border-zinc-200 pb-2">
+    <div className="mb-2 flex items-center gap-1 border-b border-border pb-2">
       {title}
       <span className="ml-auto flex items-center">
         {canEdit && canRemove ? (
@@ -700,12 +702,14 @@ function EmptyGroupPrompt({
   onAdd: () => void;
 }) {
   if (!canEdit) {
-    return <span className="text-sm text-zinc-500">No conditions yet.</span>;
+    return (
+      <span className="text-sm text-muted-foreground">No conditions yet.</span>
+    );
   }
 
   return (
     <button
-      className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-zinc-300 px-4 text-sm font-medium text-zinc-600 transition-colors outline-none hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-900 focus-visible:ring-3 focus-visible:ring-brand-500/20"
+      className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md border border-dashed border-input px-4 text-sm font-medium text-muted-foreground transition-colors outline-none hover:border-input hover:bg-accent/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/20"
       onClick={onAdd}
       type="button"
     >

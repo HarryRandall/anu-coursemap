@@ -179,3 +179,19 @@ test("keeps public and built static assets outside authentication", async () => 
   assert.equal(publicAsset.headers.get("location"), null);
   assert.equal(builtAsset.headers.get("location"), null);
 });
+
+test("removed reference routes stay unavailable without a session", async () => {
+  for (const path of [
+    "/design-system",
+    "/design-system/typography",
+    "/admin/design-system/components",
+    "/admin/design-system-preview/tokens/foundations",
+    "/api/design-system/review",
+  ]) {
+    assert.equal(
+      (await request(path, { redirect: "manual" })).status,
+      404,
+      path,
+    );
+  }
+});

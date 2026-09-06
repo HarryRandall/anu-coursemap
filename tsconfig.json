@@ -15,7 +15,8 @@
     "jsx": "react-jsx",
     "incremental": true,
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@reui/*": ["./components/reui/*"]
     },
     "plugins": [
       {

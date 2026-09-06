@@ -78,7 +78,7 @@ export function RoadmapTimeline({
           }}
           className="overflow-x-auto overscroll-x-contain scroll-smooth pb-5 outline-none"
         >
-          <ol className="relative flex w-max min-w-full px-[calc(50%-10rem)] before:absolute before:top-[23.25rem] before:right-0 before:left-0 before:h-px before:bg-zinc-200">
+          <ol className="relative flex w-max min-w-full px-[calc(50%-10rem)] before:absolute before:top-[23.25rem] before:right-0 before:left-0 before:h-px before:bg-accent">
             {stages.map((stage, index) => {
               const above = index % 2 === 0;
               const done = index < currentStage;
@@ -96,34 +96,34 @@ export function RoadmapTimeline({
                     className={cn(
                       "flex h-[22rem] flex-col border-l-2 px-6",
                       above ? "order-1 justify-end pb-8" : "order-3 pt-8",
-                      current && "border-brand-400",
-                      done && "border-brand-200",
-                      future && "border-zinc-200",
+                      current && "border-ring",
+                      done && "border-primary/25",
+                      future && "border-border",
                     )}
                   >
                     <span
                       aria-hidden="true"
                       className={cn(
                         "text-[10px] font-semibold tracking-[0.2em]",
-                        future ? "text-zinc-300" : "text-brand-400",
+                        future ? "text-muted-foreground/60" : "text-primary/70",
                       )}
                     >
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <h3 className="mt-1 flex flex-wrap items-center gap-2 text-base font-semibold tracking-tight text-zinc-900">
+                    <h3 className="mt-1 flex flex-wrap items-center gap-2 text-base font-semibold tracking-tight text-foreground">
                       {stage.title}
                       {current && (
-                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-brand-700 uppercase ring-1 ring-brand-200">
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-primary uppercase ring-1 ring-primary/25">
                           In progress
                         </span>
                       )}
                       {future && (
-                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-zinc-500 uppercase ring-1 ring-zinc-200">
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-muted-foreground uppercase ring-1 ring-border">
                           Planned
                         </span>
                       )}
                     </h3>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {stage.description}
                     </p>
 
@@ -134,14 +134,14 @@ export function RoadmapTimeline({
                             aria-hidden="true"
                             className={cn(
                               "mt-[7px] h-px w-3 shrink-0 transition-all group-hover:w-5",
-                              future ? "bg-zinc-300" : "bg-brand-400",
+                              future ? "bg-border" : "bg-primary/70",
                             )}
                           />
                           <div className="min-w-0">
-                            <h4 className="text-[13px] leading-tight font-semibold text-zinc-900">
+                            <h4 className="text-[13px] leading-tight font-semibold text-foreground">
                               {item.title}
                             </h4>
-                            <p className="mt-1 text-[11px] leading-relaxed text-zinc-500">
+                            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                               {item.description}
                             </p>
                           </div>
@@ -157,14 +157,14 @@ export function RoadmapTimeline({
                     <span
                       className={cn(
                         "grid size-5 shrink-0 place-items-center rounded-full",
-                        done && "bg-brand-600 text-white",
-                        current && "bg-brand-600 ring-4 ring-brand-100",
-                        future && "bg-white ring-2 ring-zinc-300",
+                        done && "bg-primary text-primary-foreground",
+                        current && "bg-primary ring-4 ring-primary/20",
+                        future && "bg-card ring-2 ring-input",
                       )}
                     >
                       {done && <Check size={12} strokeWidth={3.5} />}
                       {current && (
-                        <span className="size-1.5 rounded-full bg-white" />
+                        <span className="size-1.5 rounded-full bg-card" />
                       )}
                     </span>
                   </div>
@@ -180,7 +180,7 @@ export function RoadmapTimeline({
         </div>
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-zinc-50/90 to-transparent"
+          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background/90 to-transparent"
         />
       </div>
     </section>

@@ -1,11 +1,17 @@
 "use client";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@reui/ui/card";
+import { OptionPicker } from "@/components/ui/option-picker";
 
 import { useState, useTransition } from "react";
 import { Cpu } from "lucide-react";
 import { toast } from "sonner";
 import { setImportModel } from "@/lib/admin/settings-actions";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 
 const dateFormatter = new Intl.DateTimeFormat("en-AU", {
   day: "numeric",
@@ -51,26 +57,52 @@ export function ImportModelCard({
 
   return (
     <Card>
-      <CardHeader
-        description="Every queued course and academic structure import requests this model."
-        icon={<Cpu aria-hidden="true" size={16} />}
-        title="Import model"
-      />
+      <CardHeader>
+        {<Cpu aria-hidden="true" size={16} />}
+        <CardTitle>
+          <h2>{"Import model"}</h2>
+        </CardTitle>
+        {Boolean(
+          "Every queued course and academic structure import requests this model.",
+        ) && (
+          <CardDescription>
+            {
+              "Every queued course and academic structure import requests this model."
+            }
+          </CardDescription>
+        )}
+      </CardHeader>
       <CardContent className="pb-5">
         <div className="max-w-sm">
-          <Select
-            aria-label="Import model"
+          <OptionPicker
+            value={"coursemap:" + String(value)}
+            onValueChange={(nextValue) => {
+              const option = options
+                .map((option) => ({
+                  label: option,
+                  value: option,
+                }))
+                .find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+              if (option) choose(option.value);
+            }}
             disabled={!canManage || pending || options.length === 0}
-            onChange={choose}
-            options={options.map((option) => ({
-              label: option,
-              value: option,
-            }))}
-            placeholder="No model configured"
-            value={value}
+            aria-label={"Import model"}
+            onPointerDown={(event) => event.stopPropagation()}
+            placeholder={"No model configured"}
+            items={options
+              .map((option) => ({
+                label: option,
+                value: option,
+              }))
+              .map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
           />
         </div>
-        <p className="mt-2 text-xs text-zinc-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           {options.length === 0
             ? "Set COURSEMAP_OPENROUTER_MODELS to offer models here."
             : !canManage

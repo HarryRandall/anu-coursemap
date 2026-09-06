@@ -1,0 +1,142 @@
+.block {
+  isolation: isolate;
+  container-type: inline-size;
+  --category-outline: var(--color-violet-300);
+}
+
+.block[data-category="Core"] {
+  --category-outline: var(--color-blue-300);
+}
+.block[data-category="Electives"] {
+  --category-outline: var(--color-emerald-300);
+}
+.block[data-category="Breadth"] {
+  --category-outline: var(--color-amber-300);
+}
+.block::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-card);
+  box-shadow: inset 0 0 0 1.5px var(--category-outline);
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+  pointer-events: none;
+}
+.block[data-open="true"]::before {
+  opacity: 1;
+}
+
+.trigger {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  text-align: left;
+  color: #172033;
+}
+.heading {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 18px;
+}
+.units {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  line-height: 16px;
+}
+.slots {
+  position: absolute;
+  inset: 6px;
+  display: grid;
+  gap: 5px;
+  pointer-events: none;
+}
+.slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  border: 1.5px solid #8b5cf6;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-foreground);
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+.slot[data-status="Completed"] {
+  border-color: #10b981;
+}
+.slot[data-status="Unallocated"] {
+  border: 1px dashed var(--color-border);
+  color: var(--color-muted-foreground);
+}
+.block[data-open="true"] .trigger {
+  opacity: 0;
+  pointer-events: none;
+}
+.block[data-open="true"] .units {
+  display: none;
+}
+.block[data-open="true"] .heading {
+  top: 8px;
+  bottom: auto;
+  left: 8px;
+  font-size: 11px;
+  line-height: 16px;
+}
+.block[data-open="true"] .slots {
+  pointer-events: auto;
+}
+.block[data-open="true"] .slot {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot,
+  .block::before {
+    transition: none;
+  }
+}
+
+.emptyLabel {
+  transition: opacity 120ms ease-out;
+}
+.addIcon {
+  position: absolute;
+  opacity: 0;
+  color: var(--color-foreground);
+  transition: opacity 120ms ease-out;
+}
+.slot:hover .emptyLabel,
+.slot:focus-visible .emptyLabel {
+  opacity: 0;
+}
+.slot:hover .addIcon,
+.slot:focus-visible .addIcon {
+  opacity: 1;
+}
+@media (hover: none) {
+  .slot .emptyLabel {
+    opacity: 0;
+  }
+  .slot .addIcon {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .emptyLabel,
+  .addIcon {
+    transition: none;
+  }
+}
