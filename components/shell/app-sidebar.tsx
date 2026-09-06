@@ -2,28 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Award,
-  BookOpen,
-  CalendarDays,
-  CalendarRange,
-  ChevronsUpDown,
-  GraduationCap,
-  House,
-  KeyRound,
-  LayoutDashboard,
-  LifeBuoy,
-  ListChecks,
-  Map,
-  MapPin,
-  MapPinned,
-  Route,
-  Shield,
-  Tag,
-  Target,
-  UsersRound,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronsUpDown, type LucideIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +20,7 @@ import {
 import { useCoursemap } from "@/app/providers";
 import { BrandMark } from "@/components/brand-mark";
 import { CourseFind } from "@/components/course-find";
+import { routeIcons } from "@/components/shell/route-icons";
 
 type NavItem = {
   href: string;
@@ -58,21 +38,30 @@ const studentNav: NavSection[] = [
   {
     label: null,
     items: [
-      { href: "/dashboard", label: "Home", icon: House },
-      { href: "/plan", label: "Plan", icon: Map },
-      { href: "/courses", label: "Courses", icon: BookOpen },
-      { href: "/requirements", label: "Requirements", icon: ListChecks },
-      { href: "/academic", label: "Academic", icon: GraduationCap },
+      { href: "/dashboard", label: "Home", icon: routeIcons.dashboard },
+      { href: "/plan", label: "Plan", icon: routeIcons.plan },
+      { href: "/courses", label: "Courses", icon: routeIcons.courses },
+      {
+        href: "/requirements",
+        label: "Requirements",
+        icon: routeIcons.requirements,
+      },
+      { href: "/academic", label: "Academic", icon: routeIcons.academic },
     ],
   },
   {
     label: "Resources",
     items: [
-      { href: "/calendar", label: "Calendar", icon: CalendarDays },
-      { href: "/key-dates", label: "Key dates", icon: CalendarRange },
-      { href: "/roadmap", label: "Roadmap", icon: Route },
-      { href: "/rooms", label: "Room finder", icon: MapPin, badge: "Preview" },
-      { href: "/help", label: "Help centre", icon: LifeBuoy },
+      { href: "/calendar", label: "Calendar", icon: routeIcons.calendar },
+      { href: "/key-dates", label: "Key dates", icon: routeIcons["key-dates"] },
+      { href: "/roadmap", label: "Roadmap", icon: routeIcons.roadmap },
+      {
+        href: "/rooms",
+        label: "Room finder",
+        icon: routeIcons.rooms,
+        badge: "Preview",
+      },
+      { href: "/help", label: "Help centre", icon: routeIcons.help },
     ],
   },
 ];
@@ -85,32 +74,46 @@ const adminNav: NavSection[] = [
   {
     label: null,
     items: [
-      { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      {
+        href: "/admin/dashboard",
+        label: "Dashboard",
+        icon: routeIcons["admin-dashboard"],
+      },
     ],
   },
   {
     label: "Academic data",
     items: [
-      { href: "/admin/courses", label: "Courses", icon: BookOpen },
-      { href: "/admin/programmes", label: "Programmes", icon: GraduationCap },
-      { href: "/admin/majors", label: "Majors", icon: Award },
-      { href: "/admin/minors", label: "Minors", icon: Tag },
+      { href: "/admin/courses", label: "Courses", icon: routeIcons.courses },
+      {
+        href: "/admin/programmes",
+        label: "Programmes",
+        icon: routeIcons.programmes,
+      },
+      { href: "/admin/majors", label: "Majors", icon: routeIcons.majors },
+      { href: "/admin/minors", label: "Minors", icon: routeIcons.minors },
       {
         href: "/admin/specialisations",
         label: "Specialisations",
-        icon: Target,
+        icon: routeIcons.specialisations,
       },
     ],
   },
   {
     label: "Campus",
-    items: [{ href: "/admin/rooms", label: "Indoor maps", icon: MapPinned }],
+    items: [
+      {
+        href: "/admin/rooms",
+        label: "Indoor maps",
+        icon: routeIcons["admin-rooms"],
+      },
+    ],
   },
   {
     label: "Access",
     items: [
-      { href: "/admin/users", label: "Users", icon: UsersRound },
-      { href: "/admin/roles", label: "Roles", icon: KeyRound },
+      { href: "/admin/users", label: "Users", icon: routeIcons.users },
+      { href: "/admin/roles", label: "Roles", icon: routeIcons.roles },
     ],
   },
 ];
@@ -119,7 +122,13 @@ const adminNav: NavSection[] = [
 const adminEntryNav: NavSection[] = [
   {
     label: "Administration",
-    items: [{ href: "/admin/dashboard", label: "Admin console", icon: Shield }],
+    items: [
+      {
+        href: "/admin/dashboard",
+        label: "Admin console",
+        icon: routeIcons.admin,
+      },
+    ],
   },
 ];
 
@@ -127,7 +136,13 @@ const adminEntryNav: NavSection[] = [
 const studentEntryNav: NavSection[] = [
   {
     label: null,
-    items: [{ href: "/dashboard", label: "Back to student home", icon: Map }],
+    items: [
+      {
+        href: "/dashboard",
+        label: "Back to student home",
+        icon: routeIcons.dashboard,
+      },
+    ],
   },
 ];
 

@@ -1,12 +1,32 @@
 export type HelpArticleSection = {
   heading: string;
   body: string;
+  /** Short ordered instructions rendered as a numbered list under the body. */
+  steps?: string[];
+  /** One-line aside rendered as a callout after the body and steps. */
+  tip?: string;
 };
+
+export type HelpCategoryId =
+  "getting-started" | "planning" | "courses" | "account";
+
+export type HelpCategory = {
+  id: HelpCategoryId;
+  label: string;
+};
+
+export const helpCategories: HelpCategory[] = [
+  { id: "getting-started", label: "Getting started" },
+  { id: "planning", label: "Plan your degree" },
+  { id: "courses", label: "Courses and requirements" },
+  { id: "account", label: "Account and record" },
+];
 
 export type HelpArticle = {
   slug: string;
   title: string;
   description: string;
+  category: HelpCategoryId;
   productHref: string;
   productLabel: string;
   sections: HelpArticleSection[];
@@ -14,9 +34,87 @@ export type HelpArticle = {
 
 export const helpArticles: HelpArticle[] = [
   {
+    slug: "getting-started",
+    title: "Get started with Coursemap",
+    description:
+      "Create an account, skip or finish onboarding and set up a plan.",
+    category: "getting-started",
+    productHref: "/dashboard",
+    productLabel: "Go to home",
+    sections: [
+      {
+        heading: "Create an account",
+        body: "Sign up with an email address and password. Social sign-in buttons are shown on the sign-in and sign-up pages but are not active yet; they tell you the provider is coming soon rather than starting a sign-in.",
+      },
+      {
+        heading: "Onboarding is optional",
+        body: "After sign-up you land on onboarding, which asks for your programme, major and catalogue year so the plan and requirements views can apply the right rules. Choose Skip for now if you would rather look around first. Home shows an empty state with a link back to onboarding until a plan exists.",
+      },
+      {
+        heading: "Set up your first plan",
+        body: "Requirements, Calendar and Academic all read from your plan, so a small, honest plan is more useful than a complete guess.",
+        steps: [
+          "Open Plan from the sidebar.",
+          "Search for a course you have completed or are enrolled in and add it to the matching study period.",
+          "Mark it completed or enrolled so Academic and Requirements count it.",
+          "Add the courses you intend to take next; leave later years empty until you decide.",
+        ],
+        tip: "You can change programme, major or catalogue year later from Profile without losing the courses already on your plan.",
+      },
+    ],
+  },
+  {
+    slug: "quick-find",
+    title: "Find a course from anywhere",
+    description: "Use the Find shortcut to jump to a course or page.",
+    category: "getting-started",
+    productHref: "/courses",
+    productLabel: "Browse courses",
+    sections: [
+      {
+        heading: "Open Find",
+        body: "Press F on any page, or Ctrl K on Windows and Cmd K on a Mac, to open Find from the sidebar. Clicking the Find box does the same.",
+        tip: "The F shortcut is ignored while you are typing in a field, so it will not interrupt a form. Ctrl K and Cmd K work everywhere.",
+      },
+      {
+        heading: "Search by code or title",
+        body: "Type a course code such as COMP1100 or part of a title. Results show the current catalogue year and open the course page directly. Before you type, Find lists shortcuts to the course catalogue and your plan.",
+      },
+      {
+        heading: "In the admin console",
+        body: "The same shortcut works in the admin console, where the default shortcuts point at the course catalogue and course imports instead.",
+      },
+    ],
+  },
+  {
+    slug: "appearance-and-navigation",
+    title: "Personalise the workspace",
+    description:
+      "Switch theme, collapse the sidebar and use Coursemap on a phone.",
+    category: "getting-started",
+    productHref: "/dashboard",
+    productLabel: "Go to home",
+    sections: [
+      {
+        heading: "Light, dark or system theme",
+        body: "The theme control at the top right of every page offers light, dark and system. System follows your operating system setting. The choice is kept on this device.",
+      },
+      {
+        heading: "Collapse the sidebar",
+        body: "Use the toggle at the top left to collapse the sidebar to icons. Hover an icon to see its label. The collapsed state is remembered as you move between pages.",
+        tip: "The breadcrumb at the top of each page uses the same icon as its sidebar entry, so a collapsed sidebar is still easy to read.",
+      },
+      {
+        heading: "On a phone",
+        body: "On narrow screens the sidebar opens as a drawer from the same toggle and closes when you pick a page. Plan, Courses and Requirements work on a phone, but the plan board and prerequisite graph are easier to read on a larger screen.",
+      },
+    ],
+  },
+  {
     slug: "build-your-plan",
     title: "Build your plan",
     description: "Add, move and record courses across study periods.",
+    category: "planning",
     productHref: "/plan",
     productLabel: "Open your plan",
     sections: [
@@ -26,7 +124,13 @@ export const helpArticles: HelpArticle[] = [
       },
       {
         heading: "Add and arrange courses",
-        body: "Search from the plan or the course catalogue, then place a course in a study period. Drag a course to another term when the sequence changes. Keep prerequisite warnings in view as you move things around; they are a planning signal, not an enrolment decision.",
+        body: "Search from the plan or the course catalogue, then place a course in a study period. Drag a course to another term when the sequence changes.",
+        steps: [
+          "Use the search bar on the plan to find a course by code or title.",
+          "Pick the study period it belongs in; the preview shows units, prerequisites and offering sessions before you commit.",
+          "Drag a course between periods to reorder, or open its menu to record it as planned, enrolled, completed or a failed attempt.",
+        ],
+        tip: "Prerequisite warnings are a planning signal, not an enrolment decision. Confirm with the ANU handbook before you rely on one.",
       },
       {
         heading: "Where are class times and rooms?",
@@ -35,9 +139,85 @@ export const helpArticles: HelpArticle[] = [
     ],
   },
   {
+    slug: "study-calendar",
+    title: "Use the study calendar",
+    description: "See planned courses by study period, without class times.",
+    category: "planning",
+    productHref: "/calendar",
+    productLabel: "Open calendar",
+    sections: [
+      {
+        heading: "What the calendar shows",
+        body: "Calendar shows your plan's study periods with course counts alongside published ANU key dates. Switch between month and agenda views, and use the category filters to choose what appears. It is not a live timetable.",
+      },
+      {
+        heading: "Class times and rooms",
+        body: "Coursemap does not generate class times or room bookings. Use official ANU timetable sources when you need when and where to attend. Room finder is a separate, still-limited view.",
+      },
+      {
+        heading: "Change what appears",
+        body: "Add, move or remove courses on the plan. Calendar updates from that plan, so keep the plan current if you want the calendar to stay useful.",
+      },
+    ],
+  },
+  {
+    slug: "key-dates",
+    title: "Check key dates",
+    description:
+      "Semester starts, census dates and exam periods from the ANU calendar.",
+    category: "planning",
+    productHref: "/key-dates",
+    productLabel: "Open key dates",
+    sections: [
+      {
+        heading: "Where the dates come from",
+        body: "Key dates are imported from the official ANU university calendar and published by the Coursemap team once they have been checked. Each list links back to the ANU calendar so you can confirm a date at the source.",
+      },
+      {
+        heading: "Switch year and period",
+        body: "When more than one year has been published, use the year control to move between them. The page opens on the most recent published year and separates dates that have already passed from upcoming ones.",
+        tip: "Key dates are university-wide. Course-specific deadlines such as assessment due dates are not imported.",
+      },
+      {
+        heading: "If nothing is listed",
+        body: "A year that has not been imported yet shows an empty state with a link to the ANU calendar. Nothing is missing from your plan; the dates simply have not been published in Coursemap.",
+      },
+    ],
+  },
+  {
+    slug: "room-finder",
+    title: "Find a room on campus",
+    description:
+      "Search buildings and rooms on the Acton campus. Preview feature.",
+    category: "planning",
+    productHref: "/rooms",
+    productLabel: "Open room finder",
+    sections: [
+      {
+        heading: "Search the campus",
+        body: "Type a building name, room number or service into the search box to see matching places on the map. Pick a result to centre the map on it.",
+        steps: [
+          "Open Room finder from the Resources section of the sidebar.",
+          "Type at least part of a building name, room code or service name.",
+          "Choose a result. Buildings are listed first, then rooms and services within them.",
+        ],
+      },
+      {
+        heading: "Layers and directions",
+        body: "Layers switch map detail on and off. Directions draw a route between two places you choose as a start and end point.",
+        tip: "Indoor detail exists only for buildings the Coursemap team has mapped, so many rooms still resolve to their building entrance.",
+      },
+      {
+        heading: "Why it is marked preview",
+        body: "Room finder is still being filled in. Coverage is uneven and it does not know your timetable, so it cannot tell you where a class is. Treat it as a map, and use the official ANU timetable for class locations.",
+      },
+    ],
+  },
+  {
     slug: "understand-a-course",
     title: "Understand a course",
     description: "Search details, prerequisites and catalogue information.",
+    category: "courses",
     productHref: "/courses",
     productLabel: "Browse courses",
     sections: [
@@ -56,9 +236,32 @@ export const helpArticles: HelpArticle[] = [
     ],
   },
   {
+    slug: "prerequisite-graph",
+    title: "Read a prerequisite graph",
+    description: "What the nodes, labels and warnings on a course chain mean.",
+    category: "courses",
+    productHref: "/courses",
+    productLabel: "Browse courses",
+    sections: [
+      {
+        heading: "Columns, left to right",
+        body: "Each node is a course code. The columns read in study order: Then requires, Requires, This course and Unlocks. Lines join a prerequisite to the course that needs it, and the course you opened sits in the middle column so you can see both what leads to it and what it opens up.",
+      },
+      {
+        heading: "Completed, planned and still needed",
+        body: "A tick marks a course recorded as completed. A course already on your plan appears as a plain node, and a course you still need is highlighted. A padlock means the code was referenced in the catalogue but has not been imported yet, so it cannot be opened. The Requisites tab lists the same rules as text with your progress against each condition.",
+      },
+      {
+        heading: "When the graph is empty",
+        body: "The graph only draws course codes it could map from the catalogue wording. If a course has prerequisite text but the column reads No mapped course references yet, read the original wording on the Requisites tab. An imported reference is descriptive; it is not a verified enrolment rule until its source has been reviewed.",
+      },
+    ],
+  },
+  {
     slug: "read-requirements",
     title: "Read requirements",
     description: "Understand completed, planned and still-needed units.",
+    category: "courses",
     productHref: "/requirements",
     productLabel: "Open requirements",
     sections: [
@@ -77,9 +280,38 @@ export const helpArticles: HelpArticle[] = [
     ],
   },
   {
+    slug: "catalogue-accuracy",
+    title: "Why Coursemap can differ from the handbook",
+    description:
+      "How catalogue data is imported and what to do when it looks wrong.",
+    category: "courses",
+    productHref: "/courses",
+    productLabel: "Browse courses",
+    sections: [
+      {
+        heading: "Every record has a source",
+        body: "Courses, programmes, majors and requirement rules are imported from published ANU catalogue pages for a specific year. Coursemap records the year, the source and when the import ran, and shows the year on each course page.",
+      },
+      {
+        heading: "Rules are parsed, not retyped",
+        body: "Prerequisite and requirement text is read by an import step that turns it into structured rules. When the wording is ambiguous the record is marked for review rather than guessed, and the original text is kept so you can read it yourself.",
+      },
+      {
+        heading: "Report something that looks wrong",
+        body: "A corrected record is re-imported and published, so a fix reaches every plan that uses it.",
+        steps: [
+          "Open the Help centre and choose Correct course data.",
+          "Name the course or rule, the catalogue year shown on the page and what you expected to see.",
+          "Link the ANU page you compared it against if you have it.",
+        ],
+      },
+    ],
+  },
+  {
     slug: "account-and-degree",
     title: "Account and degree",
     description: "Update your profile, academic structures and rules year.",
+    category: "account",
     productHref: "/profile",
     productLabel: "Open your profile",
     sections: [
@@ -89,7 +321,14 @@ export const helpArticles: HelpArticle[] = [
       },
       {
         heading: "How to change your degree or catalogue year",
-        body: "Edit the programme, major and rules year on your profile, then save. Changing the catalogue year updates which course and requirement data Coursemap applies to your plan.",
+        body: "Changing the catalogue year updates which course and requirement data Coursemap applies to your plan.",
+        steps: [
+          "Open Profile and switch to the Course of study tab.",
+          "Choose the programme, then the major, minors or specialisations that apply.",
+          "Set the catalogue year that matches the rules you are enrolled under.",
+          "Save. Requirements and Academic recalculate on the next load.",
+        ],
+        tip: "Your ANU offer letter or enrolment record states which year's rules apply to you. Use that year rather than the current one.",
       },
       {
         heading: "Does Coursemap replace official academic advice?",
@@ -98,30 +337,10 @@ export const helpArticles: HelpArticle[] = [
     ],
   },
   {
-    slug: "study-calendar",
-    title: "Use the study calendar",
-    description: "See planned courses by study period, without class times.",
-    productHref: "/calendar",
-    productLabel: "Open calendar",
-    sections: [
-      {
-        heading: "What the calendar shows",
-        body: "Calendar lists the study periods in your plan and the courses sitting in each one. It is a view of your plan over time, not a live timetable.",
-      },
-      {
-        heading: "Class times and rooms",
-        body: "Coursemap does not generate class times or room bookings. Use official ANU timetable sources when you need when and where to attend. Room finder is a separate, still-limited view.",
-      },
-      {
-        heading: "Change what appears",
-        body: "Add, move or remove courses on the plan. Calendar updates from that plan, so keep the plan current if you want the calendar to stay useful.",
-      },
-    ],
-  },
-  {
     slug: "academic-record",
     title: "Read your academic record",
     description: "Review completed work, marks and units earned.",
+    category: "account",
     productHref: "/academic",
     productLabel: "Open academic record",
     sections: [
@@ -136,6 +355,33 @@ export const helpArticles: HelpArticle[] = [
       {
         heading: "Degree settings still live on profile",
         body: "Programme, major and catalogue year are edited on your profile. Academic reads those settings; it does not replace the official academic statement from ANU.",
+      },
+    ],
+  },
+  {
+    slug: "sign-in-and-access",
+    title: "Sign in and account access",
+    description: "Email sign-in, social sign-in status and signing out.",
+    category: "account",
+    productHref: "/profile",
+    productLabel: "Open your profile",
+    sections: [
+      {
+        heading: "Email and password",
+        body: "Sign in with the email address and password you registered. Your session is kept on this device until you sign out, so you will not be asked again on every visit.",
+      },
+      {
+        heading: "Social sign-in is not available yet",
+        body: "The Google and other provider buttons are placeholders. Choosing one tells you the provider is coming soon and does not start a sign-in, so nothing is created against that account.",
+      },
+      {
+        heading: "Sign out and shared devices",
+        body: "Protected pages such as Plan and Profile redirect to sign-in once the session has ended.",
+        steps: [
+          "Open Profile from the bottom of the sidebar.",
+          "Switch to the Account tab and choose Sign out.",
+        ],
+        tip: "Sign out before leaving a shared or lab computer. Closing the browser tab does not end the session.",
       },
     ],
   },
@@ -178,6 +424,66 @@ export const helpEmailReasons: HelpContactReason[] = [
 
 export function helpArticleBySlug(slug: string): HelpArticle | undefined {
   return helpArticles.find((article) => article.slug === slug);
+}
+
+export function helpCategoryById(id: HelpCategoryId): HelpCategory {
+  return (
+    helpCategories.find((category) => category.id === id) ?? {
+      id,
+      label: id,
+    }
+  );
+}
+
+export type HelpCategoryGroup = {
+  category: HelpCategory;
+  articles: HelpArticle[];
+};
+
+/** Guides grouped in category order. Empty categories are omitted. */
+export function groupHelpArticles(
+  articles: HelpArticle[] = helpArticles,
+): HelpCategoryGroup[] {
+  return helpCategories
+    .map((category) => ({
+      category,
+      articles: articles.filter((article) => article.category === category.id),
+    }))
+    .filter((group) => group.articles.length > 0);
+}
+
+/**
+ * Case-insensitive match across title, description and section headings.
+ * Every whitespace-separated term must appear somewhere in the guide.
+ */
+export function searchHelpArticles(query: string): HelpArticle[] {
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return helpArticles;
+  return helpArticles.filter((article) => {
+    const haystack = [
+      article.title,
+      article.description,
+      ...article.sections.map((section) => section.heading),
+      ...article.sections.map((section) => section.body),
+      ...article.sections.flatMap((section) => section.steps ?? []),
+      ...article.sections.map((section) => section.tip ?? ""),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
+}
+
+/** Guides in the same category as the given one, excluding it. */
+export function relatedHelpArticles(slug: string, limit = 3): HelpArticle[] {
+  const article = helpArticleBySlug(slug);
+  if (!article) return [];
+  return helpArticles
+    .filter(
+      (candidate) =>
+        candidate.category === article.category && candidate.slug !== slug,
+    )
+    .slice(0, limit);
 }
 
 export function helpSectionId(heading: string): string {
