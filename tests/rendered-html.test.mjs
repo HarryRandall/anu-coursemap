@@ -202,7 +202,7 @@ test("server-renders the complete student workspace", async () => {
   );
   assert.match(roadmapHtml, /Visual degree planning/i);
   assert.match(roadmapHtml, /Now/i);
-
+  assert.equal(load(roadmapHtml)("h1.sr-only").text(), "Roadmap");
   assert.doesNotMatch(
     roadmapHtml,
     /Where Coursemap is heading|Product direction/i,

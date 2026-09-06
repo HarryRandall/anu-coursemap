@@ -1,188 +1,281 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import { Check } from "lucide-react";
+import { Button } from "@reui/ui/button";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Check,
+  CircleDashed,
+  Loader,
+  Sparkles,
+  Telescope,
+  type LucideIcon,
+} from "lucide-react";
+import { routeIcons } from "@/components/shell/route-icons";
 import { cn } from "@/lib/cn";
 
-export type RoadmapStage = {
+export type RoadmapStatus = "shipped" | "now" | "planned" | "exploring";
+
+/** Product area an item belongs to. Maps to the sidebar icon for that route. */
+export type RoadmapArea =
+  | "plan"
+  | "courses"
+  | "requirements"
+  | "academic"
+  | "calendar"
+  | "key-dates"
+  | "rooms"
+  | "profile"
+  | "admin"
+  | "coursemap";
+
+export type RoadmapItem = {
   title: string;
   description: string;
-  items: Array<{ title: string; description: string }>;
+  area: RoadmapArea;
+  /** Where to open a shipped item. */
+  href?: string;
 };
 
-type RoadmapTimelineProps = {
-  stages: RoadmapStage[];
-  currentStage: number;
+export type RoadmapStage = {
+  id: string;
+  title: string;
+  description: string;
+  status: RoadmapStatus;
+  items: RoadmapItem[];
 };
 
-export function RoadmapTimeline({
-  stages,
-  currentStage,
-}: RoadmapTimelineProps) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const currentStageRef = useRef<HTMLLIElement>(null);
+const areaMeta: Record<RoadmapArea, { label: string; icon: LucideIcon }> = {
+  plan: { label: "Plan", icon: routeIcons.plan },
+  courses: { label: "Courses", icon: routeIcons.courses },
+  requirements: { label: "Requirements", icon: routeIcons.requirements },
+  academic: { label: "Academic", icon: routeIcons.academic },
+  calendar: { label: "Calendar", icon: routeIcons.calendar },
+  "key-dates": { label: "Key dates", icon: routeIcons["key-dates"] },
+  rooms: { label: "Room finder", icon: routeIcons.rooms },
+  profile: { label: "Profile", icon: routeIcons.profile },
+  admin: { label: "Admin", icon: routeIcons.admin },
+  coursemap: { label: "Coursemap", icon: Sparkles },
+};
 
-  const scrollByPage = (direction: "back" | "forward") => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
+const statusMeta: Record<
+  RoadmapStatus,
+  {
+    label: string;
+    icon: LucideIcon;
+    badge: string;
+    node: string;
+    strip: string;
+  }
+> = {
+  shipped: {
+    label: "Shipped",
+    icon: Check,
+    badge:
+      "bg-emerald-50 text-emerald-700 ring-emerald-200/70 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900",
+    node: "bg-emerald-500 text-white",
+    strip: "text-emerald-700 dark:text-emerald-300",
+  },
+  now: {
+    label: "In progress",
+    icon: Loader,
+    badge: "bg-primary/10 text-primary ring-primary/25",
+    node: "bg-primary text-primary-foreground ring-4 ring-primary/20",
+    strip: "text-primary",
+  },
+  planned: {
+    label: "Planned",
+    icon: CircleDashed,
+    badge:
+      "bg-sky-50 text-sky-700 ring-sky-200/70 dark:bg-sky-950/50 dark:text-sky-300 dark:ring-sky-900",
+    node: "bg-card text-sky-600 ring-2 ring-sky-300 dark:text-sky-300 dark:ring-sky-800",
+    strip: "text-sky-700 dark:text-sky-300",
+  },
+  exploring: {
+    label: "Exploring",
+    icon: Telescope,
+    badge: "bg-muted text-muted-foreground ring-border",
+    node: "bg-card text-muted-foreground ring-2 ring-input",
+    strip: "text-muted-foreground",
+  },
+};
 
-    viewport.scrollBy({
-      left: (direction === "forward" ? 1 : -1) * viewport.clientWidth * 0.72,
-      behavior: "smooth",
-    });
-  };
+function StatusBadge({ status }: { status: RoadmapStatus }) {
+  const meta = statusMeta[status];
+  const Icon = meta.icon;
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-semibold tracking-wide uppercase ring-1",
+        meta.badge,
+      )}
+    >
+      <Icon
+        size={12}
+        strokeWidth={2.5}
+        aria-hidden="true"
+        className={cn(
+          status === "now" && "animate-spin motion-reduce:animate-none",
+        )}
+        style={status === "now" ? { animationDuration: "3s" } : undefined}
+      />
+      {meta.label}
+    </span>
+  );
+}
 
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    const current = currentStageRef.current;
-    if (!viewport || !current) return;
-
-    const centreCurrentStage = () => {
-      const viewportBounds = viewport.getBoundingClientRect();
-      const currentBounds = current.getBoundingClientRect();
-      viewport.scrollTo({
-        left:
-          currentBounds.left -
-          viewportBounds.left +
-          viewport.scrollLeft +
-          currentBounds.width / 2 -
-          viewportBounds.width / 2,
-        behavior: "instant",
-      });
-    };
-
-    centreCurrentStage();
-    window.addEventListener("resize", centreCurrentStage);
-    return () => window.removeEventListener("resize", centreCurrentStage);
-  }, [currentStage]);
+function ItemCard({
+  item,
+  status,
+}: {
+  item: RoadmapItem;
+  status: RoadmapStatus;
+}) {
+  const area = areaMeta[item.area];
+  const AreaIcon = area.icon;
+  const openable = status === "shipped" && item.href;
+  const body = (
+    <>
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+        <AreaIcon size={12} aria-hidden="true" />
+        {area.label}
+      </span>
+      <h3 className="mt-2 text-[15px] leading-snug font-semibold tracking-tight text-foreground">
+        {item.title}
+      </h3>
+      <p className="mt-1.5 flex-1 text-sm leading-relaxed text-muted-foreground">
+        {item.description}
+      </p>
+      {openable ? (
+        <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+          Open
+          <ArrowRight
+            size={14}
+            aria-hidden="true"
+            className="transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+          />
+        </span>
+      ) : null}
+    </>
+  );
+  const className = cn(
+    "flex h-full flex-col rounded-xl border border-border bg-card p-4 shadow-xs",
+    status === "exploring" && "border-dashed bg-card/60 shadow-none",
+  );
 
   return (
-    <section
-      aria-label="Coursemap roadmap"
-      className="mx-auto w-full max-w-[1500px]"
-    >
-      <div className="relative">
-        <div
-          ref={viewportRef}
-          tabIndex={0}
-          aria-label="Coursemap roadmap timeline"
-          onKeyDown={(event) => {
-            if (event.key === "ArrowLeft") {
-              event.preventDefault();
-              scrollByPage("back");
-            }
-            if (event.key === "ArrowRight") {
-              event.preventDefault();
-              scrollByPage("forward");
-            }
-          }}
-          className="overflow-x-auto overscroll-x-contain scroll-smooth pb-5 outline-none"
+    <li className="h-full">
+      {openable ? (
+        <Link
+          href={item.href as string}
+          className={cn(
+            className,
+            "group transition hover:border-input hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
+          )}
         >
-          <ol className="relative flex w-max min-w-full px-[calc(50%-10rem)] before:absolute before:top-[23.25rem] before:right-0 before:left-0 before:h-px before:bg-accent">
-            {stages.map((stage, index) => {
-              const above = index % 2 === 0;
-              const done = index < currentStage;
-              const current = index === currentStage;
-              const future = index > currentStage;
+          {body}
+        </Link>
+      ) : (
+        <div className={className}>{body}</div>
+      )}
+    </li>
+  );
+}
 
-              return (
-                <li
-                  key={stage.title}
-                  ref={current ? currentStageRef : undefined}
-                  aria-current={current ? "step" : undefined}
-                  className="relative z-10 flex w-80 shrink-0 snap-center flex-col"
+export function RoadmapTimeline({ stages }: { stages: RoadmapStage[] }) {
+  return (
+    <div className="mx-auto max-w-5xl">
+      <nav aria-label="Roadmap stages">
+        <ol className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+          {stages.map((stage) => {
+            const meta = statusMeta[stage.status];
+            const Icon = meta.icon;
+            return (
+              <li key={stage.id} className="shrink-0">
+                <a
+                  href={`#${stage.id}`}
+                  aria-current={stage.status === "now" ? "step" : undefined}
+                  className={cn(
+                    "inline-flex h-9 items-center gap-2 rounded-full border border-border bg-card px-3.5 text-[13px] font-medium text-foreground shadow-xs transition hover:border-input hover:bg-accent/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
+                    stage.status === "now" && "border-primary/40 bg-primary/5",
+                  )}
                 >
-                  <article
-                    className={cn(
-                      "flex h-[22rem] flex-col border-l-2 px-6",
-                      above ? "order-1 justify-end pb-8" : "order-3 pt-8",
-                      current && "border-ring",
-                      done && "border-primary/25",
-                      future && "border-border",
-                    )}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "text-[10px] font-semibold tracking-[0.2em]",
-                        future ? "text-muted-foreground/60" : "text-primary/70",
-                      )}
-                    >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <h3 className="mt-1 flex flex-wrap items-center gap-2 text-base font-semibold tracking-tight text-foreground">
-                      {stage.title}
-                      {current && (
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-primary uppercase ring-1 ring-primary/25">
-                          In progress
-                        </span>
-                      )}
-                      {future && (
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-[9px] font-semibold tracking-[0.12em] text-muted-foreground uppercase ring-1 ring-border">
-                          Planned
-                        </span>
-                      )}
-                    </h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {stage.description}
-                    </p>
-
-                    <ul className="mt-5 space-y-4">
-                      {stage.items.map((item) => (
-                        <li key={item.title} className="group flex gap-2.5">
-                          <span
-                            aria-hidden="true"
-                            className={cn(
-                              "mt-[7px] h-px w-3 shrink-0 transition-all group-hover:w-5",
-                              future ? "bg-border" : "bg-primary/70",
-                            )}
-                          />
-                          <div className="min-w-0">
-                            <h4 className="text-[13px] leading-tight font-semibold text-foreground">
-                              {item.title}
-                            </h4>
-                            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                              {item.description}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
-
-                  <div
+                  <Icon
+                    size={14}
+                    strokeWidth={2.5}
                     aria-hidden="true"
-                    className="order-2 -ml-2.5 flex h-10 items-center"
-                  >
-                    <span
-                      className={cn(
-                        "grid size-5 shrink-0 place-items-center rounded-full",
-                        done && "bg-primary text-primary-foreground",
-                        current && "bg-primary ring-4 ring-primary/20",
-                        future && "bg-card ring-2 ring-input",
-                      )}
-                    >
-                      {done && <Check size={12} strokeWidth={3.5} />}
-                      {current && (
-                        <span className="size-1.5 rounded-full bg-card" />
-                      )}
-                    </span>
-                  </div>
-
-                  <div
-                    aria-hidden="true"
-                    className={cn("h-[22rem]", above ? "order-3" : "order-1")}
+                    className={meta.strip}
                   />
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-background/90 to-transparent"
-        />
+                  {stage.title}
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
+      <ol className="relative mt-10 space-y-14 before:absolute before:top-3 before:bottom-3 before:left-[0.6875rem] before:w-px before:bg-border sm:mt-12">
+        {stages.map((stage) => {
+          const meta = statusMeta[stage.status];
+          const NodeIcon = meta.icon;
+          return (
+            <li
+              key={stage.id}
+              id={stage.id}
+              aria-current={stage.status === "now" ? "step" : undefined}
+              className="relative scroll-mt-24 pl-10 sm:pl-12"
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute top-0.5 left-0 grid size-6 place-items-center rounded-full",
+                  meta.node,
+                )}
+              >
+                <NodeIcon size={13} strokeWidth={3} />
+              </span>
+
+              <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+                <header className="lg:sticky lg:top-24 lg:self-start">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                      {stage.title}
+                    </h2>
+                    {/* The badge is skipped where it would only repeat the title. */}
+                    {meta.label !== stage.title ? (
+                      <StatusBadge status={stage.status} />
+                    ) : null}
+                  </div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                    {stage.description}
+                  </p>
+                </header>
+
+                <ul className="mt-5 grid auto-rows-fr gap-3 sm:grid-cols-2 lg:mt-0">
+                  {stage.items.map((item) => (
+                    <ItemCard
+                      key={item.title}
+                      item={item}
+                      status={stage.status}
+                    />
+                  ))}
+                </ul>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="mt-16 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-xs sm:p-6">
+        <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
+          Order and timing change as we learn what students need. Tell us which
+          of these would help you most, or what is not here yet.
+        </p>
+        <Button asChild variant="outline">
+          <Link href="/help#contact">
+            Request a feature
+            <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </Button>
       </div>
-    </section>
+    </div>
   );
 }

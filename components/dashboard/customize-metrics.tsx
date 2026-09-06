@@ -40,11 +40,15 @@ function parseStoredMetricIds(raw: string | null): MetricId[] | null {
 /** Local listeners so a toggle in one component updates every subscriber. */
 const storageListeners = new Set<() => void>();
 let fallbackMetrics: string | null = null;
+let storageUnavailable = false;
 
 function readStoredMetrics() {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) ?? fallbackMetrics;
+    return storageUnavailable
+      ? fallbackMetrics
+      : window.localStorage.getItem(STORAGE_KEY);
   } catch {
+    storageUnavailable = true;
     return fallbackMetrics;
   }
 }
@@ -91,7 +95,9 @@ export function useSelectedMetrics() {
     fallbackMetrics = JSON.stringify(next);
     try {
       window.localStorage.setItem(STORAGE_KEY, fallbackMetrics);
+      storageUnavailable = false;
     } catch {
+      storageUnavailable = true;
       // Keep the preference for this session when browser storage is unavailable.
     }
     storageListeners.forEach((listener) => listener());

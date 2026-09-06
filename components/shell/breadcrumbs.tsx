@@ -2,33 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Award,
-  BookOpen,
-  CalendarDays,
-  ChevronRight,
-  ClipboardList,
-  CircleHelp,
-  Compass,
-  GitCompareArrows,
-  GraduationCap,
-  House,
-  Import,
-  KeyRound,
-  LayoutDashboard,
-  ListChecks,
-  MapPin,
-  MapPinned,
-  RefreshCw,
-  Shield,
-  Table,
-  Tag,
-  Target,
-  UserRound,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+import { BookOpen, ChevronRight, type LucideIcon } from "lucide-react";
 import { Fragment } from "react";
+import { routeIcons } from "@/components/shell/route-icons";
 
 type Crumb = { label: string; href?: string; icon?: LucideIcon };
 
@@ -42,13 +18,7 @@ const labels: Record<string, string> = {
   "key-dates": "Key dates",
   roadmap: "Roadmap",
   rooms: "Room finder",
-  help: "Help & support",
-  "build-your-plan": "Build your plan",
-  "understand-a-course": "Understand a course",
-  "read-requirements": "Read requirements",
-  "account-and-degree": "Account and degree",
-  "study-calendar": "Use the study calendar",
-  "academic-record": "Read your academic record",
+  help: "Help centre",
   timetable: "Timetable",
   profile: "Profile",
   admin: "Admin",
@@ -64,33 +34,11 @@ const labels: Record<string, string> = {
 };
 
 /**
- * Each crumb carries the same icon its sidebar entry uses. Admin dashboard
- * reuses the grid mark; the student home route keeps the house.
+ * Each crumb carries the same icon its sidebar entry uses, read from the
+ * shared route icon map. Admin dashboard and indoor maps are the two admin
+ * segments whose icon differs from the student route of the same name.
  */
-const icons: Record<string, LucideIcon> = {
-  academic: ClipboardList,
-  admin: Shield,
-  calendar: CalendarDays,
-  changes: GitCompareArrows,
-  courses: BookOpen,
-  dashboard: House,
-  help: CircleHelp,
-  imports: Import,
-  "key-dates": CalendarDays,
-  plan: Table,
-  profile: UserRound,
-  programmes: GraduationCap,
-  majors: Award,
-  minors: Tag,
-  specialisations: Target,
-  requirements: ListChecks,
-  roadmap: Compass,
-  roles: KeyRound,
-  rooms: MapPin,
-  sync: RefreshCw,
-  timetable: CalendarDays,
-  users: Users,
-};
+const icons: Record<string, LucideIcon> = routeIcons;
 
 const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}[A-Z]?$/iu;
 
@@ -129,9 +77,9 @@ function buildCrumbs(
           ? "Indoor maps"
           : (labels[segment] ?? fallbackLabel(segment)));
     const icon = isAdminDashboard
-      ? LayoutDashboard
+      ? routeIcons["admin-dashboard"]
       : isAdminRooms
-        ? MapPinned
+        ? routeIcons["admin-rooms"]
         : (icons[segment] ??
           (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
     crumbs.push({
@@ -146,7 +94,7 @@ function buildCrumbs(
   });
 
   if (admin && segments.length === 1) {
-    crumbs[0] = { label: "Admin", icon: Shield };
+    crumbs[0] = { label: "Admin", icon: routeIcons.admin };
   }
 
   return { crumbs, admin };
