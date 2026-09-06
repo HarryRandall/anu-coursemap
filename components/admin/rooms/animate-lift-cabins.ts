@@ -11,6 +11,9 @@ import { buildLiftCabins } from "@/lib/rooms/indoor-lift-animation";
 import type { IndoorSceneCollection } from "@/lib/rooms/indoor-3d";
 import type { IndoorPalette } from "@/lib/rooms/indoor-palette";
 
+import { buildStairFlights } from "@/lib/rooms/indoor-stairs";
+
+const STAIRS = "coursemap-illustrative-stairs";
 const CABINS = "coursemap-illustrative-lift-cabins";
 const SHAFTS = "coursemap-illustrative-lift-shafts";
 
@@ -29,9 +32,42 @@ export function animateLiftCabins(
     map.setFilter(id, [
       "all",
       (filters[index] ?? true) as ExpressionSpecification,
-      ["!=", ["get", "kind"], "lift"],
+      [
+        "!",
+        [
+          "any",
+          ["==", ["get", "kind"], "lift"],
+          [
+            "all",
+            ["==", ["get", "kind"], "stairs"],
+            [">", ["get", "servedFloorCount"], 1],
+          ],
+        ],
+      ],
     ]),
   );
+  map.addSource(STAIRS, {
+    type: "geojson",
+    data: buildStairFlights(connectors),
+  });
+  map.addLayer({
+    id: STAIRS,
+    type: "fill-extrusion",
+    source: STAIRS,
+    paint: {
+      "fill-extrusion-base": ["get", "base"],
+      "fill-extrusion-height": ["get", "height"],
+      "fill-extrusion-color": [
+        "match",
+        ["get", "part"],
+        "landing",
+        palette.wallStructural,
+        palette.wallPartition,
+      ],
+      "fill-extrusion-opacity": 0.96,
+    },
+  });
+  map.moveLayer(STAIRS, INDOOR_LAYER_IDS.slabsInactive);
   map.addSource(CABINS, {
     type: "geojson",
     data: buildLiftCabins(connectors, 0),
@@ -92,7 +128,11 @@ export function animateLiftCabins(
   function sync() {
     cancelAnimationFrame(frame);
     if (reducedMotion.matches) draw(0);
-    else if (!document.hidden) frame = requestAnimationFrame(tick);
+    else if (
+      !document.hidden &&
+      connectors.features.some((feature) => feature.properties.kind === "lift")
+    )
+      frame = requestAnimationFrame(tick);
   }
   reducedMotion.addEventListener("change", sync);
   document.addEventListener("visibilitychange", sync);
@@ -102,6 +142,8 @@ export function animateLiftCabins(
     reducedMotion.removeEventListener("change", sync);
     document.removeEventListener("visibilitychange", sync);
     if (!map.getLayer(CABINS)) return;
+    map.removeLayer(STAIRS);
+    map.removeSource(STAIRS);
     map.removeLayer(CABINS);
     map.removeLayer(SHAFTS);
     map.removeSource(CABINS);

@@ -407,8 +407,8 @@ export const IndoorMapSurface = forwardRef<
       !map ||
       !perspective ||
       hiddenLayers?.has("connectors") ||
-      !scene?.connectors.features.some(
-        (feature) => feature.properties.kind === "lift",
+      !scene?.connectors.features.some((feature) =>
+        ["lift", "stairs"].includes(String(feature.properties.kind)),
       )
     )
       return;

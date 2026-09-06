@@ -448,6 +448,7 @@ export function buildIndoorScene(
         base: bottom,
         height: top,
         liftStops: JSON.stringify(levelExtents.map((extent) => extent.bottom)),
+        servedFloorCount: levelExtents.length,
         cabinHeight: Math.min(
           2.2,
           ...levelExtents.map((extent) => (extent.top - extent.bottom) * 0.7),

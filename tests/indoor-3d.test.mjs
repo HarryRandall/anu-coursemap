@@ -9,6 +9,7 @@ const modules = await loadLibModules(
     "rooms/indoor-footprint",
     "rooms/indoor-map-migrate",
     "rooms/indoor-lift-animation",
+    "rooms/indoor-stairs",
   ],
   "indoor-3d",
 );
@@ -753,4 +754,49 @@ test("room label priority favours circulation and large rooms consistently", () 
     large: 1,
     small: 2,
   });
+});
+
+test("illustrative stairs connect served floors without changing the document", () => {
+  const shaft = {
+    type: "Feature",
+    id: "stairs",
+    properties: {
+      kind: "stairs",
+      connectorId: "stairs",
+      liftStops: "[0,8,16]",
+    },
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+          [0, 0],
+        ],
+      ],
+    },
+  };
+  const connectors = { type: "FeatureCollection", features: [shaft] };
+  const original = structuredClone(connectors);
+  const result = modules["indoor-stairs"].buildStairFlights(connectors);
+  assert.equal(result.features.length, 44);
+  assert.equal(
+    Math.max(...result.features.map((f) => f.properties.height)),
+    16,
+  );
+  assert.ok(
+    result.features.every((f) => f.properties.height > f.properties.base),
+  );
+  assert.equal(
+    result.features.filter((f) => f.properties.part === "landing").length,
+    4,
+  );
+  assert.deepEqual(connectors, original);
+  shaft.properties.liftStops = "[0]";
+  assert.equal(
+    modules["indoor-stairs"].buildStairFlights(connectors).features.length,
+    0,
+  );
 });
