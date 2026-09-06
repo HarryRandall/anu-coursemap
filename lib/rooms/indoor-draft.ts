@@ -7,6 +7,10 @@ import {
   type IndoorFootprintProjection,
 } from "@/lib/rooms/indoor-footprint";
 import type { IndoorPoint } from "@/lib/rooms/indoor-map";
+import {
+  DEFAULT_INDOOR_PALETTE,
+  type IndoorPalette,
+} from "@/lib/rooms/indoor-palette";
 
 export type IndoorDraftTool =
   "rectangle" | "corridor" | "wall" | "polygon" | "path";
@@ -23,13 +27,11 @@ export type IndoorDraftGeoJson = GeoJSON.FeatureCollection<
   IndoorDraftProperties
 >;
 
-const TOOL_COLOURS: Record<IndoorDraftTool, string> = {
-  rectangle: "#7c3aed",
-  corridor: "#2563eb",
-  wall: "#52525b",
-  polygon: "#7c3aed",
-  path: "#d97706",
-};
+function toolColour(tool: IndoorDraftTool, palette: IndoorPalette) {
+  if (tool === "wall") return palette.draftWall;
+  if (tool === "path") return palette.draftPath;
+  return palette.draftArea;
+}
 
 function samePoint(left: IndoorPoint, right: IndoorPoint) {
   return left.x === right.x && left.y === right.y;
@@ -80,12 +82,13 @@ function position(
 function properties(
   tool: IndoorDraftTool,
   draftKind: IndoorDraftProperties["draftKind"],
+  palette: IndoorPalette,
   preview = false,
 ): IndoorDraftProperties {
   return {
     draftKind,
     tool,
-    colour: TOOL_COLOURS[tool],
+    colour: toolColour(tool, palette),
     preview,
   };
 }
@@ -95,10 +98,11 @@ function pointFeature(
   point: IndoorPoint,
   tool: IndoorDraftTool,
   preview: boolean,
+  palette: IndoorPalette,
 ): GeoJSON.Feature<GeoJSON.Point, IndoorDraftProperties> {
   return {
     type: "Feature",
-    properties: properties(tool, "vertex", preview),
+    properties: properties(tool, "vertex", palette, preview),
     geometry: {
       type: "Point",
       coordinates: position(projection, point),
@@ -114,6 +118,7 @@ function pointFeature(
 export function buildIndoorDraftGeoJson(
   drag: IndoorDrag,
   projection: IndoorFootprintProjection,
+  palette: IndoorPalette = DEFAULT_INDOOR_PALETTE,
 ): IndoorDraftGeoJson {
   const features: IndoorDraftGeoJson["features"] = [];
 
@@ -128,7 +133,7 @@ export function buildIndoorDraftGeoJson(
     if (hasArea) {
       features.push({
         type: "Feature",
-        properties: properties(tool, "area"),
+        properties: properties(tool, "area", palette),
         geometry: {
           type: "Polygon",
           coordinates: [
@@ -139,13 +144,17 @@ export function buildIndoorDraftGeoJson(
     }
 
     if (isIndoorPointWithinFootprint(drag.origin, projection)) {
-      features.push(pointFeature(projection, drag.origin, tool, false));
+      features.push(
+        pointFeature(projection, drag.origin, tool, false, palette),
+      );
     }
     if (
       !samePoint(drag.origin, drag.current) &&
       isIndoorPointWithinFootprint(drag.current, projection)
     ) {
-      features.push(pointFeature(projection, drag.current, tool, true));
+      features.push(
+        pointFeature(projection, drag.current, tool, true, palette),
+      );
     }
     return { type: "FeatureCollection", features };
   }
@@ -175,7 +184,7 @@ export function buildIndoorDraftGeoJson(
   ) {
     features.push({
       type: "Feature",
-      properties: properties(tool, "area"),
+      properties: properties(tool, "area", palette),
       geometry: {
         type: "Polygon",
         coordinates: [[...coordinates, coordinates[0]]],
@@ -184,7 +193,7 @@ export function buildIndoorDraftGeoJson(
   } else if (coordinates.length >= 2) {
     features.push({
       type: "Feature",
-      properties: properties(tool, "stroke"),
+      properties: properties(tool, "stroke", palette),
       geometry: { type: "LineString", coordinates },
     });
   }
@@ -196,6 +205,7 @@ export function buildIndoorDraftGeoJson(
         point,
         tool,
         includePreview && index === points.length - 1,
+        palette,
       ),
     );
   });

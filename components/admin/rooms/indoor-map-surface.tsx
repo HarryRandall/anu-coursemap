@@ -1,11 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   addIndoorLayers,
+  applyIndoorPalette,
   INDOOR_PICKABLE_LAYER_ID_LIST,
   updateIndoorLayers,
+  type IndoorLayerGroup,
 } from "@/components/rooms/indoor-3d-layers";
+import { Alert, AlertDescription } from "@reui/components/alert";
 import { cn } from "@/lib/cn";
 import type { IndoorScene } from "@/lib/rooms/indoor-3d";
 import { buildIndoorDraftGeoJson } from "@/lib/rooms/indoor-draft";
@@ -16,6 +26,10 @@ import {
   type IndoorFootprintProjection,
 } from "@/lib/rooms/indoor-footprint";
 import type { IndoorPoint } from "@/lib/rooms/indoor-map";
+import {
+  DEFAULT_INDOOR_PALETTE,
+  type IndoorPalette,
+} from "@/lib/rooms/indoor-palette";
 
 /**
  * The editing surface: one real building footprint, in 2D or 3D.
@@ -29,18 +43,24 @@ import type { IndoorPoint } from "@/lib/rooms/indoor-map";
  */
 type MapLibreMap = import("maplibre-gl").Map;
 
-const EDITOR_MAP_STYLE: import("maplibre-gl").StyleSpecification = {
-  version: 8,
-  glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
-  sources: {},
-  layers: [
-    {
-      id: "coursemap-indoor-editor-background",
-      type: "background",
-      paint: { "background-color": "#f4f4f5" },
-    },
-  ],
-};
+const BACKGROUND_LAYER_ID = "coursemap-indoor-editor-background";
+
+function editorMapStyle(
+  palette: IndoorPalette,
+): import("maplibre-gl").StyleSpecification {
+  return {
+    version: 8,
+    glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
+    sources: {},
+    layers: [
+      {
+        id: BACKGROUND_LAYER_ID,
+        type: "background",
+        paint: { "background-color": palette.background },
+      },
+    ],
+  };
+}
 
 /** Looking straight down to draw; tilted to see the building as a whole. */
 export const PLAN_PITCH = 0;
@@ -55,7 +75,7 @@ const INDOOR_DRAFT_FILL_LAYER_ID = "coursemap-indoor-draft-fill";
 const INDOOR_DRAFT_LINE_LAYER_ID = "coursemap-indoor-draft-line";
 const INDOOR_DRAFT_VERTEX_LAYER_ID = "coursemap-indoor-draft-vertex";
 
-function addIndoorDraftLayers(map: MapLibreMap) {
+function addIndoorDraftLayers(map: MapLibreMap, palette: IndoorPalette) {
   if (!map.getSource(INDOOR_DRAFT_SOURCE_ID)) {
     map.addSource(INDOOR_DRAFT_SOURCE_ID, {
       type: "geojson",
@@ -101,12 +121,43 @@ function addIndoorDraftLayers(map: MapLibreMap) {
         "circle-color": ["get", "colour"],
         "circle-opacity": ["case", ["get", "preview"], 0.7, 1],
         "circle-radius": ["case", ["get", "preview"], 6, 4],
-        "circle-stroke-color": "#ffffff",
+        "circle-stroke-color": palette.draftVertexStroke,
         "circle-stroke-width": 1.5,
       },
     });
   }
 }
+
+function repaint(map: MapLibreMap, palette: IndoorPalette) {
+  if (map.getLayer(BACKGROUND_LAYER_ID)) {
+    map.setPaintProperty(
+      BACKGROUND_LAYER_ID,
+      "background-color",
+      palette.background,
+    );
+  }
+  if (map.getLayer(INDOOR_DRAFT_VERTEX_LAYER_ID)) {
+    map.setPaintProperty(
+      INDOOR_DRAFT_VERTEX_LAYER_ID,
+      "circle-stroke-color",
+      palette.draftVertexStroke,
+    );
+  }
+  applyIndoorPalette(map, palette);
+}
+
+export type IndoorPick = Readonly<{
+  kind: "space" | "wall" | "opening" | "connector" | "route-node";
+  id: string;
+}>;
+
+/** Camera controls the surrounding chrome can call. */
+export type IndoorMapSurfaceHandle = Readonly<{
+  zoomIn: () => void;
+  zoomOut: () => void;
+  /** Frames the current floor again. */
+  resetView: () => void;
+}>;
 
 export type IndoorMapSurfaceProps = Readonly<{
   scene: IndoorScene | null;
@@ -117,20 +168,20 @@ export type IndoorMapSurfaceProps = Readonly<{
   /** True while a drawing tool is active, so the map does not pan under it. */
   drawing: boolean;
   perspective: boolean;
+  palette?: IndoorPalette;
+  /** Layer groups switched off in the inspector. */
+  hiddenLayers?: ReadonlySet<IndoorLayerGroup>;
   onWorldPointerDown?: (point: IndoorPoint, event: PointerEvent) => void;
   onWorldPointerMove?: (point: IndoorPoint, event: PointerEvent) => void;
   onWorldPointerUp?: (point: IndoorPoint, event: PointerEvent) => void;
   onWorldDoubleClick?: (point: IndoorPoint) => void;
   /** What was clicked on the building, or null for empty space. */
-  onPick?: (
-    picked: Readonly<{
-      kind: "space" | "wall" | "opening" | "connector" | "route-node";
-      id: string;
-    }> | null,
-  ) => void;
+  onPick?: (picked: IndoorPick | null, event: MouseEvent) => void;
   onKeyDown?: (event: KeyboardEvent) => void;
-  /** Reports metres per pixel, so pixel tolerances convert to local units. */
+  /** Reports local units per pixel, so pixel tolerances convert correctly. */
   onScaleChange?: (unitsPerPixel: number) => void;
+  /** Reports the zoom level for the status bar. */
+  onZoomChange?: (zoom: number) => void;
   /**
    * The floor to frame from above. Changing this drops the camera onto that
    * floor, which is how you move between floors to draw on them.
@@ -139,25 +190,36 @@ export type IndoorMapSurfaceProps = Readonly<{
   className?: string;
 }>;
 
-export function IndoorMapSurface({
-  scene,
-  draft = null,
-  projection,
-  centre,
-  drawing,
-  perspective,
-  onWorldPointerDown,
-  onWorldPointerMove,
-  onWorldPointerUp,
-  onWorldDoubleClick,
-  onPick,
-  onKeyDown,
-  onScaleChange,
-  frameOutline = null,
-  className,
-}: IndoorMapSurfaceProps) {
+export const IndoorMapSurface = forwardRef<
+  IndoorMapSurfaceHandle,
+  IndoorMapSurfaceProps
+>(function IndoorMapSurface(
+  {
+    scene,
+    draft = null,
+    projection,
+    centre,
+    drawing,
+    perspective,
+    palette = DEFAULT_INDOOR_PALETTE,
+    hiddenLayers,
+    onWorldPointerDown,
+    onWorldPointerMove,
+    onWorldPointerUp,
+    onWorldDoubleClick,
+    onPick,
+    onKeyDown,
+    onScaleChange,
+    onZoomChange,
+    frameOutline = null,
+    className,
+  },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
+  const paletteRef = useRef(palette);
+  const frameRef = useRef<(animate: boolean) => void>(() => {});
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -170,6 +232,7 @@ export function IndoorMapSurface({
     onPick,
     onKeyDown,
     onScaleChange,
+    onZoomChange,
   });
   useEffect(() => {
     handlersRef.current = {
@@ -180,8 +243,19 @@ export function IndoorMapSurface({
       onPick,
       onKeyDown,
       onScaleChange,
+      onZoomChange,
     };
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      zoomIn: () => mapRef.current?.zoomIn(),
+      zoomOut: () => mapRef.current?.zoomOut(),
+      resetView: () => frameRef.current(true),
+    }),
+    [],
+  );
 
   const toLocal = useCallback(
     (map: MapLibreMap, clientX: number, clientY: number) => {
@@ -210,7 +284,7 @@ export function IndoorMapSurface({
         maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
         const map = new maplibregl.Map({
           container: containerRef.current,
-          style: EDITOR_MAP_STYLE,
+          style: editorMapStyle(paletteRef.current),
           center: [centre[0], centre[1]],
           zoom: 18.5,
           pitch: PLAN_PITCH,
@@ -223,12 +297,11 @@ export function IndoorMapSurface({
         });
         mapRef.current = map;
 
-        map.addControl(new maplibregl.NavigationControl({}), "top-right");
         map.on("load", () => {
           // The picker provides the campus context. Once a building is open,
           // this empty style keeps the canvas to its footprint and floors.
-          addIndoorLayers(map);
-          addIndoorDraftLayers(map);
+          addIndoorLayers(map, undefined, paletteRef.current);
+          addIndoorDraftLayers(map, paletteRef.current);
           setReady(true);
         });
 
@@ -243,32 +316,54 @@ export function IndoorMapSurface({
               ? map.queryRenderedFeatures(event.point, { layers })
               : [];
           if (!feature) {
-            pick(null);
+            pick(null, event.originalEvent);
             return;
           }
           const properties = feature.properties ?? {};
           if (typeof properties.openingId === "string") {
-            pick({ kind: "opening", id: properties.openingId });
+            pick(
+              { kind: "opening", id: properties.openingId },
+              event.originalEvent,
+            );
           } else if (typeof properties.routeNodeId === "string") {
-            pick({ kind: "route-node", id: properties.routeNodeId });
+            pick(
+              { kind: "route-node", id: properties.routeNodeId },
+              event.originalEvent,
+            );
           } else if (typeof properties.spaceId === "string") {
-            pick({ kind: "space", id: properties.spaceId });
+            pick(
+              { kind: "space", id: properties.spaceId },
+              event.originalEvent,
+            );
           } else if (typeof properties.wallId === "string") {
-            pick({ kind: "wall", id: properties.wallId });
+            pick({ kind: "wall", id: properties.wallId }, event.originalEvent);
           } else if (typeof properties.connectorId === "string") {
-            pick({ kind: "connector", id: properties.connectorId });
+            pick(
+              { kind: "connector", id: properties.connectorId },
+              event.originalEvent,
+            );
           } else {
-            pick(null);
+            pick(null, event.originalEvent);
           }
         });
         // MapLibre reports missing sprite images and the like as errors, so
-        // failure is "never finished loading", not "raised an error".
+        // failure is "never finished loading", not "raised an error". A map
+        // this effect already tore down (React runs effects twice in
+        // development) must not report itself as failed.
+        let loaded = false;
         const timeout = window.setTimeout(() => {
-          if (!map.loaded()) setFailed(true);
+          if (!cancelled && !loaded && !map.loaded()) setFailed(true);
         }, 12_000);
-        map.once("load", () => window.clearTimeout(timeout));
+        map.once("load", () => {
+          loaded = true;
+          window.clearTimeout(timeout);
+        });
+        map.once("remove", () => window.clearTimeout(timeout));
       })
-      .catch(() => setFailed(true));
+      .catch((error: unknown) => {
+        console.error("The indoor map surface could not start.", error);
+        setFailed(true);
+      });
 
     return () => {
       cancelled = true;
@@ -280,10 +375,17 @@ export function IndoorMapSurface({
   }, []);
 
   useEffect(() => {
+    paletteRef.current = palette;
     const map = mapRef.current;
     if (!ready || !map) return;
-    updateIndoorLayers(map, scene);
-  }, [ready, scene]);
+    repaint(map, palette);
+  }, [palette, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    updateIndoorLayers(map, scene, hiddenLayers);
+  }, [hiddenLayers, ready, scene]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -292,18 +394,20 @@ export function IndoorMapSurface({
       import("maplibre-gl").GeoJSONSource | undefined;
     source?.setData(
       draft
-        ? buildIndoorDraftGeoJson(draft, projection)
+        ? buildIndoorDraftGeoJson(draft, projection, palette)
         : { type: "FeatureCollection", features: [] },
     );
-  }, [draft, projection, ready]);
+  }, [draft, palette, projection, ready]);
 
   // Drawing has to take the pointer away from the map, or every stroke pans it.
+  // Plan view also stays north-up: a rotated plan makes every rectangle look
+  // skewed and every Shift-locked wall land on the wrong angle. Orbit belongs
+  // to the 3D view.
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
     const interactions = [
       map.dragPan,
-      map.dragRotate,
       map.doubleClickZoom,
       map.scrollZoom,
       map.touchZoomRotate,
@@ -312,7 +416,23 @@ export function IndoorMapSurface({
       if (drawing) interaction.disable();
       else interaction.enable();
     }
-  }, [drawing, ready]);
+    // The wheel still zooms while drawing, so an author can zoom into a
+    // corner mid-wall without switching tools.
+    if (drawing) map.scrollZoom.enable();
+
+    if (perspective && !drawing) {
+      map.dragRotate.enable();
+      map.touchZoomRotate.enableRotation();
+      map.keyboard.enableRotation();
+    } else {
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
+      map.keyboard.disableRotation();
+      if (!perspective && (map.getBearing() !== 0 || map.getPitch() !== 0)) {
+        map.easeTo({ bearing: 0, pitch: PLAN_PITCH, duration: 200 });
+      }
+    }
+  }, [drawing, perspective, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -322,7 +442,8 @@ export function IndoorMapSurface({
       const bounds = map!.getBounds();
       const container = map!.getContainer();
       const width = container.clientWidth || 1;
-      container.dataset.indoorZoom = map!.getZoom().toFixed(2);
+      const zoom = map!.getZoom();
+      container.dataset.indoorZoom = zoom.toFixed(2);
       const west = projectIndoorPoint(
         projection,
         bounds.getWest(),
@@ -334,6 +455,7 @@ export function IndoorMapSurface({
         bounds.getSouth(),
       );
       handlersRef.current.onScaleChange?.(Math.abs(east.x - west.x) / width);
+      handlersRef.current.onZoomChange?.(zoom);
     }
 
     report();
@@ -470,6 +592,7 @@ export function IndoorMapSurface({
       });
     }
 
+    frameRef.current = frame;
     frame(true);
     let width = container.clientWidth;
     let height = container.clientHeight;
@@ -487,30 +610,27 @@ export function IndoorMapSurface({
   }, [frameOutline, perspective, projection, ready]);
 
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-md border border-border bg-muted",
-        className,
-      )}
-    >
+    <div className={cn("relative overflow-hidden", className)}>
       <div
         ref={containerRef}
         aria-label="Building floor plan editor"
         // MapLibre's own stylesheet forces position: relative on this element,
         // so it has to be sized rather than positioned.
         className={cn(
-          "room-map h-full min-h-[28rem] w-full outline-none",
+          "room-map h-full min-h-[20rem] w-full outline-none",
           drawing && "cursor-crosshair",
         )}
         role="application"
         tabIndex={0}
       />
       {failed ? (
-        <p className="absolute inset-x-3 top-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300">
-          The map could not be loaded, so this building cannot be edited right
-          now.
-        </p>
+        <Alert className="absolute inset-x-3 top-3" variant="destructive">
+          <AlertDescription>
+            The map could not be loaded, so this building cannot be edited right
+            now.
+          </AlertDescription>
+        </Alert>
       ) : null}
     </div>
   );
-}
+});

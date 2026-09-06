@@ -1,20 +1,13 @@
 "use client";
+
+import { DoorOpen, RotateCcw, RotateCw, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@reui/ui/button";
 import { Checkbox } from "@reui/ui/checkbox";
 import { Field, FieldDescription } from "@reui/ui/field";
 import { Input } from "@reui/ui/input";
 import { OptionPicker } from "@/components/ui/option-picker";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@reui/ui/sheet";
-
-import { DoorOpen, SlidersHorizontal, Trash2 } from "lucide-react";
-
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
 import type { IndoorSelection } from "@/lib/rooms/indoor-editor-state";
 import {
   INDOOR_METRES_PER_LOCAL_UNIT,
@@ -62,72 +55,105 @@ function unitsFromMetres(value: string) {
 
 export type SelectionDetailsHandlers = Readonly<{
   updateSpace: (id: string, patch: Partial<CampusIndoorSpace>) => void;
+  /** Turns a space about its centre; positive degrees are clockwise. */
+  rotateSpace: (id: string, degrees: number) => void;
   updateWall: (id: string, patch: Partial<CampusIndoorWall>) => void;
   updateOpening: (id: string, patch: Partial<CampusIndoorWallOpening>) => void;
   updateConnector: (id: string, patch: Partial<CampusIndoorConnector>) => void;
   remove: () => void;
 }>;
 
-function selectionLabel(
+/** Heading for the inspector's selection tab. */
+export function selectionLabel(
   document: CampusIndoorDocument,
   selection: NonNullable<IndoorSelection>,
 ) {
   if (selection.kind === "space") {
     const space = document.spaces.find((item) => item.id === selection.id);
-    return space ? `${spaceKindLabel(space.kind)} details` : "Space details";
+    return space ? spaceKindLabel(space.kind) : "Space";
   }
-  if (selection.kind === "opening") return "Door details";
+  if (selection.kind === "opening") return "Door";
   if (selection.kind === "connector") {
     const connector = document.connectors.find(
       (item) => item.id === selection.id,
     );
-    return connector?.kind === "lift" ? "Lift details" : "Stairs details";
+    return connector?.kind === "lift" ? "Lift" : "Stairs";
   }
-  if (selection.kind === "wall") return "Wall details";
-  return "Route point details";
+  if (selection.kind === "wall") return "Wall";
+  return "Route point";
 }
 
-/** Selection editing is available when it is useful, without occupying the map. */
-export function SelectionDetailsSheet({
-  document,
-  selection,
-  handlers,
+const DEFAULT_ROTATION_STEP = 15;
+
+/**
+ * Turns a room in steps. Rooms are stored without an angle, so the step is
+ * applied as a rotation rather than set as a heading, and each press is one
+ * undo step.
+ */
+function RotationControls({
+  onRotate,
 }: {
-  document: CampusIndoorDocument;
-  selection: IndoorSelection;
-  handlers: SelectionDetailsHandlers;
+  onRotate: (degrees: number) => void;
 }) {
-  if (!selection) return null;
+  const [step, setStep] = useState(String(DEFAULT_ROTATION_STEP));
+  const degrees = Number(step);
+  const valid = Number.isFinite(degrees) && degrees > 0 && degrees <= 180;
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button className="h-11 sm:h-8" size="sm" variant="ghost" type="button">
-          <SlidersHorizontal aria-hidden="true" />
-          Edit selected
-        </Button>
-      </SheetTrigger>
-      <SheetContent>
-        <SheetHeader className="border-b border-border pr-16">
-          <SheetTitle>{selectionLabel(document, selection)}</SheetTitle>
-          <SheetDescription>
-            Update the selected item without covering the floor plan
-            permanently.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-          <PropertiesBody
-            document={document}
-            handlers={handlers}
-            selection={selection}
+    <Field>
+      <label className="flex flex-col gap-2">
+        <span className="text-sm font-medium">{"Rotate"}</span>
+        <div className="flex items-center gap-1.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled={!valid}
+                aria-label="Rotate anticlockwise"
+                onClick={() => onRotate(-degrees)}
+                size="icon-sm"
+                variant="secondary"
+              >
+                <RotateCcw aria-hidden="true" size={15} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{"Rotate anticlockwise"}</TooltipContent>
+          </Tooltip>
+          <Input
+            aria-label="Rotation step in degrees"
+            className="w-20 text-center tabular-nums"
+            inputMode="decimal"
+            max={180}
+            min={1}
+            onChange={(event) => setStep(event.target.value)}
+            type="number"
+            value={step}
           />
+          <span aria-hidden="true" className="text-xs text-muted-foreground">
+            degrees
+          </span>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                disabled={!valid}
+                aria-label="Rotate clockwise"
+                onClick={() => onRotate(degrees)}
+                size="icon-sm"
+                variant="secondary"
+              >
+                <RotateCw aria-hidden="true" size={15} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{"Rotate clockwise"}</TooltipContent>
+          </Tooltip>
         </div>
-      </SheetContent>
-    </Sheet>
+      </label>
+      <FieldDescription>{"Turn the room about its centre."}</FieldDescription>
+    </Field>
   );
 }
 
-function PropertiesBody({
+/** The editable fields for whatever is selected on the plan. */
+export function SelectionProperties({
   document,
   selection,
   handlers,
@@ -210,6 +236,9 @@ function PropertiesBody({
             />
           </label>
         </Field>
+        <RotationControls
+          onRotate={(degrees) => handlers.rotateSpace(space.id, degrees)}
+        />
         {space.kind === "room" ? (
           <>
             <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-foreground/80">
@@ -232,7 +261,7 @@ function PropertiesBody({
               </p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 {linkedDoors.length === 0
-                  ? "Use Entrances & routes to place a door on the side people enter from."
+                  ? "Use the Door tool on the wall people enter from."
                   : "The route can use these doors to enter this room."}
               </p>
             </div>

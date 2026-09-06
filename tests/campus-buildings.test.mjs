@@ -7,6 +7,7 @@ const modules = await loadLibModules(
   [
     "rooms/campus-map",
     "rooms/campus-map-query",
+    "rooms/campus-map-images",
     "rooms/indoor-map",
     "rooms/indoor-geometry",
     "rooms/routing",
@@ -928,24 +929,30 @@ test("the indoor editor is split into a picker, a shared canvas and pure modules
   assert.match(surface, /typeof properties\.openingId === "string"/);
   assert.match(
     surface,
-    /pick\(\{ kind: "opening", id: properties\.openingId \}\)/,
+    /pick\(\s*\{ kind: "opening", id: properties\.openingId \}/,
   );
   assert.match(surface, /typeof properties\.routeNodeId === "string"/);
   assert.match(
     surface,
-    /pick\(\{ kind: "route-node", id: properties\.routeNodeId \}\)/,
+    /pick\(\s*\{ kind: "route-node", id: properties\.routeNodeId \}/,
   );
   assert.match(
     indoorLayers,
     /INDOOR_PICKABLE_LAYER_ID_LIST = \[[\s\S]*INDOOR_LAYER_IDS\.route,/,
   );
-  assert.match(surface, /const EDITOR_MAP_STYLE/);
+  // The canvas is painted from the resolved theme palette, never from
+  // hardcoded hex, so dark mode gets a usable plan.
+  assert.match(surface, /function editorMapStyle\(/);
   assert.match(surface, /sources: \{\}/);
   assert.match(surface, /coursemap-indoor-editor-background/);
-  assert.match(surface, /style: EDITOR_MAP_STYLE/);
+  assert.match(surface, /"background-color": palette\.background/);
+  assert.match(surface, /applyIndoorPalette\(map, palette\)/);
+  assert.doesNotMatch(surface, /#[0-9a-f]{6}\b/i);
+  assert.doesNotMatch(indoorLayers, /#[0-9a-f]{6}\b/i);
+  assert.match(indoorLayers, /export function applyIndoorPalette/);
   assert.doesNotMatch(surface, /NEXT_PUBLIC_ROOM_MAP_STYLE_URL/);
   assert.match(surface, /const canvas = map\.getCanvas\(\)/);
-  assert.match(editor, /onPick=\{editable \? pointer\.onSelect : undefined\}/);
+  assert.match(editor, /onPick=\{editingEnabled \? handlePick : undefined\}/);
   assert.match(editor, /return remapIndoorDocumentToFootprint\(/);
   assert.match(surface, /const EDITOR_MAX_ZOOM = 22/);
   assert.match(surface, /cameraForBounds\(/);
@@ -958,31 +965,29 @@ test("the indoor editor is split into a picker, a shared canvas and pure modules
     /const pitch = perspective \? PERSPECTIVE_PITCH : PLAN_PITCH/,
   );
   assert.doesNotMatch(surface, /map\.fitBounds\(/);
-  assert.match(
-    editor,
-    /showingAllFloors = section === "floors" \|\| section === "preview"/,
-  );
-  assert.match(editor, /showInactiveLevels: showingAllFloors/);
-  assert.match(editor, /explode: showingAllFloors \? 2\.25 : 1/);
-  assert.match(
-    editor,
-    /editingEnabled = section === "floor-plan" \|\| section === "routes"/,
-  );
-  assert.match(editor, /drawing=\{editable && tool !== "select"\}/);
+  // One canvas: the 2D/3D toggle explodes the floors and rests the tools.
+  assert.match(editor, /showInactiveLevels: perspective/);
+  assert.match(editor, /explode: perspective \? 2\.25 : 1/);
+  assert.match(editor, /editingEnabled = !perspective/);
+  assert.match(editor, /drawing=\{editingEnabled && tool !== "select"\}/);
   assert.match(editor, /pointer\.cancel\(\);\s*setTool\("select"\)/);
 
-  // The breadcrumb owns the building identity and four focused tabs replace
-  // the permanent floor and properties rails.
+  // The breadcrumb owns the building identity; a tool rail, a floating floor
+  // pill and a right-hand inspector replace the old section tabs.
   assert.match(editor, /currentBreadcrumbLabel=\{building\.name\}/);
   assert.match(editor, /<EditorActions/);
-  assert.match(editor, /tabs=\{<EditorSectionTabs \/>\}/);
-  assert.match(editor, /label: "Floors"/);
-  assert.match(editor, /label: "Floor plan"/);
-  assert.match(editor, /label: "Entrances & routes"/);
-  assert.match(editor, /label: "Preview"/);
-  assert.match(editor, /<FloorsPanel/);
-  assert.match(editor, /<SelectionDetailsSheet/);
-  assert.doesNotMatch(editor, /<footer|<FloorsRail|<PropertiesPanel/);
+  assert.match(editor, /<ToolRail/);
+  assert.match(editor, /<LevelPill/);
+  assert.match(editor, /<Inspector/);
+  assert.match(editor, /<CanvasControls/);
+  assert.match(editor, /<EditorHint/);
+  assert.match(editor, /footer=\{canvasControls\}/);
+  assert.doesNotMatch(editor, /<EditorStatusBar/);
+  assert.match(editor, /useIndoorPalette\(rootRef\)/);
+  assert.doesNotMatch(
+    editor,
+    /<Tabs|<FloorsPanel|<SelectionDetailsSheet|<footer|<FloorsRail|<PropertiesPanel/,
+  );
 
   // Features that were removed must not creep back.
   for (const source of [picker, editor, surface]) {
@@ -1171,4 +1176,61 @@ test("accepts usable walking routes and rejects malformed responses", () => {
     },
   );
   assert.equal(routing.parseWalkingRouteResponse({ routes: [] }), null);
+});
+
+test("missing basemap icons reuse sprite symbols and preserve their pixel metadata", () => {
+  const image = {
+    data: { width: 2, height: 2, data: new Uint8Array(16) },
+    pixelRatio: 2,
+    sdf: true,
+  };
+  const images = new Map(
+    [
+      "building",
+      "roadblock",
+      "waste_basket",
+      "bicycle",
+      "entrance",
+      "parking",
+      "bank",
+      "stadium",
+      "swimming",
+      "circle",
+    ].map((id) => [id, image]),
+  );
+  const added = new Map();
+  const map = {
+    hasImage: (id) => images.has(id) || added.has(id),
+    getImage: (id) => images.get(id),
+    addImage: (id, data, options) => added.set(id, { data, options }),
+  };
+  const resolve = modules["campus-map-images"].resolveCampusMapImage;
+  for (const id of [
+    "office",
+    "bollard",
+    "recycling",
+    "bicycle_parking",
+    "gate",
+    "motorcycle_parking",
+    "atm",
+    "sports_centre",
+    "swimming_pool",
+    "cycle_barrier",
+    "athletics",
+    "lift_gate",
+    "unrecognised-poi",
+  ]) {
+    resolve(map, id);
+    assert.equal(added.get(id).data, image.data);
+    assert.equal(added.get(id).options.pixelRatio, 2);
+    assert.equal(added.get(id).options.sdf, true);
+  }
+  resolve(map, "building");
+  assert.equal(added.has("building"), false);
+  resolve(map, "office");
+  assert.equal(added.size, 13);
+  // Do not hide a broken custom sprite with an invisible placeholder.
+  images.clear();
+  resolve(map, "custom-pattern");
+  assert.equal(added.has("custom-pattern"), false);
 });

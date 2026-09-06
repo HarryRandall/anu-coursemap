@@ -171,7 +171,7 @@ export function EditorActions({
               </Field>
               {confirmingPublished && publishBlocked ? (
                 <p
-                  className="mt-3 text-xs leading-5 text-rose-700 dark:text-rose-300"
+                  className="mt-3 text-xs leading-5 text-destructive"
                   role="alert"
                 >
                   {publishBlocked}

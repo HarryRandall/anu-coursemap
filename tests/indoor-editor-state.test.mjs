@@ -232,6 +232,39 @@ test("moving and resizing a room go through the shared geometry helpers", () => 
   });
 });
 
+test("rotating a room keeps its centre and becomes an undoable polygon", () => {
+  const before = initial();
+  const rotated = apply(before, {
+    type: "space/rotate",
+    id: "room-g01",
+    degrees: 90,
+  });
+  const geometry = rotated.document.spaces[0].geometry;
+  assert.equal(geometry.type, "polygon");
+  assert.equal(geometry.points.length, 4);
+  const xs = geometry.points.map((point) => point.x);
+  const ys = geometry.points.map((point) => point.y);
+  assert.ok(Math.abs((Math.min(...xs) + Math.max(...xs)) / 2 - 70) < 1e-9);
+  assert.ok(Math.abs((Math.min(...ys) + Math.max(...ys)) / 2 - 60) < 1e-9);
+  assert.ok(Math.abs(Math.max(...xs) - Math.min(...xs) - 80) < 1e-9);
+  assert.ok(Math.abs(Math.max(...ys) - Math.min(...ys) - 100) < 1e-9);
+  assert.equal(rotated.dirty, true);
+
+  const undone = apply(rotated, { type: "undo" });
+  assert.deepEqual(
+    undone.document.spaces[0].geometry,
+    before.document.spaces[0].geometry,
+  );
+
+  // A turn that would poke a corner through the outline is refused whole.
+  const refused = apply(before, {
+    type: "space/rotate",
+    id: "room-g01",
+    degrees: 45,
+  });
+  assert.equal(refused, before);
+});
+
 test("rejects room, wall and connector edits outside the floor outline", () => {
   const start = initial();
   const outsideRoom = {

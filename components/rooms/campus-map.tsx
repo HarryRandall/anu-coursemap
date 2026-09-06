@@ -1,4 +1,5 @@
 "use client";
+import { resolveCampusMapImage } from "@/lib/rooms/campus-map-images";
 import { Button } from "@reui/ui/button";
 
 import { useEffect, useRef, useState } from "react";
@@ -439,6 +440,9 @@ export function CampusMap({
           style: MAP_STYLE_URL,
           zoom: campus.initialZoom,
         });
+        map.setMissingStyleImageResolver((id) =>
+          resolveCampusMapImage(map, id),
+        );
         mapRef.current = map;
         mapLibreRef.current = maplibregl;
 

@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadLibModules } from "./helpers/lib-modules.mjs";
 
-const { "indoor-drag": drag, "indoor-draft": draft } = await loadLibModules(
-  ["rooms/indoor-drag", "rooms/indoor-draft"],
+const {
+  "indoor-drag": drag,
+  "indoor-draft": draft,
+  "indoor-palette": paletteModule,
+} = await loadLibModules(
+  ["rooms/indoor-drag", "rooms/indoor-draft", "rooms/indoor-palette"],
   "indoor-drag",
 );
 
@@ -207,7 +211,27 @@ test("a rectangle draft projects its live area and current corner", () => {
   assert.equal(area.geometry.type, "Polygon");
   assert.equal(area.geometry.coordinates[0].length, 5, "the ring is closed");
   assert.equal(area.properties.tool, "corridor");
-  assert.equal(area.properties.colour, "#2563eb");
+  // Draft colours come from the theme palette, so dark mode is not painted
+  // with light-mode hex.
+  assert.equal(
+    area.properties.colour,
+    paletteModule.DEFAULT_INDOOR_PALETTE.draftArea,
+  );
+  const themed = draft.buildIndoorDraftGeoJson(
+    {
+      kind: "draw-rect",
+      tool: "corridor",
+      origin: { x: 20, y: 25 },
+      current: { x: 80, y: 75 },
+    },
+    footprint,
+    { ...paletteModule.DEFAULT_INDOOR_PALETTE, draftArea: "rgb(1, 2, 3)" },
+  );
+  assert.equal(
+    themed.features.find((feature) => feature.properties.draftKind === "area")
+      .properties.colour,
+    "rgb(1, 2, 3)",
+  );
 
   const vertices = collection.features.filter(
     (feature) => feature.properties.draftKind === "vertex",

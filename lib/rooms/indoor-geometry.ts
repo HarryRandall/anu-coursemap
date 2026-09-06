@@ -484,6 +484,78 @@ export function translateIndoorGeometry(
 }
 
 /**
+ * Rotates a geometry clockwise on screen (positive degrees) about a point,
+ * its own centre by default. A rectangle is axis-aligned by definition and an
+ * ellipse has no orientation of its own, so both come back as polygons; a
+ * whole number of turns leaves either untouched.
+ */
+export function rotateIndoorGeometry(
+  geometry: IndoorSpaceGeometry,
+  degrees: number,
+  centre: IndoorPoint = indoorGeometryCentre(geometry),
+): IndoorSpaceGeometry {
+  const turns = degrees / 360;
+  if (Number.isInteger(turns)) return geometry;
+
+  const radians = (degrees * Math.PI) / 180;
+  const cosine = Math.cos(radians);
+  const sine = Math.sin(radians);
+  const rotate = (point: IndoorPoint): IndoorPoint => {
+    const dx = point.x - centre.x;
+    const dy = point.y - centre.y;
+    return {
+      x: centre.x + dx * cosine - dy * sine,
+      y: centre.y + dx * sine + dy * cosine,
+    };
+  };
+  const source =
+    geometry.type === "polygon"
+      ? normalisePolygonPoints(geometry.points)
+      : indoorGeometryRing(geometry);
+  return { type: "polygon", points: source.map(rotate) };
+}
+
+function segmentsCross(
+  a: IndoorPoint,
+  b: IndoorPoint,
+  c: IndoorPoint,
+  d: IndoorPoint,
+) {
+  const orientation = (p: IndoorPoint, q: IndoorPoint, r: IndoorPoint) => {
+    const value = (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    return value === 0 ? 0 : value > 0 ? 1 : -1;
+  };
+  const o1 = orientation(a, b, c);
+  const o2 = orientation(a, b, d);
+  const o3 = orientation(c, d, a);
+  const o4 = orientation(c, d, b);
+  return o1 !== o2 && o3 !== o4 && o1 !== 0 && o2 !== 0 && o3 !== 0 && o4 !== 0;
+}
+
+/**
+ * True when no two non-adjacent edges of the ring cross. A figure-of-eight
+ * room has no single inside, so the editor refuses it with a clear message
+ * rather than storing a shape nothing downstream can extrude or route.
+ */
+export function isSimpleIndoorRing(points: readonly IndoorPoint[]) {
+  const ring = normalisePolygonPoints(points);
+  const count = ring.length;
+  if (count < 4) return true;
+  for (let i = 0; i < count; i += 1) {
+    const a = ring[i];
+    const b = ring[(i + 1) % count];
+    for (let j = i + 2; j < count; j += 1) {
+      // The last edge closes back onto the first, so they are adjacent too.
+      if (i === 0 && j === count - 1) continue;
+      const c = ring[j];
+      const d = ring[(j + 1) % count];
+      if (segmentsCross(a, b, c, d)) return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Refits a geometry into a new axis-aligned extent. Polygons scale about the
  * source extent, so a degenerate source axis translates rather than dividing by
  * zero.
