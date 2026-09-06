@@ -22,15 +22,16 @@ import {
 const STORAGE_KEY = "coursemap.dashboard.cards.v1";
 
 function isMetricId(value: unknown): value is MetricId {
-  return typeof value === "string" && value in METRIC_OPTIONS;
+  return typeof value === "string" && Object.hasOwn(METRIC_OPTIONS, value);
 }
 
 function parseStoredMetricIds(raw: string | null): MetricId[] | null {
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    const ids = Array.isArray(parsed) ? parsed.filter(isMetricId) : [];
-    return ids.length > 0 ? ids : null;
+    return Array.isArray(parsed)
+      ? [...new Set(parsed.filter(isMetricId))]
+      : null;
   } catch {
     return null;
   }
@@ -38,6 +39,15 @@ function parseStoredMetricIds(raw: string | null): MetricId[] | null {
 
 /** Local listeners so a toggle in one component updates every subscriber. */
 const storageListeners = new Set<() => void>();
+let fallbackMetrics: string | null = null;
+
+function readStoredMetrics() {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) ?? fallbackMetrics;
+  } catch {
+    return fallbackMetrics;
+  }
+}
 
 function subscribeToStoredMetrics(listener: () => void) {
   storageListeners.add(listener);
@@ -58,7 +68,7 @@ function subscribeToStoredMetrics(listener: () => void) {
 export function useSelectedMetrics() {
   const raw = useSyncExternalStore(
     subscribeToStoredMetrics,
-    () => window.localStorage.getItem(STORAGE_KEY),
+    readStoredMetrics,
     () => null,
   );
   const hydrated = useSyncExternalStore(
@@ -72,13 +82,18 @@ export function useSelectedMetrics() {
   );
 
   const toggle = useCallback((id: MetricId) => {
-    const base = parseStoredMetricIds(
-      window.localStorage.getItem(STORAGE_KEY),
-    ) ?? [...DEFAULT_METRIC_IDS];
+    const base = parseStoredMetricIds(readStoredMetrics()) ?? [
+      ...DEFAULT_METRIC_IDS,
+    ];
     const next = base.includes(id)
       ? base.filter((item) => item !== id)
       : METRIC_ORDER.filter((item) => base.includes(item) || item === id);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    fallbackMetrics = JSON.stringify(next);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, fallbackMetrics);
+    } catch {
+      // Keep the preference for this session when browser storage is unavailable.
+    }
     storageListeners.forEach((listener) => listener());
   }, []);
 

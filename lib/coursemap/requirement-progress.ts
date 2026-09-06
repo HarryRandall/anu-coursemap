@@ -95,12 +95,16 @@ function bucketTargetUnits(node: PlanRequirementNode): number | null {
   return node.minimumUnits ?? node.maximumUnits ?? null;
 }
 
-/** Last record wins so a completed result supersedes an old planned entry. */
+/** Keep earned credit even when a later planned entry repeats the course. */
 function activeAttempts(attempts: readonly Attempt[]) {
   const byCourse = new Map<string, Attempt>();
   attempts
     .filter((attempt) => attempt.status !== "failed")
-    .forEach((attempt) => byCourse.set(attempt.courseCode, attempt));
+    .forEach((attempt) => {
+      if (byCourse.get(attempt.courseCode)?.status !== "completed") {
+        byCourse.set(attempt.courseCode, attempt);
+      }
+    });
   return [...byCourse.values()];
 }
 
@@ -233,6 +237,7 @@ function stateFromUnits({
 }): RequirementNodeState {
   if (!measurable) return "unmeasured";
   const mapped = completedUnits + plannedUnits;
+  if (maximumUnits !== null && mapped > maximumUnits) return "over_limit";
   if (targetUnits === null && targetCourses === null) {
     // A maximum-only rule is a cap rather than a goal: it is fine until the
     // plan crosses it. Without any stated bound there is nothing to measure.
@@ -292,8 +297,7 @@ function conditionProgress(
 /**
  * Combines child states the way the group's operator reads: every child for
  * `all_of`, one child for `any_of` and a count of children for
- * `minimum_count`. Unmeasured children are ignored so one free-text rule
- * does not hide progress on its siblings.
+ * `minimum_count`. Unknown rules must not certify a group as satisfied.
  */
 function groupStateFromChildren(
   group: PlanRequirementGroup,
@@ -307,16 +311,18 @@ function groupStateFromChildren(
   const active = measurable.some(
     (child) => child.state === "satisfied" || child.state === "in_progress",
   );
-  if (measurable.some((child) => child.state === "over_limit")) {
-    return "over_limit";
-  }
   const required =
     group.operator === "any_of"
       ? 1
       : group.operator === "minimum_count"
         ? (group.minimumCount ?? 1)
-        : measurable.length;
+        : children.length;
   if (satisfied >= required) return "satisfied";
+  const possible = children.filter((child) => child.state !== "over_limit");
+  if (possible.length < required) return "over_limit";
+  if (children.some((child) => child.state === "unmeasured")) {
+    return "unmeasured";
+  }
   return active ? "in_progress" : "not_started";
 }
 
@@ -379,7 +385,7 @@ function groupProgress(
     unitState === "unmeasured"
       ? childState
       : childState === "unmeasured"
-        ? unitState
+        ? "unmeasured"
         : order[Math.min(order.indexOf(unitState), order.indexOf(childState))];
 
   return {

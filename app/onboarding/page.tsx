@@ -36,9 +36,12 @@ export default async function OnboardingPage() {
               shortly.
             </AlertDescription>
           </Alert>
-          <div className="mt-4">
+          <div className="mt-4 flex gap-2">
             <Button asChild size="sm" variant="default">
               <ReuiLink href="/onboarding">Try again</ReuiLink>
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <ReuiLink href="/dashboard">Skip for now</ReuiLink>
             </Button>
           </div>
         </Card>

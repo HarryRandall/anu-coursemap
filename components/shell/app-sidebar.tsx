@@ -235,10 +235,12 @@ export function AppSidebar({ admin }: { admin: boolean }) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavSections
-          sections={admin ? adminNav : studentNav}
-          onNavigate={closeMobileNav}
-        />
+        <nav aria-label={admin ? "Admin navigation" : "Student navigation"}>
+          <NavSections
+            sections={admin ? adminNav : studentNav}
+            onNavigate={closeMobileNav}
+          />
+        </nav>
 
         {/* Cross-links between the student and admin shells share the same item styling as the main navigation. */}
         {!admin && canAccessAdmin ? (

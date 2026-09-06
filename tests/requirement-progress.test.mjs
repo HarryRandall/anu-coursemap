@@ -166,7 +166,7 @@ test("a maximum-only rule reports over_limit once the plan exceeds it", () => {
   assert.equal(over.get(requirementNodeKey(rule)).state, "over_limit");
 });
 
-test("rules without an evaluable test are unmeasured and do not block siblings", () => {
+test("unmeasured mandatory rules prevent certifying their group", () => {
   const tagRule = condition(1, {
     conditionKind: "tag",
     tag: "Transdisciplinary Problem-Solving",
@@ -183,7 +183,8 @@ test("rules without an evaluable test are unmeasured and do not block siblings",
     catalogue,
   });
   assert.equal(progress.get(requirementNodeKey(tagRule)).state, "unmeasured");
-  assert.equal(progress.get(requirementNodeKey(root)).state, "satisfied");
+  assert.equal(progress.get(requirementNodeKey(root)).state, "unmeasured");
+  assert.equal(progress.get(requirementNodeKey(listRule)).state, "satisfied");
 });
 
 test("any_of groups are satisfied by one alternative and count shared courses once", () => {
@@ -229,4 +230,80 @@ test("an empty tree yields no progress", () => {
     catalogue,
   });
   assert.equal(progress.size, 0);
+});
+
+test("a bounded unit rule still enforces its maximum after meeting the minimum", () => {
+  const rule = condition(1, {
+    conditionKind: "subject",
+    subjectCode: "COMP",
+    minimumUnits: 6,
+    maximumUnits: 6,
+  });
+  const result = requirementTreeProgress({
+    root: group(10, "all_of", [rule]),
+    attempts: [
+      attempt("a", "COMP1100", "completed"),
+      attempt("b", "COMP1110", "planned"),
+    ],
+    catalogue,
+  });
+  assert.equal(result.get(requirementNodeKey(rule)).state, "over_limit");
+});
+
+test("completed credit survives a later planned duplicate", () => {
+  const rule = condition(1, { minimumUnits: 6, options: [option("COMP1100")] });
+  for (const attempts of [
+    [
+      attempt("a", "COMP1100", "completed"),
+      attempt("b", "COMP1100", "planned"),
+    ],
+    [
+      attempt("b", "COMP1100", "planned"),
+      attempt("a", "COMP1100", "completed"),
+    ],
+  ]) {
+    const result = requirementTreeProgress({
+      root: group(10, "all_of", [rule]),
+      attempts,
+      catalogue,
+    }).get(requirementNodeKey(rule));
+    assert.equal(result.state, "satisfied");
+    assert.equal(result.completedUnits, 6);
+    assert.equal(result.plannedUnits, 0);
+  }
+});
+
+test("an exceeded alternative does not invalidate a satisfied any_of branch", () => {
+  const root = group(10, "any_of", [
+    condition(1, {
+      conditionKind: "subject",
+      subjectCode: "COMP",
+      maximumUnits: 0,
+    }),
+    condition(2, { minimumUnits: 6, options: [option("COMP1100")] }),
+  ]);
+  const result = requirementTreeProgress({
+    root,
+    attempts: [attempt("a", "COMP1100", "completed")],
+    catalogue,
+  });
+  assert.equal(result.get(requirementNodeKey(root)).state, "satisfied");
+});
+
+test("minimum_count requires enough measured alternatives", () => {
+  const root = group(
+    10,
+    "minimum_count",
+    [
+      condition(1, { minimumUnits: 6, options: [option("COMP1100")] }),
+      condition(2, { conditionKind: "tag", tag: "Unknown", minimumUnits: 6 }),
+    ],
+    { minimumCount: 2 },
+  );
+  const result = requirementTreeProgress({
+    root,
+    attempts: [attempt("a", "COMP1100", "completed")],
+    catalogue,
+  });
+  assert.equal(result.get(requirementNodeKey(root)).state, "unmeasured");
 });

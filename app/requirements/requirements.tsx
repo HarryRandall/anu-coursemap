@@ -378,6 +378,7 @@ function RequirementConditionView({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
             <p className="text-sm font-medium text-foreground">
+              <span className="sr-only">Structured interpretation: </span>
               {interpretation || condition.sourceText}
             </p>
             <StateBadge progress={progress} />

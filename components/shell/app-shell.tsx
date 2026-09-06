@@ -35,10 +35,11 @@ export function AppShell({
   fill = false,
   fullBleed = false,
 }: AppShellProps) {
-  const defaultOpen = useSidebarDefaultOpen();
+  const { open, setOpen } = useSidebarDefaultOpen();
   return (
     <SidebarProvider
-      defaultOpen={defaultOpen}
+      open={open}
+      onOpenChange={setOpen}
       className={cn(
         // A filled page is exactly one viewport tall and scrolls nothing at
         // the document level, so no OS scrollbar is drawn over the window
