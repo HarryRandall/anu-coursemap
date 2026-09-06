@@ -115,6 +115,22 @@ const adminNav: NavSection[] = [
   },
 ];
 
+/** Shown to students who hold an admin role. */
+const adminEntryNav: NavSection[] = [
+  {
+    label: "Administration",
+    items: [{ href: "/admin/dashboard", label: "Admin console", icon: Shield }],
+  },
+];
+
+/** Shown at the bottom of the admin shell. */
+const studentEntryNav: NavSection[] = [
+  {
+    label: null,
+    items: [{ href: "/dashboard", label: "Back to student home", icon: Map }],
+  },
+];
+
 function NavMenuItem({
   item,
   onNavigate,
@@ -224,40 +240,18 @@ export function AppSidebar({ admin }: { admin: boolean }) {
           onNavigate={closeMobileNav}
         />
 
-        {!admin && canAccessAdmin && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Admin console">
-                    <Link href="/admin/dashboard" onClick={closeMobileNav}>
-                      <Shield aria-hidden="true" />
-                      <span>Admin console</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {admin && (
-          <SidebarGroup className="mt-auto">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild tooltip="Back to student home">
-                    <Link href="/dashboard" onClick={closeMobileNav}>
-                      <Map aria-hidden="true" />
-                      <span>Back to student home</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        {/* Cross-links between the student and admin shells share the same item styling as the main navigation. */}
+        {!admin && canAccessAdmin ? (
+          <NavSections sections={adminEntryNav} onNavigate={closeMobileNav} />
+        ) : null}
+        {admin ? (
+          <div className="mt-auto">
+            <NavSections
+              sections={studentEntryNav}
+              onNavigate={closeMobileNav}
+            />
+          </div>
+        ) : null}
       </SidebarContent>
 
       <SidebarFooter>
