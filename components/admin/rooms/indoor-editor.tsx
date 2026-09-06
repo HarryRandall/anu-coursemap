@@ -1,5 +1,5 @@
 "use client";
-import { Alert, AlertDescription } from "@reui/components/alert";
+import { toast } from "sonner";
 
 import { useSearchParams } from "next/navigation";
 import {
@@ -169,10 +169,6 @@ export function IndoorEditor({
   const [savingStatus, setSavingStatus] = useState<
     "draft" | "published" | null
   >(null);
-  const [notice, setNotice] = useState<{
-    ok: boolean;
-    message: string;
-  } | null>(null);
   const unsavedNavigation = useUnsavedNavigation(state.dirty);
   const rootRef = useRef<HTMLDivElement>(null);
   const surfaceRef = useRef<IndoorMapSurfaceHandle>(null);
@@ -344,7 +340,6 @@ export function IndoorEditor({
 
   async function save(status: "draft" | "published", name: string) {
     setSavingStatus(status);
-    setNotice(null);
     if (name !== state.name) dispatch({ type: "map/rename", name });
     const sourceDocument = document;
     const sourceName = name;
@@ -357,8 +352,8 @@ export function IndoorEditor({
         revision: savedRecord.revision,
         status,
       });
-      setNotice({ ok: result.ok, message: result.message });
       if (result.ok) {
+        toast.success(result.message);
         setSavedRecord((current) => ({
           ...current,
           name,
@@ -373,15 +368,15 @@ export function IndoorEditor({
           sourceDocument,
           sourceName,
         });
+      } else {
+        toast.error(result.message);
       }
     } catch (error) {
-      setNotice({
-        ok: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "This floor plan could not be saved.",
-      });
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "This floor plan could not be saved.",
+      );
     } finally {
       setSavingStatus(null);
     }
@@ -487,16 +482,6 @@ export function IndoorEditor({
         )}
         ref={rootRef}
       >
-        {notice ? (
-          <Alert
-            className="mx-3 mt-2 shrink-0"
-            role="status"
-            variant={notice.ok ? "success" : "destructive"}
-          >
-            <AlertDescription>{notice.message}</AlertDescription>
-          </Alert>
-        ) : null}
-
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <ToolRail
             disabled={!level || !editingEnabled}
