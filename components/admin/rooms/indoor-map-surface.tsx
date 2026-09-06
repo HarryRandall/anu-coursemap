@@ -1,4 +1,5 @@
 "use client";
+import type { CampusIndoorSpace } from "@/lib/rooms/indoor-map";
 
 import { animateLiftCabins } from "@/components/admin/rooms/animate-lift-cabins";
 import {
@@ -13,6 +14,7 @@ import {
   addIndoorLayers,
   applyIndoorPalette,
   INDOOR_PICKABLE_LAYER_ID_LIST,
+  INDOOR_SOURCE_IDS,
   updateIndoorLayers,
   type IndoorLayerGroup,
 } from "@/components/rooms/indoor-3d-layers";
@@ -130,6 +132,35 @@ function addIndoorDraftLayers(map: MapLibreMap, palette: IndoorPalette) {
 }
 
 function repaint(map: MapLibreMap, palette: IndoorPalette) {
+  if (map.getLayer("coursemap-selected-connector-marker")) {
+    map.setPaintProperty(
+      "coursemap-selected-connector-marker",
+      "circle-color",
+      palette.selection,
+    );
+    map.setPaintProperty(
+      "coursemap-selected-connector-marker",
+      "circle-stroke-color",
+      palette.labelText,
+    );
+    map.setPaintProperty(
+      "coursemap-selected-connector-label",
+      "text-color",
+      palette.labelText,
+    );
+    map.setPaintProperty(
+      "coursemap-selected-connector-label",
+      "text-halo-color",
+      palette.background,
+    );
+  }
+  if (map.getLayer("coursemap-selected-connector-outline")) {
+    map.setPaintProperty(
+      "coursemap-selected-connector-outline",
+      "line-color",
+      palette.labelText,
+    );
+  }
   if (map.getLayer(BACKGROUND_LAYER_ID)) {
     map.setPaintProperty(
       BACKGROUND_LAYER_ID,
@@ -162,6 +193,7 @@ export type IndoorMapSurfaceHandle = Readonly<{
 
 export type IndoorMapSurfaceProps = Readonly<{
   scene: IndoorScene | null;
+  spaces?: readonly CampusIndoorSpace[];
   /** The active authoring gesture, rendered separately from saved geometry. */
   draft?: IndoorDrag | null;
   projection: IndoorFootprintProjection;
@@ -169,6 +201,7 @@ export type IndoorMapSurfaceProps = Readonly<{
   /** True while a drawing tool is active, so the map does not pan under it. */
   drawing: boolean;
   perspective: boolean;
+  drawingAngle?: number;
   palette?: IndoorPalette;
   /** Layer groups switched off in the inspector. */
   hiddenLayers?: ReadonlySet<IndoorLayerGroup>;
@@ -198,10 +231,12 @@ export const IndoorMapSurface = forwardRef<
   {
     scene,
     draft = null,
+    spaces,
     projection,
     centre,
     drawing,
     perspective,
+    drawingAngle = 0,
     palette = DEFAULT_INDOOR_PALETTE,
     hiddenLayers,
     onWorldPointerDown,
@@ -282,6 +317,7 @@ export const IndoorMapSurface = forwardRef<
     void import("maplibre-gl")
       .then((maplibregl) => {
         if (cancelled || !containerRef.current) return;
+        setReady(false);
         maplibregl.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
         const map = new maplibregl.Map({
           container: containerRef.current,
@@ -302,6 +338,48 @@ export const IndoorMapSurface = forwardRef<
           // The picker provides the campus context. Once a building is open,
           // this empty style keeps the canvas to its footprint and floors.
           addIndoorLayers(map, undefined, paletteRef.current);
+          map.addLayer({
+            id: "coursemap-selected-connector-outline",
+            type: "line",
+            source: INDOOR_SOURCE_IDS.connectors,
+            filter: ["==", ["get", "highlight"], true],
+            paint: {
+              "line-color": paletteRef.current.labelText,
+              "line-width": 3,
+            },
+          });
+          map.addSource("coursemap-selected-connector", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+          });
+          map.addLayer({
+            id: "coursemap-selected-connector-marker",
+            type: "circle",
+            source: "coursemap-selected-connector",
+            paint: {
+              "circle-radius": 8,
+              "circle-color": paletteRef.current.selection,
+              "circle-stroke-color": paletteRef.current.labelText,
+              "circle-stroke-width": 3,
+            },
+          });
+          map.addLayer({
+            id: "coursemap-selected-connector-label",
+            type: "symbol",
+            source: "coursemap-selected-connector",
+            layout: {
+              "text-field": ["concat", ["get", "name"], " · selected"],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 13,
+              "text-offset": [0, 1.6],
+              "text-allow-overlap": true,
+            },
+            paint: {
+              "text-color": paletteRef.current.labelText,
+              "text-halo-color": paletteRef.current.background,
+              "text-halo-width": 2,
+            },
+          });
           addIndoorDraftLayers(map, paletteRef.current);
           setReady(true);
         });
@@ -309,13 +387,19 @@ export const IndoorMapSurface = forwardRef<
         map.on("click", (event) => {
           const pick = handlersRef.current.onPick;
           if (!pick) return;
-          const layers = INDOOR_PICKABLE_LAYER_ID_LIST.filter((layerId) =>
-            map.getLayer(layerId),
-          );
-          const [feature] =
+          const layers = [
+            "coursemap-illustrative-lift-cabins",
+            "coursemap-illustrative-stairs",
+            ...INDOOR_PICKABLE_LAYER_ID_LIST,
+          ].filter((layerId) => map.getLayer(layerId));
+          const features =
             layers.length > 0
               ? map.queryRenderedFeatures(event.point, { layers })
               : [];
+          const feature =
+            features.find(
+              (feature) => typeof feature.properties?.connectorId === "string",
+            ) ?? features[0];
           if (!feature) {
             pick(null, event.originalEvent);
             return;
@@ -385,7 +469,46 @@ export const IndoorMapSurface = forwardRef<
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
+    if (!map.getSource("coursemap-selected-connector")) return;
     updateIndoorLayers(map, scene, hiddenLayers);
+    const selected = hiddenLayers?.has("connectors")
+      ? []
+      : (scene?.connectors.features ?? []).filter(
+          (feature) => feature.properties.highlight === true,
+        );
+    (
+      map.getSource(
+        "coursemap-selected-connector",
+      ) as import("maplibre-gl").GeoJSONSource
+    ).setData({
+      type: "FeatureCollection",
+      features: selected.flatMap((feature) => {
+        if (feature.geometry.type !== "Polygon") return [];
+        const points = feature.geometry.coordinates[0].slice(0, -1);
+        return [
+          {
+            type: "Feature" as const,
+            properties: feature.properties,
+            geometry: {
+              type: "Point" as const,
+              coordinates: points.reduce<number[]>(
+                ([x, y], point) => [
+                  x + point[0] / points.length,
+                  y + point[1] / points.length,
+                ],
+                [0, 0],
+              ),
+            },
+          },
+        ];
+      }),
+    });
+
+    map.setLayoutProperty(
+      "coursemap-selected-connector-outline",
+      "visibility",
+      hiddenLayers?.has("connectors") ? "none" : "visible",
+    );
   }, [hiddenLayers, ready, scene]);
 
   useEffect(() => {
@@ -395,10 +518,10 @@ export const IndoorMapSurface = forwardRef<
       import("maplibre-gl").GeoJSONSource | undefined;
     source?.setData(
       draft
-        ? buildIndoorDraftGeoJson(draft, projection, palette)
+        ? buildIndoorDraftGeoJson(draft, projection, palette, spaces)
         : { type: "FeatureCollection", features: [] },
     );
-  }, [draft, palette, projection, ready]);
+  }, [draft, palette, projection, ready, spaces]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -416,9 +539,7 @@ export const IndoorMapSurface = forwardRef<
   }, [hiddenLayers, palette, perspective, ready, scene]);
 
   // Drawing has to take the pointer away from the map, or every stroke pans it.
-  // Plan view also stays north-up: a rotated plan makes every rectangle look
-  // skewed and every Shift-locked wall land on the wrong angle. Orbit belongs
-  // to the 3D view.
+  // Plan view follows the drawing axes; free orbit belongs to 3D.
   useEffect(() => {
     const map = mapRef.current;
     if (!ready || !map) return;
@@ -444,11 +565,14 @@ export const IndoorMapSurface = forwardRef<
       map.dragRotate.disable();
       map.touchZoomRotate.disableRotation();
       map.keyboard.disableRotation();
-      if (!perspective && (map.getBearing() !== 0 || map.getPitch() !== 0)) {
-        map.easeTo({ bearing: 0, pitch: PLAN_PITCH, duration: 200 });
+      if (
+        !perspective &&
+        (map.getBearing() !== drawingAngle || map.getPitch() !== 0)
+      ) {
+        map.easeTo({ bearing: drawingAngle, pitch: PLAN_PITCH, duration: 200 });
       }
     }
-  }, [drawing, perspective, ready]);
+  }, [drawing, drawingAngle, perspective, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -578,7 +702,7 @@ export const IndoorMapSurface = forwardRef<
       map!.setMinZoom(null);
       map!.setMaxZoom(EDITOR_MAX_ZOOM);
       const camera = map!.cameraForBounds(frameBounds, {
-        bearing: 0,
+        bearing: drawingAngle,
         maxZoom: EDITOR_MAX_ZOOM,
         padding: EDITOR_FRAME_PADDING,
         pitch,
@@ -600,7 +724,7 @@ export const IndoorMapSurface = forwardRef<
       container!.dataset.indoorMinZoom = minimumZoom.toFixed(2);
       container!.dataset.indoorMaxZoom = EDITOR_MAX_ZOOM.toFixed(2);
       map!.easeTo({
-        bearing: 0,
+        bearing: drawingAngle,
         center: camera.center,
         duration: animate && !reduceMotion ? 400 : 0,
         pitch,
@@ -623,7 +747,7 @@ export const IndoorMapSurface = forwardRef<
     });
     observer.observe(container);
     return () => observer.disconnect();
-  }, [frameOutline, perspective, projection, ready]);
+  }, [frameOutline, drawingAngle, perspective, projection, ready]);
 
   return (
     <div className={cn("relative overflow-hidden", className)}>

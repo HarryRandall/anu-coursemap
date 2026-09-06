@@ -920,7 +920,7 @@ test("the indoor editor is split into a picker, a shared canvas and pure modules
   // between map coordinates and the units a document is authored in.
   assert.match(surface, /projectIndoorPoint\(/);
   assert.match(surface, /queryRenderedFeatures\(/);
-  assert.match(surface, /INDOOR_PICKABLE_LAYER_ID_LIST\.filter/);
+  assert.match(surface, /INDOOR_PICKABLE_LAYER_ID_LIST[\s\S]*?\]\.filter/);
   assert.match(surface, /map\.getLayer\(layerId\)/);
   assert.match(
     surface,
@@ -952,7 +952,7 @@ test("the indoor editor is split into a picker, a shared canvas and pure modules
   assert.match(indoorLayers, /export function applyIndoorPalette/);
   assert.doesNotMatch(surface, /NEXT_PUBLIC_ROOM_MAP_STYLE_URL/);
   assert.match(surface, /const canvas = map\.getCanvas\(\)/);
-  assert.match(editor, /onPick=\{editingEnabled \? handlePick : undefined\}/);
+  assert.match(editor, /onPick=\{handlePick\}/);
   assert.match(editor, /return remapIndoorDocumentToFootprint\(/);
   assert.match(surface, /const EDITOR_MAX_ZOOM = 22/);
   assert.match(surface, /cameraForBounds\(/);

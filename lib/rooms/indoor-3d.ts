@@ -40,6 +40,7 @@ export type IndoorSceneOptions = Readonly<{
   /** The floor being worked on or walked through, drawn most prominently. */
   activeLevelId?: string | null;
   /** Rooms drawn as the destination. */
+  highlightConnectorIds?: ReadonlySet<string>;
   highlightSpaceIds?: ReadonlySet<string>;
   /** Route edges drawn as the way to go. */
   routeEdgeIds?: ReadonlySet<string>;
@@ -442,6 +443,7 @@ export function buildIndoorScene(
       projection,
       {
         connectorId: connector.id,
+        highlight: options.highlightConnectorIds?.has(connector.id) ?? false,
         kind: connector.kind,
         name: connector.name,
         accessibility: connector.accessibility,

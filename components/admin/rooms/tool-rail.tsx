@@ -201,7 +201,7 @@ export function ToolRail({
                       aria-label={definition.label}
                       onClick={() => onSelect(definition.tool)}
                       size="icon"
-                      variant={active ? "secondary" : "ghost"}
+                      variant={active ? "default" : "ghost"}
                     >
                       <definition.icon aria-hidden="true" size={18} />
                     </Button>

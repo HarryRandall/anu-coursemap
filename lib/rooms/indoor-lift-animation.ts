@@ -84,6 +84,7 @@ export function buildLiftCabins(
           },
           properties: {
             connectorId: shaft.properties.connectorId,
+            highlight: shaft.properties.highlight ?? false,
             part: name,
             base: base + bottom,
             height: base + top,

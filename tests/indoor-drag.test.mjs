@@ -288,7 +288,7 @@ test("a shaped-room draft fills only after it has a valid closed ring", () => {
   assert.equal(collection.features[0].geometry.coordinates[0].length, 4);
 });
 
-test("draft geometry never crosses outside the building or through a void", () => {
+test("drafts flag invalid rectangles and path crossings", () => {
   const footprintWithVoid = {
     ...footprint,
     polygons: [
@@ -316,16 +316,18 @@ test("draft geometry never crosses outside the building or through a void", () =
   );
   assert.equal(
     crossingPath.features.some(
-      (feature) => feature.properties.draftKind === "stroke",
+      (feature) =>
+        feature.properties.draftKind === "stroke" &&
+        feature.properties.colour === "#ef4444",
     ),
-    false,
+    true,
   );
-  assert.equal(
+  assert.ok(
     crossingPath.features.filter(
-      (feature) => feature.properties.draftKind === "vertex",
-    ).length,
-    1,
-    "the invalid current preview is omitted",
+      (feature) =>
+        feature.properties.draftKind === "vertex" &&
+        feature.properties.colour === "#ef4444",
+    ).length >= 2,
   );
 
   const outsideRectangle = draft.buildIndoorDraftGeoJson(
@@ -339,13 +341,15 @@ test("draft geometry never crosses outside the building or through a void", () =
   );
   assert.equal(
     outsideRectangle.features.some(
-      (feature) => feature.properties.draftKind === "area",
+      (feature) =>
+        feature.properties.draftKind === "area" &&
+        feature.properties.colour === "#ef4444",
     ),
-    false,
+    true,
   );
   assert.equal(
     outsideRectangle.features.some((feature) => feature.properties.preview),
-    false,
+    true,
   );
 });
 

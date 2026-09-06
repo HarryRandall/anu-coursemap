@@ -1,4 +1,6 @@
 "use client";
+import { buildingDrawingAngle } from "@/lib/rooms/indoor-orientation";
+import { Input } from "@reui/ui/input";
 import { toast } from "sonner";
 
 import { useSearchParams } from "next/navigation";
@@ -181,6 +183,9 @@ export function IndoorEditor({
   // Pitched 3D unprojects onto the ground plane, so geometry edits are
   // plan-only and the tools rest until the author returns to plan view.
   const editingEnabled = !perspective;
+  const [manualDrawingAngle, setDrawingAngle] = useState<number | null>(null);
+  const drawingAngle =
+    manualDrawingAngle ?? buildingDrawingAngle(footprint?.outline ?? []);
   const authoredRouteEdgeIds = useMemo(
     () => indoorAuthoredRouteEdgeIds(document),
     [document],
@@ -207,6 +212,10 @@ export function IndoorEditor({
             activeLevelId: level?.id ?? null,
             showInactiveLevels: perspective,
             routeEdgeIds: authoredRouteEdgeIds,
+            highlightConnectorIds:
+              state.selection?.kind === "connector"
+                ? new Set([state.selection.id])
+                : undefined,
             highlightSpaceIds:
               state.selection?.kind === "space"
                 ? new Set([state.selection.id])
@@ -231,6 +240,7 @@ export function IndoorEditor({
     tool,
     selection: state.selection,
     editingEnabled,
+    drawingAngle,
     snapSettings,
     dispatch,
     onToolDone: () => setTool("select"),
@@ -243,6 +253,7 @@ export function IndoorEditor({
   const selectTool = useCallback(
     (nextTool: IndoorTool) => {
       cancelPointer();
+      setPerspective(false);
       setTool(nextTool);
     },
     [cancelPointer],
@@ -306,12 +317,13 @@ export function IndoorEditor({
   const pointerSelect = pointer.onSelect;
   const handlePick = useCallback(
     (picked: Parameters<typeof pointerSelect>[0]) => {
-      pointerSelect(picked);
+      if (perspective) dispatch({ type: "select", selection: picked });
+      else pointerSelect(picked);
       // A fresh pick is what the author wants to look at, so the inspector
       // follows it rather than staying on layers or issues.
       if (picked) setInspectorTab("selection");
     },
-    [pointerSelect],
+    [pointerSelect, perspective],
   );
 
   function selectLevel(levelId: string) {
@@ -484,7 +496,7 @@ export function IndoorEditor({
       >
         <div className="flex min-h-0 flex-1 flex-col md:flex-row">
           <ToolRail
-            disabled={!level || !editingEnabled}
+            disabled={!level}
             footer={canvasControls}
             onSelect={selectTool}
             tool={tool}
@@ -494,6 +506,47 @@ export function IndoorEditor({
             aria-label="Floor plan canvas"
             className="relative flex min-h-[28rem] min-w-0 flex-1 flex-col md:min-h-0"
           >
+            <div className="flex flex-wrap items-center gap-3 border-b bg-card px-3 py-2 text-xs">
+              <label className="flex items-center gap-2">
+                Building orientation
+                <Input
+                  aria-label="Building orientation in degrees"
+                  type="number"
+                  step="1"
+                  min="-180"
+                  max="180"
+                  className="h-8 w-20"
+                  value={drawingAngle}
+                  onChange={(event) => {
+                    cancelPointer();
+                    setDrawingAngle(Number(event.target.value));
+                  }}
+                />
+                °
+              </label>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  cancelPointer();
+                  setDrawingAngle(null);
+                }}
+              >
+                Align to building
+              </Button>
+              <span>
+                {perspective
+                  ? "3D preview · choose a tool to draw"
+                  : `${toolDefinition(tool).label} · Plan view`}
+              </span>
+              {editingEnabled && pointer.drag.kind !== "idle" ? (
+                <span>Red: building boundary · Amber: room contact</span>
+              ) : null}
+              <span>
+                Grid: {snapSettings.grid ? "On" : "Off"} · Walls and corners:{" "}
+                {snapSettings.geometry ? "On" : "Off"}
+              </span>
+            </div>
             {level && footprint ? (
               <IndoorMapSurface
                 centre={building.coordinates}
@@ -503,7 +556,7 @@ export function IndoorEditor({
                 frameOutline={level.outline}
                 hiddenLayers={hiddenLayers}
                 onKeyDown={editingEnabled ? pointer.onKeyDown : undefined}
-                onPick={editingEnabled ? handlePick : undefined}
+                onPick={handlePick}
                 onScaleChange={pointer.onUnitsPerPixel}
                 onWorldDoubleClick={
                   editingEnabled ? pointer.onDoubleClick : undefined
@@ -519,9 +572,13 @@ export function IndoorEditor({
                 }
                 palette={palette}
                 perspective={perspective}
+                drawingAngle={drawingAngle}
                 projection={footprint}
                 ref={surfaceRef}
                 scene={scene}
+                spaces={document.spaces.filter(
+                  (space) => space.levelId === level.id,
+                )}
               />
             ) : (
               <div className="grid flex-1 place-items-center p-6 text-center">

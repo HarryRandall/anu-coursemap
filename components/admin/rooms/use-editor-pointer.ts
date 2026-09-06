@@ -1,4 +1,5 @@
 "use client";
+import { alignedRectangle } from "@/lib/rooms/indoor-orientation";
 
 import { useCallback, useMemo, useRef, useState, type Dispatch } from "react";
 import type { SnapSettings } from "@/components/admin/rooms/editor-status-bar";
@@ -150,6 +151,7 @@ export function useEditorPointer({
   tool,
   selection,
   editingEnabled = true,
+  drawingAngle = 0,
   snapSettings = { grid: true, geometry: true },
   dispatch,
   onToolDone,
@@ -162,6 +164,7 @@ export function useEditorPointer({
   selection: IndoorSelection;
   /** Pitched 3D unprojects onto the ground plane, so geometry edits are plan-only. */
   editingEnabled?: boolean;
+  drawingAngle?: number;
   snapSettings?: SnapSettings;
   dispatch: Dispatch<IndoorEditorAction>;
   onToolDone: () => void;
@@ -201,6 +204,7 @@ export function useEditorPointer({
       const scale = scaleRef.current;
       const grid = gridStepsForScale(scale);
       const result = snapPoint(point, targets, SNAP_TOLERANCE_PIXELS / scale, {
+        drawingAngle,
         gridStep: snapSettings.grid ? grid.minorUnits : undefined,
         axisOrigin: origin ?? null,
         axisLock: shiftRef.current,
@@ -208,7 +212,7 @@ export function useEditorPointer({
       setSnap(result);
       return result.point;
     },
-    [snapSettings.grid, targets],
+    [drawingAngle, snapSettings.grid, targets],
   );
 
   const onViewChange = useCallback((context: { scale: number }) => {
@@ -407,6 +411,7 @@ export function useEditorPointer({
         setBoundaryMessage(null);
         setDrag({
           kind: "draw-rect",
+          drawingAngle,
           tool,
           origin: point,
           current: point,
@@ -469,6 +474,7 @@ export function useEditorPointer({
           return;
         }
         setBoundaryMessage(null);
+        gestureRef.current = true;
         dispatch({
           type: "connector/add",
           connector: {
@@ -562,6 +568,7 @@ export function useEditorPointer({
       editingEnabled,
       finishDraw,
       footprint,
+      drawingAngle,
       level,
       onToolDone,
       resolve,
@@ -697,14 +704,23 @@ export function useEditorPointer({
     if (current.kind === "draw-rect") {
       const bounds = drawnRectangleBounds(current);
       if (bounds && level) {
-        const geometry = {
-          type: "rectangle" as const,
-          x: bounds.minX,
-          y: bounds.minY,
-          width: bounds.maxX - bounds.minX,
-          height: bounds.maxY - bounds.minY,
-          cornerRadius: 0,
-        };
+        const geometry = current.drawingAngle
+          ? {
+              type: "polygon" as const,
+              points: alignedRectangle(
+                current.origin,
+                current.current,
+                current.drawingAngle,
+              ),
+            }
+          : {
+              type: "rectangle" as const,
+              x: bounds.minX,
+              y: bounds.minY,
+              width: bounds.maxX - bounds.minX,
+              height: bounds.maxY - bounds.minY,
+              cornerRadius: 0,
+            };
         if (
           !isIndoorRingWithinFootprint(indoorGeometryRing(geometry), footprint)
         ) {

@@ -51,6 +51,7 @@ export function buildStairFlights(
         },
         properties: {
           connectorId: shaft.properties.connectorId,
+          highlight: shaft.properties.highlight ?? false,
           base: Math.max(stops[0], top - thickness),
           height: top,
           part: id.includes("landing") ? "landing" : "tread",

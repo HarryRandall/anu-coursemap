@@ -52,7 +52,7 @@ export function CanvasControls({
               aria-label="Snap to grid"
               onClick={() => onSnapChange({ ...snap, grid: !snap.grid })}
               size="icon-sm"
-              variant={snap.grid ? "secondary" : "ghost"}
+              variant={snap.grid ? "default" : "ghost"}
             >
               <Grid3x3 aria-hidden="true" size={15} />
             </Button>
@@ -68,7 +68,7 @@ export function CanvasControls({
                 onSnapChange({ ...snap, geometry: !snap.geometry })
               }
               size="icon-sm"
-              variant={snap.geometry ? "secondary" : "ghost"}
+              variant={snap.geometry ? "default" : "ghost"}
             >
               <Magnet aria-hidden="true" size={15} />
             </Button>
@@ -138,7 +138,7 @@ export function CanvasControls({
               aria-label="Plan view"
               onClick={() => onPerspectiveChange(false)}
               size="icon-sm"
-              variant={perspective ? "ghost" : "secondary"}
+              variant={perspective ? "ghost" : "default"}
             >
               <Square aria-hidden="true" size={14} />
             </Button>
@@ -155,7 +155,7 @@ export function CanvasControls({
               aria-label="3D view"
               onClick={() => onPerspectiveChange(true)}
               size="icon-sm"
-              variant={perspective ? "secondary" : "ghost"}
+              variant={perspective ? "default" : "ghost"}
             >
               <Box aria-hidden="true" size={14} />
             </Button>

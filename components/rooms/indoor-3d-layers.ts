@@ -194,7 +194,12 @@ function paintColours(
       "fill-extrusion-color": openingColour(palette),
     },
     [INDOOR_LAYER_IDS.connectors]: {
-      "fill-extrusion-color": palette.connector,
+      "fill-extrusion-color": [
+        "case",
+        ["==", ["get", "highlight"], true],
+        palette.selection,
+        palette.connector,
+      ],
     },
     [INDOOR_LAYER_IDS.connectorsRoute]: {
       "fill-extrusion-color": palette.route,
