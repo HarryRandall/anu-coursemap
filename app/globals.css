@@ -4,26 +4,8 @@
 /* ------------------------------------------------------------------ */
 /* ReUI foundations                                                    */
 /* ------------------------------------------------------------------ */
-/* Semantic colour roles, state variants and component styles come from the
-   vendored ReUI theme (third-party MIT source; see
-   docs/design-system/provenance.md). Its raw token values are defined on
-   :root / .dark-mode further down so the whole product — not just the
-   design-system laboratory — reads them. */
-@import "../components/design-system/reui/theme.css";
-
-/* The design-system laboratory (app/design-system) runs its own, second
-   Tailwind build. Its vendor trees and lab-only compositions stay out of the
-   production stylesheet; production scans only the ReUI primitives and
-   modules it actually renders. */
-@source not "../components/design-system/untitled";
-@source not "../components/design-system/reui/catalogue";
-@source not "../components/design-system/coursemap";
-@source not "../components/design-system/lab";
-@source not "../components/design-system/review";
-@source not "../components/design-system/shortlist";
-@source not "../components/design-system/comparison";
-@source not "../components/design-system/redesign";
-@source not "./design-system";
+/* ReUI component styles use the product theme values defined below. */
+@import "../components/reui/theme.css";
 
 @plugin "tailwindcss-animate";
 
@@ -68,6 +50,14 @@
 /* Design tokens (Tailwind v4 @theme)                                  */
 /* ------------------------------------------------------------------ */
 @theme {
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 1rem;
+
   --animate-caret-blink: caret-blink 1s infinite;
 
   @keyframes caret-blink {
@@ -132,23 +122,22 @@
 /* ------------------------------------------------------------------ */
 /* Product theme — ReUI semantic tokens                                */
 /* ------------------------------------------------------------------ */
-/* The vendored ReUI theme maps utilities (bg-background, text-primary …)
-   onto these raw variables via @theme inline. The design-system laboratory
-   scopes its own copies under .reui-scope, which sits closer in the DOM and
-   therefore still wins inside lab previews. Primary is the Coursemap violet
-   (violet-600 in light, violet-500 in dark). */
+/* ReUI semantic tokens with Coursemap violet branding. */
 :root {
+  --radius: 0.375rem;
+  --skeleton: color-mix(in oklab, var(--foreground) 12%, var(--background));
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  --card: var(--background);
+  --tooltip-background: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
+  --popover: var(--background);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.541 0.281 293.009);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
+  --secondary: var(--background);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
+  --muted: var(--background);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
@@ -191,17 +180,18 @@
 .dark-mode {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: var(--background);
+  --tooltip-background: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.269 0 0);
+  --popover: var(--background);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.606 0.25 292.717);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.269 0 0);
+  --secondary: var(--background);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: var(--background);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
+  --accent: color-mix(in oklab, var(--foreground) 7%, var(--background));
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: var(--color-red-400);
@@ -383,54 +373,25 @@
   }
 }
 
-@keyframes find-background-in {
+@keyframes find-in {
   from {
-    border-radius: 0.5rem;
-    transform: scale(var(--find-scale-x), var(--find-scale-y));
-  }
-  to {
-    border-radius: 0.75rem;
-    transform: none;
-  }
-}
-
-@keyframes find-content-in {
-  from {
-    clip-path: inset(
-      0 calc(100% - var(--find-trigger-width))
-        calc(100% - var(--find-trigger-height)) 0 round 0.5rem
-    );
-  }
-  to {
-    clip-path: inset(0 round 0.75rem);
-  }
-}
-
-@keyframes find-surface-out {
-  to {
     opacity: 0;
+    transform: translateY(6px);
   }
-}
-
-@keyframes find-closing-field-out {
-  from {
-    width: 100%;
-  }
-  to {
-    width: var(--find-trigger-width);
-  }
-}
-
-@keyframes find-overlay-out {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes find-dialog-presence-out {
-  from,
   to {
     opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes find-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }
 
@@ -569,50 +530,19 @@
   letter-spacing: -0.04em;
 }
 
-/* Vercel Find: the field grows into a modal without scaling its contents. */
-.find-dialog {
-  transition: height 180ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: height;
+/* Keep the search surface steady while its results change. */
+.find-dialog[data-state="open"] {
+  animation: find-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .find-dialog[data-state="closed"] {
-  animation: find-dialog-presence-out 180ms linear;
+  animation: find-out 120ms ease-in;
 }
 
-.find-dialog-background {
-  transform-origin: top left;
-  will-change: transform;
-}
-
-.find-dialog[data-state="open"] .find-dialog-background {
-  animation: find-background-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.find-dialog-content {
-  will-change: clip-path;
-}
-
-.find-dialog[data-state="open"] .find-dialog-content {
-  animation: find-content-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.find-closing-field {
-  display: none;
-  width: 100%;
-}
-
-.find-dialog[data-state="closed"] .find-dialog-background,
-.find-dialog[data-state="closed"] .find-dialog-content {
-  animation: find-surface-out 45ms ease-in both;
-}
-
-.find-dialog[data-state="closed"] .find-closing-field {
-  display: flex;
-  animation: find-closing-field-out 180ms cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-.find-overlay[data-state="closed"] {
-  animation: find-overlay-out 180ms ease-in both;
+@media (prefers-reduced-motion: reduce) {
+  .find-dialog[data-state] {
+    animation: none;
+  }
 }
 
 .find-command-list {
@@ -702,5 +632,92 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Product surfaces stay flat; state contrast is independent of muted surfaces. */
+@layer base {
+  .style-nova .cn-input:not(:disabled),
+  .style-nova .cn-textarea:not(:disabled),
+  .style-nova .cn-select-trigger:not(:disabled),
+  .style-nova .cn-input-group,
+  .style-nova .cn-button-variant-outline:not(:disabled) {
+    background-color: var(--background);
+  }
+
+  .style-nova .cn-skeleton {
+    background-color: var(--skeleton);
+  }
+
+  @media (hover: hover) {
+    .style-nova
+      .cn-button-variant-ghost[data-size^="icon"]:not(:disabled):not(
+        [aria-disabled="true"]
+      ):hover {
+      background-color: var(--accent);
+    }
+
+    .style-nova .cn-button-variant-outline:not(:disabled):hover,
+    .style-nova .cn-select-trigger:not(:disabled):hover {
+      background-color: var(--accent);
+    }
+  }
+}
+
+/* Page sections use one tab rhythm; the indicator stays above the divider. */
+.style-nova .cn-tabs-list[data-variant="line"] {
+  height: 48px;
+  min-width: max-content;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0;
+}
+
+.style-nova .cn-tabs-list[data-variant="line"] .cn-tabs-trigger {
+  height: 48px;
+  flex: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0 20px;
+  font-size: 14px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.style-nova .cn-tabs-trigger[data-state="active"] {
+  color: var(--foreground);
+}
+
+.style-nova
+  .cn-tabs-list[data-variant="line"]
+  .cn-tabs-trigger[data-state="active"]::after {
+  opacity: 1;
+  background-color: var(--primary);
+  bottom: 0;
+}
+
+/* Clickable controls share a pointer, including Radix menu and select items. */
+.style-nova
+  :where(
+    button,
+    a[href],
+    summary,
+    [role="button"],
+    [role="tab"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    [role="combobox"],
+    [role="option"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"]
+  ):not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .style-nova .cn-skeleton {
+    animation: none;
   }
 }

@@ -54,19 +54,6 @@ export const accent: Record<
 export type Tone =
   "neutral" | "brand" | "success" | "warning" | "danger" | "info";
 
-export const toneClasses: Record<Tone, string> = {
-  neutral: "border-border bg-muted/50 text-muted-foreground",
-  brand: "border-primary/25 bg-primary/10 text-primary",
-  success:
-    "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300",
-  warning:
-    "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/60 dark:text-amber-300",
-  danger:
-    "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300",
-  info: "border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/60 dark:text-sky-300",
-};
-
-/** Map an effective plan status to a tone + label. */
 export const statusTone: Record<EffectiveStatus, Tone> = {
   completed: "success",
   failed: "danger",
@@ -97,3 +84,13 @@ export function parseTone(state: string): Tone {
       return "neutral";
   }
 }
+
+/** Map Coursemap statuses onto the standard ReUI badge variants. */
+export const badgeVariantForTone = {
+  neutral: "outline",
+  brand: "primary-light",
+  success: "success-light",
+  warning: "warning-light",
+  danger: "destructive-light",
+  info: "info-light",
+} as const;

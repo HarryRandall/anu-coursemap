@@ -16,8 +16,7 @@
     "incremental": true,
     "paths": {
       "@/*": ["./*"],
-      "@uui/*": ["./components/design-system/untitled/*"],
-      "@reui/*": ["./components/design-system/reui/*"]
+      "@reui/*": ["./components/reui/*"]
     },
     "plugins": [
       {

@@ -1,8 +1,5 @@
 "use client";
-
-import { TriangleAlert, X } from "lucide-react";
-import { useRef, useState, type ReactNode, type RefObject } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@reui/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -12,7 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@reui/ui/dialog";
+
+import { TriangleAlert, X } from "lucide-react";
+import { useRef, useState, type ReactNode, type RefObject } from "react";
 
 /**
  * Confirmation for an action with broad visibility or data impact. The
@@ -77,7 +77,7 @@ export function ConfirmDialog({
             ?.querySelector<HTMLButtonElement>("[data-confirm-cancel]")
             ?.focus();
         }}
-        overlayClassName="bg-zinc-950/25 backdrop-blur-[1px]"
+
         ref={contentRef}
         showCloseButton={false}
       >
@@ -113,6 +113,7 @@ export function ConfirmDialog({
             data-confirm-cancel
             onClick={() => changeOpen(false)}
             type="button"
+            variant="outline"
           >
             {cancelLabel}
           </Button>
@@ -120,7 +121,7 @@ export function ConfirmDialog({
             disabled={pending}
             onClick={confirm}
             type="button"
-            variant={destructive ? "danger" : "primary"}
+            variant={destructive ? "destructive" : "default"}
           >
             {pending ? "Working..." : confirmLabel}
           </Button>

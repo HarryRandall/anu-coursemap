@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Card } from "@reui/ui/card";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Sparkline, type SparklineVariant } from "@/components/ui/sparkline";
@@ -80,7 +81,7 @@ export function StatTile({
   );
 
   const classes = cn(
-    "flex h-full flex-col rounded-lg border border-border/80 bg-card px-3.5 py-3 text-foreground shadow-xs",
+    "h-full gap-0 px-3.5 py-3",
     href &&
       "transition hover:border-input hover:bg-accent/40 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/20 focus-visible:outline-none",
     className,
@@ -88,11 +89,14 @@ export function StatTile({
 
   if (href) {
     return (
-      <Link className={classes} href={href}>
-        {body}
+      <Link
+        className="block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        href={href}
+      >
+        <Card className={classes}>{body}</Card>
       </Link>
     );
   }
 
-  return <div className={classes}>{body}</div>;
+  return <Card className={classes}>{body}</Card>;
 }

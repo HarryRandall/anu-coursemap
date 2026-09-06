@@ -1,18 +1,15 @@
 "use client";
+import { Button } from "@reui/ui/button";
+import { Input } from "@reui/ui/input";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@reui/ui/popover";
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Funnel, ListFilter, Search, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/field";
+
 import { encodeNegatableValue, parseNegatableValue } from "@/lib/filter-params";
 import { OptionMenu } from "@/components/ui/option-menu";
-import { Tooltip } from "@/components/ui/tooltip";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 export type FilterConfig = {
   key: string;
@@ -57,7 +54,13 @@ export function FilterBar({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [localQuery, setLocalQuery] = useState(searchParams.get("q") ?? "");
+  const urlQuery = searchParams.get("q") ?? "";
+  const [localQuery, setLocalQuery] = useState(urlQuery);
+  const [previousUrlQuery, setPreviousUrlQuery] = useState(urlQuery);
+  if (urlQuery !== previousUrlQuery) {
+    setPreviousUrlQuery(urlQuery);
+    setLocalQuery(urlQuery);
+  }
   const [isPending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   const [field, setField] = useState<FilterConfig | null>(null);
@@ -166,34 +169,36 @@ export function FilterBar({
         </label>
         {filters.length > 0 ? (
           <Popover onOpenChange={openMenu} open={menuOpen}>
-            <Tooltip
-              content={
-                active.length > 0
-                  ? `${active.length} filter${active.length === 1 ? "" : "s"} applied`
-                  : "Filter"
-              }
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  aria-label={
-                    active.length > 0
-                      ? `Filter (${active.length} active)`
-                      : "Filter"
-                  }
-                  aria-pressed={active.length > 0}
-                  className="size-10 shrink-0"
-                  size="icon"
-                  variant={active.length > 0 ? "subtle" : "secondary"}
-                >
-                  {/* A solid funnel reads as "filtering" at a glance; the
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <Button
+                    aria-label={
+                      active.length > 0
+                        ? `Filter (${active.length} active)`
+                        : "Filter"
+                    }
+                    aria-pressed={active.length > 0}
+                    className="size-10 shrink-0"
+                    size="icon"
+                    variant={active.length > 0 ? "secondary" : "outline"}
+                    type="button"
+                  >
+                    {/* A solid funnel reads as "filtering" at a glance; the
                     outline is the resting state. */}
-                  <Funnel
-                    aria-hidden="true"
-                    fill={active.length > 0 ? "currentColor" : "none"}
-                    size={16}
-                  />
-                </Button>
-              </PopoverTrigger>
+                    <Funnel
+                      aria-hidden="true"
+                      fill={active.length > 0 ? "currentColor" : "none"}
+                      size={16}
+                    />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                {active.length > 0
+                  ? `${active.length} filter${active.length === 1 ? "" : "s"} applied`
+                  : "Filter"}
+              </TooltipContent>
             </Tooltip>
             <PopoverContent align="end" className="w-56 p-1.5">
               {field ? (

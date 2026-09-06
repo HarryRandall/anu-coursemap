@@ -39,16 +39,26 @@ function highlightJson(json: string) {
   return content;
 }
 
-export function JsonCode({ label, value }: { label: string; value: unknown }) {
+export function JsonCode({
+  label,
+  value,
+  uncapped = false,
+}: {
+  label: string;
+  value: unknown;
+  uncapped?: boolean;
+}) {
   const json = JSON.stringify(value, null, 2);
 
   return (
     <pre
       aria-label={label}
-      className="max-h-[65vh] overflow-auto border-t border-border bg-muted/40 px-5 py-4 font-mono text-[13px] leading-6 break-words whitespace-pre-wrap text-muted-foreground outline-none selection:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-6 sm:py-5"
+      className={`${uncapped ? "" : "max-h-[min(65vh,40rem)]"} overflow-auto border-t border-border bg-muted/40 px-5 py-4 font-mono text-[13px] leading-[1.7] break-words whitespace-pre-wrap text-muted-foreground outline-none selection:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-6 sm:py-5`}
       tabIndex={0}
     >
-      <code>{highlightJson(json)}</code>
+      <code className="font-[inherit] leading-[inherit] text-[inherit]">
+        {highlightJson(json)}
+      </code>
     </pre>
   );
 }
