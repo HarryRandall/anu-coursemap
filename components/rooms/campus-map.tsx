@@ -1,4 +1,9 @@
 "use client";
+import { useTheme } from "next-themes";
+import {
+  applyCampusMapAppearance,
+  isCampusBasemapClutter,
+} from "@/lib/rooms/campus-map-appearance";
 import { resolveCampusMapImage } from "@/lib/rooms/campus-map-images";
 import { Button } from "@reui/ui/button";
 
@@ -319,6 +324,10 @@ function applyStyleLayerVisibility(
       continue;
     }
 
+    if (isCampusBasemapClutter(styleLayer)) {
+      map.setLayoutProperty(styleLayer.id, "visibility", "none");
+      continue;
+    }
     const visibility = getControlledStyleLayerVisibility(
       styleLayer.id,
       layers,
@@ -364,6 +373,11 @@ export function CampusMap({
   indoorFocus = null,
   onCameraSettled,
 }: CampusMapProps) {
+  const { resolvedTheme } = useTheme();
+  const darkRef = useRef(resolvedTheme === "dark");
+  useEffect(() => {
+    darkRef.current = resolvedTheme === "dark";
+  }, [resolvedTheme]);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("maplibre-gl").Map | null>(null);
   const mapLibreRef = useRef<typeof import("maplibre-gl") | null>(null);
@@ -718,6 +732,64 @@ export function CampusMap({
           });
 
           applyStyleLayerVisibility(map, layers, visibleLayerSlugsRef.current);
+          map.addSource("coursemap-woodland-trees", {
+            type: "geojson",
+            data: "/map-data/anu-trees-3d.geojson",
+          });
+          map.addLayer({
+            id: "coursemap-woodland-trees",
+            type: "fill-extrusion",
+            source: "coursemap-woodland-trees",
+            minzoom: 15,
+            paint: {
+              "fill-extrusion-base": ["get", "base"],
+              "fill-extrusion-height": ["get", "height"],
+              "fill-extrusion-color": "#78916c",
+              "fill-extrusion-opacity": 0.95,
+            },
+          });
+          const campusRing = campus.boundary.coordinates[0];
+          const frameWest = Math.min(...campusRing.map(([lng]) => lng));
+          const frameEast = Math.max(...campusRing.map(([lng]) => lng));
+          const frameSouth = Math.min(...campusRing.map(([, lat]) => lat));
+          const frameNorth = Math.max(...campusRing.map(([, lat]) => lat));
+          // A world polygon with a campus-sized hole makes the map a finite tile.
+          map.addSource("coursemap-campus-frame", {
+            type: "geojson",
+            data: {
+              type: "Feature",
+              properties: {},
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [-180, -85],
+                    [180, -85],
+                    [180, 85],
+                    [-180, 85],
+                    [-180, -85],
+                  ],
+                  [
+                    [frameWest, frameSouth],
+                    [frameWest, frameNorth],
+                    [frameEast, frameNorth],
+                    [frameEast, frameSouth],
+                    [frameWest, frameSouth],
+                  ],
+                ],
+              },
+            },
+          });
+          map.addLayer({
+            id: "coursemap-campus-frame",
+            type: "fill",
+            source: "coursemap-campus-frame",
+            paint: {
+              "fill-color": darkRef.current ? "#09090b" : "#fafafa",
+              "fill-opacity": 1,
+            },
+          });
+          applyCampusMapAppearance(map, darkRef.current);
           setMapReady(true);
           setMapFailed(false);
         });
@@ -759,6 +831,21 @@ export function CampusMap({
       ? indoorScene
       : null;
     updateIndoorLayers(map, visibleIndoorScene);
+    // Keep the whole-building preview transparent enough to see connectors.
+    for (const [id, opacity] of [
+      [INDOOR_LAYER_IDS.slabs, 0.05],
+      [INDOOR_LAYER_IDS.slabsInactive, 0.05],
+      [INDOOR_LAYER_IDS.rooms, 0.12],
+      [INDOOR_LAYER_IDS.roomsInactive, 0.12],
+      [INDOOR_LAYER_IDS.walls, 0.18],
+      [INDOOR_LAYER_IDS.wallsInactive, 0.18],
+      [INDOOR_LAYER_IDS.perimeters, 0.12],
+      [INDOOR_LAYER_IDS.perimetersInactive, 0.12],
+      [INDOOR_LAYER_IDS.connectors, 0.98],
+    ] as const) {
+      if (map.getLayer(id))
+        map.setPaintProperty(id, "fill-extrusion-opacity", opacity);
+    }
     if (map.getLayer(SELECTED_ANU_BUILDING_LAYER_ID)) {
       // Only the selected shell turns to glass while its interior is visible.
       map.setPaintProperty(
@@ -942,6 +1029,12 @@ export function CampusMap({
     routeEndpoints,
   ]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (mapReady && map)
+      applyCampusMapAppearance(map, resolvedTheme === "dark");
+  }, [mapReady, resolvedTheme]);
+
   function togglePerspective() {
     const map = mapRef.current;
     if (!map) return;
@@ -956,7 +1049,7 @@ export function CampusMap({
   }
 
   return (
-    <div className="room-map relative h-full min-h-[50dvh] overflow-hidden bg-muted lg:min-h-0">
+    <div className="room-map relative h-full min-h-80 overflow-hidden bg-muted lg:min-h-0">
       <div
         ref={containerRef}
         aria-label="Interactive vector map of ANU and central Canberra"
@@ -1006,9 +1099,6 @@ export function CampusMap({
             <Box aria-hidden="true" size={14} />
             {isPerspective ? "2D view" : "3D view"}
           </Button>
-          <p className="pointer-events-none hidden rounded-full border border-border bg-card/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur sm:block">
-            Drag to pan · right-drag to rotate
-          </p>
         </div>
       ) : null}
     </div>
