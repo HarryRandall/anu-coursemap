@@ -268,7 +268,7 @@ export function CoursePicker({
         <DialogHeader className="border-b border-border/60 px-5 pt-5 pr-16 pb-4">
           <div className="flex flex-wrap items-center gap-2">
             <DialogTitle>Find a course</DialogTitle>
-            <Badge className="py-0.5" variant={"primary-light"}>
+            <Badge className="py-0.5" variant="primary-light">
               {intent === "recommended" ? "Recommended for" : "Add to"}{" "}
               {destination}
             </Badge>
@@ -283,58 +283,41 @@ export function CoursePicker({
                 Course year
               </span>
               <OptionPicker
-                value={"coursemap:" + String(academicYear)}
+                value={String(academicYear)}
                 onValueChange={(nextValue) => {
-                  const option = selectableAcademicYears
-                    .map((year) => ({
-                      value: year,
-                      label: String(year),
-                    }))
-                    .find(
-                      (option) =>
-                        "coursemap:" + String(option.value) === nextValue,
-                    );
-                  if (option)
-                    ((year) => {
-                      setUnscheduledAcademicYear(year);
-                      setPage(1);
-                      setResponse(null);
-                      setSelectedCode(null);
-                      setMobilePreviewOpen(false);
-                      setFailedKey(null);
-                    })(option.value);
+                  const year = Number(nextValue);
+                  if (!selectableAcademicYears.includes(year)) return;
+                  setUnscheduledAcademicYear(year);
+                  setPage(1);
+                  setResponse(null);
+                  setSelectedCode(null);
+                  setMobilePreviewOpen(false);
+                  setFailedKey(null);
                 }}
-                aria-label={"Course year for unscheduled course"}
-                onPointerDown={(event) => event.stopPropagation()}
-                placeholder={"Select..."}
+                aria-label="Course year for unscheduled course"
                 searchable={false}
-                items={selectableAcademicYears
-                  .map((year) => ({
-                    value: year,
-                    label: String(year),
-                  }))
-                  .map((option) => ({
-                    value: "coursemap:" + String(option.value),
-                    label: option.label,
-                  }))}
+                items={selectableAcademicYears.map((year) => ({
+                  value: String(year),
+                  label: String(year),
+                }))}
               />
             </div>
           ) : null}
         </DialogHeader>
 
-        <div
-          className={cn(
-            "min-h-0",
-            trimmedQuery.length >= 2 &&
-              "grid min-w-0 grid-cols-1 md:grid-cols-[22rem_minmax(0,1fr)]",
-          )}
+        {/*
+          The search bar spans the dialog; below it the results list and the
+          selected-course preview sit side by side on wide screens and swap
+          in place on narrow ones. The body height is fixed so the dialog does
+          not jump as results load.
+        */}
+        <Command
+          shouldFilter={false}
+          loop
+          label="Course catalogue"
+          className="min-h-0 bg-transparent"
         >
-          <Command
-            shouldFilter={false}
-            loop
-            label="Course catalogue"
-            className="!contents"
-          >
+          <div className="border-b border-border/60">
             <CommandInput
               ref={searchRef}
               autoFocus
@@ -350,24 +333,26 @@ export function CoursePicker({
                   setFailedKey(null);
                 }
               }}
-
               placeholder="Search by course code or name"
               aria-label="Search courses"
             />
+          </div>
 
+          <div className="grid h-[clamp(16rem,calc(100dvh-16rem),30rem)] min-h-0 grid-cols-1 md:grid-cols-[minmax(0,1fr)_22rem]">
             {trimmedQuery.length < 2 ? (
               <CommandList
                 label="Course results"
                 className="col-span-full max-h-none overflow-hidden !p-0"
               >
-                <Empty className="min-h-36 !flex-none !rounded-none !py-8">
+                <Empty className="h-full !rounded-none">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
                       <Search />
                     </EmptyMedia>
                     <EmptyTitle>Search the catalogue</EmptyTitle>
                     <EmptyDescription>
-                      Enter at least two characters to find a course.
+                      Enter at least two characters of a course code or name.
+                      Only published {academicYear} courses appear here.
                     </EmptyDescription>
                   </EmptyHeader>
                 </Empty>
@@ -376,7 +361,7 @@ export function CoursePicker({
               <section
                 aria-label="Course results"
                 className={cn(
-                  "h-[clamp(12rem,calc(100dvh-12rem),28rem)] min-h-0 border-border/60 md:border-r",
+                  "min-h-0 border-border/60 md:border-r",
                   mobilePreviewOpen
                     ? "hidden md:flex md:flex-col"
                     : "flex flex-col",
@@ -389,8 +374,10 @@ export function CoursePicker({
                     <SearchFailure />
                   ) : (
                     <>
-                      <CommandEmpty>
-                        {`No courses match '${trimmedQuery}'.`}
+                      <CommandEmpty className="px-6 py-10 text-center text-sm text-muted-foreground">
+                        No published {academicYear} courses match &lsquo;
+                        {trimmedQuery}&rsquo;. Try a course code such as
+                        COMP1100.
                       </CommandEmpty>
                       {courses.length > 0 ? (
                         <CommandGroup
@@ -427,7 +414,7 @@ export function CoursePicker({
                                 {inPlan ? (
                                   <Badge
                                     className="px-2 py-0.5"
-                                    variant={"primary-light"}
+                                    variant="primary-light"
                                   >
                                     In plan
                                   </Badge>
@@ -465,7 +452,7 @@ export function CoursePicker({
                       size="sm"
                       disabled={loading}
                       onClick={loadNextPage}
-                      className={cn(undefined, "w-full")}
+                      className="w-full"
                       type="button"
                     >
                       {loading ? (
@@ -489,7 +476,7 @@ export function CoursePicker({
                       variant="outline"
                       size="sm"
                       onClick={retrySearch}
-                      className={cn(undefined, "w-full")}
+                      className="w-full"
                       type="button"
                     >
                       {page > 1 ? "Retry loading results" : "Retry search"}
@@ -498,25 +485,25 @@ export function CoursePicker({
                 ) : null}
               </section>
             )}
-          </Command>
 
-          {trimmedQuery.length >= 2 ? (
-            <CoursePreview
-              course={selected}
-              term={term}
-              inPlan={
-                selected ? (courseCounts.get(selected.code) ?? 0) > 0 : false
-              }
-              adding={addingCode === selected?.code}
-              mobileOpen={mobilePreviewOpen}
-              backButtonRef={backButtonRef}
-              onBack={showResults}
-              onAdd={() => {
-                if (selected) void choose(selected);
-              }}
-            />
-          ) : null}
-        </div>
+            {trimmedQuery.length >= 2 ? (
+              <CoursePreview
+                course={selected}
+                term={term}
+                inPlan={
+                  selected ? (courseCounts.get(selected.code) ?? 0) > 0 : false
+                }
+                adding={addingCode === selected?.code}
+                mobileOpen={mobilePreviewOpen}
+                backButtonRef={backButtonRef}
+                onBack={showResults}
+                onAdd={() => {
+                  if (selected) void choose(selected);
+                }}
+              />
+            ) : null}
+          </div>
+        </Command>
       </DialogContent>
     </Dialog>
   );
@@ -545,7 +532,7 @@ function CoursePreview({
     <aside
       aria-label="Selected course details"
       className={cn(
-        "h-[clamp(12rem,calc(100dvh-12rem),28rem)] min-h-0 bg-muted/30",
+        "min-h-0 bg-muted/30",
         course && mobileOpen ? "flex flex-col" : "hidden md:flex md:flex-col",
       )}
     >
