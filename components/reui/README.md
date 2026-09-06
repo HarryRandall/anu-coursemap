@@ -25,3 +25,9 @@ Rewrite upstream imports to concrete `@reui/ui`, `@reui/components`,
 formatting; document any compatibility changes. Never import the full registry
 or its examples. Run `npm run verify` and check the affected product flow in a
 browser after changing retained source or dependencies.
+
+## Coursemap adjustments
+
+- `ui/tooltip.tsx`: `TooltipContent` defaults to `sideOffset = 6`. Coursemap
+  hides the tooltip arrow and restyles the surface in `app/globals.css`, so the
+  offset provides the gap the arrow used to.

@@ -30,9 +30,11 @@ function TooltipTrigger({
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
 }
 
+// Coursemap: tooltips render without the arrow (see app/globals.css), so the
+// default offset keeps a visible gap between the surface and its trigger.
 function TooltipContent({
   className,
-  sideOffset = 0,
+  sideOffset = 6,
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
