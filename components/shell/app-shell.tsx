@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { SidebarInset, SidebarProvider } from "@reui/ui/sidebar";
 import { cn } from "@/lib/cn";
 import { AppSidebar } from "@/components/shell/app-sidebar";
+import { useSidebarDefaultOpen } from "@/components/shell/sidebar-preference";
 import { Topbar } from "@/components/shell/topbar";
 
 export type AppShellProps = {
@@ -34,8 +35,10 @@ export function AppShell({
   fill = false,
   fullBleed = false,
 }: AppShellProps) {
+  const defaultOpen = useSidebarDefaultOpen();
   return (
     <SidebarProvider
+      defaultOpen={defaultOpen}
       className={cn(
         // A filled page is exactly one viewport tall and scrolls nothing at
         // the document level, so no OS scrollbar is drawn over the window

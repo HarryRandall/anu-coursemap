@@ -217,7 +217,7 @@ export function AppSidebar({ admin }: { admin: boolean }) {
       .toUpperCase() || "?";
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="select-none">
       <SidebarHeader className="gap-3 px-3 pb-3 group-data-[collapsible=icon]:px-2">
         <Link
           href={admin ? "/admin/dashboard" : "/dashboard"}
