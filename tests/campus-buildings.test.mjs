@@ -1089,8 +1089,8 @@ test("uses fixed-opacity sibling layers for indoor floor emphasis", async () => 
     /"text-opacity": \["case", \["get", "active"\]/u,
   );
   assert.match(indoorLayers, /"text-opacity": 0\.48,/u);
-  assert.match(indoorLayers, /"text-allow-overlap": true,/u);
-  assert.match(indoorLayers, /"text-ignore-placement": true,/u);
+  assert.doesNotMatch(indoorLayers, /"text-allow-overlap": true,/u);
+  assert.doesNotMatch(indoorLayers, /"text-ignore-placement": true,/u);
   assert.match(indoorLayers, /filter: \["==", \["get", "active"\], false\]/u);
   assert.match(indoorLayers, /filter: \["==", \["get", "active"\], true\]/u);
   assert.match(indoorLayers, /\["==", \["get", "perimeter"\], true\]/u);

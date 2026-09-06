@@ -425,7 +425,7 @@ export function IndoorEditor({
   }
 
   const statusHint = !editingEnabled
-    ? "Switch to plan view to draw. Drag to orbit the building."
+    ? "Drag to orbit. Lift movement is illustrative. Switch to plan view to draw."
     : tool === "select"
       ? state.selection?.kind === "space"
         ? "Drag the room to move it. Rotate it from the inspector. Delete removes it."

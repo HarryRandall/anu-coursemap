@@ -124,6 +124,36 @@ function openingColour(palette: IndoorPalette): Expression {
   ];
 }
 
+/** Reveal a few landmarks first, then smaller rooms as the map gets closer. */
+function roomLabelText(inactive = false): Expression {
+  const label: Expression = inactive
+    ? ["concat", ["get", "levelRef"], " · ", ["get", "label"]]
+    : ["get", "label"];
+  const visible = (limit: number): Expression => [
+    "case",
+    [
+      "any",
+      ["==", ["get", "highlight"], true],
+      ["<", ["coalesce", ["get", "labelRank"], 0], limit],
+    ],
+    label,
+    "",
+  ];
+  return inactive
+    ? ["step", ["zoom"], "", 20.5, visible(2), 21.5, visible(6), 22, label]
+    : [
+        "step",
+        ["zoom"],
+        visible(1),
+        18.5,
+        visible(2),
+        20,
+        visible(6),
+        21,
+        label,
+      ];
+}
+
 function labelColour(palette: IndoorPalette): Expression {
   return [
     "case",
@@ -496,13 +526,14 @@ export function addIndoorLayers(
       source: INDOOR_SOURCE_IDS.labels,
       filter: ["==", ["get", "active"], false],
       layout: {
-        "text-field": ["concat", ["get", "levelRef"], " · ", ["get", "label"]],
+        "text-field": roomLabelText(true),
         "text-font": ["Noto Sans Regular"],
         "text-size": 10,
-        // Inactive labels must not claim collision space from the selected
-        // floor. Their floor prefix keeps overlapping room references clear.
-        "text-allow-overlap": true,
-        "text-ignore-placement": true,
+        // Inactive floors appear later and yield to active-floor labels.
+        "text-allow-overlap": false,
+        "text-ignore-placement": false,
+        "symbol-sort-key": ["+", 1000, ["get", "labelRank"]],
+        "text-padding": 6,
         "symbol-placement": "point",
       },
       paint: {
@@ -522,13 +553,19 @@ export function addIndoorLayers(
       id: INDOOR_LAYER_IDS.labels,
       type: "symbol",
       source: INDOOR_SOURCE_IDS.labels,
-      // Active labels keep their full emphasis and collision behaviour. The
-      // faint sibling layer ignores placement, so it cannot hide these.
+      // Selected and high-priority rooms win collision placement.
       filter: ["==", ["get", "active"], true],
       layout: {
-        "text-field": ["get", "label"],
+        "text-field": roomLabelText(),
         "text-font": ["Noto Sans Regular"],
         "text-size": 11,
+        "symbol-sort-key": [
+          "case",
+          ["==", ["get", "highlight"], true],
+          -1,
+          ["get", "labelRank"],
+        ],
+        "text-padding": 6,
         "text-allow-overlap": false,
         "symbol-placement": "point",
       },

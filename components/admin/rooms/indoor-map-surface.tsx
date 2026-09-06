@@ -1,5 +1,6 @@
 "use client";
 
+import { animateLiftCabins } from "@/components/admin/rooms/animate-lift-cabins";
 import {
   forwardRef,
   useCallback,
@@ -398,6 +399,21 @@ export const IndoorMapSurface = forwardRef<
         : { type: "FeatureCollection", features: [] },
     );
   }, [draft, palette, projection, ready]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (
+      !ready ||
+      !map ||
+      !perspective ||
+      hiddenLayers?.has("connectors") ||
+      !scene?.connectors.features.some(
+        (feature) => feature.properties.kind === "lift",
+      )
+    )
+      return;
+    return animateLiftCabins(map, scene.connectors, palette);
+  }, [hiddenLayers, palette, perspective, ready, scene]);
 
   // Drawing has to take the pointer away from the map, or every stroke pans it.
   // Plan view also stays north-up: a rotated plan makes every rectangle look
