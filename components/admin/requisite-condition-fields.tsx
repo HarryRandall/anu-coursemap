@@ -1,4 +1,16 @@
 "use client";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@reui/ui/command";
+import { Input } from "@reui/ui/input";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { Textarea } from "@reui/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@reui/ui/popover";
 
 import { useEffect, useId, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
@@ -20,20 +32,6 @@ import {
   type ReviewedConditionKind,
   type ReviewedConditionNode,
 } from "@/lib/coursemap/requisite-conditions";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Input, inputClasses, Select, Textarea } from "@/components/ui/field";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 export const KIND_OPTIONS = CONDITION_FAMILY_KINDS.map((kind) => ({
   value: kind,
@@ -63,7 +61,7 @@ const stackedMatchControl =
   "!h-10 min-h-10 w-full min-w-0 !rounded-none !border-transparent bg-transparent px-2.5 text-xs font-medium text-muted-foreground shadow-none max-md:!h-11 max-md:min-h-11";
 
 const stackedValueCell =
-  "flex min-h-10 min-w-0 flex-wrap items-center gap-1 px-2 py-1 text-xs text-muted-foreground max-md:min-h-11 [&_[data-slot=input]]:!h-8 [&_[data-slot=input]]:max-w-full [&_[data-slot=input]]:!border-transparent [&_[data-slot=input]]:bg-transparent [&_[data-slot=input]]:text-xs [&_[data-slot=input]]:font-medium [&_[data-slot=input]]:text-foreground/80 [&_[data-slot=input]]:shadow-none [&_[data-slot=search-picker-trigger]]:!h-8 [&_[data-slot=search-picker-trigger]]:max-w-full [&_[data-slot=search-picker-trigger]]:!border-transparent [&_[data-slot=search-picker-trigger]]:bg-transparent [&_[data-slot=search-picker-trigger]]:text-xs [&_[data-slot=search-picker-trigger]]:text-foreground/80 [&_[data-slot=search-picker-trigger]]:shadow-none max-md:[&_[data-slot=search-picker-trigger]]:!h-10 max-md:[&_[data-slot=search-picker-trigger]]:!w-full max-md:[&_[data-slot=search-picker-trigger]]:!min-w-0 [&_[data-slot=select-trigger]]:!h-8 [&_[data-slot=select-trigger]]:max-w-full [&_[data-slot=select-trigger]]:!border-transparent [&_[data-slot=select-trigger]]:bg-transparent [&_[data-slot=select-trigger]]:text-xs [&_[data-slot=select-trigger]]:font-medium [&_[data-slot=select-trigger]]:text-foreground/80 [&_[data-slot=select-trigger]]:shadow-none [&_[data-slot=textarea]]:!border-transparent [&_[data-slot=textarea]]:bg-transparent [&_[data-slot=textarea]]:text-xs [&_[data-slot=textarea]]:text-foreground/80 [&_[data-slot=textarea]]:shadow-none";
+  "flex min-h-10 min-w-0 flex-wrap items-center gap-1 px-2 py-1 text-xs text-muted-foreground max-md:min-h-11 [&_[data-slot=input]]:!h-8 [&_[data-slot=input]]:max-w-full [&_[data-slot=input]]:!border-transparent [&_[data-slot=input]]:bg-transparent [&_[data-slot=input]]:text-xs [&_[data-slot=input]]:font-medium [&_[data-slot=input]]:text-foreground/80 [&_[data-slot=input]]:shadow-none [&_[data-slot=search-picker-trigger]]:!h-8 [&_[data-slot=search-picker-trigger]]:max-w-full [&_[data-slot=search-picker-trigger]]:!border-transparent [&_[data-slot=search-picker-trigger]]:bg-transparent [&_[data-slot=search-picker-trigger]]:text-xs [&_[data-slot=search-picker-trigger]]:text-foreground/80 [&_[data-slot=search-picker-trigger]]:shadow-none max-md:[&_[data-slot=search-picker-trigger]]:!h-10 max-md:[&_[data-slot=search-picker-trigger]]:!w-full max-md:[&_[data-slot=search-picker-trigger]]:!min-w-0 [&_[data-slot=option-picker-trigger]]:!h-8 [&_[data-slot=option-picker-trigger]]:max-w-full [&_[data-slot=option-picker-trigger]]:!border-transparent [&_[data-slot=option-picker-trigger]]:bg-transparent [&_[data-slot=option-picker-trigger]]:text-xs [&_[data-slot=option-picker-trigger]]:font-medium [&_[data-slot=option-picker-trigger]]:text-foreground/80 [&_[data-slot=option-picker-trigger]]:shadow-none [&_[data-slot=textarea]]:!border-transparent [&_[data-slot=textarea]]:bg-transparent [&_[data-slot=textarea]]:text-xs [&_[data-slot=textarea]]:text-foreground/80 [&_[data-slot=textarea]]:shadow-none";
 
 const COURSE_MATCH_OPTIONS: Array<{
   value: CourseMatch;
@@ -162,7 +160,8 @@ function SearchPicker({
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           aria-label={label}
-          className={inputClasses(
+          className={cn(
+            "cn-input",
             cn(
               "flex min-w-0 flex-1 cursor-pointer items-center justify-start text-left font-normal",
               className,
@@ -205,7 +204,6 @@ function SearchPicker({
             onValueChange={setQuery}
             placeholder="Search by code or title..."
             value={query}
-            wrapperClassName="gap-2 px-2.5"
           />
           <CommandList className="max-h-56 p-1">
             {term.length < 2 && !value ? (
@@ -476,17 +474,34 @@ function InlineValueFields({
         >
           at
         </span>
-        <Select
-          aria-label="Course level"
-          className={cn(inlineControl, "min-w-[8rem]")}
-          onChange={(next) => onChange({ ...condition, level: next })}
-          options={levels.map((option) => ({
-            value: option,
-            label: `${option} level`,
-          }))}
-          placeholder="Level"
-          value={level}
+        <OptionPicker
+          value={"coursemap:" + String(level)}
+          onValueChange={(nextValue) => {
+            const option = levels
+              .map((option) => ({
+                value: option,
+                label: `${option} level`,
+              }))
+              .find(
+                (option) => "coursemap:" + String(option.value) === nextValue,
+              );
+            if (option)
+              ((next) => onChange({ ...condition, level: next }))(option.value);
+          }}
           {...bindOpen("level")}
+          className={cn(inlineControl, "min-w-[8rem]")}
+          aria-label={"Course level"}
+          onPointerDown={(event) => event.stopPropagation()}
+          placeholder={"Level"}
+          items={levels
+            .map((option) => ({
+              value: option,
+              label: `${option} level`,
+            }))
+            .map((option) => ({
+              value: "coursemap:" + String(option.value),
+              label: option.label,
+            }))}
         />
         <span
           data-slot="condition-grammar"
@@ -664,30 +679,53 @@ export function ConditionInlineEditor({
   }
 
   const familyControl = (
-    <Select
-      aria-label="Condition type"
+    <OptionPicker
+      value={"coursemap:" + String(family)}
+      onValueChange={(nextValue) => {
+        const option = KIND_OPTIONS.find(
+          (option) => "coursemap:" + String(option.value) === nextValue,
+        );
+        if (option) onKindChange(option.value);
+      }}
+      {...bindOpen("family")}
       className={cn(
         inlineControl,
         layout === "stacked" && stackedFamilyControl,
       )}
-      onChange={onKindChange}
-      options={KIND_OPTIONS}
-      value={family}
-      {...bindOpen("family")}
+      aria-label={"Condition type"}
+      onPointerDown={(event) => event.stopPropagation()}
+      placeholder={"Select..."}
+      items={KIND_OPTIONS.map((option) => ({
+        value: "coursemap:" + String(option.value),
+        label: option.label,
+      }))}
     />
   );
   const matchControl =
     family === "course" ? (
-      <Select
-        aria-label="Course requirement"
+      <OptionPicker
+        value={"coursemap:" + String(courseMatch(condition))}
+        onValueChange={(nextValue) => {
+          const option = COURSE_MATCH_OPTIONS.find(
+            (option) => "coursemap:" + String(option.value) === nextValue,
+          );
+          if (option)
+            ((next) => onChange(applyCourseMatch(condition, next)))(
+              option.value,
+            );
+        }}
+        {...bindOpen("match")}
         className={cn(
           inlineControl,
           layout === "stacked" && stackedMatchControl,
         )}
-        onChange={(next) => onChange(applyCourseMatch(condition, next))}
-        options={COURSE_MATCH_OPTIONS}
-        value={courseMatch(condition)}
-        {...bindOpen("match")}
+        aria-label={"Course requirement"}
+        onPointerDown={(event) => event.stopPropagation()}
+        placeholder={"Select..."}
+        items={COURSE_MATCH_OPTIONS.map((option) => ({
+          value: "coursemap:" + String(option.value),
+          label: option.label,
+        }))}
       />
     ) : (
       <span

@@ -1,8 +1,5 @@
 "use client";
-
-import { Layers3, Pencil, Plus, Trash2 } from "lucide-react";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Button, IconButton } from "@/components/ui/button";
+import { Button } from "@reui/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -12,8 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Field, Input } from "@/components/ui/field";
+} from "@reui/ui/dialog";
+import { Field, FieldDescription } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+
+import { Layers3, Pencil, Plus, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+
 import { cn } from "@/lib/cn";
 import type { CampusIndoorLevel } from "@/lib/rooms/indoor-map";
 
@@ -27,14 +29,16 @@ function FloorDetailsDialog({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <IconButton
+        <Button
           className="size-11 sm:size-8"
-          label={`Edit ${level.name}`}
           size="icon-sm"
           variant="ghost"
+          aria-label={`Edit ${level.name}`}
+          title={`Edit ${level.name}`}
+          type="button"
         >
           <Pencil aria-hidden="true" />
-        </IconButton>
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader className="px-5 pt-5 pr-16">
@@ -45,22 +49,29 @@ function FloorDetailsDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 overflow-y-auto px-5 py-4">
-          <Field label="Name">
-            <Input
-              onChange={(event) => onUpdate({ name: event.target.value })}
-              value={level.name}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Name"}</span>
+              <Input
+                onChange={(event) => onUpdate({ name: event.target.value })}
+                value={level.name}
+              />
+            </label>
           </Field>
-          <Field label="Reference" hint="For example G, 1 or LG.">
-            <Input
-              onChange={(event) => onUpdate({ ref: event.target.value })}
-              value={level.ref}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Reference"}</span>
+              <Input
+                onChange={(event) => onUpdate({ ref: event.target.value })}
+                value={level.ref}
+              />
+              <FieldDescription>{"For example G, 1 or LG."}</FieldDescription>
+            </label>
           </Field>
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button className="h-11 sm:h-8" variant="primary">
+            <Button className="h-11 sm:h-8" variant="default" type="button">
               Done
             </Button>
           </DialogClose>
@@ -105,7 +116,13 @@ export function FloorsPanel({
               spacing automatically.
             </p>
           </div>
-          <Button className="h-11 sm:h-8" onClick={onAdd} size="sm">
+          <Button
+            className="h-11 sm:h-8"
+            onClick={onAdd}
+            size="sm"
+            variant="outline"
+            type="button"
+          >
             <Plus aria-hidden="true" />
             Add floor
           </Button>
@@ -119,7 +136,13 @@ export function FloorsPanel({
             <p className="mt-1 text-xs text-muted-foreground">
               Add the ground floor to start the map.
             </p>
-            <Button className="mt-4 h-11 sm:h-8" onClick={onAdd} size="sm">
+            <Button
+              className="mt-4 h-11 sm:h-8"
+              onClick={onAdd}
+              size="sm"
+              variant="outline"
+              type="button"
+            >
               <Plus aria-hidden="true" />
               Add ground floor
             </Button>
@@ -179,14 +202,16 @@ export function FloorsPanel({
                   onConfirm={() => onRemove(level.id)}
                   title={`Remove ${level.name}?`}
                   trigger={
-                    <IconButton
+                    <Button
                       className="size-11 sm:size-8"
-                      label={`Remove ${level.name}`}
                       size="icon-sm"
                       variant="ghost"
+                      aria-label={`Remove ${level.name}`}
+                      title={`Remove ${level.name}`}
+                      type="button"
                     >
                       <Trash2 aria-hidden="true" />
-                    </IconButton>
+                    </Button>
                   }
                 />
               </li>

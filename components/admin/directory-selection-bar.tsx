@@ -1,18 +1,16 @@
 "use client";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@reui/ui/tooltip";
+import { Button } from "@reui/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@reui/ui/popover";
 
 import { useState, useTransition } from "react";
 import { ChevronDown, Download, X } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { Tooltip } from "@/components/ui/tooltip";
+
 import { toast } from "sonner";
 import { setImportModel } from "@/lib/admin/settings-actions";
-import { Button } from "@/components/ui/button";
+
 import { OptionMenu } from "@/components/ui/option-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 
 function ModelName({ model }: { model: string }) {
   const separator = model.lastIndexOf("/");
@@ -174,28 +172,29 @@ export function DirectorySelectionBar({
           </span>
         ) : (
           <Popover onOpenChange={setModelOpen} open={modelOpen}>
-            <Tooltip
-              content={
-                canManageModel
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <PopoverTrigger asChild>
+                  <button
+                    aria-label={`Import model: ${model}`}
+                    className="hidden h-8 max-w-64 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 data-[state=open]:bg-accent sm:inline-flex"
+                    disabled={!canManageModel || savingModel}
+                    type="button"
+                  >
+                    <ModelName model={model} />
+                    <ChevronDown
+                      aria-hidden="true"
+                      className="shrink-0 text-muted-foreground/80"
+                      size={13}
+                    />
+                  </button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                {canManageModel
                   ? "Change the import model"
-                  : "Imports run on this model"
-              }
-            >
-              <PopoverTrigger asChild>
-                <button
-                  aria-label={`Import model: ${model}`}
-                  className="hidden h-8 max-w-64 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-[13px] transition-colors outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 data-[state=open]:bg-accent sm:inline-flex"
-                  disabled={!canManageModel || savingModel}
-                  type="button"
-                >
-                  <ModelName model={model} />
-                  <ChevronDown
-                    aria-hidden="true"
-                    className="shrink-0 text-muted-foreground/80"
-                    size={13}
-                  />
-                </button>
-              </PopoverTrigger>
+                  : "Imports run on this model"}
+              </TooltipContent>
             </Tooltip>
             <PopoverContent align="center" className="w-72 p-1.5" side="top">
               <OptionMenu
@@ -211,27 +210,45 @@ export function DirectorySelectionBar({
           </Popover>
         )}
 
-        <Tooltip content={disabledReason ?? "Queue the selected entries"}>
-          <Button
-            className="h-8 rounded-lg"
-            disabled={disabledReason !== null || savingModel || submitting}
-            onClick={() => onImport(model)}
-            size="sm"
-            variant="primary"
-          >
-            <Download aria-hidden="true" size={14} />
-            {submitting ? "Starting..." : "Import"}
-          </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span
+              className="inline-flex"
+              tabIndex={
+                disabledReason !== null || savingModel || submitting
+                  ? 0
+                  : undefined
+              }
+            >
+              <Button
+                className="h-8 rounded-lg"
+                disabled={disabledReason !== null || savingModel || submitting}
+                onClick={() => onImport(model)}
+                size="sm"
+                variant="default"
+                type="button"
+              >
+                <Download aria-hidden="true" size={14} />
+                {submitting ? "Starting..." : "Import"}
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            {disabledReason ?? "Queue the selected entries"}
+          </TooltipContent>
         </Tooltip>
-        <Tooltip content="Clear the selection">
-          <button
-            aria-label="Clear the selection"
-            className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-muted-foreground/80 transition-colors outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={onClear}
-            type="button"
-          >
-            <X aria-hidden="true" size={15} />
-          </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              aria-label="Clear the selection"
+              className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-lg text-muted-foreground/80 transition-colors outline-none hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={onClear}
+              type="button"
+            >
+              <X aria-hidden="true" size={15} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{"Clear the selection"}</TooltipContent>
         </Tooltip>
       </div>
     </div>

@@ -1,4 +1,28 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@reui/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@reui/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
+import ReuiLink from "next/link";
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
@@ -18,23 +42,10 @@ import {
 import { AcademicStructureImportPipeline } from "@/components/admin/imports/academic-structure-import-pipeline";
 import { CourseImportAutoRefresh } from "@/components/admin/imports/course-import-auto-refresh";
 import { AppShell } from "@/components/shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  DataTableEmpty,
-  DataTableShell,
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/data-table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
+
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
 import {
@@ -43,12 +54,6 @@ import {
   rejectAcademicStructureImportTarget,
 } from "@/lib/coursemap/academic-structure-import-review-actions";
 import type { Tone } from "@/lib/ui";
-
-const dateFormatter = new Intl.DateTimeFormat("en-AU", {
-  dateStyle: "medium",
-  timeStyle: "short",
-  timeZone: "Australia/Sydney",
-});
 
 function readable(value: string) {
   const words = value.replaceAll("_", " ");
@@ -190,7 +195,7 @@ function RequirementTree({
   }) {
     if (visited.has(group.id)) {
       return (
-        <Alert tone="danger">
+        <Alert variant={"destructive"}>
           <CircleAlert aria-hidden="true" />
           <AlertDescription>
             The saved requirement groups contain a cycle at {group.group_key}.
@@ -210,11 +215,19 @@ function RequirementTree({
 
     return (
       <Card className="border-border shadow-none">
-        <CardHeader
-          action={<Badge tone="neutral">{operator}</Badge>}
-          description={group.description ?? undefined}
-          title={group.title ?? "Requirement group"}
-        />
+        <CardHeader>
+          <CardTitle>
+            <h2>{group.title ?? "Requirement group"}</h2>
+          </CardTitle>
+          {Boolean(group.description ?? undefined) && (
+            <CardDescription>{group.description ?? undefined}</CardDescription>
+          )}
+          {Boolean(<Badge variant={"outline"}>{operator}</Badge>) && (
+            <CardAction>
+              {<Badge variant={"outline"}>{operator}</Badge>}
+            </CardAction>
+          )}
+        </CardHeader>
         <CardContent className="space-y-3">
           {groupConditions.map((condition) => {
             const conditionOptions = optionsByCondition.get(condition.id) ?? [];
@@ -225,23 +238,23 @@ function RequirementTree({
                 key={condition.id}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone="brand">
+                  <Badge variant={"primary-light"}>
                     {readable(condition.condition_kind)}
                   </Badge>
                   <p className="text-xs font-medium text-foreground">
                     {conditionSummary(condition)}
                   </p>
                   {condition.minimum_courses ? (
-                    <Badge tone="neutral">
-                      At least {condition.minimum_courses} courses
+                    <Badge variant={"outline"}>
+                      At least {condition.minimum_courses}courses
                     </Badge>
                   ) : null}
-                  {units ? <Badge tone="neutral">{units}</Badge> : null}
+                  {units ? <Badge variant={"outline"}>{units}</Badge> : null}
                 </div>
                 {conditionOptions.length ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {conditionOptions.map((option) => (
-                      <Badge key={option.id} tone="neutral">
+                      <Badge key={option.id} variant={"outline"}>
                         <span className="font-mono">{option.option_code}</span>
                         {option.structure_kind
                           ? ` · ${readable(option.structure_kind)}`
@@ -292,7 +305,7 @@ function RequirementTree({
         <Group group={root} key={root.id} visited={new Set()} />
       ))}
       {unmodelled.length ? (
-        <Alert tone="warning">
+        <Alert variant={"warning"}>
           <CircleAlert aria-hidden="true" />
           <AlertDescription>
             <p className="font-medium">
@@ -339,11 +352,23 @@ function CandidatePreview({
   return (
     <div className="space-y-5">
       <Card>
-        <CardHeader
-          action={
+        <CardHeader>
+          <CardTitle>
+            <h2>{snapshot.name}</h2>
+          </CardTitle>
+          {Boolean(
+            `${readable(detail.run.structureKind)} · ${detail.run.academicYear}`,
+          ) && (
+            <CardDescription>{`${readable(detail.run.structureKind)} · ${detail.run.academicYear}`}</CardDescription>
+          )}
+          {Boolean(
             <div className="flex flex-wrap gap-1.5">
               <Badge
-                tone={snapshot.critical_uncertainty ? "warning" : "success"}
+                variant={
+                  badgeVariantForTone[
+                    snapshot.critical_uncertainty ? "warning" : "success"
+                  ]
+                }
               >
                 {snapshot.critical_uncertainty
                   ? "Critical uncertainty"
@@ -351,16 +376,48 @@ function CandidatePreview({
               </Badge>
               {snapshot.overall_confidence !== null ? (
                 <Badge
-                  tone={snapshot.critical_uncertainty ? "warning" : "brand"}
+                  variant={
+                    badgeVariantForTone[
+                      snapshot.critical_uncertainty ? "warning" : "brand"
+                    ]
+                  }
                 >
                   {Math.round(snapshot.overall_confidence * 100)}% confidence
                 </Badge>
               ) : null}
-            </div>
-          }
-          description={`${readable(detail.run.structureKind)} · ${detail.run.academicYear}`}
-          title={snapshot.name}
-        />
+            </div>,
+          ) && (
+            <CardAction>
+              {
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge
+                    variant={
+                      badgeVariantForTone[
+                        snapshot.critical_uncertainty ? "warning" : "success"
+                      ]
+                    }
+                  >
+                    {snapshot.critical_uncertainty
+                      ? "Critical uncertainty"
+                      : "No critical uncertainty"}
+                  </Badge>
+                  {snapshot.overall_confidence !== null ? (
+                    <Badge
+                      variant={
+                        badgeVariantForTone[
+                          snapshot.critical_uncertainty ? "warning" : "brand"
+                        ]
+                      }
+                    >
+                      {Math.round(snapshot.overall_confidence * 100)}%
+                      confidence
+                    </Badge>
+                  ) : null}
+                </div>
+              }
+            </CardAction>
+          )}
+        </CardHeader>
         <CardContent className="space-y-4">
           <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
             <MetadataItem label="Code" value={detail.target.code} />
@@ -420,10 +477,16 @@ function CandidatePreview({
 
       {fields.length ? (
         <Card>
-          <CardHeader
-            description="All labelled values retained from the ANU summary."
-            title="Source summary"
-          />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Source summary"}</h2>
+            </CardTitle>
+            {Boolean("All labelled values retained from the ANU summary.") && (
+              <CardDescription>
+                {"All labelled values retained from the ANU summary."}
+              </CardDescription>
+            )}
+          </CardHeader>
           <CardContent>
             <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
               {fields.map((item) => (
@@ -449,12 +512,22 @@ function CandidatePreview({
           </h2>
           {sections.map((section) => (
             <Card key={section.id}>
-              <CardHeader
-                description={
-                  <span className="font-mono">{section.source_locator}</span>
-                }
-                title={section.heading}
-              />
+              <CardHeader>
+                <CardTitle>
+                  <h2>{section.heading}</h2>
+                </CardTitle>
+                {Boolean(
+                  <span className="font-mono">{section.source_locator}</span>,
+                ) && (
+                  <CardDescription>
+                    {
+                      <span className="font-mono">
+                        {section.source_locator}
+                      </span>
+                    }
+                  </CardDescription>
+                )}
+              </CardHeader>
               <CardContent>
                 <pre className="overflow-auto text-sm leading-6 whitespace-pre-wrap text-foreground/80">
                   {section.markdown}
@@ -467,7 +540,11 @@ function CandidatePreview({
 
       {outcomes.length ? (
         <Card>
-          <CardHeader title="Learning outcomes" />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Learning outcomes"}</h2>
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-foreground/80">
               {outcomes.map((outcome) => (
@@ -498,7 +575,9 @@ function CandidatePreview({
         {fees.length ? (
           <DataTableShell>
             <Table className="min-w-[780px]">
-              <TableCaption>Imported fee records</TableCaption>
+              <TableCaption className="sr-only">
+                Imported fee records
+              </TableCaption>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Audience</TableHead>
@@ -549,7 +628,7 @@ function CandidatePreview({
         {relationships.length ? (
           <DataTableShell>
             <Table className="min-w-[720px]">
-              <TableCaption>
+              <TableCaption className="sr-only">
                 Imported academic structure relationships
               </TableCaption>
               <TableHeader>
@@ -589,7 +668,7 @@ function CandidatePreview({
         <details className="group rounded-xl border border-border bg-card shadow-xs">
           <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             Evidence and confidence
-            <Badge tone="neutral">{evidence.length} records</Badge>
+            <Badge variant={"outline"}>{evidence.length} records</Badge>
           </summary>
           <div className="divide-y divide-border/60 border-t border-border/60">
             {evidence.map((item) => (
@@ -598,8 +677,8 @@ function CandidatePreview({
                   <span className="font-mono font-medium text-foreground/90">
                     {item.field_key}
                   </span>
-                  <Badge tone="neutral">{item.method}</Badge>
-                  <Badge tone="brand">
+                  <Badge variant={"outline"}>{item.method}</Badge>
+                  <Badge variant={"primary-light"}>
                     {Math.round(item.confidence * 100)}%
                   </Badge>
                 </div>
@@ -650,7 +729,11 @@ function ReviewItems({
   return (
     <div className="space-y-5">
       <Card>
-        <CardHeader title="Decision context" />
+        <CardHeader>
+          <CardTitle>
+            <h2>{"Decision context"}</h2>
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
             <MetadataItem
@@ -679,10 +762,20 @@ function ReviewItems({
 
       {snapshotFields.length ? (
         <Card>
-          <CardHeader
-            description="A compact comparison of the main snapshot fields. Full relational data is in Candidate and Database rows."
-            title="Changed snapshot fields"
-          />
+          <CardHeader>
+            <CardTitle>
+              <h2>{"Changed snapshot fields"}</h2>
+            </CardTitle>
+            {Boolean(
+              "A compact comparison of the main snapshot fields. Full relational data is in Candidate and Database rows.",
+            ) && (
+              <CardDescription>
+                {
+                  "A compact comparison of the main snapshot fields. Full relational data is in Candidate and Database rows."
+                }
+              </CardDescription>
+            )}
+          </CardHeader>
           <div className="divide-y divide-border/60 border-t border-border/60">
             {snapshotFields.map(([label, before, after]) => (
               <div
@@ -711,13 +804,15 @@ function ReviewItems({
             Review items
           </h2>
           <Badge
-            tone={
-              items.some((item) => item.status === "open")
-                ? "warning"
-                : "neutral"
+            variant={
+              badgeVariantForTone[
+                items.some((item) => item.status === "open")
+                  ? "warning"
+                  : "neutral"
+              ]
             }
           >
-            {items.filter((item) => item.status === "open").length} open
+            {items.filter((item) => item.status === "open").length}open
           </Badge>
         </div>
         {items.length === 0 ? (
@@ -744,10 +839,14 @@ function ReviewItems({
                     </span>
                   </span>
                   <span className="flex shrink-0 gap-1.5">
-                    <Badge tone={statusTone(item.severity)}>
+                    <Badge
+                      variant={badgeVariantForTone[statusTone(item.severity)]}
+                    >
                       {readable(item.severity)}
                     </Badge>
-                    <Badge tone={statusTone(item.status)}>
+                    <Badge
+                      variant={badgeVariantForTone[statusTone(item.status)]}
+                    >
                       {readable(item.status)}
                     </Badge>
                   </span>
@@ -871,7 +970,7 @@ export function AcademicStructureImportTargetReview({
                   onConfirm={() => decide("reject")}
                   title={`Reject ${detail.target.code}?`}
                   trigger={
-                    <Button size="sm" variant="danger">
+                    <Button size="sm" variant="destructive" type="button">
                       <X aria-hidden="true" size={15} />
                       Reject
                     </Button>
@@ -883,7 +982,7 @@ export function AcademicStructureImportTargetReview({
                   onConfirm={() => decide("accept")}
                   title={`Accept ${detail.target.code} as draft?`}
                   trigger={
-                    <Button size="sm" variant="primary">
+                    <Button size="sm" variant="default" type="button">
                       <Check aria-hidden="true" size={15} />
                       Accept as draft
                     </Button>
@@ -892,10 +991,12 @@ export function AcademicStructureImportTargetReview({
               </>
             ) : null}
             {accepted && workspaceHref ? (
-              <ButtonLink href={workspaceHref} size="sm">
-                <ExternalLink aria-hidden="true" size={15} />
-                Edit draft
-              </ButtonLink>
+              <Button asChild size="sm" variant="outline">
+                <ReuiLink href={workspaceHref}>
+                  <ExternalLink aria-hidden="true" size={15} />
+                  Edit draft
+                </ReuiLink>
+              </Button>
             ) : null}
             {canPublish ? (
               <ConfirmDialog
@@ -904,7 +1005,7 @@ export function AcademicStructureImportTargetReview({
                 onConfirm={publish}
                 title={`Publish ${detail.target.code} for ${detail.run.academicYear}?`}
                 trigger={
-                  <Button size="sm" variant="primary">
+                  <Button size="sm" variant="default" type="button">
                     <Send aria-hidden="true" size={15} />
                     Publish draft
                   </Button>
@@ -919,6 +1020,8 @@ export function AcademicStructureImportTargetReview({
                     ? "Resolve blocking review items and critical uncertainty first"
                     : "The current draft is unavailable"
                 }
+                variant="outline"
+                type="button"
               >
                 <Send aria-hidden="true" size={15} />
                 Publish draft
@@ -928,69 +1031,16 @@ export function AcademicStructureImportTargetReview({
         ) : undefined
       }
       admin
+      fullBleed
       currentBreadcrumbLabel={detail.target.code}
     >
       <CourseImportAutoRefresh active={active} />
-      <div className="mx-auto w-full max-w-7xl space-y-5 pb-10">
-        <h1 className="sr-only">Review {detail.target.code} import</h1>
+      <div className="w-full px-4 pb-10 sm:px-6">
+        <h1 className="sr-only">Review{detail.target.code} import</h1>
 
-        <header className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-lg font-semibold text-foreground">
-            {detail.target.code}
-          </span>
-          {detail.target.title ? (
-            <span className="text-sm text-muted-foreground">
-              {detail.target.title}
-            </span>
-          ) : null}
-          <Badge tone="neutral">{detail.run.academicYear}</Badge>
-          <Badge tone="neutral">Run #{detail.run.runNumber}</Badge>
-          <Badge tone={statusTone(detail.target.processingStatus)}>
-            {readable(detail.target.processingStatus)}
-          </Badge>
-          <Badge tone={statusTone(detail.target.reviewStatus)}>
-            {readable(detail.target.reviewStatus)}
-          </Badge>
-          {alreadyPublished ? <Badge tone="success">Published</Badge> : null}
-        </header>
-
-        {message ? (
-          <Alert tone={message.tone}>
-            <AlertDescription>{message.text}</AlertDescription>
-          </Alert>
-        ) : null}
-        {detail.target.errorSummary ? (
-          <Alert tone="danger">
-            <CircleAlert aria-hidden="true" />
-            <AlertDescription>
-              {detail.target.errorCode ? `${detail.target.errorCode}: ` : ""}
-              {detail.target.errorSummary}
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {active ? (
-          <Alert tone="brand">
-            <Clock3 aria-hidden="true" />
-            <AlertDescription>
-              This structure is still processing. Saved stages and artefacts
-              update automatically.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {openErrors || detail.candidateSnapshot?.critical_uncertainty ? (
-          <Alert tone="warning">
-            <CircleAlert aria-hidden="true" />
-            <AlertDescription>
-              Review the open errors and critical uncertainty before
-              publication. You can still accept the candidate as a draft and
-              edit it in the structure workspace.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <Tabs defaultValue="pipeline">
-          <div className="overflow-x-auto pb-1">
-            <TabsList className="h-auto min-w-max">
+        <Tabs defaultValue="pipeline" className="gap-5">
+          <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6">
+            <TabsList aria-label="Import review sections" variant="line">
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
               <TabsTrigger value="candidate">Candidate</TabsTrigger>
               <TabsTrigger value="review">Review</TabsTrigger>
@@ -999,7 +1049,84 @@ export function AcademicStructureImportTargetReview({
             </TabsList>
           </div>
 
-          <TabsContent value="pipeline">
+          {message ? (
+            <Alert
+              variant={
+                (
+                  {
+                    neutral: "default",
+                    brand: "info",
+                    danger: "destructive",
+                    success: "success",
+                    warning: "warning",
+                  } as const
+                )[message.tone]
+              }
+            >
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          ) : null}
+          {detail.target.errorSummary ? (
+            <Alert variant={"destructive"}>
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription>
+                {detail.target.errorCode ? `${detail.target.errorCode}: ` : ""}
+                {detail.target.errorSummary}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {active ? (
+            <Alert variant={"info"}>
+              <Clock3 aria-hidden="true" />
+              <AlertDescription>
+                This structure is still processing. Saved stages and artefacts
+                update automatically.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {openErrors || detail.candidateSnapshot?.critical_uncertainty ? (
+            <Alert variant={"warning"}>
+              <CircleAlert aria-hidden="true" />
+              <AlertDescription>
+                Review the open errors and critical uncertainty before
+                publication. You can still accept the candidate as a draft and
+                edit it in the structure workspace.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          <TabsContent value="pipeline" className="space-y-5">
+            <header className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-lg font-semibold text-foreground">
+                {detail.target.code}
+              </span>
+              {detail.target.title ? (
+                <span className="text-sm text-muted-foreground">
+                  {detail.target.title}
+                </span>
+              ) : null}
+              <Badge variant={"outline"}>{detail.run.academicYear}</Badge>
+              <Badge variant={"outline"}>Run #{detail.run.runNumber}</Badge>
+              <Badge
+                variant={
+                  badgeVariantForTone[
+                    statusTone(detail.target.processingStatus)
+                  ]
+                }
+              >
+                {readable(detail.target.processingStatus)}
+              </Badge>
+              <Badge
+                variant={
+                  badgeVariantForTone[statusTone(detail.target.reviewStatus)]
+                }
+              >
+                {readable(detail.target.reviewStatus)}
+              </Badge>
+              {alreadyPublished ? (
+                <Badge variant={"success-light"}>Published</Badge>
+              ) : null}
+            </header>
             <AcademicStructureImportPipeline
               extractions={detail.extractions}
               stages={detail.stages}
@@ -1013,42 +1140,6 @@ export function AcademicStructureImportTargetReview({
           </TabsContent>
           <TabsContent value="source">
             <div className="space-y-4">
-              {detail.sourcePage ? (
-                <dl className="grid gap-3 rounded-xl border border-border bg-card p-4 text-xs sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <dt className="text-muted-foreground">ANU page</dt>
-                    <dd className="mt-1 break-all">
-                      <a
-                        className="text-primary underline underline-offset-2"
-                        href={detail.sourcePage.canonical_url}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        {detail.sourcePage.canonical_url}
-                      </a>
-                    </dd>
-                  </div>
-                  <MetadataItem
-                    label="Fetched"
-                    value={dateFormatter.format(
-                      new Date(detail.sourcePage.fetched_at),
-                    )}
-                  />
-                  <MetadataItem
-                    label="HTTP status"
-                    value={detail.sourcePage.http_status}
-                  />
-                  <div>
-                    <dt className="text-muted-foreground">Source hash</dt>
-                    <dd
-                      className="mt-1 truncate font-mono text-foreground/90"
-                      title={detail.sourcePage.content_sha256}
-                    >
-                      {detail.sourcePage.content_sha256}
-                    </dd>
-                  </div>
-                </dl>
-              ) : null}
               <AcademicStructureImportArtifactViewer
                 artifacts={detail.artifacts}
               />

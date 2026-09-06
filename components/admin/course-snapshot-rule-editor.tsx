@@ -1,13 +1,16 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Field } from "@reui/ui/field";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { Textarea } from "@reui/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { AutomaticMapping } from "@/components/admin/requisite-automatic-mapping";
 import { RequisiteRuleTree } from "@/components/admin/requisite-rule-tree";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Field, Select, Textarea } from "@/components/ui/field";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { extractAnuCourseCodes } from "@/lib/course-import/course-codes";
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
 import {
@@ -227,7 +230,7 @@ function RuleViews({
 function UnsupportedConditions({ kinds }: { kinds: string[] }) {
   if (kinds.length === 0) return null;
   return (
-    <Alert tone="warning">
+    <Alert variant={"warning"}>
       <AlertDescription>
         This rule contains unsupported conditions (
         {[...new Set(kinds)].join(", ")}). They remain in the saved snapshot,
@@ -332,25 +335,48 @@ export function CourseSnapshotRuleEditor({
     <div className="space-y-4 px-5 py-5 sm:px-6">
       <UnsupportedConditions kinds={initial.unsupportedKinds} />
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
-        <Field label="Original ANU wording">
-          <Textarea
-            className="min-h-24"
-            disabled={!canEdit}
-            onChange={(event) => setSourceText(event.target.value)}
-            value={sourceText}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">
+              {"Original ANU wording"}
+            </span>
+            <Textarea
+              className="min-h-24"
+              disabled={!canEdit}
+              onChange={(event) => setSourceText(event.target.value)}
+              value={sourceText}
+            />
+          </label>
         </Field>
-        <Field label="Rule strength">
-          <Select
-            aria-label="Rule strength"
-            disabled={!canEdit}
-            onChange={setHardness}
-            options={[
-              { value: "hard", label: "Hard requirement" },
-              { value: "advisory", label: "Advisory" },
-            ]}
-            value={hardness}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Rule strength"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(hardness)}
+              onValueChange={(nextValue) => {
+                const option = (
+                  [
+                    { value: "hard", label: "Hard requirement" },
+                    { value: "advisory", label: "Advisory" },
+                  ] as const
+                ).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option) setHardness(option.value);
+              }}
+              disabled={!canEdit}
+              aria-label={"Rule strength"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[
+                { value: "hard", label: "Hard requirement" },
+                { value: "advisory", label: "Advisory" },
+              ].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
       </div>
 
@@ -370,18 +396,24 @@ export function CourseSnapshotRuleEditor({
       />
 
       {error ? (
-        <Alert tone="danger">
+        <Alert variant={"destructive"}>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
       <div className="flex justify-end gap-2 border-t border-border/60 pt-4">
-        <Button disabled={saving} onClick={onCancel}>
+        <Button
+          disabled={saving}
+          onClick={onCancel}
+          variant="outline"
+          type="button"
+        >
           Cancel
         </Button>
         <Button
           disabled={!canEdit || saving || initial.unsupportedKinds.length > 0}
           onClick={() => void save()}
-          variant="primary"
+          variant="default"
+          type="button"
         >
           {saving ? "Saving..." : "Save rule as new draft snapshot"}
         </Button>

@@ -1,10 +1,15 @@
-import { FileCode2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { badgeVariantForTone } from "@/lib/ui";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
 import {
-  DataTableEmpty,
-  DataTableShell,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@reui/ui/card";
+import {
   Table,
   TableBody,
   TableCaption,
@@ -12,7 +17,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@reui/ui/table";
+import ReuiLink from "next/link";
+import { FileCode2 } from "lucide-react";
+
+import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
 import type { Tone } from "@/lib/ui";
 
@@ -66,16 +75,21 @@ export function CourseImportPipeline({
               snapshot.
             </p>
           </div>
-          <ButtonLink href={reviewHref} size="sm">
-            <FileCode2 aria-hidden="true" size={15} /> Full import review
-          </ButtonLink>
+          <Button asChild size="sm" variant="outline">
+            <ReuiLink href={reviewHref}>
+              <FileCode2 aria-hidden="true" size={15} />
+              Full import review
+            </ReuiLink>
+          </Button>
         </div>
       ) : null}
 
       {stages.length ? (
         <DataTableShell>
           <Table className="min-w-[720px]">
-            <TableCaption>Import pipeline stages</TableCaption>
+            <TableCaption className="sr-only">
+              Import pipeline stages
+            </TableCaption>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-16">Step</TableHead>
@@ -96,7 +110,9 @@ export function CourseImportPipeline({
                     {readable(stage.stage_name)}
                   </TableCell>
                   <TableCell>
-                    <Badge tone={statusTone(stage.status)}>
+                    <Badge
+                      variant={badgeVariantForTone[statusTone(stage.status)]}
+                    >
                       {readable(stage.status)}
                     </Badge>
                   </TableCell>
@@ -125,15 +141,37 @@ export function CourseImportPipeline({
 
       {extractions.map((extraction) => (
         <Card key={extraction.id}>
-          <CardHeader
-            action={
-              <Badge tone={statusTone(extraction.validation_status)}>
+          <CardHeader>
+            <CardTitle>
+              <h2>{extraction.resolved_model ?? extraction.requested_model}</h2>
+            </CardTitle>
+            {Boolean(`Extraction attempt ${extraction.extraction_number}`) && (
+              <CardDescription>{`Extraction attempt ${extraction.extraction_number}`}</CardDescription>
+            )}
+            {Boolean(
+              <Badge
+                variant={
+                  badgeVariantForTone[statusTone(extraction.validation_status)]
+                }
+              >
                 {readable(extraction.validation_status)}
-              </Badge>
-            }
-            description={`Extraction attempt ${extraction.extraction_number}`}
-            title={extraction.resolved_model ?? extraction.requested_model}
-          />
+              </Badge>,
+            ) && (
+              <CardAction>
+                {
+                  <Badge
+                    variant={
+                      badgeVariantForTone[
+                        statusTone(extraction.validation_status)
+                      ]
+                    }
+                  >
+                    {readable(extraction.validation_status)}
+                  </Badge>
+                }
+              </CardAction>
+            )}
+          </CardHeader>
           <CardContent>
             <dl className="grid gap-3 text-xs sm:grid-cols-3 lg:grid-cols-6">
               <div>

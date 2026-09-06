@@ -1,8 +1,5 @@
 "use client";
-
-import { LoaderCircle, Redo2, Save, Send, Undo2 } from "lucide-react";
-import { useId, useState } from "react";
-import { Button, IconButton } from "@/components/ui/button";
+import { Button } from "@reui/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -11,8 +8,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Field, Input } from "@/components/ui/field";
+} from "@reui/ui/dialog";
+import { Field } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+
+import { LoaderCircle, Redo2, Save, Send, Undo2 } from "lucide-react";
+import { useId, useState } from "react";
 
 /**
  * Compact document actions for the application top bar. The breadcrumb owns
@@ -63,32 +64,38 @@ export function EditorActions({
 
   return (
     <>
-      <IconButton
+      <Button
         className="size-11 sm:size-8"
         disabled={!canUndo}
-        label="Undo"
         onClick={onUndo}
         size="icon-sm"
         variant="ghost"
+        aria-label={"Undo"}
+        title={"Undo"}
+        type="button"
       >
         <Undo2 aria-hidden="true" />
-      </IconButton>
-      <IconButton
+      </Button>
+      <Button
         className="size-11 sm:size-8"
         disabled={!canRedo}
-        label="Redo"
         onClick={onRedo}
         size="icon-sm"
         variant="ghost"
+        aria-label={"Redo"}
+        title={"Redo"}
+        type="button"
       >
         <Redo2 aria-hidden="true" />
-      </IconButton>
+      </Button>
       <Button
         aria-label="Save indoor map"
         className="h-11 px-3 sm:h-8"
         disabled={savingStatus !== null}
         onClick={() => openSave(saveIntent)}
         size="sm"
+        variant="outline"
+        type="button"
       >
         {savingStatus !== null ? (
           <LoaderCircle
@@ -112,7 +119,8 @@ export function EditorActions({
         }}
         size="sm"
         title={publishBlocked ?? undefined}
-        variant="primary"
+        variant="default"
+        type="button"
       >
         <Send aria-hidden="true" />
         <span className="hidden sm:inline">Publish</span>
@@ -149,14 +157,17 @@ export function EditorActions({
               </DialogDescription>
             </DialogHeader>
             <div className="px-5 py-4">
-              <Field label="Map name">
-                <Input
-                  autoFocus
-                  onChange={(event) => setDraftName(event.target.value)}
-                  placeholder="Indoor map name"
-                  required
-                  value={draftName}
-                />
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Map name"}</span>
+                  <Input
+                    autoFocus
+                    onChange={(event) => setDraftName(event.target.value)}
+                    placeholder="Indoor map name"
+                    required
+                    value={draftName}
+                  />
+                </label>
               </Field>
               {confirmingPublished && publishBlocked ? (
                 <p
@@ -172,6 +183,8 @@ export function EditorActions({
                 <Button
                   className="h-11 sm:h-8"
                   disabled={savingStatus !== null}
+                  variant="outline"
+                  type="button"
                 >
                   Cancel
                 </Button>
@@ -184,7 +197,7 @@ export function EditorActions({
                   (confirmingPublished && publishBlocked !== null)
                 }
                 type="submit"
-                variant="primary"
+                variant="default"
               >
                 {savingStatus !== null ? (
                   <LoaderCircle

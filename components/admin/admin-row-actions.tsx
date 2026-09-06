@@ -1,4 +1,11 @@
 "use client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@reui/ui/dropdown-menu";
 
 import {
   Archive,
@@ -11,13 +18,6 @@ import {
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export function AdminRowActions({
   archived = false,

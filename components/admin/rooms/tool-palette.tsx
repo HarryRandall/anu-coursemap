@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@reui/ui/button";
 
 import {
   Circle,
@@ -12,7 +13,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Fragment, useId } from "react";
-import { Button } from "@/components/ui/button";
+
 import { cn } from "@/lib/cn";
 
 /**
@@ -161,7 +162,8 @@ export function ToolPalette({
                 onClick={() => onSelect(definition.tool)}
                 size="sm"
                 title={definition.hint}
-                variant={tool === definition.tool ? "subtle" : "ghost"}
+                variant={tool === definition.tool ? "secondary" : "ghost"}
+                type="button"
               >
                 <definition.icon aria-hidden="true" />
                 {definition.label}

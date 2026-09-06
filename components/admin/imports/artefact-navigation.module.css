@@ -1,0 +1,14 @@
+.list [role="tab"] {
+  flex: none;
+  height: 36px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.list [role="tab"]:hover {
+  background: var(--accent);
+}
+.list [role="tab"][data-state="active"] {
+  background: color-mix(in oklab, var(--primary) 12%, var(--background));
+  color: var(--primary);
+}

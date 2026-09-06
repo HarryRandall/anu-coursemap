@@ -1,4 +1,10 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
+import { Field } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { Textarea } from "@reui/ui/textarea";
 
 import { CircleAlert, Plus, Save, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -8,9 +14,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button, IconButton } from "@/components/ui/button";
-import { Field, Input, Select, Textarea } from "@/components/ui/field";
+
 import { saveAcademicStructureManualSnapshot } from "@/lib/coursemap/academic-structure-snapshot-actions";
 import type { AdminStructureReviewRecord } from "@/lib/coursemap/admin-catalogue";
 import {
@@ -146,8 +150,9 @@ function SummaryFieldsEditor({
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <CollectionHeader
         action={
-          <Button onClick={addField} size="sm" variant="secondary">
-            <Plus aria-hidden="true" size={13} /> Add summary field
+          <Button onClick={addField} size="sm" variant="outline" type="button">
+            <Plus aria-hidden="true" size={13} />
+            Add summary field
           </Button>
         }
         count={fields.length}
@@ -188,31 +193,36 @@ function SummaryFieldsEditor({
             >
               <div className="flex items-start gap-3">
                 <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
-                  <Field label="Label">
-                    <Input
-                      onChange={(event) =>
-                        updateField({ label: event.target.value })
-                      }
-                      required
-                      value={field.label}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Label"}</span>
+                      <Input
+                        onChange={(event) =>
+                          updateField({ label: event.target.value })
+                        }
+                        required
+                        value={field.label}
+                      />
+                    </label>
                   </Field>
-                  <Field label="Field key">
-                    <Input
-                      className="font-mono"
-                      onChange={(event) =>
-                        updateField({
-                          fieldKey: event.target.value.toLowerCase(),
-                        })
-                      }
-                      pattern="[a-z0-9]+(?:_[a-z0-9]+)*"
-                      required
-                      value={field.fieldKey}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Field key"}</span>
+                      <Input
+                        className="font-mono"
+                        onChange={(event) =>
+                          updateField({
+                            fieldKey: event.target.value.toLowerCase(),
+                          })
+                        }
+                        pattern="[a-z0-9]+(?:_[a-z0-9]+)*"
+                        required
+                        value={field.fieldKey}
+                      />
+                    </label>
                   </Field>
                 </div>
-                <IconButton
-                  label={`Remove ${field.label || "summary field"}`}
+                <Button
                   onClick={() =>
                     onProjectionChange({
                       ...projection,
@@ -222,9 +232,13 @@ function SummaryFieldsEditor({
                     })
                   }
                   size="icon-sm"
+                  variant="outline"
+                  aria-label={`Remove ${field.label || "summary field"}`}
+                  title={`Remove ${field.label || "summary field"}`}
+                  type="button"
                 >
                   <Trash2 aria-hidden="true" size={14} />
-                </IconButton>
+                </Button>
               </div>
 
               <div className="mt-3 space-y-2 rounded-lg bg-muted/50 p-3">
@@ -247,9 +261,11 @@ function SummaryFieldsEditor({
                       })
                     }
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
+                    type="button"
                   >
-                    <Plus aria-hidden="true" size={13} /> Add value
+                    <Plus aria-hidden="true" size={13} />
+                    Add value
                   </Button>
                 </div>
                 {values.map((value) => (
@@ -268,8 +284,7 @@ function SummaryFieldsEditor({
                       value={value.fieldValue}
                     />
                     {values.length > 1 ? (
-                      <IconButton
-                        label={`Remove value ${value.valuePosition}`}
+                      <Button
                         onClick={() =>
                           onProjectionChange({
                             ...projection,
@@ -281,23 +296,30 @@ function SummaryFieldsEditor({
                           })
                         }
                         size="icon-sm"
+                        variant="outline"
+                        aria-label={`Remove value ${value.valuePosition}`}
+                        title={`Remove value ${value.valuePosition}`}
+                        type="button"
                       >
                         <Trash2 aria-hidden="true" size={14} />
-                      </IconButton>
+                      </Button>
                     ) : null}
                   </div>
                 ))}
               </div>
 
-              <Field className="mt-3" label="Source text">
-                <Textarea
-                  className="min-h-20"
-                  onChange={(event) =>
-                    updateField({ sourceText: event.target.value })
-                  }
-                  required
-                  value={field.sourceText}
-                />
+              <Field className="mt-3">
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Source text"}</span>
+                  <Textarea
+                    className="min-h-20"
+                    onChange={(event) =>
+                      updateField({ sourceText: event.target.value })
+                    }
+                    required
+                    value={field.sourceText}
+                  />
+                </label>
               </Field>
             </div>
           );
@@ -334,8 +356,14 @@ function EvidenceEditor({
     <section className="overflow-hidden rounded-xl border border-border bg-card">
       <CollectionHeader
         action={
-          <Button onClick={addEvidence} size="sm" variant="secondary">
-            <Plus aria-hidden="true" size={13} /> Add evidence
+          <Button
+            onClick={addEvidence}
+            size="sm"
+            variant="outline"
+            type="button"
+          >
+            <Plus aria-hidden="true" size={13} />
+            Add evidence
           </Button>
         }
         count={projection.evidence.length}
@@ -358,54 +386,91 @@ function EvidenceEditor({
             >
               <div className="flex items-start gap-3">
                 <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Field label="Field key">
-                    <Input
-                      className="font-mono"
-                      onChange={(event) =>
-                        updateEvidence({ fieldKey: event.target.value })
-                      }
-                      required
-                      value={evidence.fieldKey}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Field key"}</span>
+                      <Input
+                        className="font-mono"
+                        onChange={(event) =>
+                          updateEvidence({ fieldKey: event.target.value })
+                        }
+                        required
+                        value={evidence.fieldKey}
+                      />
+                    </label>
                   </Field>
-                  <Field label="Method">
-                    <Select
-                      aria-label="Evidence method"
-                      onChange={(method) => updateEvidence({ method })}
-                      options={[
-                        { value: "deterministic", label: "Deterministic" },
-                        { value: "model", label: "Model" },
-                      ]}
-                      value={evidence.method}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Method"}</span>
+                      <OptionPicker
+                        value={"coursemap:" + String(evidence.method)}
+                        onValueChange={(nextValue) => {
+                          const option = (
+                            [
+                              {
+                                value: "deterministic",
+                                label: "Deterministic",
+                              },
+                              { value: "model", label: "Model" },
+                            ] as const
+                          ).find(
+                            (option) =>
+                              "coursemap:" + String(option.value) === nextValue,
+                          );
+                          if (option)
+                            ((method) => updateEvidence({ method }))(
+                              option.value,
+                            );
+                        }}
+                        aria-label={"Evidence method"}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        placeholder={"Select..."}
+                        items={[
+                          { value: "deterministic", label: "Deterministic" },
+                          { value: "model", label: "Model" },
+                        ].map((option) => ({
+                          value: "coursemap:" + String(option.value),
+                          label: option.label,
+                        }))}
+                      />
+                    </label>
                   </Field>
-                  <Field label="Confidence">
-                    <Input
-                      max="1"
-                      min="0"
-                      onChange={(event) =>
-                        updateEvidence({
-                          confidence: Number(event.target.value),
-                        })
-                      }
-                      required
-                      step="0.01"
-                      type="number"
-                      value={evidence.confidence}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">
+                        {"Confidence"}
+                      </span>
+                      <Input
+                        max="1"
+                        min="0"
+                        onChange={(event) =>
+                          updateEvidence({
+                            confidence: Number(event.target.value),
+                          })
+                        }
+                        required
+                        step="0.01"
+                        type="number"
+                        value={evidence.confidence}
+                      />
+                    </label>
                   </Field>
-                  <Field label="Source locator">
-                    <Input
-                      onChange={(event) =>
-                        updateEvidence({ sourceLocator: event.target.value })
-                      }
-                      required
-                      value={evidence.sourceLocator}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">
+                        {"Source locator"}
+                      </span>
+                      <Input
+                        onChange={(event) =>
+                          updateEvidence({ sourceLocator: event.target.value })
+                        }
+                        required
+                        value={evidence.sourceLocator}
+                      />
+                    </label>
                   </Field>
                 </div>
-                <IconButton
-                  label={`Remove evidence ${index + 1}`}
+                <Button
                   onClick={() =>
                     onProjectionChange({
                       ...projection,
@@ -415,19 +480,28 @@ function EvidenceEditor({
                     })
                   }
                   size="icon-sm"
+                  variant="outline"
+                  aria-label={`Remove evidence ${index + 1}`}
+                  title={`Remove evidence ${index + 1}`}
+                  type="button"
                 >
                   <Trash2 aria-hidden="true" size={14} />
-                </IconButton>
+                </Button>
               </div>
-              <Field className="mt-3" label="Evidence excerpt">
-                <Textarea
-                  className="min-h-20"
-                  onChange={(event) =>
-                    updateEvidence({ evidenceExcerpt: event.target.value })
-                  }
-                  required
-                  value={evidence.evidenceExcerpt}
-                />
+              <Field className="mt-3">
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">
+                    {"Evidence excerpt"}
+                  </span>
+                  <Textarea
+                    className="min-h-20"
+                    onChange={(event) =>
+                      updateEvidence({ evidenceExcerpt: event.target.value })
+                    }
+                    required
+                    value={evidence.evidenceExcerpt}
+                  />
+                </label>
               </Field>
             </div>
           );
@@ -454,20 +528,26 @@ function ProvenanceFields({
         Source provenance
       </summary>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Field label="Source locator">
-          <Input
-            onChange={(event) => onLocatorChange(event.target.value)}
-            required
-            value={sourceLocator}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Source locator"}</span>
+            <Input
+              onChange={(event) => onLocatorChange(event.target.value)}
+              required
+              value={sourceLocator}
+            />
+          </label>
         </Field>
-        <Field className="sm:col-span-2" label="Source text">
-          <Textarea
-            className="min-h-20"
-            onChange={(event) => onSourceTextChange(event.target.value)}
-            required
-            value={sourceText}
-          />
+        <Field className="sm:col-span-2">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Source text"}</span>
+            <Textarea
+              className="min-h-20"
+              onChange={(event) => onSourceTextChange(event.target.value)}
+              required
+              value={sourceText}
+            />
+          </label>
         </Field>
       </div>
     </details>
@@ -609,144 +689,205 @@ function RequirementConditionEditor({
             {condition.key}
           </p>
         </div>
-        <IconButton label="Remove condition" onClick={remove} size="icon-sm">
+        <Button
+          onClick={remove}
+          size="icon-sm"
+          variant="outline"
+          aria-label={"Remove condition"}
+          title={"Remove condition"}
+          type="button"
+        >
           <Trash2 aria-hidden="true" size={14} />
-        </IconButton>
+        </Button>
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label="Condition type">
-          <Select
-            aria-label="Condition type"
-            onChange={setKind}
-            options={[...conditionKindOptions]}
-            value={condition.conditionKind}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Condition type"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(condition.conditionKind)}
+              onValueChange={(nextValue) => {
+                const option = ([...conditionKindOptions] as const).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option) setKind(option.value);
+              }}
+              aria-label={"Condition type"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[...conditionKindOptions].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
         {condition.conditionKind === "structure_list" ? (
-          <Field label="Structure kind">
-            <Select
-              aria-label="Structure kind"
-              onChange={(structureKind) => {
-                update({ structureKind });
-                onProjectionChange({
-                  ...projection,
-                  requirementConditions: projection.requirementConditions.map(
-                    (item) =>
-                      item.key === condition.key
-                        ? { ...item, structureKind }
-                        : item,
-                  ),
-                  requirementOptions: projection.requirementOptions.map(
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Structure kind"}</span>
+              <OptionPicker
+                value={
+                  "coursemap:" + String(condition.structureKind ?? "major")
+                }
+                onValueChange={(nextValue) => {
+                  const option = ([...structureKindOptions] as const).find(
                     (option) =>
-                      option.conditionKey === condition.key
-                        ? { ...option, structureKind }
-                        : option,
-                  ),
-                });
-              }}
-              options={[...structureKindOptions]}
-              value={condition.structureKind ?? "major"}
-            />
+                      "coursemap:" + String(option.value) === nextValue,
+                  );
+                  if (option)
+                    ((structureKind) => {
+                      update({ structureKind });
+                      onProjectionChange({
+                        ...projection,
+                        requirementConditions:
+                          projection.requirementConditions.map((item) =>
+                            item.key === condition.key
+                              ? { ...item, structureKind }
+                              : item,
+                          ),
+                        requirementOptions: projection.requirementOptions.map(
+                          (option) =>
+                            option.conditionKey === condition.key
+                              ? { ...option, structureKind }
+                              : option,
+                        ),
+                      });
+                    })(option.value);
+                }}
+                aria-label={"Structure kind"}
+                onPointerDown={(event) => event.stopPropagation()}
+                placeholder={"Select..."}
+                items={[...structureKindOptions].map((option) => ({
+                  value: "coursemap:" + String(option.value),
+                  label: option.label,
+                }))}
+              />
+            </label>
           </Field>
         ) : null}
         {condition.conditionKind === "subject" ? (
-          <Field label="Subject code">
-            <Input
-              maxLength={4}
-              onChange={(event) =>
-                update({ subjectCode: event.target.value.toUpperCase() })
-              }
-              pattern="[A-Z]{4}"
-              required
-              value={condition.subjectCode ?? ""}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Subject code"}</span>
+              <Input
+                maxLength={4}
+                onChange={(event) =>
+                  update({ subjectCode: event.target.value.toUpperCase() })
+                }
+                pattern="[A-Z]{4}"
+                required
+                value={condition.subjectCode ?? ""}
+              />
+            </label>
           </Field>
         ) : null}
         {condition.conditionKind === "tag" ? (
-          <Field label="Tag">
-            <Input
-              onChange={(event) => update({ tag: event.target.value })}
-              required
-              value={condition.tag ?? ""}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Tag"}</span>
+              <Input
+                onChange={(event) => update({ tag: event.target.value })}
+                required
+                value={condition.tag ?? ""}
+              />
+            </label>
           </Field>
         ) : null}
         {supportsUnits ? (
           <>
-            <Field label="Minimum units">
-              <Input
-                min="0.5"
-                onChange={(event) =>
-                  update({ minimumUnits: nullableNumber(event.target.value) })
-                }
-                step="0.5"
-                type="number"
-                value={numberValue(condition.minimumUnits)}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Minimum units"}</span>
+                <Input
+                  min="0.5"
+                  onChange={(event) =>
+                    update({ minimumUnits: nullableNumber(event.target.value) })
+                  }
+                  step="0.5"
+                  type="number"
+                  value={numberValue(condition.minimumUnits)}
+                />
+              </label>
             </Field>
-            <Field label="Maximum units">
-              <Input
-                min="0.5"
-                onChange={(event) =>
-                  update({ maximumUnits: nullableNumber(event.target.value) })
-                }
-                step="0.5"
-                type="number"
-                value={numberValue(condition.maximumUnits)}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Maximum units"}</span>
+                <Input
+                  min="0.5"
+                  onChange={(event) =>
+                    update({ maximumUnits: nullableNumber(event.target.value) })
+                  }
+                  step="0.5"
+                  type="number"
+                  value={numberValue(condition.maximumUnits)}
+                />
+              </label>
             </Field>
           </>
         ) : null}
         {supportsLevels ? (
           <>
-            <Field label="Minimum level">
-              <Input
-                min="0"
-                onChange={(event) =>
-                  update({ minimumLevel: nullableNumber(event.target.value) })
-                }
-                step="1"
-                type="number"
-                value={numberValue(condition.minimumLevel)}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Minimum level"}</span>
+                <Input
+                  min="0"
+                  onChange={(event) =>
+                    update({ minimumLevel: nullableNumber(event.target.value) })
+                  }
+                  step="1"
+                  type="number"
+                  value={numberValue(condition.minimumLevel)}
+                />
+              </label>
             </Field>
-            <Field label="Maximum level">
-              <Input
-                min="0"
-                onChange={(event) =>
-                  update({ maximumLevel: nullableNumber(event.target.value) })
-                }
-                step="1"
-                type="number"
-                value={numberValue(condition.maximumLevel)}
-              />
+            <Field>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Maximum level"}</span>
+                <Input
+                  min="0"
+                  onChange={(event) =>
+                    update({ maximumLevel: nullableNumber(event.target.value) })
+                  }
+                  step="1"
+                  type="number"
+                  value={numberValue(condition.maximumLevel)}
+                />
+              </label>
             </Field>
           </>
         ) : null}
         {condition.conditionKind === "course_list" ||
         condition.conditionKind === "structure_list" ? (
-          <Field label="Minimum choices">
-            <Input
-              min="1"
-              onChange={(event) =>
-                update({ minimumCourses: nullableNumber(event.target.value) })
-              }
-              step="1"
-              type="number"
-              value={numberValue(condition.minimumCourses)}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Minimum choices"}</span>
+              <Input
+                min="1"
+                onChange={(event) =>
+                  update({ minimumCourses: nullableNumber(event.target.value) })
+                }
+                step="1"
+                type="number"
+                value={numberValue(condition.minimumCourses)}
+              />
+            </label>
           </Field>
         ) : null}
       </div>
 
       {condition.conditionKind === "free_text" ? (
-        <Field className="mt-3" label="Requirement wording">
-          <Textarea
-            onChange={(event) => update({ freeText: event.target.value })}
-            required
-            value={condition.freeText ?? ""}
-          />
+        <Field className="mt-3">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Requirement wording"}</span>
+            <Textarea
+              onChange={(event) => update({ freeText: event.target.value })}
+              required
+              value={condition.freeText ?? ""}
+            />
+          </label>
         </Field>
       ) : null}
 
@@ -757,8 +898,14 @@ function RequirementConditionEditor({
             <p className="text-xs font-medium text-foreground/80">
               Allowed options
             </p>
-            <Button onClick={addOption} size="sm" variant="secondary">
-              <Plus aria-hidden="true" size={13} /> Add option
+            <Button
+              onClick={addOption}
+              size="sm"
+              variant="outline"
+              type="button"
+            >
+              <Plus aria-hidden="true" size={13} />
+              Add option
             </Button>
           </div>
           <div className="mt-3 space-y-2">
@@ -782,13 +929,16 @@ function RequirementConditionEditor({
                   required
                   value={option.optionCode}
                 />
-                <IconButton
-                  label={`Remove ${option.optionCode || "option"}`}
+                <Button
                   onClick={() => removeOption(option.position)}
                   size="icon-sm"
+                  variant="outline"
+                  aria-label={`Remove ${option.optionCode || "option"}`}
+                  title={`Remove ${option.optionCode || "option"}`}
+                  type="button"
                 >
                   <Trash2 aria-hidden="true" size={14} />
-                </IconButton>
+                </Button>
               </div>
             ))}
           </div>
@@ -936,83 +1086,124 @@ function RequirementGroupEditor({
             {group.key}
           </p>
         </div>
-        <IconButton label="Remove group" onClick={remove} size="icon-sm">
+        <Button
+          onClick={remove}
+          size="icon-sm"
+          variant="outline"
+          aria-label={"Remove group"}
+          title={"Remove group"}
+          type="button"
+        >
           <Trash2 aria-hidden="true" size={14} />
-        </IconButton>
+        </Button>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label="Group title">
-          <Input
-            onChange={(event) =>
-              update({ title: nullableText(event.target.value) })
-            }
-            value={group.title ?? ""}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Group title"}</span>
+            <Input
+              onChange={(event) =>
+                update({ title: nullableText(event.target.value) })
+              }
+              value={group.title ?? ""}
+            />
+          </label>
         </Field>
-        <Field label="Operator">
-          <Select
-            aria-label="Group operator"
-            onChange={(operator) =>
-              update({
-                operator,
-                minimumCount:
-                  operator === "minimum_count"
-                    ? (group.minimumCount ?? 1)
-                    : null,
-              })
-            }
-            options={[
-              { value: "all_of", label: "Complete all" },
-              { value: "any_of", label: "Complete any" },
-              { value: "minimum_count", label: "Minimum number" },
-            ]}
-            value={group.operator}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Operator"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(group.operator)}
+              onValueChange={(nextValue) => {
+                const option = (
+                  [
+                    { value: "all_of", label: "Complete all" },
+                    { value: "any_of", label: "Complete any" },
+                    { value: "minimum_count", label: "Minimum number" },
+                  ] as const
+                ).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option)
+                  ((operator) =>
+                    update({
+                      operator,
+                      minimumCount:
+                        operator === "minimum_count"
+                          ? (group.minimumCount ?? 1)
+                          : null,
+                    }))(option.value);
+              }}
+              aria-label={"Group operator"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[
+                { value: "all_of", label: "Complete all" },
+                { value: "any_of", label: "Complete any" },
+                { value: "minimum_count", label: "Minimum number" },
+              ].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
         {group.operator === "minimum_count" ? (
-          <Field label="Minimum number">
-            <Input
-              min="1"
-              onChange={(event) =>
-                update({ minimumCount: nullableNumber(event.target.value) })
-              }
-              required
-              step="1"
-              type="number"
-              value={numberValue(group.minimumCount)}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Minimum number"}</span>
+              <Input
+                min="1"
+                onChange={(event) =>
+                  update({ minimumCount: nullableNumber(event.target.value) })
+                }
+                required
+                step="1"
+                type="number"
+                value={numberValue(group.minimumCount)}
+              />
+            </label>
           </Field>
         ) : null}
-        <Field label="Minimum units">
-          <Input
-            min="0.5"
-            onChange={(event) =>
-              update({ minimumUnits: nullableNumber(event.target.value) })
-            }
-            step="0.5"
-            type="number"
-            value={numberValue(group.minimumUnits)}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Minimum units"}</span>
+            <Input
+              min="0.5"
+              onChange={(event) =>
+                update({ minimumUnits: nullableNumber(event.target.value) })
+              }
+              step="0.5"
+              type="number"
+              value={numberValue(group.minimumUnits)}
+            />
+          </label>
         </Field>
-        <Field label="Maximum units">
-          <Input
-            min="0.5"
-            onChange={(event) =>
-              update({ maximumUnits: nullableNumber(event.target.value) })
-            }
-            step="0.5"
-            type="number"
-            value={numberValue(group.maximumUnits)}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Maximum units"}</span>
+            <Input
+              min="0.5"
+              onChange={(event) =>
+                update({ maximumUnits: nullableNumber(event.target.value) })
+              }
+              step="0.5"
+              type="number"
+              value={numberValue(group.maximumUnits)}
+            />
+          </label>
         </Field>
-        <Field className="sm:col-span-2 lg:col-span-3" label="Description">
-          <Textarea
-            className="min-h-20"
-            onChange={(event) =>
-              update({ description: nullableText(event.target.value) })
-            }
-            value={group.description ?? ""}
-          />
+        <Field className="sm:col-span-2 lg:col-span-3">
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Description"}</span>
+            <Textarea
+              className="min-h-20"
+              onChange={(event) =>
+                update({ description: nullableText(event.target.value) })
+              }
+              value={group.description ?? ""}
+            />
+          </label>
         </Field>
       </div>
       <ProvenanceFields
@@ -1047,11 +1238,18 @@ function RequirementGroupEditor({
         ) : null}
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button onClick={addCondition} size="sm" variant="secondary">
-          <Plus aria-hidden="true" size={13} /> Add condition
+        <Button
+          onClick={addCondition}
+          size="sm"
+          variant="outline"
+          type="button"
+        >
+          <Plus aria-hidden="true" size={13} />
+          Add condition
         </Button>
-        <Button onClick={addGroup} size="sm" variant="secondary">
-          <Plus aria-hidden="true" size={13} /> Add nested group
+        <Button onClick={addGroup} size="sm" variant="outline" type="button">
+          <Plus aria-hidden="true" size={13} />
+          Add nested group
         </Button>
       </div>
     </div>
@@ -1143,46 +1341,92 @@ export function AcademicStructureManualSnapshotEditor({
           <div>
             <h3 className="text-sm font-semibold text-foreground">Identity</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Field className="sm:col-span-2" label="Name">
-                {textField("title", { required: true })}
+              <Field className="sm:col-span-2">
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Name"}</span>
+                  {textField("title", { required: true })}
+                </label>
               </Field>
-              <Field label="Acronym">{textField("acronym")}</Field>
-              <Field label="Short name">{textField("shortName")}</Field>
-              <Field label="Academic career">
-                {textField("academicCareer")}
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Acronym"}</span>
+                  {textField("acronym")}
+                </label>
               </Field>
-              <Field label="College">{textField("college")}</Field>
-              <Field label="Total units">
-                <Input
-                  min="0.5"
-                  onChange={(event) =>
-                    updateSnapshot(
-                      "totalUnits",
-                      nullableNumber(event.target.value),
-                    )
-                  }
-                  step="0.5"
-                  type="number"
-                  value={numberValue(projection.snapshot.totalUnits)}
-                />
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Short name"}</span>
+                  {textField("shortName")}
+                </label>
               </Field>
-              <Field label="Duration in years">
-                <Input
-                  min="0.1"
-                  onChange={(event) =>
-                    updateSnapshot(
-                      "durationYears",
-                      nullableNumber(event.target.value),
-                    )
-                  }
-                  step="0.1"
-                  type="number"
-                  value={numberValue(projection.snapshot.durationYears)}
-                />
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">
+                    {"Academic career"}
+                  </span>
+                  {textField("academicCareer")}
+                </label>
               </Field>
-              <Field label="Delivery mode">{textField("deliveryMode")}</Field>
-              <Field label="Study as">{textField("studyAs")}</Field>
-              <Field label="Contact">{textField("contactText")}</Field>
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"College"}</span>
+                  {textField("college")}
+                </label>
+              </Field>
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Total units"}</span>
+                  <Input
+                    min="0.5"
+                    onChange={(event) =>
+                      updateSnapshot(
+                        "totalUnits",
+                        nullableNumber(event.target.value),
+                      )
+                    }
+                    step="0.5"
+                    type="number"
+                    value={numberValue(projection.snapshot.totalUnits)}
+                  />
+                </label>
+              </Field>
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">
+                    {"Duration in years"}
+                  </span>
+                  <Input
+                    min="0.1"
+                    onChange={(event) =>
+                      updateSnapshot(
+                        "durationYears",
+                        nullableNumber(event.target.value),
+                      )
+                    }
+                    step="0.1"
+                    type="number"
+                    value={numberValue(projection.snapshot.durationYears)}
+                  />
+                </label>
+              </Field>
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Delivery mode"}</span>
+                  {textField("deliveryMode")}
+                </label>
+              </Field>
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Study as"}</span>
+                  {textField("studyAs")}
+                </label>
+              </Field>
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Contact"}</span>
+                  {textField("contactText")}
+                </label>
+              </Field>
             </div>
           </div>
 
@@ -1191,88 +1435,150 @@ export function AcademicStructureManualSnapshotEditor({
               Admissions and combinations
             </h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Field label="Selection rank">
-                <Input
-                  max="100"
-                  min="0"
-                  onChange={(event) =>
-                    updateSnapshot(
-                      "selectionRank",
-                      nullableNumber(event.target.value),
-                    )
-                  }
-                  step="0.05"
-                  type="number"
-                  value={numberValue(projection.snapshot.selectionRank)}
-                />
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">
+                    {"Selection rank"}
+                  </span>
+                  <Input
+                    max="100"
+                    min="0"
+                    onChange={(event) =>
+                      updateSnapshot(
+                        "selectionRank",
+                        nullableNumber(event.target.value),
+                      )
+                    }
+                    step="0.05"
+                    type="number"
+                    value={numberValue(projection.snapshot.selectionRank)}
+                  />
+                </label>
               </Field>
-              <Field label="ATAR">
-                <Input
-                  max="100"
-                  min="0"
-                  onChange={(event) =>
-                    updateSnapshot("atar", nullableNumber(event.target.value))
-                  }
-                  step="0.05"
-                  type="number"
-                  value={numberValue(projection.snapshot.atar)}
-                />
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"ATAR"}</span>
+                  <Input
+                    max="100"
+                    min="0"
+                    onChange={(event) =>
+                      updateSnapshot("atar", nullableNumber(event.target.value))
+                    }
+                    step="0.05"
+                    type="number"
+                    value={numberValue(projection.snapshot.atar)}
+                  />
+                </label>
               </Field>
-              <Field label="Can combine">
-                <Select
-                  aria-label="Can combine"
-                  onChange={(value) =>
-                    updateSnapshot(
-                      "canCombine",
-                      value === "unknown" ? null : value === "yes",
-                    )
-                  }
-                  options={[
-                    { value: "unknown", label: "Not recorded" },
-                    { value: "yes", label: "Yes" },
-                    { value: "no", label: "No" },
-                  ]}
-                  value={
-                    projection.snapshot.canCombine === null
-                      ? "unknown"
-                      : projection.snapshot.canCombine
-                        ? "yes"
-                        : "no"
-                  }
-                />
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Can combine"}</span>
+                  <OptionPicker
+                    value={
+                      "coursemap:" +
+                      String(
+                        projection.snapshot.canCombine === null
+                          ? "unknown"
+                          : projection.snapshot.canCombine
+                            ? "yes"
+                            : "no",
+                      )
+                    }
+                    onValueChange={(nextValue) => {
+                      const option = (
+                        [
+                          { value: "unknown", label: "Not recorded" },
+                          { value: "yes", label: "Yes" },
+                          { value: "no", label: "No" },
+                        ] as const
+                      ).find(
+                        (option) =>
+                          "coursemap:" + String(option.value) === nextValue,
+                      );
+                      if (option)
+                        ((value) =>
+                          updateSnapshot(
+                            "canCombine",
+                            value === "unknown" ? null : value === "yes",
+                          ))(option.value);
+                    }}
+                    aria-label={"Can combine"}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    placeholder={"Select..."}
+                    items={[
+                      { value: "unknown", label: "Not recorded" },
+                      { value: "yes", label: "Yes" },
+                      { value: "no", label: "No" },
+                    ].map((option) => ({
+                      value: "coursemap:" + String(option.value),
+                      label: option.label,
+                    }))}
+                  />
+                </label>
               </Field>
-              <Field label="Can combine vertically">
-                <Select
-                  aria-label="Can combine vertically"
-                  onChange={(value) =>
-                    updateSnapshot(
-                      "canCombineVertical",
-                      value === "unknown" ? null : value === "yes",
-                    )
-                  }
-                  options={[
-                    { value: "unknown", label: "Not recorded" },
-                    { value: "yes", label: "Yes" },
-                    { value: "no", label: "No" },
-                  ]}
-                  value={
-                    projection.snapshot.canCombineVertical === null
-                      ? "unknown"
-                      : projection.snapshot.canCombineVertical
-                        ? "yes"
-                        : "no"
-                  }
-                />
+              <Field>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">
+                    {"Can combine vertically"}
+                  </span>
+                  <OptionPicker
+                    value={
+                      "coursemap:" +
+                      String(
+                        projection.snapshot.canCombineVertical === null
+                          ? "unknown"
+                          : projection.snapshot.canCombineVertical
+                            ? "yes"
+                            : "no",
+                      )
+                    }
+                    onValueChange={(nextValue) => {
+                      const option = (
+                        [
+                          { value: "unknown", label: "Not recorded" },
+                          { value: "yes", label: "Yes" },
+                          { value: "no", label: "No" },
+                        ] as const
+                      ).find(
+                        (option) =>
+                          "coursemap:" + String(option.value) === nextValue,
+                      );
+                      if (option)
+                        ((value) =>
+                          updateSnapshot(
+                            "canCombineVertical",
+                            value === "unknown" ? null : value === "yes",
+                          ))(option.value);
+                    }}
+                    aria-label={"Can combine vertically"}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    placeholder={"Select..."}
+                    items={[
+                      { value: "unknown", label: "Not recorded" },
+                      { value: "yes", label: "Yes" },
+                      { value: "no", label: "No" },
+                    ].map((option) => ({
+                      value: "coursemap:" + String(option.value),
+                      label: option.label,
+                    }))}
+                  />
+                </label>
               </Field>
             </div>
           </div>
 
           <div className="grid gap-4 border-t border-border/60 pt-6 sm:grid-cols-2">
-            <Field className="sm:col-span-2" label="Introduction">
-              {textField("introduction", { multiline: true })}
+            <Field className="sm:col-span-2">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Introduction"}</span>
+                {textField("introduction", { multiline: true })}
+              </label>
             </Field>
-            <Field className="sm:col-span-2" label="Description">
-              {textField("description", { multiline: true })}
+            <Field className="sm:col-span-2">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium">{"Description"}</span>
+                {textField("description", { multiline: true })}
+              </label>
             </Field>
           </div>
         </div>
@@ -1308,9 +1614,11 @@ export function AcademicStructureManualSnapshotEditor({
                 });
               }}
               size="sm"
-              variant="secondary"
+              variant="outline"
+              type="button"
             >
-              <Plus aria-hidden="true" size={13} /> Add section
+              <Plus aria-hidden="true" size={13} />
+              Add section
             </Button>
           }
           count={projection.sections.length}
@@ -1325,49 +1633,56 @@ export function AcademicStructureManualSnapshotEditor({
             >
               <div className="flex items-start gap-3">
                 <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2">
-                  <Field label="Heading">
-                    <Input
-                      onChange={(event) =>
-                        setProjection({
-                          ...projection,
-                          sections: projection.sections.map(
-                            (item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, heading: event.target.value }
-                                : item,
-                          ),
-                        })
-                      }
-                      required
-                      value={section.heading}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">{"Heading"}</span>
+                      <Input
+                        onChange={(event) =>
+                          setProjection({
+                            ...projection,
+                            sections: projection.sections.map(
+                              (item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, heading: event.target.value }
+                                  : item,
+                            ),
+                          })
+                        }
+                        required
+                        value={section.heading}
+                      />
+                    </label>
                   </Field>
-                  <Field label="Section key">
-                    <Input
-                      className="font-mono"
-                      onChange={(event) =>
-                        setProjection({
-                          ...projection,
-                          sections: projection.sections.map(
-                            (item, itemIndex) =>
-                              itemIndex === index
-                                ? {
-                                    ...item,
-                                    sectionKey:
-                                      event.target.value.toLowerCase(),
-                                  }
-                                : item,
-                          ),
-                        })
-                      }
-                      pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-                      required
-                      value={section.sectionKey}
-                    />
+                  <Field>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium">
+                        {"Section key"}
+                      </span>
+                      <Input
+                        className="font-mono"
+                        onChange={(event) =>
+                          setProjection({
+                            ...projection,
+                            sections: projection.sections.map(
+                              (item, itemIndex) =>
+                                itemIndex === index
+                                  ? {
+                                      ...item,
+                                      sectionKey:
+                                        event.target.value.toLowerCase(),
+                                    }
+                                  : item,
+                            ),
+                          })
+                        }
+                        pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                        required
+                        value={section.sectionKey}
+                      />
+                    </label>
                   </Field>
                 </div>
-                <IconButton
-                  label={`Remove ${section.heading || "section"}`}
+                <Button
                   onClick={() =>
                     setProjection({
                       ...projection,
@@ -1377,26 +1692,33 @@ export function AcademicStructureManualSnapshotEditor({
                     })
                   }
                   size="icon-sm"
+                  variant="outline"
+                  aria-label={`Remove ${section.heading || "section"}`}
+                  title={`Remove ${section.heading || "section"}`}
+                  type="button"
                 >
                   <Trash2 aria-hidden="true" size={14} />
-                </IconButton>
+                </Button>
               </div>
-              <Field className="mt-3" label="Content">
-                <Textarea
-                  className="min-h-32"
-                  onChange={(event) =>
-                    setProjection({
-                      ...projection,
-                      sections: projection.sections.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, markdown: event.target.value }
-                          : item,
-                      ),
-                    })
-                  }
-                  required
-                  value={section.markdown}
-                />
+              <Field className="mt-3">
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium">{"Content"}</span>
+                  <Textarea
+                    className="min-h-32"
+                    onChange={(event) =>
+                      setProjection({
+                        ...projection,
+                        sections: projection.sections.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, markdown: event.target.value }
+                            : item,
+                        ),
+                      })
+                    }
+                    required
+                    value={section.markdown}
+                  />
+                </label>
               </Field>
               <ProvenanceFields
                 onLocatorChange={(sourceLocator) =>
@@ -1447,9 +1769,11 @@ export function AcademicStructureManualSnapshotEditor({
                 })
               }
               size="sm"
-              variant="secondary"
+              variant="outline"
+              type="button"
             >
-              <Plus aria-hidden="true" size={13} /> Add outcome
+              <Plus aria-hidden="true" size={13} />
+              Add outcome
             </Button>
           }
           count={projection.learningOutcomes.length}
@@ -1463,28 +1787,27 @@ export function AcademicStructureManualSnapshotEditor({
               key={`${outcome.position}-${index}`}
             >
               <div className="flex items-start gap-3">
-                <Field
-                  className="min-w-0 flex-1"
-                  label={`Outcome ${index + 1}`}
-                >
-                  <Textarea
-                    onChange={(event) =>
-                      setProjection({
-                        ...projection,
-                        learningOutcomes: projection.learningOutcomes.map(
-                          (item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, outcomeText: event.target.value }
-                              : item,
-                        ),
-                      })
-                    }
-                    required
-                    value={outcome.outcomeText}
-                  />
+                <Field className="min-w-0 flex-1">
+                  <label className="flex flex-col gap-2">
+                    <span className="text-sm font-medium">{`Outcome ${index + 1}`}</span>
+                    <Textarea
+                      onChange={(event) =>
+                        setProjection({
+                          ...projection,
+                          learningOutcomes: projection.learningOutcomes.map(
+                            (item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, outcomeText: event.target.value }
+                                : item,
+                          ),
+                        })
+                      }
+                      required
+                      value={outcome.outcomeText}
+                    />
+                  </label>
                 </Field>
-                <IconButton
-                  label={`Remove outcome ${index + 1}`}
+                <Button
                   onClick={() =>
                     setProjection({
                       ...projection,
@@ -1494,9 +1817,13 @@ export function AcademicStructureManualSnapshotEditor({
                     })
                   }
                   size="icon-sm"
+                  variant="outline"
+                  aria-label={`Remove outcome ${index + 1}`}
+                  title={`Remove outcome ${index + 1}`}
+                  type="button"
                 >
                   <Trash2 aria-hidden="true" size={14} />
-                </IconButton>
+                </Button>
               </div>
               <ProvenanceFields
                 onLocatorChange={(sourceLocator) =>
@@ -1550,9 +1877,11 @@ export function AcademicStructureManualSnapshotEditor({
                 })
               }
               size="sm"
-              variant="secondary"
+              variant="outline"
+              type="button"
             >
-              <Plus aria-hidden="true" size={13} /> Add fee
+              <Plus aria-hidden="true" size={13} />
+              Add fee
             </Button>
           }
           count={projection.fees.length}
@@ -1577,106 +1906,233 @@ export function AcademicStructureManualSnapshotEditor({
               >
                 <div className="flex items-start gap-3">
                   <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <Field label="Audience">
-                      <Select
-                        aria-label="Fee audience"
-                        onChange={(audience) => updateFee({ audience })}
-                        options={[
-                          { value: "domestic", label: "Domestic" },
-                          { value: "international", label: "International" },
-                          {
-                            value: "commonwealth_supported",
-                            label: "Commonwealth supported",
-                          },
-                          { value: "other", label: "Other" },
-                        ]}
-                        value={fee.audience}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Audience"}
+                        </span>
+                        <OptionPicker
+                          value={"coursemap:" + String(fee.audience)}
+                          onValueChange={(nextValue) => {
+                            const option = (
+                              [
+                                { value: "domestic", label: "Domestic" },
+                                {
+                                  value: "international",
+                                  label: "International",
+                                },
+                                {
+                                  value: "commonwealth_supported",
+                                  label: "Commonwealth supported",
+                                },
+                                { value: "other", label: "Other" },
+                              ] as const
+                            ).find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                            if (option)
+                              ((audience) => updateFee({ audience }))(
+                                option.value,
+                              );
+                          }}
+                          aria-label={"Fee audience"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          items={[
+                            { value: "domestic", label: "Domestic" },
+                            {
+                              value: "international",
+                              label: "International",
+                            },
+                            {
+                              value: "commonwealth_supported",
+                              label: "Commonwealth supported",
+                            },
+                            { value: "other", label: "Other" },
+                          ].map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Fee type">
-                      <Select
-                        aria-label="Fee type"
-                        onChange={(feeType) => updateFee({ feeType })}
-                        options={[
-                          {
-                            value: "student_contribution",
-                            label: "Student contribution",
-                          },
-                          { value: "tuition", label: "Tuition" },
-                          { value: "indicative", label: "Indicative" },
-                          { value: "other", label: "Other" },
-                        ]}
-                        value={fee.feeType}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Fee type"}
+                        </span>
+                        <OptionPicker
+                          value={"coursemap:" + String(fee.feeType)}
+                          onValueChange={(nextValue) => {
+                            const option = (
+                              [
+                                {
+                                  value: "student_contribution",
+                                  label: "Student contribution",
+                                },
+                                { value: "tuition", label: "Tuition" },
+                                { value: "indicative", label: "Indicative" },
+                                { value: "other", label: "Other" },
+                              ] as const
+                            ).find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                            if (option)
+                              ((feeType) => updateFee({ feeType }))(
+                                option.value,
+                              );
+                          }}
+                          aria-label={"Fee type"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          items={[
+                            {
+                              value: "student_contribution",
+                              label: "Student contribution",
+                            },
+                            { value: "tuition", label: "Tuition" },
+                            { value: "indicative", label: "Indicative" },
+                            { value: "other", label: "Other" },
+                          ].map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Amount">
-                      <Input
-                        min="0"
-                        onChange={(event) =>
-                          updateFee({
-                            amount: nullableNumber(event.target.value),
-                          })
-                        }
-                        step="0.01"
-                        type="number"
-                        value={numberValue(fee.amount)}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">{"Amount"}</span>
+                        <Input
+                          min="0"
+                          onChange={(event) =>
+                            updateFee({
+                              amount: nullableNumber(event.target.value),
+                            })
+                          }
+                          step="0.01"
+                          type="number"
+                          value={numberValue(fee.amount)}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Currency">
-                      <Select
-                        aria-label="Fee currency"
-                        onChange={(currency) =>
-                          updateFee({
-                            currency: currency === "unknown" ? null : "AUD",
-                          })
-                        }
-                        options={[
-                          { value: "unknown", label: "Not stated" },
-                          { value: "AUD", label: "AUD" },
-                        ]}
-                        value={fee.currency ?? "unknown"}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Currency"}
+                        </span>
+                        <OptionPicker
+                          value={
+                            "coursemap:" + String(fee.currency ?? "unknown")
+                          }
+                          onValueChange={(nextValue) => {
+                            const option = (
+                              [
+                                { value: "unknown", label: "Not stated" },
+                                { value: "AUD", label: "AUD" },
+                              ] as const
+                            ).find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                            if (option)
+                              ((currency) =>
+                                updateFee({
+                                  currency:
+                                    currency === "unknown" ? null : "AUD",
+                                }))(option.value);
+                          }}
+                          aria-label={"Fee currency"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          items={[
+                            { value: "unknown", label: "Not stated" },
+                            { value: "AUD", label: "AUD" },
+                          ].map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Basis">
-                      <Select
-                        aria-label="Fee basis"
-                        onChange={(basis) => updateFee({ basis })}
-                        options={[
-                          { value: "programme", label: "Programme" },
-                          { value: "unit", label: "Per unit" },
-                          { value: "eftsl", label: "Per EFTSL" },
-                          { value: "annual", label: "Annual" },
-                          { value: "unknown", label: "Not stated" },
-                        ]}
-                        value={fee.basis}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">{"Basis"}</span>
+                        <OptionPicker
+                          value={"coursemap:" + String(fee.basis)}
+                          onValueChange={(nextValue) => {
+                            const option = (
+                              [
+                                { value: "programme", label: "Programme" },
+                                { value: "unit", label: "Per unit" },
+                                { value: "eftsl", label: "Per EFTSL" },
+                                { value: "annual", label: "Annual" },
+                                { value: "unknown", label: "Not stated" },
+                              ] as const
+                            ).find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                            if (option)
+                              ((basis) => updateFee({ basis }))(option.value);
+                          }}
+                          aria-label={"Fee basis"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          items={[
+                            { value: "programme", label: "Programme" },
+                            { value: "unit", label: "Per unit" },
+                            { value: "eftsl", label: "Per EFTSL" },
+                            { value: "annual", label: "Annual" },
+                            { value: "unknown", label: "Not stated" },
+                          ].map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Fee year">
-                      <Input
-                        min="2000"
-                        onChange={(event) =>
-                          updateFee({
-                            feeYear: nullableNumber(event.target.value),
-                          })
-                        }
-                        step="1"
-                        type="number"
-                        value={numberValue(fee.feeYear)}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Fee year"}
+                        </span>
+                        <Input
+                          min="2000"
+                          onChange={(event) =>
+                            updateFee({
+                              feeYear: nullableNumber(event.target.value),
+                            })
+                          }
+                          step="1"
+                          type="number"
+                          value={numberValue(fee.feeYear)}
+                        />
+                      </label>
                     </Field>
-                    <Field className="sm:col-span-2" label="Source label">
-                      <Input
-                        onChange={(event) =>
-                          updateFee({
-                            sourceLabel: nullableText(event.target.value),
-                          })
-                        }
-                        value={fee.sourceLabel ?? ""}
-                      />
+                    <Field className="sm:col-span-2">
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Source label"}
+                        </span>
+                        <Input
+                          onChange={(event) =>
+                            updateFee({
+                              sourceLabel: nullableText(event.target.value),
+                            })
+                          }
+                          value={fee.sourceLabel ?? ""}
+                        />
+                      </label>
                     </Field>
                   </div>
-                  <IconButton
-                    label={`Remove fee ${index + 1}`}
+                  <Button
                     onClick={() =>
                       setProjection({
                         ...projection,
@@ -1686,9 +2142,13 @@ export function AcademicStructureManualSnapshotEditor({
                       })
                     }
                     size="icon-sm"
+                    variant="outline"
+                    aria-label={`Remove fee ${index + 1}`}
+                    title={`Remove fee ${index + 1}`}
+                    type="button"
                   >
                     <Trash2 aria-hidden="true" size={14} />
-                  </IconButton>
+                  </Button>
                 </div>
                 <ProvenanceFields
                   onLocatorChange={(sourceLocator) =>
@@ -1726,9 +2186,11 @@ export function AcademicStructureManualSnapshotEditor({
                 })
               }
               size="sm"
-              variant="secondary"
+              variant="outline"
+              type="button"
             >
-              <Plus aria-hidden="true" size={13} /> Add relationship
+              <Plus aria-hidden="true" size={13} />
+              Add relationship
             </Button>
           }
           count={projection.relationships.length}
@@ -1754,64 +2216,134 @@ export function AcademicStructureManualSnapshotEditor({
               >
                 <div className="flex items-start gap-3">
                   <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <Field label="Relationship">
-                      <Select
-                        aria-label="Relationship kind"
-                        onChange={(relationshipKind) =>
-                          updateRelationship({ relationshipKind })
-                        }
-                        options={[
-                          {
-                            value: "source_reference",
-                            label: "Source reference",
-                          },
-                          { value: "relevant", label: "Relevant" },
-                          { value: "option", label: "Option" },
-                          { value: "required", label: "Required" },
-                          { value: "incompatible", label: "Incompatible" },
-                          { value: "other", label: "Other" },
-                        ]}
-                        value={relationship.relationshipKind}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Relationship"}
+                        </span>
+                        <OptionPicker
+                          value={
+                            "coursemap:" + String(relationship.relationshipKind)
+                          }
+                          onValueChange={(nextValue) => {
+                            const option = (
+                              [
+                                {
+                                  value: "source_reference",
+                                  label: "Source reference",
+                                },
+                                { value: "relevant", label: "Relevant" },
+                                { value: "option", label: "Option" },
+                                { value: "required", label: "Required" },
+                                {
+                                  value: "incompatible",
+                                  label: "Incompatible",
+                                },
+                                { value: "other", label: "Other" },
+                              ] as const
+                            ).find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                            if (option)
+                              ((relationshipKind) =>
+                                updateRelationship({ relationshipKind }))(
+                                option.value,
+                              );
+                          }}
+                          aria-label={"Relationship kind"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          items={[
+                            {
+                              value: "source_reference",
+                              label: "Source reference",
+                            },
+                            { value: "relevant", label: "Relevant" },
+                            { value: "option", label: "Option" },
+                            { value: "required", label: "Required" },
+                            { value: "incompatible", label: "Incompatible" },
+                            { value: "other", label: "Other" },
+                          ].map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Target kind">
-                      <Select
-                        aria-label="Relationship target kind"
-                        onChange={(targetKind) =>
-                          updateRelationship({ targetKind, targetCode: "" })
-                        }
-                        options={[
-                          ...structureKindOptions,
-                          { value: "course", label: "Course" },
-                        ]}
-                        value={relationship.targetKind}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Target kind"}
+                        </span>
+                        <OptionPicker
+                          value={"coursemap:" + String(relationship.targetKind)}
+                          onValueChange={(nextValue) => {
+                            const option = (
+                              [
+                                ...structureKindOptions,
+                                { value: "course", label: "Course" },
+                              ] as const
+                            ).find(
+                              (option) =>
+                                "coursemap:" + String(option.value) ===
+                                nextValue,
+                            );
+                            if (option)
+                              ((targetKind) =>
+                                updateRelationship({
+                                  targetKind,
+                                  targetCode: "",
+                                }))(option.value);
+                          }}
+                          aria-label={"Relationship target kind"}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          placeholder={"Select..."}
+                          items={[
+                            ...structureKindOptions,
+                            { value: "course", label: "Course" },
+                          ].map((option) => ({
+                            value: "coursemap:" + String(option.value),
+                            label: option.label,
+                          }))}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Target code">
-                      <Input
-                        className="font-mono"
-                        onChange={(event) =>
-                          updateRelationship({
-                            targetCode: event.target.value.toUpperCase(),
-                          })
-                        }
-                        required
-                        value={relationship.targetCode}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Target code"}
+                        </span>
+                        <Input
+                          className="font-mono"
+                          onChange={(event) =>
+                            updateRelationship({
+                              targetCode: event.target.value.toUpperCase(),
+                            })
+                          }
+                          required
+                          value={relationship.targetCode}
+                        />
+                      </label>
                     </Field>
-                    <Field label="Target title">
-                      <Input
-                        onChange={(event) =>
-                          updateRelationship({
-                            targetTitle: nullableText(event.target.value),
-                          })
-                        }
-                        value={relationship.targetTitle ?? ""}
-                      />
+                    <Field>
+                      <label className="flex flex-col gap-2">
+                        <span className="text-sm font-medium">
+                          {"Target title"}
+                        </span>
+                        <Input
+                          onChange={(event) =>
+                            updateRelationship({
+                              targetTitle: nullableText(event.target.value),
+                            })
+                          }
+                          value={relationship.targetTitle ?? ""}
+                        />
+                      </label>
                     </Field>
                   </div>
-                  <IconButton
-                    label={`Remove relationship ${index + 1}`}
+                  <Button
                     onClick={() =>
                       setProjection({
                         ...projection,
@@ -1821,9 +2353,13 @@ export function AcademicStructureManualSnapshotEditor({
                       })
                     }
                     size="icon-sm"
+                    variant="outline"
+                    aria-label={`Remove relationship ${index + 1}`}
+                    title={`Remove relationship ${index + 1}`}
+                    type="button"
                   >
                     <Trash2 aria-hidden="true" size={14} />
-                  </IconButton>
+                  </Button>
                 </div>
                 <ProvenanceFields
                   onLocatorChange={(sourceLocator) =>
@@ -1873,9 +2409,11 @@ export function AcademicStructureManualSnapshotEditor({
                   });
                 }}
                 size="sm"
-                variant="secondary"
+                variant="outline"
+                type="button"
               >
-                <Plus aria-hidden="true" size={13} /> Add root group
+                <Plus aria-hidden="true" size={13} />
+                Add root group
               </Button>
             ) : null
           }
@@ -1922,9 +2460,11 @@ export function AcademicStructureManualSnapshotEditor({
                   })
                 }
                 size="sm"
-                variant="secondary"
+                variant="outline"
+                type="button"
               >
-                <Plus aria-hidden="true" size={13} /> Add wording
+                <Plus aria-hidden="true" size={13} />
+                Add wording
               </Button>
             </div>
             <div className="mt-3 space-y-2">
@@ -1951,8 +2491,7 @@ export function AcademicStructureManualSnapshotEditor({
                     required
                     value={item.sourceText}
                   />
-                  <IconButton
-                    label={`Remove unmodelled requirement ${index + 1}`}
+                  <Button
                     onClick={() =>
                       setProjection({
                         ...projection,
@@ -1963,9 +2502,13 @@ export function AcademicStructureManualSnapshotEditor({
                       })
                     }
                     size="icon-sm"
+                    variant="outline"
+                    aria-label={`Remove unmodelled requirement ${index + 1}`}
+                    title={`Remove unmodelled requirement ${index + 1}`}
+                    type="button"
                   >
                     <Trash2 aria-hidden="true" size={14} />
-                  </IconButton>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -1974,17 +2517,23 @@ export function AcademicStructureManualSnapshotEditor({
       </section>
 
       {error ? (
-        <Alert tone="danger">
+        <Alert variant={"destructive"}>
           <CircleAlert aria-hidden="true" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
       <div className="sticky bottom-4 flex flex-wrap items-center justify-end gap-2 rounded-xl border border-border bg-card/80 p-3 shadow-lg backdrop-blur">
-        <Button disabled={saving} onClick={onCancel} variant="secondary">
-          <X aria-hidden="true" size={15} /> Cancel
+        <Button
+          disabled={saving}
+          onClick={onCancel}
+          variant="outline"
+          type="button"
+        >
+          <X aria-hidden="true" size={15} />
+          Cancel
         </Button>
-        <Button disabled={saving} type="submit" variant="primary">
+        <Button disabled={saving} type="submit" variant="default">
           <Save aria-hidden="true" size={15} />
           {saving ? "Saving draft..." : "Save new draft"}
         </Button>

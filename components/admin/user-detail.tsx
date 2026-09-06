@@ -1,69 +1,65 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useSearchParams } from "next/navigation";
+import { Badge } from "@reui/components/badge";
+import { Card } from "@reui/ui/card";
+import { Button } from "@reui/ui/button";
 import {
-  BookOpen,
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  GraduationCap,
-  History,
-  IdCard,
-  ListChecks,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
-import { UserRoleEditor } from "@/components/admin/user-role-editor";
-import { TermLoadChart } from "@/components/dashboard/term-load-chart";
-import { DegreeProgressBar } from "@/components/plan/degree-progress-bar";
-import { AppShell } from "@/components/shell";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DataTableEmpty,
-  DataTableShell,
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@reui/ui/table";
+
+import { useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@reui/ui/tabs";
+import { UserActivityTimeline } from "@/components/admin/user-activity-timeline";
+import { ChevronDown } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
+import { CatalogueIdentity } from "@/components/admin/catalogue-table/catalogue-table";
+
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@reui/ui/collapsible";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@reui/ui/chart";
+import { DataTableShell } from "@/components/ui/data-table";
+import { UserRoleEditor } from "@/components/admin/user-role-editor";
+import { AppShell } from "@/components/shell";
+import { FilterBar } from "@/components/ui/filter-bar";
 import { GeneratedAvatar } from "@/components/ui/generated-avatar";
-import { StatTile } from "@/components/ui/stat-tile";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   adminUserStudyProgress,
   adminUserTermLoads,
   uniqueTrackedCourseCount,
 } from "@/lib/admin/user-study";
 import type {
-  AdminUserCourseStatus,
   AdminUserDetailData,
+  AdminUserCourseStatus,
 } from "@/lib/admin/users";
-import type { Tone } from "@/lib/ui";
 
-const userTabs = ["overview", "courses", "access"] as const;
-type UserTab = (typeof userTabs)[number];
-
-function tabFromSearch(value: string | null): UserTab {
-  return userTabs.includes(value as UserTab) ? (value as UserTab) : "overview";
-}
+const statuses = {
+  planned: { label: "Planned", tone: "info" },
+  enrolled: { label: "In progress", tone: "brand" },
+  completed: { label: "Completed", tone: "success" },
+  credited: { label: "Credit", tone: "success" },
+  failed: { label: "Failed", tone: "danger" },
+  withdrawn: { label: "Withdrawn", tone: "neutral" },
+} as const;
+const chartConfig = {
+  completed: { label: "Completed / credited", color: "var(--primary)" },
+  planned: { label: "Planned / enrolled", color: "var(--chart-2)" },
+} satisfies ChartConfig;
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-AU", {
@@ -73,59 +69,20 @@ function formatDate(value: string) {
     timeZone: "UTC",
   }).format(new Date(value));
 }
-
-function formatStudyLoad(value: "full_time" | "part_time") {
-  return value === "part_time" ? "Part time" : "Full time";
-}
-
-function formatTerm({
-  calendarYear,
-  periodName,
-  periodCode,
+function Panel({
+  children,
+  className = "",
 }: {
-  calendarYear: number | null;
-  periodName: string | null;
-  periodCode: string | null;
+  children: ReactNode;
+  className?: string;
 }) {
-  if (calendarYear === null || periodCode === null) return "Not scheduled";
-  return (periodName ?? periodCode) + " " + calendarYear;
+  return <Card className={`p-4 sm:p-5 ${className}`}>{children}</Card>;
 }
-
-function courseStatus(status: AdminUserCourseStatus): {
-  label: string;
-  tone: Tone;
-} {
-  return {
-    planned: { label: "Planned", tone: "info" },
-    enrolled: { label: "In progress", tone: "brand" },
-    completed: { label: "Completed", tone: "success" },
-    credited: { label: "Credit", tone: "success" },
-    failed: { label: "Failed", tone: "danger" },
-    withdrawn: { label: "Withdrawn", tone: "neutral" },
-  }[status] as { label: string; tone: Tone };
-}
-
-function DetailRow({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: ReactNode;
-  mono?: boolean;
-}) {
+function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid gap-1 border-b border-border/60 py-3 last:border-b-0 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-start sm:gap-4">
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd
-        className={
-          mono
-            ? "min-w-0 font-mono text-xs break-all text-foreground/80"
-            : "min-w-0 text-sm text-foreground"
-        }
-      >
-        {value}
-      </dd>
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-[13px] leading-5 break-words">{children}</dd>
     </div>
   );
 }
@@ -133,569 +90,489 @@ function DetailRow({
 export function AdminUserDetail({
   data,
   currentUserId,
+  accountAgeDays,
 }: {
   data: AdminUserDetailData;
   currentUserId: string;
+  accountAgeDays: number;
 }) {
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<UserTab>(() =>
-    tabFromSearch(searchParams.get("tab")),
-  );
-  const assignedRoleKeys = new Set(
-    data.assignments.map((assignment) => assignment.roleKey),
-  );
-  const assignedRole = data.roles.find((role) =>
-    assignedRoleKeys.has(role.key),
-  );
-  const assignment = data.assignments[0];
-  const isAdministrator = assignedRole?.key === "admin";
-  const programme = data.study.structures.find(
-    (structure) => structure.role === "programme",
-  );
-  const major = data.study.structures.find(
-    (structure) => structure.role === "major",
-  );
-  const minors = data.study.structures.filter(
-    (structure) => structure.role === "minor",
-  );
-  const specialisations = data.study.structures.filter(
-    (structure) => structure.role === "specialisation",
-  );
-  const progress = useMemo(
-    () => adminUserStudyProgress(data.study),
-    [data.study],
-  );
-  const termLoads = useMemo(
-    () => adminUserTermLoads(data.study.courses),
-    [data.study.courses],
-  );
-  const trackedCourses = uniqueTrackedCourseCount(data.study.courses);
-  const completedCourses = data.study.courses.filter(
-    (course) => course.status === "completed" || course.status === "credited",
-  ).length;
-  const activeCourses = data.study.courses.filter(
-    (course) => course.status === "planned" || course.status === "enrolled",
-  ).length;
-  const milestones = [
-    {
-      label: "Account created",
-      date: data.user.createdAt,
-      detail: "Coursemap profile created",
-    },
-    ...(data.user.updatedAt !== data.user.createdAt
-      ? [
-          {
-            label: "Profile updated",
-            date: data.user.updatedAt,
-            detail: "Name or study identity changed",
-          },
-        ]
-      : []),
-    ...(data.study.plan
-      ? [
-          {
-            label: "Primary plan created",
-            date: data.study.plan.createdAt,
-            detail: data.study.plan.catalogueYear + " catalogue",
-          },
-          ...(data.study.plan.updatedAt !== data.study.plan.createdAt
-            ? [
-                {
-                  label: "Plan updated",
-                  date: data.study.plan.updatedAt,
-                  detail: "Latest saved plan change",
-                },
-              ]
-            : []),
-        ]
-      : []),
-  ].toSorted(
-    (left, right) =>
-      new Date(right.date).getTime() - new Date(left.date).getTime(),
-  );
-
-  useEffect(() => {
-    const syncTabFromHistory = () => {
-      setActiveTab(
-        tabFromSearch(new URL(window.location.href).searchParams.get("tab")),
-      );
-    };
-    window.addEventListener("popstate", syncTabFromHistory);
-    return () => window.removeEventListener("popstate", syncTabFromHistory);
-  }, []);
-
-  const selectTab = (tab: UserTab) => {
-    setActiveTab(tab);
+  const tabFromValue = (value: string | null) =>
+    value === "activity"
+      ? "activity"
+      : value === "study" || value === "courses"
+        ? "study"
+        : "overview";
+  const activeTab = tabFromValue(searchParams.get("tab"));
+  const selectTab = (value: string) => {
     const url = new URL(window.location.href);
-    if (tab === "overview") url.searchParams.delete("tab");
-    else url.searchParams.set("tab", tab);
-    window.history.pushState({}, "", url.pathname + url.search + url.hash);
+    if (value === "overview") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", value);
+    window.history.pushState(null, "", url.pathname + url.search + url.hash);
   };
-
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const plan = data.study.plan;
+  const programme = data.study.structures.find(
+    (item) => item.role === "programme",
+  );
+  const studyAreas = [
+    {
+      label: "Major",
+      structures: data.study.structures.filter(
+        (structure) => structure.role === "major",
+      ),
+    },
+    {
+      label: "Minors",
+      structures: data.study.structures.filter(
+        (structure) => structure.role === "minor",
+      ),
+    },
+    {
+      label: "Specialisations",
+      structures: data.study.structures.filter(
+        (structure) => structure.role === "specialisation",
+      ),
+    },
+  ];
+  const role = data.roles.find(
+    (item) => item.key === (data.assignments[0]?.roleKey ?? "user"),
+  );
+  const progress = adminUserStudyProgress(data.study);
+  const terms = adminUserTermLoads(data.study.courses);
+  const tracked = uniqueTrackedCourseCount(data.study.courses);
+  const filteredCourses = data.study.courses.filter(
+    (course) =>
+      (!status || course.status === status) &&
+      `${course.code} ${course.title}`
+        .toLowerCase()
+        .includes(query.trim().toLowerCase()),
+  );
+  const completedCourses = uniqueTrackedCourseCount(
+    data.study.courses.filter(
+      (course) => course.status === "completed" || course.status === "credited",
+    ),
+  );
+  const metrics = [
+    {
+      label: "Degree completion",
+      value: !plan
+        ? "Not started"
+        : progress.total
+          ? `${progress.percent}%`
+          : "Unavailable",
+      detail: progress.total
+        ? `${progress.completed} of ${progress.total} units`
+        : "No degree requirements available",
+    },
+    {
+      label: "Courses completed",
+      value: completedCourses,
+      detail: "Completed or credited courses",
+    },
+    {
+      label: "Courses tracked",
+      value: tracked,
+      detail: "Unique courses in plan and history",
+    },
+    {
+      label: "Units planned",
+      value: progress.planned,
+      detail: "Planned and enrolled courses",
+    },
+  ];
   const tabs = (
-    <TabsList className="h-auto min-w-max justify-start gap-0 rounded-none bg-transparent p-0">
+    <TabsList aria-label="User sections" variant="line">
       {[
-        { value: "overview", label: "Overview", icon: UserRound },
-        { value: "courses", label: "Courses", icon: BookOpen },
-        { value: "access", label: "Access", icon: ShieldCheck },
-      ].map(({ value, label, icon: Icon }) => (
-        <TabsTrigger
-          className="h-12 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
-          key={value}
-          value={value}
-        >
-          <Icon aria-hidden="true" size={15} />
-          {label}
-          {value === "courses" && trackedCourses > 0 ? (
-            <span className="ml-0.5 text-[11px] text-muted-foreground/80 tabular-nums">
-              {trackedCourses}
-            </span>
-          ) : null}
+        { value: "overview", label: "Overview" },
+        { value: "study", label: "Study" },
+        { value: "activity", label: "Activity" },
+      ].map((tab) => (
+        <TabsTrigger key={tab.value} value={tab.value}>
+          {tab.label}
         </TabsTrigger>
       ))}
     </TabsList>
   );
-
   return (
-    <Tabs
-      className="block"
-      onValueChange={(value) => selectTab(value as UserTab)}
-      value={activeTab}
-    >
+    <Tabs value={activeTab} onValueChange={selectTab} className="block">
       <AppShell
         admin
         currentBreadcrumbLabel={data.user.displayName}
         tabs={tabs}
       >
-        <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5 pb-10">
-          <Card className="overflow-hidden">
-            <div className="flex min-w-0 flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-              <div className="flex min-w-0 items-center gap-4">
-                <GeneratedAvatar
-                  name={data.user.displayName}
-                  email={data.user.email}
-                  className="size-14 text-sm"
-                />
-                <div className="min-w-0">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    {/*
-                      The breadcrumb already ends in this name, so it is here
-                      as the label for the avatar beside it, not as a page
-                      title. At display size it was the largest type in the
-                      console and read as one.
-                    */}
-                    <h1 className="min-w-0 text-base font-semibold break-words text-foreground">
-                      {data.user.displayName}
-                    </h1>
-                    {data.user.userId === currentUserId ? (
-                      <Badge tone="brand">You</Badge>
-                    ) : null}
-                    <Badge tone={isAdministrator ? "success" : "neutral"}>
-                      {assignedRole?.name ?? "User"}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 text-sm break-all text-muted-foreground">
-                    {data.user.email ?? "No email address"}
-                  </p>
-                </div>
+        <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5 pb-8">
+          <header className="flex items-center gap-3">
+            <GeneratedAvatar
+              name={data.user.displayName}
+              email={data.user.email}
+              className="size-11 shrink-0 text-sm"
+            />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-lg font-semibold tracking-tight break-words">
+                  {data.user.displayName}
+                </h1>
+                <Badge variant={"outline"}>{role?.name ?? "User"}</Badge>
+                {!plan ? (
+                  <Badge variant={"warning-light"}>Onboarding incomplete</Badge>
+                ) : null}
+                {data.user.userId === currentUserId ? (
+                  <Badge variant={"primary-light"}>You</Badge>
+                ) : null}
               </div>
-              <Badge
-                className="self-start sm:self-auto"
-                tone={data.study.plan ? "success" : "warning"}
-              >
-                {data.study.plan ? (
-                  <CheckCircle2 aria-hidden="true" />
-                ) : (
-                  <Clock3 aria-hidden="true" />
-                )}
-                {data.study.plan
-                  ? "Onboarding complete"
-                  : "Onboarding incomplete"}
-              </Badge>
+              <p className="mt-1 text-[13px] break-all text-muted-foreground">
+                {data.user.email ?? "No email address"}
+              </p>
             </div>
-            <div className="grid border-t border-border bg-muted/30 sm:grid-cols-3 sm:divide-x sm:divide-border/80">
-              {[
-                {
-                  icon: CalendarDays,
-                  label: "Joined",
-                  value: formatDate(data.user.createdAt),
-                },
-                {
-                  icon: IdCard,
-                  label: "Student number",
-                  value: data.user.studentNumber ?? "Not supplied",
-                },
-                {
-                  icon: Clock3,
-                  label: "Last record change",
-                  value: formatDate(
-                    data.study.plan?.updatedAt ?? data.user.updatedAt,
-                  ),
-                },
-              ].map(({ icon: Icon, label, value }) => (
-                <div
-                  className="flex items-center gap-3 border-b border-border px-5 py-3 last:border-b-0 sm:border-b-0"
-                  key={label}
-                >
-                  <Icon
-                    aria-hidden="true"
-                    className="shrink-0 text-muted-foreground/80"
-                    size={15}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-medium tracking-wide text-muted-foreground/80 uppercase">
-                      {label}
-                    </p>
-                    <p className="mt-0.5 truncate text-xs font-medium text-foreground/80">
-                      {value}
-                    </p>
-                  </div>
-                </div>
+          </header>
+
+          <TabsContent value="overview" className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Panel>
+                <dl>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Account age
+                  </dt>
+                  <dd className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">
+                    {accountAgeDays}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {accountAgeDays === 1 ? "day" : "days"}
+                    </span>
+                  </dd>
+                  <dd className="mt-2 text-xs text-muted-foreground">
+                    Joined {formatDate(data.user.createdAt)}
+                  </dd>
+                </dl>
+              </Panel>
+              <Panel>
+                <dl>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Profile updated
+                  </dt>
+                  <dd className="mt-2 text-xl font-semibold tracking-tight">
+                    {formatDate(data.user.updatedAt)}
+                  </dd>
+                </dl>
+              </Panel>
+              <Panel>
+                <dl>
+                  <dt className="text-xs font-medium text-muted-foreground">
+                    Onboarding
+                  </dt>
+                  <dd className="mt-2 text-xl font-semibold tracking-tight">
+                    {plan ? "Complete" : "Incomplete"}
+                  </dd>
+                </dl>
+              </Panel>
+            </div>
+            <UserRoleEditor
+              user={data.user}
+              roles={data.roles}
+              permissions={data.permissions}
+              assignments={data.assignments}
+              currentUserId={currentUserId}
+            />
+
+            <Panel>
+              <h2 className="mb-4 text-sm font-semibold">Account details</h2>
+              <dl className="grid gap-5 sm:grid-cols-2">
+                <Detail label="Name">{data.user.displayName}</Detail>
+                <Detail label="Email">
+                  {data.user.email ?? "Not supplied"}
+                </Detail>
+                <Detail label="Student number">
+                  {data.user.studentNumber ?? "Not supplied"}
+                </Detail>
+                <Detail label="Joined">
+                  {formatDate(data.user.createdAt)}
+                </Detail>
+              </dl>
+              <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3 -ml-3"
+                    type="button"
+                  >
+                    Record details
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`size-3.5 ${detailsOpen ? "rotate-180" : ""}`}
+                    />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <dl className="grid gap-5 pt-3 sm:grid-cols-2">
+                    <Detail label="User ID">
+                      <span className="font-mono text-xs break-all">
+                        {data.user.userId}
+                      </span>
+                    </Detail>
+                  </dl>
+                </CollapsibleContent>
+              </Collapsible>
+            </Panel>
+          </TabsContent>
+          <TabsContent value="study" className="space-y-5">
+            {plan ? (
+              <section aria-labelledby="details-heading" className="space-y-5">
+                <h2 id="details-heading" className="text-sm font-semibold">
+                  Degree details
+                </h2>
+                <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {plan ? (
+                    <>
+                      <Detail label="Programme">
+                        {programme
+                          ? `${programme.name} (${programme.code})`
+                          : plan.name}
+                      </Detail>
+                      <Detail label="Study load">
+                        {plan.studyLoad === "full_time"
+                          ? "Full time"
+                          : "Part time"}
+                      </Detail>
+                      <Detail label="Commencement">
+                        {plan.commencementYear}
+                      </Detail>
+                      <Detail label="Catalogue">{plan.catalogueYear}</Detail>
+                      {studyAreas
+                        .filter((area) => area.structures.length > 0)
+                        .map((area) => (
+                          <Detail key={area.label} label={area.label}>
+                            {area.structures
+                              .map(
+                                (structure) =>
+                                  `${structure.name} (${structure.code})`,
+                              )
+                              .join(", ")}
+                          </Detail>
+                        ))}
+                    </>
+                  ) : null}
+                </dl>
+              </section>
+            ) : null}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {metrics.map((metric) => (
+                <Panel key={metric.label}>
+                  <dl>
+                    <dt className="text-xs font-medium text-muted-foreground">
+                      {metric.label}
+                    </dt>
+                    <dd className="mt-2 flex flex-wrap items-baseline gap-1.5 text-2xl font-semibold tracking-tight tabular-nums">
+                      {metric.value}
+                    </dd>
+                    <dd className="mt-2 text-xs text-muted-foreground">
+                      {metric.detail}
+                    </dd>
+                  </dl>
+                </Panel>
               ))}
             </div>
-          </Card>
 
-          <TabsContent className="mt-0 space-y-5" value="overview">
-            {data.study.plan && programme ? (
-              <>
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <StatTile
-                    description={
-                      progress.completed +
-                      " of " +
-                      progress.total +
-                      " units completed"
-                    }
-                    icon={<GraduationCap aria-hidden="true" />}
-                    label="Degree progress"
-                    unit="%"
-                    value={progress.percent}
+            {plan && terms.length > 0 ? (
+              <section aria-labelledby="study-load-heading">
+                <Panel>
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                    <h2
+                      id="study-load-heading"
+                      className="text-sm font-semibold"
+                    >
+                      Study load by semester
+                    </h2>
+                    <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                      {Object.entries(chartConfig).map(([key, item]) => (
+                        <span key={key} className="flex items-center gap-1.5">
+                          <span
+                            aria-hidden="true"
+                            className="size-2 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          {item.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <ChartContainer config={chartConfig} className="h-64 w-full">
+                    <BarChart
+                      accessibilityLayer
+                      data={terms}
+                      margin={{ left: 0, right: 12, top: 8, bottom: 0 }}
+                    >
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={10}
+                      />
+                      <YAxis
+                        width={34}
+                        allowDecimals={false}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent />}
+                      />
+                      <Bar
+                        dataKey="completed"
+                        stackId="units"
+                        fill="var(--color-completed)"
+                        maxBarSize={48}
+                        isAnimationActive={false}
+                      />
+                      <Bar
+                        dataKey="planned"
+                        stackId="units"
+                        fill="var(--color-planned)"
+                        radius={[4, 4, 0, 0]}
+                        maxBarSize={48}
+                        isAnimationActive={false}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Units per semester. Unscheduled, failed and withdrawn
+                    records are excluded.
+                  </p>
+                  <table className="sr-only">
+                    <caption>Study load in units by semester</caption>
+                    <thead>
+                      <tr>
+                        <th>Semester</th>
+                        <th>Completed or credited</th>
+                        <th>Planned or enrolled</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {terms.map((term) => (
+                        <tr key={term.id}>
+                          <th>{term.label}</th>
+                          <td>{term.completed}</td>
+                          <td>{term.planned}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Panel>
+              </section>
+            ) : !plan ? (
+              <p className="text-sm text-muted-foreground">
+                This user has not saved a primary degree plan yet.
+              </p>
+            ) : null}
+
+            {plan || data.study.courses.length > 0 ? (
+              <section
+                id="courses"
+                aria-labelledby="courses-heading"
+                className="space-y-4"
+              >
+                <h2 id="courses-heading" className="text-sm font-semibold">
+                  Courses
+                </h2>
+                {data.study.courses.length > 8 ? (
+                  <FilterBar
+                    searchPlaceholder="Search courses"
+                    filters={[
+                      {
+                        key: "status",
+                        label: "Status",
+                        options: Object.entries(statuses).map(
+                          ([value, item]) => ({
+                            value,
+                            label: item.label,
+                          }),
+                        ),
+                      },
+                    ]}
+                    state={{
+                      query,
+                      values: { status },
+                      onQueryChange: setQuery,
+                      onFilterChange: (_, value) => setStatus(value),
+                    }}
                   />
-                  <StatTile
-                    description={
-                      completedCourses +
-                      " completed or credited, " +
-                      activeCourses +
-                      " active"
-                    }
-                    icon={<BookOpen aria-hidden="true" />}
-                    label="Courses tracked"
-                    value={trackedCourses}
-                  />
-                  <StatTile
-                    description={progress.remaining + " units still to map"}
-                    icon={<ListChecks aria-hidden="true" />}
-                    label="Plan coverage"
-                    unit="units"
-                    value={progress.mapped}
-                  />
-                  <StatTile
-                    description="Most recent primary-plan change"
-                    icon={<Clock3 aria-hidden="true" />}
-                    label="Plan updated"
-                    value={formatDate(data.study.plan.updatedAt)}
-                  />
-                </div>
-
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(20rem,0.85fr)]">
-                  <Card>
-                    <CardHeader>
-                      <div>
-                        <CardTitle>Degree progress</CardTitle>
-                        <CardDescription>
-                          {programme.name} ({programme.code})
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="mb-4 text-3xl font-semibold tracking-tight text-foreground tabular-nums">
-                        {progress.percent}% complete
-                      </p>
-                      <DegreeProgressBar compact progress={progress} />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader title="Study details" />
-                    <CardContent>
-                      <dl>
-                        <DetailRow
-                          label="Programme"
-                          value={programme.name + " (" + programme.code + ")"}
-                        />
-                        <DetailRow
-                          label="Major"
-                          value={
-                            major
-                              ? major.name + " (" + major.code + ")"
-                              : "None selected"
-                          }
-                        />
-                        <DetailRow
-                          label="Minors"
-                          value={
-                            minors.length > 0
-                              ? minors
-                                  .map(
-                                    (minor) =>
-                                      minor.name + " (" + minor.code + ")",
-                                  )
-                                  .join(", ")
-                              : "None selected"
-                          }
-                        />
-                        <DetailRow
-                          label="Specialisations"
-                          value={
-                            specialisations.length > 0
-                              ? specialisations
-                                  .map(
-                                    (specialisation) =>
-                                      specialisation.name +
-                                      " (" +
-                                      specialisation.code +
-                                      ")",
-                                  )
-                                  .join(", ")
-                              : "None selected"
-                          }
-                        />
-                        <DetailRow
-                          label="Catalogue"
-                          value={data.study.plan.catalogueYear}
-                        />
-                        <DetailRow
-                          label="Commencement"
-                          value={data.study.plan.commencementYear}
-                        />
-                        <DetailRow
-                          label="Study load"
-                          value={formatStudyLoad(data.study.plan.studyLoad)}
-                        />
-                      </dl>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
-                  <TermLoadChart terms={termLoads} />
-
-                  <Card>
-                    <CardHeader
-                      icon={
-                        <History
-                          aria-hidden="true"
-                          className="mt-0.5 text-primary"
-                          size={17}
-                        />
-                      }
-                      title="Record milestones"
-                    />
-                    <CardContent>
-                      <ol className="space-y-0">
-                        {milestones.map((milestone, index) => (
-                          <li
-                            className="relative grid grid-cols-[1rem_minmax(0,1fr)] gap-3 pb-5 last:pb-0"
-                            key={milestone.label + "-" + milestone.date}
-                          >
-                            {index < milestones.length - 1 ? (
-                              <span
-                                aria-hidden="true"
-                                className="absolute top-4 bottom-0 left-[5px] w-px bg-accent"
-                              />
-                            ) : null}
-                            <span className="relative mt-1 size-2.5 rounded-full border-2 border-white bg-primary ring-1 ring-primary/25" />
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-foreground">
-                                {milestone.label}
-                              </p>
-                              <p className="mt-0.5 text-[11px] text-muted-foreground">
-                                {milestone.detail}
-                              </p>
-                              <time
-                                className="mt-1 block text-[10px] text-muted-foreground/80 tabular-nums"
-                                dateTime={milestone.date}
-                              >
-                                {formatDate(milestone.date)}
-                              </time>
-                            </div>
-                          </li>
-                        ))}
-                      </ol>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            ) : (
-              <Card>
-                <Empty className="min-h-72">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <GraduationCap aria-hidden="true" />
-                    </EmptyMedia>
-                    <EmptyTitle>Onboarding has not been completed</EmptyTitle>
-                    <EmptyDescription>
-                      This account does not have a primary degree plan yet.
-                      Access settings are still available in the Access tab.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent className="mt-0" value="courses">
-            <DataTableShell
-              footer={
-                <p className="text-xs text-muted-foreground tabular-nums">
-                  {trackedCourses.toLocaleString("en-AU")} unique{" "}
-                  {trackedCourses === 1 ? "course" : "courses"}
-                </p>
-              }
-            >
-              <Table className="min-w-[780px] table-fixed">
-                <TableCaption>
-                  Planned courses and recorded course attempts
-                </TableCaption>
-                <colgroup>
-                  <col className="w-[34%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[22%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[9%]" />
-                  <col className="w-[11%]" />
-                </colgroup>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead>Course</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Study period</TableHead>
-                    <TableHead>Units</TableHead>
-                    <TableHead>Mark</TableHead>
-                    <TableHead>Updated</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.study.courses.length === 0 ? (
-                    <TableRow className="hover:bg-transparent">
-                      <TableCell className="p-0" colSpan={6}>
-                        <DataTableEmpty
-                          description="Courses will appear after this user begins building their plan or records study history."
-                          icon={<BookOpen aria-hidden="true" />}
-                          title="No courses recorded"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                  {data.study.courses.map((course) => {
-                    const status = courseStatus(course.status);
-                    return (
-                      <TableRow key={course.id}>
-                        <TableCell>
-                          <div className="flex min-w-0 items-center gap-3">
-                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 font-mono text-[10px] font-bold text-primary">
-                              {course.code.slice(0, 2)}
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block font-mono text-xs font-semibold text-foreground">
-                                {course.code}
-                              </span>
-                              <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                                {course.title}
-                              </span>
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge tone={status.tone}>{status.label}</Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {formatTerm(course)}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
-                          {course.units}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
-                          {course.mark ?? "Not recorded"}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground tabular-nums">
-                          {formatDate(course.updatedAt)}
-                        </TableCell>
+                ) : null}
+                <DataTableShell>
+                  <Table className="min-w-[640px] text-sm">
+                    <caption className="sr-only">
+                      Planned courses and recorded course attempts
+                    </caption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="pl-5">Course</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Semester</TableHead>
+                        <TableHead className="text-right">Units</TableHead>
+                        <TableHead className="pr-5 text-right">Mark</TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </DataTableShell>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCourses.length ? (
+                        filteredCourses.map((course) => (
+                          <TableRow key={course.id}>
+                            <TableCell className="py-4 pl-5">
+                              <CatalogueIdentity
+                                code={course.code}
+                                title={course.title}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  badgeVariantForTone[
+                                    statuses[
+                                      course.status as AdminUserCourseStatus
+                                    ].tone
+                                  ]
+                                }
+                              >
+                                {statuses[course.status].label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {course.calendarYear !== null && course.periodCode
+                                ? `${course.periodShortName ?? course.periodName ?? course.periodCode} ${course.calendarYear}`
+                                : "Unscheduled"}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {course.units}
+                            </TableCell>
+                            <TableCell className="pr-5 text-right tabular-nums">
+                              {course.mark ?? (
+                                <span aria-label="No mark recorded">-</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={5}
+                            className="h-24 text-center text-muted-foreground"
+                          >
+                            {data.study.courses.length
+                              ? "No matching courses"
+                              : "No courses recorded yet"}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </DataTableShell>
+              </section>
+            ) : null}
           </TabsContent>
-
-          <TabsContent className="mt-0" value="access">
-            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.65fr)]">
-              <UserRoleEditor
-                assignments={data.assignments}
-                currentUserId={currentUserId}
-                permissions={data.permissions}
-                roles={data.roles}
-                user={data.user}
-              />
-
-              <div className="space-y-5">
-                <Card>
-                  <CardHeader title="Account details" />
-                  <CardContent>
-                    <dl>
-                      <DetailRow
-                        label="Email"
-                        value={data.user.email ?? "Not supplied"}
-                      />
-                      <DetailRow
-                        label="Student number"
-                        value={data.user.studentNumber ?? "Not supplied"}
-                      />
-                      <DetailRow
-                        label="User ID"
-                        mono
-                        value={data.user.userId}
-                      />
-                      <DetailRow
-                        label="Joined"
-                        value={formatDate(data.user.createdAt)}
-                      />
-                      <DetailRow
-                        label="Profile updated"
-                        value={formatDate(data.user.updatedAt)}
-                      />
-                    </dl>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader title="Role assignment" />
-                  <CardContent>
-                    <dl>
-                      <DetailRow
-                        label="Current role"
-                        value={assignedRole?.name ?? "User"}
-                      />
-                      <DetailRow
-                        label="Assigned by"
-                        value={
-                          assignment?.grantedByDisplayName ?? "System default"
-                        }
-                      />
-                      <DetailRow
-                        label="Assigned on"
-                        value={
-                          assignment?.grantedAt
-                            ? formatDate(assignment.grantedAt)
-                            : "Not recorded"
-                        }
-                      />
-                    </dl>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+          <TabsContent value="activity">
+            <UserActivityTimeline />
           </TabsContent>
         </div>
       </AppShell>

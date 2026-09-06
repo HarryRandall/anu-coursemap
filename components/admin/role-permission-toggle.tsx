@@ -1,9 +1,10 @@
 "use client";
+import { Checkbox } from "@reui/ui/checkbox";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LoaderCircle, Minus } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { setAdminRolePermission } from "@/lib/admin/actions";
 import { cn } from "@/lib/cn";
 
@@ -73,7 +74,7 @@ export function RolePermissionToggle({
 
   return (
     <span>
-      <span className="relative grid size-11 place-items-center rounded-lg hover:bg-accent">
+      <span className="relative grid size-11 place-items-center rounded-lg">
         <Checkbox
           checked={enabled}
           aria-busy={isPending}

@@ -1,8 +1,14 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { badgeVariantForTone } from "@/lib/ui";
+import { Badge } from "@reui/components/badge";
 import {
-  DataTableEmpty,
-  DataTableShell,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardAction,
+} from "@reui/ui/card";
+import {
   Table,
   TableBody,
   TableCaption,
@@ -10,7 +16,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@reui/ui/table";
+
+import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import type { Tone } from "@/lib/ui";
 
@@ -63,7 +71,9 @@ export function AcademicStructureImportPipeline({
       {stages.length ? (
         <DataTableShell>
           <Table className="min-w-[760px]">
-            <TableCaption>Academic structure import stages</TableCaption>
+            <TableCaption className="sr-only">
+              Academic structure import stages
+            </TableCaption>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-16">Step</TableHead>
@@ -84,7 +94,9 @@ export function AcademicStructureImportPipeline({
                     {readable(stage.stage_name)}
                   </TableCell>
                   <TableCell>
-                    <Badge tone={statusTone(stage.status)}>
+                    <Badge
+                      variant={badgeVariantForTone[statusTone(stage.status)]}
+                    >
                       {readable(stage.status)}
                     </Badge>
                   </TableCell>
@@ -121,15 +133,43 @@ export function AcademicStructureImportPipeline({
       ) : (
         extractions.map((extraction) => (
           <Card key={extraction.id}>
-            <CardHeader
-              action={
-                <Badge tone={statusTone(extraction.validation_status)}>
+            <CardHeader>
+              <CardTitle>
+                <h2>
+                  {extraction.resolved_model ?? extraction.requested_model}
+                </h2>
+              </CardTitle>
+              {Boolean(
+                `Extraction attempt ${extraction.extraction_number}`,
+              ) && (
+                <CardDescription>{`Extraction attempt ${extraction.extraction_number}`}</CardDescription>
+              )}
+              {Boolean(
+                <Badge
+                  variant={
+                    badgeVariantForTone[
+                      statusTone(extraction.validation_status)
+                    ]
+                  }
+                >
                   {readable(extraction.validation_status)}
-                </Badge>
-              }
-              description={`Extraction attempt ${extraction.extraction_number}`}
-              title={extraction.resolved_model ?? extraction.requested_model}
-            />
+                </Badge>,
+              ) && (
+                <CardAction>
+                  {
+                    <Badge
+                      variant={
+                        badgeVariantForTone[
+                          statusTone(extraction.validation_status)
+                        ]
+                      }
+                    >
+                      {readable(extraction.validation_status)}
+                    </Badge>
+                  }
+                </CardAction>
+              )}
+            </CardHeader>
             <CardContent>
               <dl className="grid gap-3 text-xs sm:grid-cols-3 lg:grid-cols-7">
                 <div>

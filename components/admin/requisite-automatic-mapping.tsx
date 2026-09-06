@@ -1,9 +1,9 @@
 "use client";
+import { Button } from "@reui/ui/button";
 
 import { Sparkles, TriangleAlert } from "lucide-react";
 import { expressionSummary } from "@/lib/coursemap/requisite-conditions";
 import type { RequisiteExpression } from "@/lib/coursemap/requisite-summary";
-import { Button } from "@/components/ui/button";
 
 /**
  * What the importer made of the official wording, kept to a single line so the
@@ -48,7 +48,7 @@ export function AutomaticMapping({
         Read as {expressionSummary(expression)}
       </span>
       {canApply ? (
-        <Button onClick={onApply} size="sm">
+        <Button onClick={onApply} size="sm" variant="outline" type="button">
           Use this reading
         </Button>
       ) : null}

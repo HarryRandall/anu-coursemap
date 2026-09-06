@@ -1,6 +1,4 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader } from "@/components/ui/card";
-import { ImportDatabaseRowTable } from "@/components/admin/imports/import-database-row-table";
+import { DatabaseRowsViewer } from "./database-rows-viewer";
 import type { AcademicStructureImportRelationalData } from "@/lib/coursemap/admin-academic-structure-imports";
 
 const ACADEMIC_STRUCTURE_DESTINATION_TABLES = [
@@ -289,33 +287,10 @@ export function persistedAcademicStructureDatabaseTables(
 }
 
 export function AcademicStructureImportDatabaseRows({
-  emptyLabel = "No rows",
   tables,
 }: {
   emptyLabel?: string;
   tables: AcademicStructureImportDatabaseTable[];
 }) {
-  return (
-    <div className="space-y-3">
-      {tables.map((table) => (
-        <Card className="overflow-hidden" key={table.name}>
-          <CardHeader
-            action={
-              <Badge tone={table.rows.length ? "neutral" : "info"}>
-                {table.rows.length || emptyLabel}
-              </Badge>
-            }
-            title={<span className="font-mono text-sm">{table.name}</span>}
-          />
-          {table.rows.length ? (
-            <ImportDatabaseRowTable rows={table.rows} tableName={table.name} />
-          ) : (
-            <p className="border-t border-border px-5 py-4 text-xs text-muted-foreground">
-              This candidate does not write a row to this table.
-            </p>
-          )}
-        </Card>
-      ))}
-    </div>
-  );
+  return <DatabaseRowsViewer tables={tables} label="Saved database rows" />;
 }

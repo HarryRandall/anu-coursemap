@@ -1,10 +1,11 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Button } from "@reui/ui/button";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { recoverStalledCourseImportRun } from "@/lib/coursemap/course-import-review-actions";
 
@@ -29,14 +30,26 @@ export function CourseImportRunRecovery({ runId }: { runId: string }) {
         onConfirm={recover}
         title="Recover stalled import work?"
         trigger={
-          <Button size="sm">
+          <Button size="sm" variant="outline" type="button">
             <RotateCcw aria-hidden="true" size={14} />
             Recover stalled work
           </Button>
         }
       />
       {message ? (
-        <Alert tone={message.ok ? "success" : "danger"}>
+        <Alert
+          variant={
+            (
+              {
+                neutral: "default",
+                brand: "info",
+                danger: "destructive",
+                success: "success",
+                warning: "warning",
+              } as const
+            )[message.ok ? "success" : "danger"]
+          }
+        >
           <AlertDescription>{message.text}</AlertDescription>
         </Alert>
       ) : null}

@@ -1,14 +1,21 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
+
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { Badge } from "@reui/components/badge";
+import { Button } from "@reui/ui/button";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
 
 import { useMemo, useState } from "react";
 import { FileCode2, LoaderCircle } from "lucide-react";
-import { CourseImportDatabaseRows } from "@/components/admin/imports/course-import-database-rows";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { DatabaseRowsViewer } from "./database-rows-viewer";
+import { ArtefactViewport } from "./artefact-viewport";
+
+import navigationStyles from "./artefact-navigation.module.css";
+import { SourceCode } from "./source-code";
 import { JsonCode } from "@/components/ui/json-code";
-import { Select } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import type { CourseImportArtifact } from "@/lib/coursemap/admin-course-imports";
 import { projectedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
 
@@ -80,7 +87,13 @@ function PersistenceDecision({ value }: { value: unknown }) {
             {decision}
           </p>
         </div>
-        <Badge tone={changeKind === "unchanged" ? "neutral" : "warning"}>
+        <Badge
+          variant={
+            badgeVariantForTone[
+              changeKind === "unchanged" ? "neutral" : "warning"
+            ]
+          }
+        >
           {changeKind.replaceAll("_", " ")}
         </Badge>
       </div>
@@ -134,17 +147,10 @@ function ArtifactContent({
 
   if (artifact.kind === "database_projection" && parsed !== null) {
     return (
-      <div className="space-y-4 bg-muted/30 p-4 sm:p-5">
-        <p className="text-xs leading-5 text-muted-foreground">
-          These are the destination tables and row shapes prepared by the
-          import. Angle-bracketed values are identifiers assigned when the
-          candidate is saved.
-        </p>
-        <CourseImportDatabaseRows
-          emptyLabel="0 rows"
-          tables={projectedCourseDatabaseTables(parsed)}
-        />
-      </div>
+      <DatabaseRowsViewer
+        tables={projectedCourseDatabaseTables(parsed)}
+        label="Planned database rows"
+      />
     );
   }
   if (artifact.kind === "change_set" && parsed !== null) {
@@ -152,20 +158,23 @@ function ArtifactContent({
   }
   if (parsed !== null) {
     return (
-      <JsonCode
+      <ArtefactViewport
         label={`${labels[artifact.kind] ?? artifact.kind} content`}
-        value={parsed}
-      />
+      >
+        <JsonCode
+          label={`${labels[artifact.kind] ?? artifact.kind} JSON`}
+          value={parsed}
+          uncapped
+        />
+      </ArtefactViewport>
     );
   }
   return (
-    <pre
-      aria-label={`${labels[artifact.kind] ?? artifact.kind} content`}
-      className="max-h-[70vh] overflow-auto border-t border-border bg-muted/30 px-5 py-4 font-mono text-xs leading-5 whitespace-pre text-foreground/80 outline-none selection:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-      tabIndex={0}
-    >
-      <code>{content}</code>
-    </pre>
+    <SourceCode
+      content={content}
+      kind={artifact.kind}
+      label={`${labels[artifact.kind] ?? artifact.kind} content`}
+    />
   );
 }
 
@@ -287,6 +296,8 @@ export function CourseImportArtifactViewer({
 
   return (
     <Tabs
+      orientation="vertical"
+      className="min-w-0 flex-col gap-4 md:flex-row"
       onValueChange={(value) => {
         setActiveKind(value);
         const artifact = selectedArtifactForKind(value);
@@ -294,10 +305,30 @@ export function CourseImportArtifactViewer({
       }}
       value={selectedGroup?.kind ?? ""}
     >
-      <div className="overflow-x-auto pb-1">
-        <TabsList className="h-auto min-w-max">
+      <div className="shrink-0 md:w-52">
+        <div className="md:hidden">
+          <OptionPicker
+            value={selectedGroup?.kind ?? ""}
+            onValueChange={(kind) => {
+              setActiveKind(kind);
+              const artifact = selectedArtifactForKind(kind);
+              if (artifact) loadArtifact(artifact);
+            }}
+            aria-label="Choose artefact"
+            className="w-full"
+            items={grouped.map((group) => ({
+              value: group.kind,
+              label: labels[group.kind] ?? group.kind,
+            }))}
+          />
+        </div>
+        <TabsList
+          aria-label="Import artefacts"
+          className={`${navigationStyles.list} hidden h-auto w-full items-stretch gap-1 bg-transparent p-0 md:flex`}
+        >
           {grouped.map((group) => (
             <TabsTrigger
+              className="h-9 w-full shrink-0 justify-start rounded-md px-3 text-left text-[13px] hover:bg-accent data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
               key={group.kind}
               onFocus={() => {
                 const artifact = selectedArtifactForKind(group.kind);
@@ -315,45 +346,56 @@ export function CourseImportArtifactViewer({
         </TabsList>
       </div>
       {selected && selectedGroup ? (
-        <TabsContent key={selectedGroup.kind} value={selectedGroup.kind}>
+        <TabsContent
+          className="min-w-0 flex-1"
+          key={selectedGroup.kind}
+          value={selectedGroup.kind}
+        >
           <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-            <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3 text-xs text-muted-foreground">
-              {selectedGroup.attempts.length > 1 ? (
-                <Select
-                  aria-label={`Choose ${labels[selected.kind] ?? selected.kind} attempt`}
-                  className="w-40"
-                  onChange={(artifactId) => {
-                    setSelectedAttempts((current) => ({
-                      ...current,
-                      [selectedGroup.kind]: artifactId,
-                    }));
-                    const artifact = selectedGroup.attempts.find(
-                      (candidate) => candidate.id === artifactId,
-                    );
-                    if (artifact) loadArtifact(artifact);
+            {selectedGroup.attempts.length > 1 ? (
+              <div className="border-b border-border p-3">
+                <OptionPicker
+                  value={"coursemap:" + String(selected.id)}
+                  onValueChange={(nextValue) => {
+                    const option = selectedGroup.attempts
+                      .map((artifact, index) => ({
+                        value: artifact.id,
+                        label: `Attempt ${artifact.attemptNumber}${index === 0 ? " (latest)" : ""}`,
+                      }))
+                      .find(
+                        (option) =>
+                          "coursemap:" + String(option.value) === nextValue,
+                      );
+                    if (option)
+                      ((artifactId) => {
+                        setSelectedAttempts((current) => ({
+                          ...current,
+                          [selectedGroup.kind]: artifactId,
+                        }));
+                        const artifact = selectedGroup.attempts.find(
+                          (candidate) => candidate.id === artifactId,
+                        );
+                        if (artifact) loadArtifact(artifact);
+                      })(option.value);
                   }}
-                  options={selectedGroup.attempts.map((artifact, index) => ({
-                    value: artifact.id,
-                    label: `Attempt ${artifact.attemptNumber}${index === 0 ? " (latest)" : ""}`,
-                  }))}
-                  value={selected.id}
+                  className={"w-40"}
+                  aria-label={`Choose ${labels[selected.kind] ?? selected.kind} attempt`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  placeholder={"Select..."}
+                  items={selectedGroup.attempts
+                    .map((artifact, index) => ({
+                      value: artifact.id,
+                      label: `Attempt ${artifact.attemptNumber}${index === 0 ? " (latest)" : ""}`,
+                    }))
+                    .map((option) => ({
+                      value: "coursemap:" + String(option.value),
+                      label: option.label,
+                    }))}
                 />
-              ) : (
-                <Badge tone="neutral">Attempt {selected.attemptNumber}</Badge>
-              )}
-              <span>{selected.mediaType}</span>
-              <span className="tabular-nums">
-                {selected.byteSize.toLocaleString("en-AU")} bytes
-              </span>
-              <span
-                className="min-w-0 truncate font-mono"
-                title={selected.contentSha256}
-              >
-                sha256:{selected.contentSha256.slice(0, 12)}
-              </span>
-            </div>
+              </div>
+            ) : null}
             {errors[selected.id] ? (
-              <Alert className="m-4" tone="danger">
+              <Alert className="m-4" variant={"destructive"}>
                 <AlertDescription>{errors[selected.id]}</AlertDescription>
               </Alert>
             ) : loading.includes(selected.id) && !content[selected.id] ? (
@@ -372,7 +414,11 @@ export function CourseImportArtifactViewer({
               />
             ) : (
               <div className="grid min-h-64 place-items-center">
-                <Button onClick={() => loadArtifact(selected)}>
+                <Button
+                  onClick={() => loadArtifact(selected)}
+                  variant="outline"
+                  type="button"
+                >
                   Load {labels[selected.kind] ?? selected.kind}
                 </Button>
               </div>

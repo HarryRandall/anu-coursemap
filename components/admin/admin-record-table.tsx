@@ -1,11 +1,5 @@
 "use client";
-
-import Link from "next/link";
-import { Settings } from "lucide-react";
-import { useMemo, useSyncExternalStore, type ReactNode } from "react";
 import {
-  DataTableEmpty,
-  DataTableShell,
   Table,
   TableBody,
   TableCaption,
@@ -13,14 +7,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/data-table";
+} from "@reui/ui/table";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@reui/ui/dropdown-menu";
+
+import Link from "next/link";
+import { Settings } from "lucide-react";
+import { useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
+
 import { Pagination } from "@/components/ui/pagination";
 import { cn } from "@/lib/cn";
 
@@ -144,7 +144,7 @@ export function AdminRecordTable<Row>({
       }
     >
       <Table>
-        <TableCaption>{caption}</TableCaption>
+        <TableCaption className="sr-only">{caption}</TableCaption>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             {visible.map((column) => (

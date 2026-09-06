@@ -1,18 +1,21 @@
 "use client";
+import { badgeVariantForTone } from "@/lib/ui";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { LayoutGrid, MapPinned, Search } from "lucide-react";
-import { CampusMap } from "@/components/rooms/campus-map";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@reui/components/badge";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
-import { Input } from "@/components/ui/field";
+} from "@reui/ui/empty";
+import { Input } from "@reui/ui/input";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LayoutGrid, MapPinned, Search } from "lucide-react";
+import { CampusMap } from "@/components/rooms/campus-map";
+
 import { cn } from "@/lib/cn";
 import { indoorMapStatusTone } from "@/components/admin/rooms/indoor-status";
 import {
@@ -163,7 +166,13 @@ export function BuildingPicker({
                         </span>
                       </span>
                       {summary ? (
-                        <Badge tone={indoorMapStatusTone(summary.status)}>
+                        <Badge
+                          variant={
+                            badgeVariantForTone[
+                              indoorMapStatusTone(summary.status)
+                            ]
+                          }
+                        >
                           {summary.status}
                         </Badge>
                       ) : null}

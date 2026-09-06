@@ -1,4 +1,14 @@
 "use client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@reui/ui/dropdown-menu";
 
 import {
   createElement,
@@ -32,16 +42,6 @@ import {
   type ReviewedOperator,
 } from "@/lib/coursemap/requisite-conditions";
 import { ConditionInlineEditor } from "@/components/admin/requisite-condition-fields";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const CONDITION_ICONS: Record<ReviewedConditionKind, LucideIcon> = {
   course: BookOpen,

@@ -1,4 +1,7 @@
 "use client";
+import { Alert, AlertDescription } from "@reui/components/alert";
+import { OptionPicker } from "@/components/ui/option-picker";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useReducer, useState } from "react";
@@ -19,10 +22,9 @@ import {
 import { useEditorPointer } from "@/components/admin/rooms/use-editor-pointer";
 import { useUnsavedNavigation } from "@/components/admin/rooms/use-unsaved-navigation";
 import { AppShell } from "@/components/shell/app-shell";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Select } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { buildIndoorScene } from "@/lib/rooms/indoor-3d";
 import {
   createIndoorEditorState,
@@ -69,16 +71,9 @@ function editorSectionFromSearch(value: string | null): EditorSection {
 function EditorSectionTabs() {
   return (
     <div className="min-w-0 flex-1 overflow-x-auto">
-      <TabsList
-        aria-label="Indoor map sections"
-        className="h-auto min-w-max justify-start gap-0 rounded-none bg-transparent p-0"
-      >
+      <TabsList aria-label="Indoor map sections" variant="line">
         {EDITOR_SECTIONS.map(({ value, label, icon: Icon }) => (
-          <TabsTrigger
-            className="h-12 gap-1.5 rounded-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-4 text-sm text-muted-foreground shadow-none hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
-            key={value}
-            value={value}
-          >
+          <TabsTrigger key={value} value={value}>
             <Icon aria-hidden="true" className="hidden sm:block" size={15} />
             {value === "routes" ? (
               <>
@@ -111,18 +106,35 @@ function FloorSelect({
       <span className="shrink-0 text-xs font-medium text-muted-foreground">
         {label}
       </span>
-      <Select
-        aria-label={label}
-        className="h-11 w-52 max-w-full"
+      <OptionPicker
+        value={"coursemap:" + String(value)}
+        onValueChange={(nextValue) => {
+          const option = [...levels]
+            .sort((left, right) => right.number - left.number)
+            .map((level) => ({
+              value: level.id,
+              label: `${level.ref || level.number} · ${level.name}`,
+            }))
+            .find(
+              (option) => "coursemap:" + String(option.value) === nextValue,
+            );
+          if (option) onChange(option.value);
+        }}
         disabled={levels.length === 0}
-        onChange={onChange}
-        options={[...levels]
+        className={"h-11 w-52 max-w-full"}
+        aria-label={label}
+        onPointerDown={(event) => event.stopPropagation()}
+        placeholder={"Select..."}
+        items={[...levels]
           .sort((left, right) => right.number - left.number)
           .map((level) => ({
             value: level.id,
             label: `${level.ref || level.number} · ${level.name}`,
+          }))
+          .map((option) => ({
+            value: "coursemap:" + String(option.value),
+            label: option.label,
           }))}
-        value={value}
       />
     </label>
   );
@@ -505,7 +517,17 @@ export function IndoorEditor({
             <Alert
               className="mx-3 mt-2 shrink-0"
               role="status"
-              tone={notice.ok ? "success" : "danger"}
+              variant={
+                (
+                  {
+                    neutral: "default",
+                    brand: "info",
+                    danger: "destructive",
+                    success: "success",
+                    warning: "warning",
+                  } as const
+                )[notice.ok ? "success" : "danger"]
+              }
             >
               <AlertDescription>{notice.message}</AlertDescription>
             </Alert>

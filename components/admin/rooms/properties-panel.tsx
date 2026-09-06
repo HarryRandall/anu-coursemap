@@ -1,10 +1,9 @@
 "use client";
-
-import { DoorOpen, SlidersHorizontal, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Field, Input } from "@/components/ui/field";
-import { Select } from "@/components/ui/select";
+import { Button } from "@reui/ui/button";
+import { Checkbox } from "@reui/ui/checkbox";
+import { Field, FieldDescription } from "@reui/ui/field";
+import { Input } from "@reui/ui/input";
+import { OptionPicker } from "@/components/ui/option-picker";
 import {
   Sheet,
   SheetContent,
@@ -12,7 +11,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from "@reui/ui/sheet";
+
+import { DoorOpen, SlidersHorizontal, Trash2 } from "lucide-react";
+
 import type { IndoorSelection } from "@/lib/rooms/indoor-editor-state";
 import {
   INDOOR_METRES_PER_LOCAL_UNIT,
@@ -100,7 +102,7 @@ export function SelectionDetailsSheet({
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button className="h-11 sm:h-8" size="sm" variant="ghost">
+        <Button className="h-11 sm:h-8" size="sm" variant="ghost" type="button">
           <SlidersHorizontal aria-hidden="true" />
           Edit selected
         </Button>
@@ -152,37 +154,61 @@ function PropertiesBody({
     );
     return (
       <>
-        <Field label="Kind">
-          <Select
-            aria-label="Space kind"
-            onChange={(kind) => {
-              const nextKind = kind as CampusIndoorSpace["kind"];
-              handlers.updateSpace(space.id, {
-                kind: nextKind,
-                ...(nextKind === "room" ? {} : { searchable: false }),
-              });
-            }}
-            options={[...spaceKindOptions]}
-            value={space.kind}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Kind"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(space.kind)}
+              onValueChange={(nextValue) => {
+                const option = ([...spaceKindOptions] as const).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option)
+                  ((kind) => {
+                    const nextKind = kind as CampusIndoorSpace["kind"];
+                    handlers.updateSpace(space.id, {
+                      kind: nextKind,
+                      ...(nextKind === "room" ? {} : { searchable: false }),
+                    });
+                  })(option.value);
+              }}
+              aria-label={"Space kind"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[...spaceKindOptions].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
-        <Field label="Name">
-          <Input
-            onChange={(event) =>
-              handlers.updateSpace(space.id, { name: event.target.value })
-            }
-            placeholder={space.kind === "room" ? "Seminar room" : "Space name"}
-            value={space.name}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Name"}</span>
+            <Input
+              onChange={(event) =>
+                handlers.updateSpace(space.id, { name: event.target.value })
+              }
+              placeholder={
+                space.kind === "room" ? "Seminar room" : "Space name"
+              }
+              value={space.name}
+            />
+          </label>
         </Field>
-        <Field label={space.kind === "room" ? "Room reference" : "Reference"}>
-          <Input
-            onChange={(event) =>
-              handlers.updateSpace(space.id, { ref: event.target.value })
-            }
-            placeholder={space.kind === "room" ? "G01" : "Optional"}
-            value={space.ref}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">
+              {space.kind === "room" ? "Room reference" : "Reference"}
+            </span>
+            <Input
+              onChange={(event) =>
+                handlers.updateSpace(space.id, { ref: event.target.value })
+              }
+              placeholder={space.kind === "room" ? "G01" : "Optional"}
+              value={space.ref}
+            />
+          </label>
         </Field>
         {space.kind === "room" ? (
           <>
@@ -254,30 +280,46 @@ function PropertiesBody({
     }
     return (
       <>
-        <Field label="Kind">
-          <Select
-            aria-label="Wall kind"
-            onChange={(kind) =>
-              handlers.updateWall(wall.id, {
-                kind: kind as CampusIndoorWall["kind"],
-              })
-            }
-            options={[...wallKindOptions]}
-            value={wall.kind}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Kind"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(wall.kind)}
+              onValueChange={(nextValue) => {
+                const option = ([...wallKindOptions] as const).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option)
+                  ((kind) =>
+                    handlers.updateWall(wall.id, {
+                      kind: kind as CampusIndoorWall["kind"],
+                    }))(option.value);
+              }}
+              aria-label={"Wall kind"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[...wallKindOptions].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
-        <Field label="Thickness (m)">
-          <Input
-            min="0.05"
-            onChange={(event) =>
-              handlers.updateWall(wall.id, {
-                thickness: unitsFromMetres(event.target.value),
-              })
-            }
-            step="0.05"
-            type="number"
-            value={metres(wall.thickness)}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Thickness (m)"}</span>
+            <Input
+              min="0.05"
+              onChange={(event) =>
+                handlers.updateWall(wall.id, {
+                  thickness: unitsFromMetres(event.target.value),
+                })
+              }
+              step="0.05"
+              type="number"
+              value={metres(wall.thickness)}
+            />
+          </label>
         </Field>
         <dl className="grid grid-cols-2 gap-2 text-xs">
           <div>
@@ -326,37 +368,56 @@ function PropertiesBody({
 
     return (
       <>
-        <Field label="Kind">
-          <Select
-            aria-label="Opening kind"
-            onChange={(kind) =>
-              handlers.updateOpening(opening.id, {
-                kind: kind as CampusIndoorWallOpening["kind"],
-              })
-            }
-            options={[
-              { value: "door", label: "Door" },
-              { value: "opening", label: "Open gap" },
-            ]}
-            value={opening.kind}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Kind"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(opening.kind)}
+              onValueChange={(nextValue) => {
+                const option = (
+                  [
+                    { value: "door", label: "Door" },
+                    { value: "opening", label: "Open gap" },
+                  ] as const
+                ).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option)
+                  ((kind) =>
+                    handlers.updateOpening(opening.id, {
+                      kind: kind as CampusIndoorWallOpening["kind"],
+                    }))(option.value);
+              }}
+              aria-label={"Opening kind"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[
+                { value: "door", label: "Door" },
+                { value: "opening", label: "Open gap" },
+              ].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
-        <Field
-          hint={`This wall segment is ${metres(segment)} m long.`}
-          label="Width (m)"
-        >
-          <Input
-            max={metres(segment)}
-            min="0.1"
-            onChange={(event) =>
-              handlers.updateOpening(opening.id, {
-                width: Math.min(unitsFromMetres(event.target.value), segment),
-              })
-            }
-            step="0.1"
-            type="number"
-            value={metres(opening.width)}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Width (m)"}</span>
+            <Input
+              max={metres(segment)}
+              min="0.1"
+              onChange={(event) =>
+                handlers.updateOpening(opening.id, {
+                  width: Math.min(unitsFromMetres(event.target.value), segment),
+                })
+              }
+              step="0.1"
+              type="number"
+              value={metres(opening.width)}
+            />
+            <FieldDescription>{`This wall segment is ${metres(segment)} m long.`}</FieldDescription>
+          </label>
         </Field>
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-foreground/80">
           <Checkbox
@@ -371,39 +432,79 @@ function PropertiesBody({
           Leads outside (building entrance)
         </label>
         {opening.exterior ? null : (
-          <Field hint="Which room this door opens into." label="Serves room">
-            <Select
-              aria-label="Room this door serves"
-              onChange={(spaceId) =>
-                handlers.updateOpening(opening.id, {
-                  spaceId: spaceId || undefined,
-                })
-              }
-              options={[
-                { value: "", label: "Not linked" },
-                ...rooms.map((room) => ({
-                  value: room.id,
-                  label: room.ref
-                    ? `${room.ref} · ${room.name || "Room"}`
-                    : room.name || "Room",
-                })),
-              ]}
-              value={opening.spaceId ?? ""}
-            />
+          <Field>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm font-medium">{"Serves room"}</span>
+              <OptionPicker
+                value={"coursemap:" + String(opening.spaceId ?? "")}
+                onValueChange={(nextValue) => {
+                  const option = (
+                    [
+                      { value: "", label: "Not linked" },
+                      ...rooms.map((room) => ({
+                        value: room.id,
+                        label: room.ref
+                          ? `${room.ref} · ${room.name || "Room"}`
+                          : room.name || "Room",
+                      })),
+                    ] as const
+                  ).find(
+                    (option) =>
+                      "coursemap:" + String(option.value) === nextValue,
+                  );
+                  if (option)
+                    ((spaceId) =>
+                      handlers.updateOpening(opening.id, {
+                        spaceId: spaceId || undefined,
+                      }))(option.value);
+                }}
+                aria-label={"Room this door serves"}
+                onPointerDown={(event) => event.stopPropagation()}
+                placeholder={"Select..."}
+                items={[
+                  { value: "", label: "Not linked" },
+                  ...rooms.map((room) => ({
+                    value: room.id,
+                    label: room.ref
+                      ? `${room.ref} · ${room.name || "Room"}`
+                      : room.name || "Room",
+                  })),
+                ].map((option) => ({
+                  value: "coursemap:" + String(option.value),
+                  label: option.label,
+                }))}
+              />
+              <FieldDescription>
+                {"Which room this door opens into."}
+              </FieldDescription>
+            </label>
           </Field>
         )}
-        <Field label="Accessibility">
-          <Select
-            aria-label="Opening accessibility"
-            onChange={(accessibility) =>
-              handlers.updateOpening(opening.id, {
-                accessibility:
-                  accessibility as CampusIndoorWallOpening["accessibility"],
-              })
-            }
-            options={[...accessibilityOptions]}
-            value={opening.accessibility}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Accessibility"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(opening.accessibility)}
+              onValueChange={(nextValue) => {
+                const option = ([...accessibilityOptions] as const).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option)
+                  ((accessibility) =>
+                    handlers.updateOpening(opening.id, {
+                      accessibility:
+                        accessibility as CampusIndoorWallOpening["accessibility"],
+                    }))(option.value);
+              }}
+              aria-label={"Opening accessibility"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[...accessibilityOptions].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
         <DeleteButton label="Delete door" onDelete={handlers.remove} />
       </>
@@ -417,28 +518,44 @@ function PropertiesBody({
     if (!connector) return null;
     return (
       <>
-        <Field label="Name">
-          <Input
-            onChange={(event) =>
-              handlers.updateConnector(connector.id, {
-                name: event.target.value,
-              })
-            }
-            value={connector.name}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Name"}</span>
+            <Input
+              onChange={(event) =>
+                handlers.updateConnector(connector.id, {
+                  name: event.target.value,
+                })
+              }
+              value={connector.name}
+            />
+          </label>
         </Field>
-        <Field label="Accessibility">
-          <Select
-            aria-label="Connector accessibility"
-            onChange={(accessibility) =>
-              handlers.updateConnector(connector.id, {
-                accessibility:
-                  accessibility as CampusIndoorConnector["accessibility"],
-              })
-            }
-            options={[...accessibilityOptions]}
-            value={connector.accessibility}
-          />
+        <Field>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">{"Accessibility"}</span>
+            <OptionPicker
+              value={"coursemap:" + String(connector.accessibility)}
+              onValueChange={(nextValue) => {
+                const option = ([...accessibilityOptions] as const).find(
+                  (option) => "coursemap:" + String(option.value) === nextValue,
+                );
+                if (option)
+                  ((accessibility) =>
+                    handlers.updateConnector(connector.id, {
+                      accessibility:
+                        accessibility as CampusIndoorConnector["accessibility"],
+                    }))(option.value);
+              }}
+              aria-label={"Connector accessibility"}
+              onPointerDown={(event) => event.stopPropagation()}
+              placeholder={"Select..."}
+              items={[...accessibilityOptions].map((option) => ({
+                value: "coursemap:" + String(option.value),
+                label: option.label,
+              }))}
+            />
+          </label>
         </Field>
         <fieldset>
           <legend className="text-xs font-medium text-foreground/80">
@@ -518,7 +635,8 @@ function DeleteButton({
       className="h-11 w-full sm:h-8"
       onClick={onDelete}
       size="sm"
-      variant="danger"
+      variant="destructive"
+      type="button"
     >
       <Trash2 aria-hidden="true" />
       {label}
