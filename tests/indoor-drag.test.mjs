@@ -2,8 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadLibModules } from "./helpers/lib-modules.mjs";
 
-const { "indoor-drag": drag, "indoor-draft": draft } = await loadLibModules(
-  ["rooms/indoor-drag", "rooms/indoor-draft"],
+const {
+  "indoor-drag": drag,
+  "indoor-draft": draft,
+  "indoor-palette": paletteModule,
+} = await loadLibModules(
+  ["rooms/indoor-drag", "rooms/indoor-draft", "rooms/indoor-palette"],
   "indoor-drag",
 );
 
@@ -207,7 +211,27 @@ test("a rectangle draft projects its live area and current corner", () => {
   assert.equal(area.geometry.type, "Polygon");
   assert.equal(area.geometry.coordinates[0].length, 5, "the ring is closed");
   assert.equal(area.properties.tool, "corridor");
-  assert.equal(area.properties.colour, "#2563eb");
+  // Draft colours come from the theme palette, so dark mode is not painted
+  // with light-mode hex.
+  assert.equal(
+    area.properties.colour,
+    paletteModule.DEFAULT_INDOOR_PALETTE.draftArea,
+  );
+  const themed = draft.buildIndoorDraftGeoJson(
+    {
+      kind: "draw-rect",
+      tool: "corridor",
+      origin: { x: 20, y: 25 },
+      current: { x: 80, y: 75 },
+    },
+    footprint,
+    { ...paletteModule.DEFAULT_INDOOR_PALETTE, draftArea: "rgb(1, 2, 3)" },
+  );
+  assert.equal(
+    themed.features.find((feature) => feature.properties.draftKind === "area")
+      .properties.colour,
+    "rgb(1, 2, 3)",
+  );
 
   const vertices = collection.features.filter(
     (feature) => feature.properties.draftKind === "vertex",
@@ -264,7 +288,7 @@ test("a shaped-room draft fills only after it has a valid closed ring", () => {
   assert.equal(collection.features[0].geometry.coordinates[0].length, 4);
 });
 
-test("draft geometry never crosses outside the building or through a void", () => {
+test("drafts flag invalid rectangles and path crossings", () => {
   const footprintWithVoid = {
     ...footprint,
     polygons: [
@@ -292,16 +316,18 @@ test("draft geometry never crosses outside the building or through a void", () =
   );
   assert.equal(
     crossingPath.features.some(
-      (feature) => feature.properties.draftKind === "stroke",
+      (feature) =>
+        feature.properties.draftKind === "stroke" &&
+        feature.properties.colour === "#ef4444",
     ),
-    false,
+    true,
   );
-  assert.equal(
+  assert.ok(
     crossingPath.features.filter(
-      (feature) => feature.properties.draftKind === "vertex",
-    ).length,
-    1,
-    "the invalid current preview is omitted",
+      (feature) =>
+        feature.properties.draftKind === "vertex" &&
+        feature.properties.colour === "#ef4444",
+    ).length >= 2,
   );
 
   const outsideRectangle = draft.buildIndoorDraftGeoJson(
@@ -315,13 +341,15 @@ test("draft geometry never crosses outside the building or through a void", () =
   );
   assert.equal(
     outsideRectangle.features.some(
-      (feature) => feature.properties.draftKind === "area",
+      (feature) =>
+        feature.properties.draftKind === "area" &&
+        feature.properties.colour === "#ef4444",
     ),
-    false,
+    true,
   );
   assert.equal(
     outsideRectangle.features.some((feature) => feature.properties.preview),
-    false,
+    true,
   );
 });
 

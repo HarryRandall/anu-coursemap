@@ -40,6 +40,7 @@ export type IndoorSceneOptions = Readonly<{
   /** The floor being worked on or walked through, drawn most prominently. */
   activeLevelId?: string | null;
   /** Rooms drawn as the destination. */
+  highlightConnectorIds?: ReadonlySet<string>;
   highlightSpaceIds?: ReadonlySet<string>;
   /** Route edges drawn as the way to go. */
   routeEdgeIds?: ReadonlySet<string>;
@@ -261,6 +262,38 @@ export function buildIndoorScene(
     });
   }
 
+  // Give each floor a stable label order: named circulation first, then
+  // larger rooms. Only the first few labels appear at the building overview.
+  const labelRanks = new Map<string, number>();
+  for (const level of document.levels) {
+    const ranked = document.spaces
+      .filter(
+        (space) => space.levelId === level.id && (space.ref || space.name),
+      )
+      .map((space) => {
+        const ring = indoorGeometryRing(space.geometry);
+        const area =
+          Math.abs(
+            ring.reduce((sum, point, index) => {
+              const next = ring[(index + 1) % ring.length];
+              return sum + point.x * next.y - next.x * point.y;
+            }, 0),
+          ) / 2;
+        return {
+          space,
+          area,
+          circulation: space.kind === "corridor" || space.kind === "open-area",
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(b.circulation) - Number(a.circulation) ||
+          b.area - a.area ||
+          a.space.id.localeCompare(b.space.id),
+      );
+    ranked.forEach(({ space }, index) => labelRanks.set(space.id, index));
+  }
+
   for (const space of document.spaces) {
     const level = levelsById.get(space.levelId);
     if (!level) continue;
@@ -300,6 +333,7 @@ export function buildIndoorScene(
           levelId: space.levelId,
           levelRef: level.ref,
           label: space.ref || space.name,
+          labelRank: labelRanks.get(space.id) ?? 0,
           active,
           highlight: highlighted.has(space.id),
         },
@@ -409,11 +443,18 @@ export function buildIndoorScene(
       projection,
       {
         connectorId: connector.id,
+        highlight: options.highlightConnectorIds?.has(connector.id) ?? false,
         kind: connector.kind,
         name: connector.name,
         accessibility: connector.accessibility,
         base: bottom,
         height: top,
+        liftStops: JSON.stringify(levelExtents.map((extent) => extent.bottom)),
+        servedFloorCount: levelExtents.length,
+        cabinHeight: Math.min(
+          2.2,
+          ...levelExtents.map((extent) => (extent.top - extent.bottom) * 0.7),
+        ),
       },
       connector.id,
     );

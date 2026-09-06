@@ -9,11 +9,22 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@reui/ui/empty";
+import { Button } from "@reui/ui/button";
+import { buildIndoorScene } from "@/lib/rooms/indoor-3d";
+import {
+  projectBuildingFootprint,
+  remapIndoorDocumentToFootprint,
+} from "@/lib/rooms/indoor-footprint";
+import { isCampusMapBuildingGeometry } from "@/lib/rooms/campus-map";
+import {
+  loadIndoorMapForBuilding,
+  type CampusIndoorMapEditorRecord,
+} from "@/lib/rooms/indoor-map-admin";
 import { Input } from "@reui/ui/input";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LayoutGrid, MapPinned, Search } from "lucide-react";
+import { MapPinned, Search } from "lucide-react";
 import { CampusMap } from "@/components/rooms/campus-map";
 
 import { cn } from "@/lib/cn";
@@ -64,6 +75,46 @@ export function BuildingPicker({
   const [query, setQuery] = useState("");
   const [selectedSlug, setSelectedSlug] = useState<string | undefined>();
 
+  const [preview, setPreview] = useState<{
+    slug: string;
+    record: CampusIndoorMapEditorRecord;
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const requestRef = useRef(0);
+  const selectedBuilding = buildings.find(
+    (building) => building.slug === selectedSlug,
+  );
+  const indoorScene = useMemo(() => {
+    if (
+      !selectedBuilding ||
+      !preview ||
+      preview?.slug !== selectedSlug ||
+      !preview.record.document.levels.length
+    )
+      return null;
+    const feature = mapData.features.find(
+      (item) =>
+        item.placeId === selectedBuilding.id &&
+        item.featureKind === "building" &&
+        isCampusMapBuildingGeometry(item.geometry),
+    );
+    if (!feature || !isCampusMapBuildingGeometry(feature.geometry)) return null;
+    const projection = projectBuildingFootprint(feature.geometry);
+    return buildIndoorScene(
+      remapIndoorDocumentToFootprint(preview.record.document, projection),
+      projection,
+      { explode: 2.25, activeLevelId: null, showInactiveLevels: true },
+    );
+  }, [mapData.features, preview, selectedBuilding, selectedSlug]);
+  function clearSelection() {
+    requestRef.current++;
+    setSelectedSlug(undefined);
+    setPreview(null);
+    setPreviewLoading(false);
+    setPreviewError(null);
+  }
+
   const summaryByBuilding = useMemo(
     () =>
       new Map(summaries.map((summary) => [summary.buildingPlaceId, summary])),
@@ -83,13 +134,35 @@ export function BuildingPicker({
   const started = buildings.filter((place) => summaryByBuilding.has(place.id));
   const listed = terms.length > 0 ? results : started;
 
-  function openBuilding(slug: string) {
+  function editBuilding(slug: string) {
     router.push(`/admin/rooms/${encodeURIComponent(slug)}`);
   }
 
+  async function previewBuilding(slug: string) {
+    const request = ++requestRef.current;
+    setSelectedSlug(slug);
+    setPreview(null);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    try {
+      const data = await loadIndoorMapForBuilding(slug);
+      if (requestRef.current === request) {
+        if (data) setPreview({ slug, record: data.record });
+        else setPreviewError("This building could not be loaded.");
+      }
+    } catch {
+      if (requestRef.current === request)
+        setPreviewError(
+          "The indoor preview could not be loaded. Try selecting the building again.",
+        );
+    } finally {
+      if (requestRef.current === request) setPreviewLoading(false);
+    }
+  }
+
   return (
-    <div className="grid min-h-[calc(100dvh-4rem)] bg-muted lg:h-[calc(100dvh-4rem)] lg:min-h-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col border-b border-border bg-card lg:border-r lg:border-b-0">
+    <div className="grid min-h-0 w-full flex-1 gap-4 p-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      <aside className="flex max-h-64 min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:max-h-none">
         <div className="border-b border-border p-4">
           <div className="relative">
             <Search
@@ -151,8 +224,7 @@ export function BuildingPicker({
                         "flex min-h-11 w-full items-start gap-2 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
                         place.slug === selectedSlug && "bg-primary/10",
                       )}
-                      onClick={() => openBuilding(place.slug)}
-                      onMouseEnter={() => setSelectedSlug(place.slug)}
+                      onClick={() => previewBuilding(place.slug)}
                       type="button"
                     >
                       <span className="min-w-0 flex-1">
@@ -191,15 +263,15 @@ export function BuildingPicker({
         </nav>
       </aside>
 
-      <main className="relative min-h-96 min-w-0">
+      <main className="relative min-h-[30rem] min-w-0 overflow-hidden rounded-xl border lg:min-h-0">
         <CampusMap
           campus={mapData.campus}
           features={mapData.features}
           layers={mapData.layers}
-          onClearSelection={() => setSelectedSlug(undefined)}
+          indoorScene={indoorScene}
+          onClearSelection={clearSelection}
           onSelect={(slug) => {
-            setSelectedSlug(slug);
-            openBuilding(slug);
+            previewBuilding(slug);
           }}
           places={mapData.places}
           route={null}
@@ -207,10 +279,31 @@ export function BuildingPicker({
           selectedSlug={selectedSlug}
           visibleLayerSlugs={visibleLayerSlugs}
         />
-        <p className="pointer-events-none absolute top-3 left-3 inline-flex items-center gap-2 rounded-md border border-border bg-card/80 px-3 py-2 text-xs font-medium text-foreground/80 shadow-xs">
-          <LayoutGrid aria-hidden="true" size={14} />
-          Click a building to open its floor plan
-        </p>
+        {selectedBuilding ? (
+          <section
+            aria-label="Selected building"
+            className="absolute top-3 left-3 max-w-[calc(100%-5rem)] rounded-lg border bg-card/95 p-3 shadow-sm"
+          >
+            <h2 className="text-sm font-semibold">{selectedBuilding.name}</h2>
+            <p className="mt-1 text-xs text-muted-foreground" role="status">
+              {previewLoading
+                ? "Loading indoor preview…"
+                : (previewError ??
+                  (indoorScene ? "3D indoor preview" : "No indoor map yet"))}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => editBuilding(selectedBuilding.slug)}
+              >
+                Edit indoor map
+              </Button>
+              <Button size="sm" variant="outline" onClick={clearSelection}>
+                Close
+              </Button>
+            </div>
+          </section>
+        ) : null}
       </main>
     </div>
   );

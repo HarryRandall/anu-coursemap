@@ -1,10 +1,14 @@
 "use client";
+import { constrainIndoorMove } from "@/lib/rooms/indoor-move";
+import { alignedRectangle } from "@/lib/rooms/indoor-orientation";
 
 import { useCallback, useMemo, useRef, useState, type Dispatch } from "react";
-import type { IndoorTool } from "@/components/admin/rooms/tool-palette";
+import type { SnapSettings } from "@/components/admin/rooms/editor-status-bar";
+import type { IndoorTool } from "@/components/admin/rooms/tool-rail";
 import {
   indoorGeometryBounds,
   indoorGeometryRing,
+  isSimpleIndoorRing,
   pointInIndoorGeometry,
   resizeIndoorGeometryToBounds,
   thickenPolyline,
@@ -27,6 +31,7 @@ import {
   previewDrawPoint,
   resizeBounds,
   type IndoorDrag,
+  type IndoorDrawTool,
   type IndoorHandleId,
 } from "@/lib/rooms/indoor-drag";
 import { gridStepsForScale } from "@/lib/rooms/indoor-grid";
@@ -64,6 +69,16 @@ const DEFAULT_WALL_THICKNESS = 2;
 const DEFAULT_DOOR_WIDTH = 9;
 const CONNECTOR_HALF_SIZE_UNITS = 12;
 const BOUNDARY_MESSAGE = "Keep rooms and paths inside the building outline.";
+const FINISH_BOUNDARY_MESSAGE =
+  "The last edge leaves the building outline. Backspace removes the last point, Escape cancels.";
+const CROSSING_MESSAGE =
+  "The edges of this room cross each other. Backspace removes the last corner, Escape cancels.";
+
+function tooFewPointsMessage(tool: IndoorDrawTool) {
+  return tool === "polygon"
+    ? "A room needs at least three corners. Keep clicking, or press Escape to cancel."
+    : `A ${tool === "wall" ? "wall" : "path"} needs at least two points. Keep clicking, or press Escape to cancel.`;
+}
 
 function connectorRing(point: IndoorPoint) {
   return [
@@ -137,6 +152,8 @@ export function useEditorPointer({
   tool,
   selection,
   editingEnabled = true,
+  drawingAngle = 0,
+  snapSettings = { grid: true, geometry: true },
   dispatch,
   onToolDone,
 }: {
@@ -148,6 +165,8 @@ export function useEditorPointer({
   selection: IndoorSelection;
   /** Pitched 3D unprojects onto the ground plane, so geometry edits are plan-only. */
   editingEnabled?: boolean;
+  drawingAngle?: number;
+  snapSettings?: SnapSettings;
   dispatch: Dispatch<IndoorEditorAction>;
   onToolDone: () => void;
 }) {
@@ -173,10 +192,12 @@ export function useEditorPointer({
   const levelId = level?.id ?? "";
   const targets = useMemo(
     () =>
-      collectSnapTargets(document, levelId, {
-        excludeIds: selection ? new Set([selection.id]) : undefined,
-      }),
-    [document, levelId, selection],
+      snapSettings.geometry
+        ? collectSnapTargets(document, levelId, {
+            excludeIds: selection ? new Set([selection.id]) : undefined,
+          })
+        : { points: [], segments: [] },
+    [document, levelId, selection, snapSettings.geometry],
   );
 
   const resolve = useCallback(
@@ -184,14 +205,15 @@ export function useEditorPointer({
       const scale = scaleRef.current;
       const grid = gridStepsForScale(scale);
       const result = snapPoint(point, targets, SNAP_TOLERANCE_PIXELS / scale, {
-        gridStep: grid.minorUnits,
+        drawingAngle,
+        gridStep: snapSettings.grid ? grid.minorUnits : undefined,
         axisOrigin: origin ?? null,
         axisLock: shiftRef.current,
       });
       setSnap(result);
       return result.point;
     },
-    [targets],
+    [drawingAngle, snapSettings.grid, targets],
   );
 
   const onViewChange = useCallback((context: { scale: number }) => {
@@ -238,25 +260,38 @@ export function useEditorPointer({
     [document.spaces, document.walls],
   );
 
+  /**
+   * Turns the points placed so far into a wall, room or path. Anything that
+   * stops it says why in the status line and leaves the drawing in place, so
+   * the author can fix the last point instead of starting again.
+   */
   const finishDraw = useCallback(
-    (current: IndoorDrag) => {
+    (current: IndoorDrag, options: { closed?: boolean } = {}) => {
       if (!level || !footprint) return;
-      const points = drawnPoints(current);
-      if (!points || current.kind !== "draw-points") {
+      if (current.kind !== "draw-points") {
         cancel();
+        return;
+      }
+      const points = drawnPoints(current);
+      if (!points) {
+        if (current.points.length === 0) cancel();
+        else setBoundaryMessage(tooFewPointsMessage(current.tool));
         return;
       }
 
       if (current.tool === "wall") {
+        // Clicking back on the first corner closes the run into a loop, which
+        // is how a whole room's walls get drawn in one gesture.
+        const closed = options.closed === true && points.length >= 3;
         if (
           !wallPointsFitFootprint(
             points,
-            false,
+            closed,
             DEFAULT_WALL_THICKNESS,
             footprint,
           )
         ) {
-          blockBoundary();
+          setBoundaryMessage(FINISH_BOUNDARY_MESSAGE);
           return;
         }
         dispatch({
@@ -267,13 +302,17 @@ export function useEditorPointer({
             kind: "structural",
             points: points.map((point) => ({ ...point })),
             thickness: DEFAULT_WALL_THICKNESS,
-            closed: false,
+            closed,
             openings: [],
           },
         });
       } else if (current.tool === "polygon") {
+        if (!isSimpleIndoorRing(points)) {
+          setBoundaryMessage(CROSSING_MESSAGE);
+          return;
+        }
         if (!isIndoorRingWithinFootprint(points, footprint)) {
-          blockBoundary();
+          setBoundaryMessage(FINISH_BOUNDARY_MESSAGE);
           return;
         }
         dispatch({
@@ -293,7 +332,7 @@ export function useEditorPointer({
         });
       } else {
         if (!pathFitsFootprint(points, footprint)) {
-          blockBoundary();
+          setBoundaryMessage(FINISH_BOUNDARY_MESSAGE);
           return;
         }
         // A walking path becomes junction nodes joined end to end, snapped onto
@@ -349,7 +388,6 @@ export function useEditorPointer({
       onToolDone();
     },
     [
-      blockBoundary,
       cancel,
       dispatch,
       document,
@@ -374,6 +412,7 @@ export function useEditorPointer({
         setBoundaryMessage(null);
         setDrag({
           kind: "draw-rect",
+          drawingAngle,
           tool,
           origin: point,
           current: point,
@@ -384,6 +423,34 @@ export function useEditorPointer({
         const current = dragRef.current;
         const previous =
           current.kind === "draw-points" ? current.points.at(-1) : undefined;
+
+        // Clicking back on the first point closes a room or wall loop, the
+        // gesture every drawing tool teaches. Paths have no inside to close.
+        if (
+          tool !== "path" &&
+          current.kind === "draw-points" &&
+          current.points.length >= 3
+        ) {
+          const first = current.points[0];
+          const closeRadius = SNAP_TOLERANCE_PIXELS / scaleRef.current;
+          if (
+            Math.hypot(rawPoint.x - first.x, rawPoint.y - first.y) <=
+            closeRadius
+          ) {
+            finishDraw(current, { closed: true });
+            return;
+          }
+        }
+        // The second click of a double-click lands a pixel or two from the
+        // first; it must not become a stray corner before the finish fires.
+        if (
+          previous &&
+          Math.hypot(point.x - previous.x, point.y - previous.y) <=
+            SNAP_TOLERANCE_PIXELS / scaleRef.current
+        ) {
+          return;
+        }
+
         if (
           !isIndoorPointWithinFootprint(point, footprint) ||
           (previous &&
@@ -408,6 +475,7 @@ export function useEditorPointer({
           return;
         }
         setBoundaryMessage(null);
+        gestureRef.current = true;
         dispatch({
           type: "connector/add",
           connector: {
@@ -499,7 +567,9 @@ export function useEditorPointer({
       document.spaces,
       document.walls,
       editingEnabled,
+      finishDraw,
       footprint,
+      drawingAngle,
       level,
       onToolDone,
       resolve,
@@ -525,7 +595,25 @@ export function useEditorPointer({
           return { ...current, current: resolve(rawPoint, current.origin) };
         }
         if (current.kind === "move") {
-          return { ...current, current: rawPoint };
+          const space = document.spaces.find(
+            (space) => space.id === current.targetId,
+          );
+          if (!space || !footprint) return current;
+          const delta = constrainIndoorMove(
+            space.geometry,
+            {
+              x: rawPoint.x - current.origin.x,
+              y: rawPoint.y - current.origin.y,
+            },
+            footprint,
+          );
+          return {
+            ...current,
+            current: {
+              x: current.origin.x + delta.x,
+              y: current.origin.y + delta.y,
+            },
+          };
         }
         if (current.kind === "resize") {
           return {
@@ -540,7 +628,7 @@ export function useEditorPointer({
         return current;
       });
     },
-    [resolve, setDrag],
+    [document.spaces, footprint, resolve, setDrag],
   );
 
   const onPointerUp = useCallback(() => {
@@ -635,14 +723,23 @@ export function useEditorPointer({
     if (current.kind === "draw-rect") {
       const bounds = drawnRectangleBounds(current);
       if (bounds && level) {
-        const geometry = {
-          type: "rectangle" as const,
-          x: bounds.minX,
-          y: bounds.minY,
-          width: bounds.maxX - bounds.minX,
-          height: bounds.maxY - bounds.minY,
-          cornerRadius: 0,
-        };
+        const geometry = current.drawingAngle
+          ? {
+              type: "polygon" as const,
+              points: alignedRectangle(
+                current.origin,
+                current.current,
+                current.drawingAngle,
+              ),
+            }
+          : {
+              type: "rectangle" as const,
+              x: bounds.minX,
+              y: bounds.minY,
+              width: bounds.maxX - bounds.minX,
+              height: bounds.maxY - bounds.minY,
+              cornerRadius: 0,
+            };
         if (
           !isIndoorRingWithinFootprint(indoorGeometryRing(geometry), footprint)
         ) {

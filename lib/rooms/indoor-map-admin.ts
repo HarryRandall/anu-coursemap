@@ -422,7 +422,28 @@ export async function saveCampusIndoorMap(
           : "Indoor map draft saved.",
       revision: savedRevision,
     };
-  } catch {
-    return failure("The indoor map could not be saved.");
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "unknown";
+    console.error("Indoor map save failed", {
+      buildingPlaceId: input.buildingPlaceId,
+      code,
+    });
+    if (
+      code === "23514" &&
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      String(error.message).includes("campus_indoor_maps_document_check")
+    ) {
+      return failure(
+        "The database rejected this map format. Your edits are still here. The indoor map database needs updating before you can save.",
+      );
+    }
+    return failure(
+      "The indoor map could not be saved. Your edits are still here. Please try again.",
+    );
   }
 }

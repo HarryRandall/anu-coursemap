@@ -1,3 +1,4 @@
+import { rotateDrawingPoint } from "@/lib/rooms/indoor-orientation";
 import { closestPointOnIndoorSegment } from "@/lib/rooms/indoor-geometry";
 import { snapToGrid } from "@/lib/rooms/indoor-grid";
 import { wallSegments } from "@/lib/rooms/indoor-walls";
@@ -40,6 +41,7 @@ export type IndoorSnapResult = Readonly<{
 export type IndoorSnapOptions = Readonly<{
   /** Grid spacing in local units. Omit to leave the grid out of snapping. */
   gridStep?: number;
+  drawingAngle?: number;
   /** Where a constrained drag started, for the axis lock. */
   axisOrigin?: IndoorPoint | null;
   axisLock?: boolean;
@@ -162,6 +164,31 @@ export function snapPoint(
   toleranceUnits: number,
   options: IndoorSnapOptions = {},
 ): IndoorSnapResult {
+  if (options.drawingAngle) {
+    const angle = options.drawingAngle;
+    const rotate = (point: IndoorPoint) => rotateDrawingPoint(point, -angle);
+    const result = snapPoint(
+      rotate(candidate),
+      {
+        points: targets.points.map((target) => ({
+          ...target,
+          point: rotate(target.point),
+        })),
+        segments: targets.segments.map((target) => ({
+          ...target,
+          start: rotate(target.start),
+          end: rotate(target.end),
+        })),
+      },
+      toleranceUnits,
+      {
+        ...options,
+        drawingAngle: 0,
+        axisOrigin: options.axisOrigin ? rotate(options.axisOrigin) : null,
+      },
+    );
+    return { ...result, point: rotateDrawingPoint(result.point, angle) };
+  }
   const constrained =
     options.axisLock && options.axisOrigin
       ? applyAxisLock(options.axisOrigin, candidate)

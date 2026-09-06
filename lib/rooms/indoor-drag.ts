@@ -1,3 +1,4 @@
+import { rotateDrawingPoint } from "@/lib/rooms/indoor-orientation";
 import type { IndoorBounds } from "@/lib/rooms/indoor-geometry";
 import type { IndoorPoint } from "@/lib/rooms/indoor-map";
 
@@ -58,6 +59,7 @@ export type IndoorDrag =
     }>
   | Readonly<{
       kind: "draw-rect";
+      drawingAngle?: number;
       tool: IndoorRectangleTool;
       origin: IndoorPoint;
       current: IndoorPoint;
@@ -157,11 +159,13 @@ export function resizeBounds(
 /** The extent a press-drag-release rectangle covers, or null if it is too small. */
 export function drawnRectangleBounds(drag: IndoorDrag): IndoorBounds | null {
   if (drag.kind !== "draw-rect") return null;
+  const origin = rotateDrawingPoint(drag.origin, -(drag.drawingAngle ?? 0));
+  const current = rotateDrawingPoint(drag.current, -(drag.drawingAngle ?? 0));
   const bounds = normaliseBounds({
-    minX: drag.origin.x,
-    minY: drag.origin.y,
-    maxX: drag.current.x,
-    maxY: drag.current.y,
+    minX: origin.x,
+    minY: origin.y,
+    maxX: current.x,
+    maxY: current.y,
   });
   if (
     bounds.maxX - bounds.minX < MINIMUM_DRAW_SIZE ||

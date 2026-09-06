@@ -837,27 +837,59 @@ test("serves the indoor map picker and a per-building floor plan editor", async 
   );
 
   const editor = load(await editorResponse.text());
+  // One canvas: the section tabs are gone in favour of a single tool rail
+  // that also carries snapping and camera controls, a floor pill and a hint
+  // over the map, and a collapsible right-hand inspector.
   assert.equal(
     editor('[role="tablist"][aria-label="Indoor map sections"]').length,
+    0,
+  );
+  assert.equal(editor('[aria-label="Floor plan tools"]').length, 1);
+  for (const label of ["Select", "Wall", "Door", "Stairs", "Lift"]) {
+    assert.ok(
+      editor(`[aria-label="Floor plan tools"] button[aria-label="${label}"]`)
+        .length >= 1,
+      `the ${label} tool is on the rail`,
+    );
+  }
+  assert.equal(editor('section[aria-label="Floor plan canvas"]').length, 1);
+  assert.equal(editor('[aria-label="Building floors"]').length, 1);
+  assert.equal(editor('aside[aria-label="Inspector"]').length, 1);
+  assert.equal(
+    editor('[role="tablist"][aria-label="Inspector sections"]').length,
     1,
   );
-  for (const label of [
-    "Floors",
-    "Floor plan",
-    "Entrances & routes",
-    "Preview",
-  ]) {
-    assert.equal(editor(`[role="tab"]:contains("${label}")`).length, 1);
+  for (const label of ["Selection", "Layers", "Issues"]) {
+    assert.equal(
+      editor(
+        `[aria-label="Inspector sections"] [role="tab"]:contains("${label}")`,
+      ).length,
+      1,
+    );
   }
-  assert.equal(editor('[aria-label="Building floors"]').length, 1);
+  assert.equal(
+    editor(
+      '[aria-label="Floor plan tools"] [role="group"][aria-label="Snapping"]',
+    ).length,
+    1,
+  );
+  assert.equal(
+    editor('[aria-label="Floor plan tools"] [aria-label="View"]').length,
+    1,
+  );
+  assert.equal(editor('button[aria-label="Hide inspector"]').length, 1);
+  assert.equal(
+    editor('section[aria-label="Floor plan canvas"] [role="status"]').length,
+    1,
+  );
   assert.equal(editor('[aria-label="Indoor map name"]').length, 0);
   assert.equal(editor('[aria-label="Save indoor map"]').length, 1);
   const editorMainText = editor("main").text();
   assert.match(editorMainText, /Forestry Building/u);
 
   // Naming and selected-item details are on demand, so the canvas is no
-  // longer compressed by permanent settings or properties rails.
-  assert.doesNotMatch(editorMainText, /Floor settings|Properties/u);
+  // longer compressed by permanent settings rails.
+  assert.doesNotMatch(editorMainText, /Floor settings/u);
   assert.doesNotMatch(editorMainText, /Revision \d+|Unsaved/u);
 });
 

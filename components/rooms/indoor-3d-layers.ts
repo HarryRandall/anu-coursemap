@@ -1,12 +1,19 @@
 import type { IndoorScene } from "@/lib/rooms/indoor-3d";
+import {
+  DEFAULT_INDOOR_PALETTE,
+  spaceFillExpression,
+  type IndoorPalette,
+} from "@/lib/rooms/indoor-palette";
 
 /**
  * Adds and updates the layers that draw a building's interior on the campus
  * map. Everything is a fill extrusion, so the inside of a building is made of
  * the same stuff as the outside and one camera move carries you from the campus
- * into a room.
+ * into a room. Colours come from an {@link IndoorPalette} so the editor can
+ * repaint for dark mode without rebuilding the layers.
  */
 type MapLibreMap = import("maplibre-gl").Map;
+type Expression = import("maplibre-gl").ExpressionSpecification;
 
 function emptyCollection(): import("maplibre-gl").GeoJSONSourceSpecification["data"] {
   return { type: "FeatureCollection", features: [] };
@@ -55,6 +62,26 @@ export const INDOOR_PICKABLE_LAYER_ID_LIST = [
   INDOOR_LAYER_IDS.route,
 ] as const;
 
+/** The editor's layer visibility groups, in the order they are listed. */
+export type IndoorLayerGroup =
+  "spaces" | "walls" | "doors" | "connectors" | "routing" | "labels";
+
+export const INDOOR_LAYER_GROUPS: Readonly<
+  Record<IndoorLayerGroup, readonly string[]>
+> = {
+  spaces: [INDOOR_LAYER_IDS.rooms, INDOOR_LAYER_IDS.roomsInactive],
+  walls: [
+    INDOOR_LAYER_IDS.walls,
+    INDOOR_LAYER_IDS.wallsInactive,
+    INDOOR_LAYER_IDS.perimeters,
+    INDOOR_LAYER_IDS.perimetersInactive,
+  ],
+  doors: [INDOOR_LAYER_IDS.openings, INDOOR_LAYER_IDS.openingsInactive],
+  connectors: [INDOOR_LAYER_IDS.connectors, INDOOR_LAYER_IDS.connectorsRoute],
+  routing: [INDOOR_LAYER_IDS.route, INDOOR_LAYER_IDS.routeInactive],
+  labels: [INDOOR_LAYER_IDS.labels, INDOOR_LAYER_IDS.labelsInactive],
+};
+
 const INDOOR_LAYER_DRAW_ORDER = [
   INDOOR_LAYER_IDS.slabs,
   INDOOR_LAYER_IDS.rooms,
@@ -74,11 +101,151 @@ const INDOOR_LAYER_DRAW_ORDER = [
   INDOOR_LAYER_IDS.labels,
 ] as const;
 
-export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
+function wallColour(palette: IndoorPalette): Expression {
+  return [
+    "match",
+    ["get", "kind"],
+    "glazing",
+    palette.wallGlazing,
+    "partition",
+    palette.wallPartition,
+    palette.wallStructural,
+  ];
+}
+
+function openingColour(palette: IndoorPalette): Expression {
+  return [
+    "case",
+    ["boolean", ["get", "exterior"], false],
+    palette.entrance,
+    ["==", ["get", "kind"], "door"],
+    palette.door,
+    palette.gap,
+  ];
+}
+
+/** Reveal a few landmarks first, then smaller rooms as the map gets closer. */
+function roomLabelText(inactive = false): Expression {
+  const label: Expression = inactive
+    ? ["concat", ["get", "levelRef"], " · ", ["get", "label"]]
+    : ["get", "label"];
+  const visible = (limit: number): Expression => [
+    "case",
+    [
+      "any",
+      ["==", ["get", "highlight"], true],
+      ["<", ["coalesce", ["get", "labelRank"], 0], limit],
+    ],
+    label,
+    "",
+  ];
+  return inactive
+    ? ["step", ["zoom"], "", 20.5, visible(2), 21.5, visible(6), 22, label]
+    : [
+        "step",
+        ["zoom"],
+        visible(1),
+        18.5,
+        visible(2),
+        20,
+        visible(6),
+        21,
+        label,
+      ];
+}
+
+function labelColour(palette: IndoorPalette): Expression {
+  return [
+    "case",
+    ["boolean", ["get", "highlight"], false],
+    palette.labelHighlight,
+    palette.labelText,
+  ];
+}
+
+/**
+ * Every colour-bearing paint property, keyed by layer. `addIndoorLayers` and
+ * `applyIndoorPalette` share this so a theme change repaints exactly what was
+ * first drawn.
+ */
+function paintColours(
+  palette: IndoorPalette,
+): Readonly<Record<string, Readonly<Record<string, string | Expression>>>> {
+  const spaceFill = spaceFillExpression(palette);
+  return {
+    [INDOOR_LAYER_IDS.slabsInactive]: { "fill-extrusion-color": palette.slab },
+    [INDOOR_LAYER_IDS.slabs]: { "fill-extrusion-color": palette.slab },
+    [INDOOR_LAYER_IDS.rooms]: { "fill-extrusion-color": spaceFill },
+    [INDOOR_LAYER_IDS.roomsInactive]: { "fill-extrusion-color": spaceFill },
+    [INDOOR_LAYER_IDS.perimeters]: {
+      "fill-extrusion-color": palette.perimeter,
+    },
+    [INDOOR_LAYER_IDS.perimetersInactive]: {
+      "fill-extrusion-color": palette.perimeter,
+    },
+    [INDOOR_LAYER_IDS.walls]: { "fill-extrusion-color": wallColour(palette) },
+    [INDOOR_LAYER_IDS.wallsInactive]: {
+      "fill-extrusion-color": wallColour(palette),
+    },
+    [INDOOR_LAYER_IDS.openings]: {
+      "fill-extrusion-color": openingColour(palette),
+    },
+    [INDOOR_LAYER_IDS.openingsInactive]: {
+      "fill-extrusion-color": openingColour(palette),
+    },
+    [INDOOR_LAYER_IDS.connectors]: {
+      "fill-extrusion-color": [
+        "case",
+        ["==", ["get", "highlight"], true],
+        palette.selection,
+        palette.connector,
+      ],
+    },
+    [INDOOR_LAYER_IDS.connectorsRoute]: {
+      "fill-extrusion-color": palette.route,
+    },
+    [INDOOR_LAYER_IDS.route]: { "fill-extrusion-color": palette.route },
+    [INDOOR_LAYER_IDS.routeInactive]: {
+      "fill-extrusion-color": palette.route,
+    },
+    [INDOOR_LAYER_IDS.labelsInactive]: {
+      "text-color": palette.labelMuted,
+      "text-halo-color": palette.labelHalo,
+    },
+    [INDOOR_LAYER_IDS.labels]: {
+      "text-color": labelColour(palette),
+      "text-halo-color": palette.labelHalo,
+    },
+  };
+}
+
+/** Repaints every indoor layer for a new palette, for example on theme change. */
+export function applyIndoorPalette(map: MapLibreMap, palette: IndoorPalette) {
+  for (const [layerId, properties] of Object.entries(paintColours(palette))) {
+    if (!map.getLayer(layerId)) continue;
+    for (const [property, value] of Object.entries(properties)) {
+      map.setPaintProperty(
+        layerId,
+        property as Parameters<MapLibreMap["setPaintProperty"]>[1],
+        value,
+      );
+    }
+  }
+}
+
+export function addIndoorLayers(
+  map: MapLibreMap,
+  beforeId?: string,
+  palette: IndoorPalette = DEFAULT_INDOOR_PALETTE,
+) {
   for (const sourceId of Object.values(INDOOR_SOURCE_IDS)) {
     if (map.getSource(sourceId)) continue;
     map.addSource(sourceId, { type: "geojson", data: emptyCollection() });
   }
+
+  const colours = paintColours(palette);
+  const colour = (layerId: string, property: string) =>
+    colours[layerId][property];
 
   // MapLibre opacity is fixed per fill-extrusion layer. Active and inactive
   // features therefore need separate filtered layers rather than a data
@@ -92,7 +259,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": "#d4d4d8",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.slabsInactive,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.1,
       },
     });
@@ -107,7 +277,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": "#d4d4d8",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.slabs,
+          "fill-extrusion-color",
+        ),
         // A floor plate has to read as a plate without becoming a lid over the
         // floor beneath it.
         "fill-extrusion-opacity": 0.2,
@@ -124,18 +297,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": [
-          "case",
-          ["get", "highlight"],
-          "#7c3aed",
-          ["==", ["get", "kind"], "corridor"],
-          "#dbeafe",
-          ["==", ["get", "kind"], "service"],
-          "#fef3c7",
-          ["==", ["get", "kind"], "open-area"],
-          "#dcfce7",
-          "#ede9fe",
-        ],
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.rooms,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.95,
         "fill-extrusion-vertical-gradient": true,
       },
@@ -151,16 +316,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": [
-          "case",
-          ["==", ["get", "kind"], "corridor"],
-          "#bfdbfe",
-          ["==", ["get", "kind"], "service"],
-          "#fde68a",
-          ["==", ["get", "kind"], "open-area"],
-          "#bbf7d0",
-          "#ddd6fe",
-        ],
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.roomsInactive,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.28,
         "fill-extrusion-vertical-gradient": true,
       },
@@ -180,7 +339,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": "#52525b",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.perimeters,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.35,
       },
     });
@@ -199,7 +361,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": "#a1a1aa",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.perimetersInactive,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.12,
       },
     });
@@ -218,15 +383,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": [
-          "match",
-          ["get", "kind"],
-          "glazing",
-          "#7dd3fc",
-          "partition",
-          "#a1a1aa",
-          "#52525b",
-        ],
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.walls,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.9,
       },
     });
@@ -245,15 +405,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": [
-          "match",
-          ["get", "kind"],
-          "glazing",
-          "#7dd3fc",
-          "partition",
-          "#a1a1aa",
-          "#71717a",
-        ],
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.wallsInactive,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.24,
       },
     });
@@ -268,14 +423,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": [
-          "case",
-          ["get", "exterior"],
-          "#059669",
-          ["==", ["get", "kind"], "door"],
-          "#7c3aed",
-          "#0284c7",
-        ],
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.openings,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.98,
       },
     });
@@ -290,14 +441,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": [
-          "case",
-          ["get", "exterior"],
-          "#6ee7b7",
-          ["==", ["get", "kind"], "door"],
-          "#c4b5fd",
-          "#7dd3fc",
-        ],
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.openingsInactive,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.48,
       },
     });
@@ -312,7 +459,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": "#8b5cf6",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.connectors,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.55,
       },
     });
@@ -329,7 +479,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
         "fill-extrusion-height": ["get", "height"],
         // A shaft on the route is lit its whole length, which is what says
         // "go up here" without any words.
-        "fill-extrusion-color": "#f59e0b",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.connectorsRoute,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.95,
       },
     });
@@ -344,7 +497,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": "#f59e0b",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.route,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 1,
       },
     });
@@ -359,7 +515,10 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       paint: {
         "fill-extrusion-base": ["get", "base"],
         "fill-extrusion-height": ["get", "height"],
-        "fill-extrusion-color": "#f59e0b",
+        "fill-extrusion-color": colour(
+          INDOOR_LAYER_IDS.routeInactive,
+          "fill-extrusion-color",
+        ),
         "fill-extrusion-opacity": 0.32,
       },
     });
@@ -372,18 +531,22 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       source: INDOOR_SOURCE_IDS.labels,
       filter: ["==", ["get", "active"], false],
       layout: {
-        "text-field": ["concat", ["get", "levelRef"], " · ", ["get", "label"]],
+        "text-field": roomLabelText(true),
         "text-font": ["Noto Sans Regular"],
         "text-size": 10,
-        // Inactive labels must not claim collision space from the selected
-        // floor. Their floor prefix keeps overlapping room references clear.
-        "text-allow-overlap": true,
-        "text-ignore-placement": true,
+        // Inactive floors appear later and yield to active-floor labels.
+        "text-allow-overlap": false,
+        "text-ignore-placement": false,
+        "symbol-sort-key": ["+", 1000, ["get", "labelRank"]],
+        "text-padding": 6,
         "symbol-placement": "point",
       },
       paint: {
-        "text-color": "#71717a",
-        "text-halo-color": "#ffffff",
+        "text-color": colour(INDOOR_LAYER_IDS.labelsInactive, "text-color"),
+        "text-halo-color": colour(
+          INDOOR_LAYER_IDS.labelsInactive,
+          "text-halo-color",
+        ),
         "text-halo-width": 1.2,
         "text-opacity": 0.48,
       },
@@ -395,19 +558,25 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
       id: INDOOR_LAYER_IDS.labels,
       type: "symbol",
       source: INDOOR_SOURCE_IDS.labels,
-      // Active labels keep their full emphasis and collision behaviour. The
-      // faint sibling layer ignores placement, so it cannot hide these.
+      // Selected and high-priority rooms win collision placement.
       filter: ["==", ["get", "active"], true],
       layout: {
-        "text-field": ["get", "label"],
+        "text-field": roomLabelText(),
         "text-font": ["Noto Sans Regular"],
         "text-size": 11,
+        "symbol-sort-key": [
+          "case",
+          ["==", ["get", "highlight"], true],
+          -1,
+          ["get", "labelRank"],
+        ],
+        "text-padding": 6,
         "text-allow-overlap": false,
         "symbol-placement": "point",
       },
       paint: {
-        "text-color": ["case", ["get", "highlight"], "#5b21b6", "#3f3f46"],
-        "text-halo-color": "#ffffff",
+        "text-color": colour(INDOOR_LAYER_IDS.labels, "text-color"),
+        "text-halo-color": colour(INDOOR_LAYER_IDS.labels, "text-halo-color"),
         "text-halo-width": 1.4,
         "text-opacity": 1,
       },
@@ -427,6 +596,7 @@ export function addIndoorLayers(map: MapLibreMap, beforeId?: string) {
 export function updateIndoorLayers(
   map: MapLibreMap,
   scene: IndoorScene | null,
+  hiddenGroups: ReadonlySet<IndoorLayerGroup> = new Set(),
 ) {
   for (const [key, sourceId] of Object.entries(INDOOR_SOURCE_IDS)) {
     const source = map.getSource(sourceId) as
@@ -437,10 +607,16 @@ export function updateIndoorLayers(
     );
   }
 
-  const visibility = scene ? "visible" : "none";
+  const hiddenLayerIds = new Set(
+    [...hiddenGroups].flatMap((group) => INDOOR_LAYER_GROUPS[group]),
+  );
   for (const layerId of INDOOR_LAYER_ID_LIST) {
     if (map.getLayer(layerId)) {
-      map.setLayoutProperty(layerId, "visibility", visibility);
+      map.setLayoutProperty(
+        layerId,
+        "visibility",
+        scene && !hiddenLayerIds.has(layerId) ? "visible" : "none",
+      );
     }
   }
 

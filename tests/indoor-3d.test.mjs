@@ -4,7 +4,13 @@ import test from "node:test";
 import { loadLibModules } from "./helpers/lib-modules.mjs";
 
 const modules = await loadLibModules(
-  ["rooms/indoor-3d", "rooms/indoor-footprint", "rooms/indoor-map-migrate"],
+  [
+    "rooms/indoor-3d",
+    "rooms/indoor-footprint",
+    "rooms/indoor-map-migrate",
+    "rooms/indoor-lift-animation",
+    "rooms/indoor-stairs",
+  ],
   "indoor-3d",
 );
 const { buildIndoorScene } = modules["indoor-3d"];
@@ -657,5 +663,140 @@ test("replaces the Copland sample pentagon with its stored vector footprint", as
     scene.walls.features.filter((wall) => wall.properties.perimeter === true)
       .length,
     projection.outline.length * document.levels.length,
+  );
+});
+
+test("illustrative lift cabins pause at served floors and return without jumping", () => {
+  const { liftCabinBase } = modules["indoor-lift-animation"];
+  const stops = [0, 7.2, 18];
+  assert.equal(liftCabinBase(stops, 0), 0);
+  assert.equal(liftCabinBase(stops, 1000), 0);
+  assert.equal(liftCabinBase(stops, 2600), 3.6);
+  assert.equal(liftCabinBase(stops, 4000), 7.2);
+  assert.equal(liftCabinBase(stops, 8000), 18);
+  assert.equal(liftCabinBase(stops, 12000), 7.2);
+  assert.equal(liftCabinBase(stops, 16000), 0);
+  assert.equal(liftCabinBase([5], 100000), 5);
+  assert.equal(liftCabinBase([], 0), 0);
+});
+
+test("lift cabin doors open at a stop and close before travel without changing the scene", () => {
+  const { document, projection } = createFixture();
+  const scene = buildIndoorScene(document, projection, { explode: 2.25 });
+  const before = JSON.stringify(scene.connectors);
+  const { buildLiftCabins } = modules["indoor-lift-animation"];
+  const closed = buildLiftCabins(scene.connectors, 0);
+  const open = buildLiftCabins(scene.connectors, 600);
+  const moving = buildLiftCabins(scene.connectors, 2600);
+  const door = (collection) =>
+    collection.features.find(
+      (feature) => feature.properties.part === "left-door",
+    );
+  const width = (feature) => {
+    const xs = feature.geometry.coordinates[0].map(([x]) => x);
+    return Math.max(...xs) - Math.min(...xs);
+  };
+  assert.ok(door(closed));
+  assert.ok(width(door(open)) < width(door(closed)));
+  assert.equal(width(door(moving)), width(door(closed)));
+  assert.ok(door(moving).properties.base > door(closed).properties.base);
+  assert.equal(JSON.stringify(scene.connectors), before);
+  assert.ok(
+    closed.features.some((feature) => feature.properties.part === "indicator"),
+  );
+});
+
+test("room label priority favours circulation and large rooms consistently", () => {
+  const { document, projection } = createFixture();
+  const template = {
+    levelId: document.levels[0].id,
+    name: "Room",
+    kind: "room",
+    searchable: true,
+    geometry: { type: "rectangle", x: 20, y: 20, width: 20, height: 20 },
+  };
+  const spaces = [
+    {
+      ...template,
+      id: "small",
+      ref: "S",
+      geometry: { type: "rectangle", x: 20, y: 20, width: 20, height: 20 },
+    },
+    {
+      ...template,
+      id: "large",
+      ref: "L",
+      geometry: { type: "rectangle", x: 20, y: 20, width: 60, height: 60 },
+    },
+    {
+      ...template,
+      id: "corridor",
+      ref: "",
+      name: "Main corridor",
+      kind: "corridor",
+    },
+  ];
+  const labels = (items) =>
+    buildIndoorScene(
+      { ...document, spaces: items },
+      projection,
+    ).labels.features.map((feature) => [
+      feature.properties.spaceId,
+      feature.properties.labelRank,
+    ]);
+  assert.deepEqual(Object.fromEntries(labels(spaces)), {
+    small: 2,
+    large: 1,
+    corridor: 0,
+  });
+  assert.deepEqual(Object.fromEntries(labels([...spaces].reverse())), {
+    corridor: 0,
+    large: 1,
+    small: 2,
+  });
+});
+
+test("illustrative stairs connect served floors without changing the document", () => {
+  const shaft = {
+    type: "Feature",
+    id: "stairs",
+    properties: {
+      kind: "stairs",
+      connectorId: "stairs",
+      liftStops: "[0,8,16]",
+    },
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+          [0, 0],
+        ],
+      ],
+    },
+  };
+  const connectors = { type: "FeatureCollection", features: [shaft] };
+  const original = structuredClone(connectors);
+  const result = modules["indoor-stairs"].buildStairFlights(connectors);
+  assert.equal(result.features.length, 44);
+  assert.equal(
+    Math.max(...result.features.map((f) => f.properties.height)),
+    16,
+  );
+  assert.ok(
+    result.features.every((f) => f.properties.height > f.properties.base),
+  );
+  assert.equal(
+    result.features.filter((f) => f.properties.part === "landing").length,
+    4,
+  );
+  assert.deepEqual(connectors, original);
+  shaft.properties.liftStops = "[0]";
+  assert.equal(
+    modules["indoor-stairs"].buildStairFlights(connectors).features.length,
+    0,
   );
 });

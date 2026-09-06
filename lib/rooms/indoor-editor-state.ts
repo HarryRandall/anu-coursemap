@@ -4,6 +4,7 @@ import {
   isIndoorRingWithinPolygon,
   isIndoorSegmentWithinPolygon,
   resizeIndoorGeometryToBounds,
+  rotateIndoorGeometry,
   thickenPolyline,
   translateIndoorGeometry,
   type IndoorBounds,
@@ -71,11 +72,14 @@ export type IndoorEditorAction =
   | { type: "level/add" }
   | { type: "level/remove"; levelId: string }
   | { type: "level/update"; levelId: string; patch: Partial<CampusIndoorLevel> }
+  | { type: "level/move"; levelId: string; direction: "up" | "down" }
   | { type: "space/add"; space: CampusIndoorSpace }
   | { type: "space/update"; id: string; patch: Partial<CampusIndoorSpace> }
   | { type: "space/geometry"; id: string; geometry: IndoorSpaceGeometry }
   | { type: "space/translate"; id: string; delta: IndoorPoint }
   | { type: "space/resize"; id: string; bounds: IndoorBounds }
+  /** Clockwise degrees about the space's own centre. */
+  | { type: "space/rotate"; id: string; degrees: number }
   | { type: "wall/add"; wall: CampusIndoorWall }
   | { type: "wall/update"; id: string; patch: Partial<CampusIndoorWall> }
   | { type: "wall/vertex/move"; id: string; index: number; point: IndoorPoint }
@@ -478,6 +482,39 @@ export function indoorEditorReducer(
         `level/update:${action.levelId}`,
       );
 
+    case "level/move": {
+      // Floors swap their position and height with the neighbour, so the
+      // stack stays contiguous and nothing else has to be renumbered.
+      const ordered = [...state.document.levels].sort(
+        (left, right) => left.number - right.number,
+      );
+      const index = ordered.findIndex((level) => level.id === action.levelId);
+      const neighbourIndex = action.direction === "up" ? index + 1 : index - 1;
+      const level = ordered[index];
+      const neighbour = ordered[neighbourIndex];
+      if (!level || !neighbour) return state;
+      return withDocument(state, {
+        ...state.document,
+        levels: state.document.levels.map((candidate) => {
+          if (candidate.id === level.id) {
+            return {
+              ...candidate,
+              number: neighbour.number,
+              elevationMetres: neighbour.elevationMetres,
+            };
+          }
+          if (candidate.id === neighbour.id) {
+            return {
+              ...candidate,
+              number: level.number,
+              elevationMetres: level.elevationMetres,
+            };
+          }
+          return candidate;
+        }),
+      });
+    }
+
     case "space/add":
       if (!spaceFitsLevel(state.document, action.space, state.footprint)) {
         return state;
@@ -513,7 +550,8 @@ export function indoorEditorReducer(
 
     case "space/geometry":
     case "space/translate":
-    case "space/resize": {
+    case "space/resize":
+    case "space/rotate": {
       const current = state.document.spaces.find(
         (space) => space.id === action.id,
       );
@@ -523,7 +561,9 @@ export function indoorEditorReducer(
           ? action.geometry
           : action.type === "space/translate"
             ? translateIndoorGeometry(current.geometry, action.delta)
-            : resizeIndoorGeometryToBounds(current.geometry, action.bounds);
+            : action.type === "space/rotate"
+              ? rotateIndoorGeometry(current.geometry, action.degrees)
+              : resizeIndoorGeometryToBounds(current.geometry, action.bounds);
       const candidate = { ...current, geometry };
       if (!spaceFitsLevel(state.document, candidate, state.footprint)) {
         return state;

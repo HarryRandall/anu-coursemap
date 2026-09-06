@@ -1,0 +1,100 @@
+/*
+ * Indoor map paint roles, expressed in the application's semantic tokens.
+ *
+ * MapLibre cannot read CSS variables, so `use-indoor-palette.ts` resolves these
+ * from the editor root at runtime and again whenever the theme class changes.
+ * Keeping the mapping in CSS means the canvas follows the same tokens as the
+ * chrome around it, and a token change never needs a code change.
+ */
+.theme {
+  --indoor-background: var(--muted);
+  --indoor-slab: var(--color-zinc-300);
+  --indoor-wall-structural: var(--color-zinc-600);
+  --indoor-wall-partition: var(--color-zinc-400);
+  --indoor-wall-glazing: var(--color-sky-300);
+  --indoor-perimeter: var(--color-zinc-600);
+  --indoor-door: var(--primary);
+  --indoor-gap: var(--color-sky-600);
+  --indoor-entrance: var(--color-emerald-600);
+  --indoor-connector: var(--info);
+  --indoor-route: var(--color-amber-500);
+  --indoor-highlight: var(--primary);
+  --indoor-label-text: var(--foreground);
+  --indoor-label-highlight: var(--primary);
+  --indoor-label-halo: var(--muted);
+  --indoor-label-muted: var(--muted-foreground);
+  --indoor-unclassified: var(--color-zinc-400);
+  --indoor-space-fallback: var(--color-violet-100);
+  --indoor-draft-area: var(--primary);
+  --indoor-draft-wall: var(--foreground);
+  --indoor-draft-path: var(--color-amber-600);
+  --indoor-draft-vertex-stroke: var(--card);
+  --indoor-selection: var(--primary);
+
+  --indoor-space-room: var(--color-violet-100);
+  --indoor-space-corridor: var(--color-blue-100);
+  --indoor-space-open-area: var(--color-green-100);
+  --indoor-space-service: var(--color-amber-100);
+  --indoor-space-void: var(--muted);
+  --indoor-space-lecture-theatre: var(--color-violet-200);
+  --indoor-space-tutorial-room: var(--color-purple-200);
+  --indoor-space-computer-lab: var(--color-indigo-200);
+  --indoor-space-laboratory: var(--color-sky-200);
+  --indoor-space-office: var(--color-amber-200);
+  --indoor-space-meeting-room: var(--color-orange-200);
+  --indoor-space-study-space: var(--color-green-200);
+  --indoor-space-kitchen: var(--color-rose-200);
+  --indoor-space-toilets: var(--color-sky-100);
+  --indoor-space-plant: var(--color-stone-200);
+  --indoor-space-misc: var(--color-violet-100);
+  --indoor-space-foyer: var(--color-green-100);
+  --indoor-space-stairwell: var(--color-fuchsia-200);
+  --indoor-space-lift-shaft: var(--color-fuchsia-200);
+  --indoor-space-ramp: var(--color-blue-100);
+}
+
+:global(.dark-mode) .theme {
+  --indoor-background: var(--background);
+  --indoor-slab: var(--color-zinc-700);
+  --indoor-wall-structural: var(--color-zinc-200);
+  --indoor-wall-partition: var(--color-zinc-400);
+  --indoor-wall-glazing: var(--color-sky-500);
+  --indoor-perimeter: var(--color-zinc-300);
+  --indoor-gap: var(--color-sky-400);
+  --indoor-entrance: var(--color-emerald-400);
+  --indoor-route: var(--color-amber-400);
+  --indoor-label-halo: var(--background);
+  --indoor-unclassified: var(--color-zinc-500);
+  --indoor-space-fallback: var(--color-violet-950);
+  --indoor-draft-path: var(--color-amber-400);
+
+  --indoor-space-room: var(--color-violet-950);
+  --indoor-space-corridor: var(--color-blue-950);
+  --indoor-space-open-area: var(--color-green-950);
+  --indoor-space-service: var(--color-amber-950);
+  --indoor-space-void: var(--background);
+  --indoor-space-lecture-theatre: var(--color-violet-900);
+  --indoor-space-tutorial-room: var(--color-purple-900);
+  --indoor-space-computer-lab: var(--color-indigo-900);
+  --indoor-space-laboratory: var(--color-sky-900);
+  --indoor-space-office: var(--color-amber-900);
+  --indoor-space-meeting-room: var(--color-orange-900);
+  --indoor-space-study-space: var(--color-green-900);
+  --indoor-space-kitchen: var(--color-rose-900);
+  --indoor-space-toilets: var(--color-sky-950);
+  --indoor-space-plant: var(--color-stone-800);
+  --indoor-space-misc: var(--color-violet-950);
+  --indoor-space-foyer: var(--color-green-950);
+  --indoor-space-stairwell: var(--color-fuchsia-900);
+  --indoor-space-lift-shaft: var(--color-fuchsia-900);
+  --indoor-space-ramp: var(--color-blue-950);
+}
+
+/* Diagonal hatching for faces that are enclosed but not yet classified. */
+.hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    var(--indoor-unclassified) 6px 7px
+  );
+}

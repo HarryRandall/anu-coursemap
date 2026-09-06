@@ -26,12 +26,15 @@ const {
   closestPointOnIndoorGeometryBoundary,
   indoorGeometryBounds,
   indoorGeometryCentre,
+  indoorGeometryRing,
   isIndoorPointWithinPolygon,
   isIndoorRingWithinPolygon,
   isIndoorSegmentWithinPolygon,
+  isSimpleIndoorRing,
   moveIndoorGeometryVertex,
   pointInIndoorGeometry,
   resizeIndoorGeometryToBounds,
+  rotateIndoorGeometry,
   translateIndoorGeometry,
 } = await import(pathToFileURL(target).href);
 
@@ -159,6 +162,65 @@ test("translating a geometry moves its bounds and nothing else", () => {
   assert.deepEqual(
     translateIndoorGeometry(lShape, { x: 10, y: 10 }).points[0],
     { x: 10, y: 10 },
+  );
+});
+
+test("rotating a rectangle turns it into a polygon about its centre", () => {
+  const rotated = rotateIndoorGeometry(rectangle, 90);
+  assert.equal(rotated.type, "polygon");
+  assert.equal(rotated.points.length, 4);
+  // A quarter turn swaps width and height around the same centre.
+  const bounds = boundsOfPoints(rotated.points);
+  assert.ok(Math.abs(bounds.maxX - bounds.minX - 30) < 1e-9);
+  assert.ok(Math.abs(bounds.maxY - bounds.minY - 40) < 1e-9);
+  const centre = indoorGeometryCentre(rotated);
+  assert.ok(Math.abs(centre.x - 30) < 1e-9);
+  assert.ok(Math.abs(centre.y - 35) < 1e-9);
+
+  // Whole turns are the identity, so the rectangle keeps its cheaper shape.
+  assert.equal(rotateIndoorGeometry(rectangle, 360), rectangle);
+  assert.equal(rotateIndoorGeometry(rectangle, -720), rectangle);
+
+  // Positive degrees turn clockwise on screen, where y grows downwards.
+  const quarter = rotateIndoorGeometry(
+    {
+      type: "polygon",
+      points: [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 10 },
+      ],
+    },
+    90,
+    { x: 0, y: 0 },
+  );
+  assert.ok(Math.abs(quarter.points[1].x) < 1e-9);
+  assert.ok(Math.abs(quarter.points[1].y - 10) < 1e-9);
+});
+
+test("tells a simple ring from one whose edges cross", () => {
+  assert.equal(isSimpleIndoorRing(lShape.points), true);
+  assert.equal(isSimpleIndoorRing(indoorGeometryRing(rectangle)), true);
+  // A bow tie: the two diagonals cross in the middle.
+  assert.equal(
+    isSimpleIndoorRing([
+      { x: 0, y: 0 },
+      { x: 10, y: 10 },
+      { x: 10, y: 0 },
+      { x: 0, y: 10 },
+    ]),
+    false,
+  );
+  // A repeated closing point is not a crossing.
+  assert.equal(
+    isSimpleIndoorRing([
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 10, y: 10 },
+      { x: 0, y: 10 },
+      { x: 0, y: 0 },
+    ]),
+    true,
   );
 });
 

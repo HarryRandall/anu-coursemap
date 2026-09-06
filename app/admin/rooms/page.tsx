@@ -12,7 +12,7 @@ export default async function AdminRoomsPage() {
   const { mapData, buildings, summaries } = await loadIndoorMapPickerData();
 
   return (
-    <AppShell admin fullBleed>
+    <AppShell admin fill fullBleed>
       <h1 className="sr-only">Indoor maps</h1>
       <BuildingPicker
         buildings={buildings}
