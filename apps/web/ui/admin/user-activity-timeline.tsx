@@ -1,7 +1,7 @@
 "use client";
 import { Badge } from "@coursemap/ui/components/badge";
 import { Card } from "@coursemap/ui/primitives/card";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 
 import { useState } from "react";
 

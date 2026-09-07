@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@coursemap/ui/primitives/button";
-import { OptionMenu } from "@/ui/ui/option-menu";
+import { OptionMenu } from "@/ui/common/option-menu";
 
 import styles from "./catalogue-table.module.css";
 

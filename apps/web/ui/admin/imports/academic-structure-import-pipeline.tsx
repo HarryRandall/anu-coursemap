@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@coursemap/ui/primitives/table";
 
-import { DataTableEmpty, DataTableShell } from "@/ui/ui/data-table";
+import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import type { Tone } from "@/lib/ui";
 

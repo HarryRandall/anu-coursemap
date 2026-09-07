@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@coursemap/ui/primitives/dropdown-menu";
 
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import { Tabs, TabsContent } from "@coursemap/ui/primitives/tabs";
 
 import {
@@ -43,7 +43,7 @@ import {
 } from "@/ui/courses/course-detail-view";
 import { AppShell } from "@/ui/shell";
 
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 
 import { AnuSourceDialog } from "@/ui/admin/anu-source-dialog";
 import { CourseProjectionEditor } from "@/ui/admin/courses/course-projection-editor";

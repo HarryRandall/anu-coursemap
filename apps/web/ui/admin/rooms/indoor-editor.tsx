@@ -39,7 +39,7 @@ import { useUnsavedNavigation } from "@/ui/admin/rooms/use-unsaved-navigation";
 import type { IndoorLayerGroup } from "@/ui/rooms/indoor-3d-layers";
 import { AppShell } from "@/ui/shell/app-shell";
 import { Button } from "@coursemap/ui/primitives/button";
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import {
   Sheet,
   SheetContent,

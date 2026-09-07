@@ -1,6 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".node-version", "pnpm-lock.yaml"],
+  "globalDependencies": [
+    ".node-version",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml"
+  ],
   "globalEnv": [
     "NEXT_PUBLIC_*",
     "COURSEMAP_*",
@@ -19,14 +23,20 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^typecheck"],
+      "outputs": []
     },
     "test:unit": {
       "dependsOn": ["^typecheck"],
       "outputs": []
+    },
+    "test:catalogue-db": {
+      "cache": false,
+      "dependsOn": ["^typecheck"]
     }
   }
 }

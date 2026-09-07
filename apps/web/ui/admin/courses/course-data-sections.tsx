@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Button } from "@coursemap/ui/primitives/button";
 import { Input } from "@coursemap/ui/primitives/input";
 import { Textarea } from "@coursemap/ui/primitives/textarea";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import type { CourseSnapshotProjectionData as Projection } from "@/lib/course-import/project-snapshot";
 import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";
 import {

@@ -18,7 +18,7 @@ import { cn } from "@/lib/cn";
 import { toast } from "sonner";
 import { setImportModel } from "@/lib/admin/settings-actions";
 
-import { OptionMenu } from "@/ui/ui/option-menu";
+import { OptionMenu } from "@/ui/common/option-menu";
 
 function ModelName({ model }: { model: string }) {
   const separator = model.lastIndexOf("/");

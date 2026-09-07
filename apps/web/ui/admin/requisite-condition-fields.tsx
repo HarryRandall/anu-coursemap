@@ -8,7 +8,7 @@ import {
   CommandList,
 } from "@coursemap/ui/primitives/command";
 import { Input } from "@coursemap/ui/primitives/input";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import { Textarea } from "@coursemap/ui/primitives/textarea";
 import {
   Popover,

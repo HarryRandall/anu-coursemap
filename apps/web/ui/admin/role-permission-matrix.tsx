@@ -20,8 +20,8 @@ import { ChevronDown, Info } from "lucide-react";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { FilterBar } from "@/ui/ui/filter-bar";
-import { DataTableEmpty, DataTableShell } from "@/ui/ui/data-table";
+import { FilterBar } from "@/ui/common/filter-bar";
+import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
 import type {
   AdminPermission,
   AdminRole,

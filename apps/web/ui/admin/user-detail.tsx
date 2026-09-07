@@ -38,11 +38,11 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@coursemap/ui/primitives/chart";
-import { DataTableShell } from "@/ui/ui/data-table";
+import { DataTableShell } from "@/ui/common/data-table";
 import { UserRoleEditor } from "@/ui/admin/user-role-editor";
 import { AppShell } from "@/ui/shell";
-import { FilterBar } from "@/ui/ui/filter-bar";
-import { GeneratedAvatar } from "@/ui/ui/generated-avatar";
+import { FilterBar } from "@/ui/common/filter-bar";
+import { GeneratedAvatar } from "@/ui/common/generated-avatar";
 import {
   adminUserStudyProgress,
   adminUserTermLoads,

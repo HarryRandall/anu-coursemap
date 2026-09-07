@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@coursemap/ui/primitives/dropdown-menu";
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import ReuiLink from "next/link";
 
 import {
@@ -42,7 +42,7 @@ import { StructureRequirementDiagram } from "@/ui/admin/academic-structures/requ
 import { structureSectionSourceTexts } from "@/lib/coursemap/structure-source-text";
 import { AnuSourceDialog } from "@/ui/admin/anu-source-dialog";
 import { PendingImportProposals } from "@/ui/admin/pending-import-proposals";
-import { JsonCode } from "@/ui/ui/json-code";
+import { JsonCode } from "@/ui/common/json-code";
 import {
   AcademicStructureManualSnapshotEditor,
   type StructureEditorSection,

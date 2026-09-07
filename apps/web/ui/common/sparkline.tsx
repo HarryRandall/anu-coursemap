@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartHoverCard } from "@/ui/ui/chart-tooltip";
+import { ChartHoverCard } from "@/ui/common/chart-tooltip";
 import { cn } from "@/lib/cn";
 
 export type SparklineVariant = "area" | "bar" | "line";

@@ -27,7 +27,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { CourseToken } from "@/ui/ui/course-token";
+import { CourseToken } from "@/ui/common/course-token";
 
 type SearchCourse = {
   accent: "amber" | "blue" | "cyan" | "mint" | "rose" | "violet";

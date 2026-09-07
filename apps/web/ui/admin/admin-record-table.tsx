@@ -19,9 +19,9 @@ import {
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import { useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { DataTableEmpty, DataTableShell } from "@/ui/ui/data-table";
+import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
 
-import { Pagination } from "@/ui/ui/pagination";
+import { Pagination } from "@/ui/common/pagination";
 import { cn } from "@/lib/cn";
 
 export type AdminTableColumn<Row> = {

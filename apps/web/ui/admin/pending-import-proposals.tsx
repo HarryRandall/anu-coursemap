@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Badge } from "@coursemap/ui/components/badge";
 import { ExtractionIssue } from "@/ui/admin/extraction-issue";
 import { CatalogueValue } from "@/ui/admin/catalogue-value";
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import { inspectCatalogueProposal } from "@/lib/coursemap/catalogue-proposal-actions";
 import { catalogueFieldLabel } from "@/lib/coursemap/catalogue-proposal-comparison";
 import {

@@ -1,5 +1,5 @@
 import { Badge } from "@coursemap/ui/components/badge";
-import { JsonCode } from "@/ui/ui/json-code";
+import { JsonCode } from "@/ui/common/json-code";
 import { badgeVariantForTone } from "@/lib/ui";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -3,7 +3,7 @@ import type { ChangeEvent } from "react";
 import { Field } from "@coursemap/ui/primitives/field";
 import { Input } from "@coursemap/ui/primitives/input";
 import { Textarea } from "@coursemap/ui/primitives/textarea";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import type { AcademicStructureManualSnapshotProjection as Projection } from "@/lib/structure-import/manual-snapshot";
 import { nullableText, nullableNumber, numberValue } from "./editor-utils";
 

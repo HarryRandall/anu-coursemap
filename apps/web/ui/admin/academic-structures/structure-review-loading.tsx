@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
 import { AppShell } from "@/ui/shell";
-import { TabsLoading } from "@/ui/ui/tabs-loading";
+import { TabsLoading } from "@/ui/common/tabs-loading";
 import { cn } from "@/lib/cn";
 
 /**

@@ -10,8 +10,8 @@ import {
   TabsList,
   TabsTrigger,
 } from "@coursemap/ui/primitives/tabs";
-import { OptionPicker } from "@/ui/ui/option-picker";
-import { JsonCode } from "@/ui/ui/json-code";
+import { OptionPicker } from "@/ui/common/option-picker";
+import { JsonCode } from "@/ui/common/json-code";
 import { DatabaseRowsViewer } from "./database-rows-viewer";
 import {
   parseImportArtefact,

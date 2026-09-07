@@ -45,8 +45,8 @@ import {
 import { useCoursemap, type Profile } from "@/app/providers";
 import { StructureMultiSelect } from "@/ui/profile/structure-multi-select";
 import { AppShell } from "@/ui/shell";
-import { GeneratedAvatar } from "@/ui/ui/generated-avatar";
-import { SelectField } from "@/ui/ui/select-field";
+import { GeneratedAvatar } from "@/ui/common/generated-avatar";
+import { SelectField } from "@/ui/common/select-field";
 import type { OnboardingCatalogue } from "@/lib/coursemap/onboarding-catalogue";
 import { nominalProgrammeDuration } from "@/lib/coursemap/plan-timeline";
 

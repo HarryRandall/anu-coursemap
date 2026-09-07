@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coursemap Workspace"
+  short_description: "Add dependencies, scripts and packages without drift"
+  default_prompt: "Use $coursemap-workspace for workspace, dependency and build configuration."

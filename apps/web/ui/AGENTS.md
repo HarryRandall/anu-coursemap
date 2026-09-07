@@ -1,7 +1,7 @@
 # Component conventions
 
 - Use semantic HTML and native controls before adding ARIA.
-- Use the pinned ReUI primitives through `@coursemap/ui/primitives/*` and extended components through `@coursemap/ui/components/*`. Keep `apps/web/ui/ui` for Coursemap-specific compositions.
+- Use the pinned ReUI primitives through `@coursemap/ui/primitives/*` and extended components through `@coursemap/ui/components/*`. Keep `apps/web/ui/common` for shared Coursemap compositions and `apps/web/ui/<area>` for feature-specific ones.
 - Import directly from concrete ReUI modules. Do not create duplicate primitive wrappers.
 - Add ReUI components only when a product page needs them. Inspect the pinned source and dependency diff before adding a component.
 - Use Lucide for interface icons and include an accessible name where an icon has meaning.

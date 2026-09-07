@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@coursemap/ui/primitives/card";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 
 import { useState, useTransition } from "react";
 import { Cpu } from "lucide-react";

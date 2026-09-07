@@ -8,7 +8,7 @@ import {
   FieldDescription,
 } from "@coursemap/ui/primitives/field";
 import { Input } from "@coursemap/ui/primitives/input";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import ReuiLink from "next/link";
 import { cn } from "@/lib/cn";
 
@@ -45,7 +45,7 @@ import {
   SheetTitle,
 } from "@coursemap/ui/primitives/sheet";
 
-import { StatusPill } from "@/ui/ui/status-pill";
+import { StatusPill } from "@/ui/common/status-pill";
 import { FixIssueButton } from "@/ui/plan/fix-issue-button";
 
 export function CourseDrawer({

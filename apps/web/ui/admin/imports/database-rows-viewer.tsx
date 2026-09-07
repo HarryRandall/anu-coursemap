@@ -3,8 +3,8 @@
 import { useState, useSyncExternalStore } from "react";
 import { Checkbox } from "@coursemap/ui/primitives/checkbox";
 import { Tabs, TabsList, TabsTrigger } from "@coursemap/ui/primitives/tabs";
-import { FilterBar } from "@/ui/ui/filter-bar";
-import { JsonCode } from "@/ui/ui/json-code";
+import { FilterBar } from "@/ui/common/filter-bar";
+import { JsonCode } from "@/ui/common/json-code";
 import {
   filterImportDatabaseTables,
   importDatabaseTableLabel,

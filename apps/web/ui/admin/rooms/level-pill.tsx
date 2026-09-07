@@ -10,7 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useRef, useState, type RefObject } from "react";
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import { Button } from "@coursemap/ui/primitives/button";
 import {
   Dialog,

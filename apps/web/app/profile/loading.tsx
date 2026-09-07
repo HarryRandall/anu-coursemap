@@ -1,7 +1,7 @@
 import { Card } from "@coursemap/ui/primitives/card";
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
 import { AppShell } from "@/ui/shell";
-import { TabsLoading } from "@/ui/ui/tabs-loading";
+import { TabsLoading } from "@/ui/common/tabs-loading";
 
 function FieldSkeleton({ className }: { className?: string }) {
   return (

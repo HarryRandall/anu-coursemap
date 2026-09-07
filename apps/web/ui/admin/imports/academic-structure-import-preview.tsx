@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@coursemap/ui/primitives/table";
-import { DataTableShell } from "@/ui/ui/data-table";
+import { DataTableShell } from "@/ui/common/data-table";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import { AcademicStructureImportRequirementTree } from "./academic-structure-import-requirements";
 import {

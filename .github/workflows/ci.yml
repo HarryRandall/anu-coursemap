@@ -13,6 +13,11 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# The pnpm version is read from `packageManager` in package.json and the Node
+# version from .node-version, so neither is repeated in this workflow.
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
 jobs:
   quality:
     name: Quality gate
@@ -28,14 +33,68 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Install pnpm
-        run: npm install --global pnpm@12.3.4
+      - name: Install pnpm and dependencies
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          cache: true
+          require-lockfile: true
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Restore Turborepo cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key: turbo-quality-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-quality-${{ runner.os }}-
 
-      - name: Run repository verification
-        run: pnpm verify
+      - name: Check formatting, lint and types
+        run: pnpm check
+
+      - name: Run unit and component tests
+        run: pnpm test:unit
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level=high
+
+  routes:
+    name: Route gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Install pnpm and dependencies
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          cache: true
+          require-lockfile: true
+
+      - name: Restore Turborepo cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key: turbo-routes-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-routes-${{ runner.os }}-
+
+      - name: Install Chromium
+        run: pnpm --filter @coursemap/web exec playwright install --with-deps chromium
+
+      - name: Check demonstration rendering
+        run: pnpm --filter @coursemap/web test:build:demo && pnpm --filter @coursemap/web test:rendered
+
+      - name: Check authenticated access control
+        run: pnpm --filter @coursemap/web test:build:auth && pnpm --filter @coursemap/web test:auth-access
+
+      - name: Check for whitespace errors
+        run: git diff --check
 
       - name: Upload route-test report and traces
         if: always()
@@ -46,9 +105,6 @@ jobs:
             apps/web/playwright-report
             apps/web/test-results
           retention-days: 7
-
-      - name: Audit production dependencies
-        run: pnpm audit --prod --audit-level=high
 
   database:
     name: Database gate
@@ -64,11 +120,11 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Install pnpm
-        run: npm install --global pnpm@12.3.4
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Install pnpm and dependencies
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          cache: true
+          require-lockfile: true
 
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
@@ -76,21 +132,22 @@ jobs:
           version: 2.114.0
 
       - name: Start local database
-        run: supabase db start
+        run: pnpm db:start
 
       - name: Reset and seed local preview database
         run: pnpm db:reset
 
       - name: Run database tests
-        run: supabase test db
+        run: pnpm db:test
 
       - name: Lint database schemas
-        run: supabase db lint --local --schema public,private --level warning --fail-on warning
+        run: pnpm db:lint
 
       - name: Verify generated database types
         run: |
-          supabase gen types typescript --local --schema public > /tmp/database.ts
-          diff --ignore-blank-lines --unified apps/web/types/database.ts /tmp/database.ts
+          cp apps/web/types/database.ts /tmp/database.committed.ts
+          pnpm db:types
+          diff --ignore-blank-lines --unified /tmp/database.committed.ts apps/web/types/database.ts
 
       - name: Test catalogue database import
         run: pnpm test:catalogue-db
@@ -99,29 +156,47 @@ jobs:
     name: Browser gate
     runs-on: ubuntu-latest
     timeout-minutes: 25
+
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
-      - name: Install pnpm
-        run: npm install --global pnpm@12.3.4
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+
+      - name: Install pnpm and dependencies
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          cache: true
+          require-lockfile: true
+
+      - name: Restore Turborepo cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: .turbo/cache
+          key: turbo-browser-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-browser-${{ runner.os }}-
+
       - name: Install Chromium
         run: pnpm --filter @coursemap/web exec playwright install --with-deps chromium
+
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
         with:
           version: 2.114.0
+
       - name: Start local services
         run: pnpm db:start
+
       - name: Seed local catalogue
         run: pnpm db:reset
+
       - name: Run authenticated browser journeys
         run: pnpm test:e2e
+
       - name: Upload Playwright report and failure traces
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

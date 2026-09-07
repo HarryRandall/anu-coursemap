@@ -6,7 +6,7 @@ import { Button } from "@coursemap/ui/primitives/button";
 import { Checkbox } from "@coursemap/ui/primitives/checkbox";
 import { Field, FieldDescription } from "@coursemap/ui/primitives/field";
 import { Input } from "@coursemap/ui/primitives/input";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import {
   Tooltip,
   TooltipTrigger,

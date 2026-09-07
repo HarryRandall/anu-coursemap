@@ -1,13 +1,18 @@
 # Coursemap agent guide
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and delivery requirements.
-Use Node.js 24 and pnpm. Routes live in `apps/web/app/`, product components in `apps/web/ui/`,
-and domain logic in `apps/web/lib/`. See [architecture](docs/architecture.md) for boundaries.
+Use Node.js 24 and pnpm. Routes live in `apps/web/app/`, shared product components in
+`apps/web/ui/common/`, feature components in `apps/web/ui/<area>/`, domain logic in
+`apps/web/lib/` and the vendored design system in `packages/ui/`. Dependency versions live
+only in the `catalog:` block of `pnpm-workspace.yaml`. See [architecture](docs/architecture.md)
+for boundaries.
 
 ## Skills
 
 Load the skills relevant to the task:
 
+- [coursemap-conventions](.agents/skills/coursemap-conventions/SKILL.md): house style, naming, comments and file placement.
+- [coursemap-workspace](.agents/skills/coursemap-workspace/SKILL.md): dependencies, scripts, packages and build configuration.
 - [nextjs-development](.agents/skills/nextjs-development/SKILL.md): routes, React state and data flow.
 - [coursemap-ui](.agents/skills/coursemap-ui/SKILL.md): pages, components and accessibility. Also read [UI conventions](apps/web/ui/AGENTS.md).
 - [coursemap-testing](.agents/skills/coursemap-testing/SKILL.md): regression coverage and test implementation.

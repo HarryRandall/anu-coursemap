@@ -22,8 +22,8 @@ import { useMemo, useState } from "react";
 import { useCoursemap } from "@/app/providers";
 import { CourseDrawer } from "@/ui/overlays";
 import { AppShell } from "@/ui/shell";
-import { CourseToken } from "@/ui/ui/course-token";
-import { StatTile } from "@/ui/ui/stat-tile";
+import { CourseToken } from "@/ui/common/course-token";
+import { StatTile } from "@/ui/common/stat-tile";
 import { cn } from "@/lib/cn";
 import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
 import {

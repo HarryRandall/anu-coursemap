@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import { recoverStalledCourseImportRun } from "@/lib/coursemap/course-import-review-actions";
 
 export function CourseImportRunRecovery({ runId }: { runId: string }) {

@@ -9,7 +9,7 @@ import { Suspense } from "react";
 import { UserDirectory } from "@/ui/admin/user-directory";
 import { AppShell } from "@/ui/shell";
 
-import { FilterBar } from "@/ui/ui/filter-bar";
+import { FilterBar } from "@/ui/common/filter-bar";
 import { loadAdminUserManagement } from "@/lib/admin/users";
 import { getAuthContext } from "@/lib/auth/viewer";
 import { isDemoMode } from "@/lib/supabase/config";

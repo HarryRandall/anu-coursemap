@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card } from "@coursemap/ui/primitives/card";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { Sparkline, type SparklineVariant } from "@/ui/ui/sparkline";
+import { Sparkline, type SparklineVariant } from "@/ui/common/sparkline";
 
 /** Adapted from ShowCrafter's compact dashboard stat tile. */
 export function StatTile({

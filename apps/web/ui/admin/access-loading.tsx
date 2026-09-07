@@ -1,6 +1,6 @@
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
 import { cn } from "@/lib/cn";
-import { DataTableShell } from "@/ui/ui/data-table";
+import { DataTableShell } from "@/ui/common/data-table";
 
 export function UserDirectoryLoadingSkeleton() {
   return (

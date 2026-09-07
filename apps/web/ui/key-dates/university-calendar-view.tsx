@@ -15,8 +15,8 @@ import {
   TreePalm,
 } from "lucide-react";
 
-import { OptionPicker } from "@/ui/ui/option-picker";
-import { FilterBar } from "@/ui/ui/filter-bar";
+import { OptionPicker } from "@/ui/common/option-picker";
+import { FilterBar } from "@/ui/common/filter-bar";
 import { cn } from "@/lib/cn";
 import {
   UNIVERSITY_CALENDAR_CATEGORIES,

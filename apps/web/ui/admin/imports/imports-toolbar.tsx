@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FilterBar } from "@/ui/ui/filter-bar";
-import { SortMenu, type SortOption } from "@/ui/ui/sort-menu";
+import { FilterBar } from "@/ui/common/filter-bar";
+import { SortMenu, type SortOption } from "@/ui/common/sort-menu";
 import {
   DEFAULT_IMPORT_LIST_SORT,
   type ImportListSort,

@@ -34,17 +34,17 @@ import {
 import { CatalogueIdentity } from "@/ui/admin/catalogue-table/catalogue-table";
 import { CatalogueRowActions } from "@/ui/admin/catalogue-table/catalogue-row-actions";
 import { CatalogueEmpty } from "@/ui/admin/catalogue-table/catalogue-empty";
-import { FilterBar } from "@/ui/ui/filter-bar";
-import { Pagination } from "@/ui/ui/pagination";
-import { SortMenu, type SortOption } from "@/ui/ui/sort-menu";
+import { FilterBar } from "@/ui/common/filter-bar";
+import { Pagination } from "@/ui/common/pagination";
+import { SortMenu, type SortOption } from "@/ui/common/sort-menu";
 
-import { YearPicker, type YearSelection } from "@/ui/ui/year-picker";
+import { YearPicker, type YearSelection } from "@/ui/common/year-picker";
 import type {
   AcademicStructureDirectoryPage,
   AcademicStructureDirectoryRecord,
   AcademicStructureDirectorySort,
 } from "@/lib/coursemap/admin-academic-structures";
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import {
   adminAcademicStructureCollectionPath,
   adminAcademicStructureDetailPath,

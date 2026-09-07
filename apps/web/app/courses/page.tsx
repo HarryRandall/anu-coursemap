@@ -4,7 +4,7 @@ import { AppShell } from "@/ui/shell";
 
 import { CatalogueEmpty } from "@/ui/admin/catalogue-table/catalogue-empty";
 import { DataTableShell } from "@/ui/admin/catalogue-table/catalogue-table";
-import { FilterBar } from "@/ui/ui/filter-bar";
+import { FilterBar } from "@/ui/common/filter-bar";
 import {
   loadAcademicYearOptions,
   loadPublishedCoursePage,

@@ -7,7 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@coursemap/ui/primitives/popover";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 
 import {
   useCallback,
@@ -31,9 +31,9 @@ import {
 } from "lucide-react";
 import { CampusMap } from "@/ui/rooms/campus-map";
 
-import { FilterBar } from "@/ui/ui/filter-bar";
+import { FilterBar } from "@/ui/common/filter-bar";
 
-import { Hint } from "@/ui/ui/hint";
+import { Hint } from "@/ui/common/hint";
 import { cn } from "@/lib/cn";
 import { buildIndoorScene } from "@/lib/rooms/indoor-3d";
 import {

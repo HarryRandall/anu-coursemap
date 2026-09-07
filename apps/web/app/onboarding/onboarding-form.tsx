@@ -31,7 +31,7 @@ import {
 
 import { BrandMark } from "@/ui/brand-mark";
 import { StructureMultiSelect } from "@/ui/profile/structure-multi-select";
-import { SelectField } from "@/ui/ui/select-field";
+import { SelectField } from "@/ui/common/select-field";
 import { cn } from "@/lib/cn";
 import { saveProfileAndPlan } from "@/lib/coursemap/actions";
 import type {

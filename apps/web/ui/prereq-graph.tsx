@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Check, LockKeyhole } from "lucide-react";
 import { useMemo } from "react";
-import { Hint } from "@/ui/ui/hint";
+import { Hint } from "@/ui/common/hint";
 import { cn } from "@/lib/cn";
 import type { CoursePrerequisiteEdge } from "@/lib/coursemap/course-types";
 

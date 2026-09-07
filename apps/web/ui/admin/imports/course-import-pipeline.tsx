@@ -21,7 +21,7 @@ import {
 import ReuiLink from "next/link";
 import { FileCode2 } from "lucide-react";
 
-import { DataTableEmpty, DataTableShell } from "@/ui/ui/data-table";
+import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
 import type { Tone } from "@/lib/ui";
 

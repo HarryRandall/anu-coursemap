@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
 import { AppShell } from "@/ui/shell";
-import { TabsLoading } from "@/ui/ui/tabs-loading";
+import { TabsLoading } from "@/ui/common/tabs-loading";
 
 /** Mirrors the indoor map editor: section tabs, the floors rail and the map surface. */
 export default function AdminRoomEditorLoading() {

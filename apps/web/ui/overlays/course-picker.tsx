@@ -27,7 +27,7 @@ import {
   EmptyTitle,
 } from "@coursemap/ui/primitives/empty";
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import { cn } from "@/lib/cn";
 import ReuiLink from "next/link";
 
@@ -45,7 +45,7 @@ import type { RefObject } from "react";
 import { useCoursemap } from "@/app/providers";
 import type { Course, Term } from "@/lib/coursemap/types";
 
-import { CourseToken } from "@/ui/ui/course-token";
+import { CourseToken } from "@/ui/common/course-token";
 
 type CourseSearchResponse = {
   academicYear: number;

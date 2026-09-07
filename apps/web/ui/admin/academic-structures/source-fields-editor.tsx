@@ -4,7 +4,7 @@ import { Button } from "@coursemap/ui/primitives/button";
 import { Field } from "@coursemap/ui/primitives/field";
 import { Input } from "@coursemap/ui/primitives/input";
 import { Textarea } from "@coursemap/ui/primitives/textarea";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import { Plus, Trash2 } from "lucide-react";
 import type { AcademicStructureManualSnapshotProjection } from "@/lib/structure-import/manual-snapshot";
 import { nextSummaryFieldKey } from "./editor-utils";

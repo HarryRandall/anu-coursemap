@@ -13,8 +13,8 @@ to apply and verify them.
 
 1. Identify the user's action and the states the page must support. Inspect the rendered page when changing an existing interface.
 2. Search for the existing Coursemap composition before creating another one. Reuse shared list filters, tabs, dialogs and tooltips.
-3. Import pinned primitives from `@coursemap/ui/primitives/*` and extended components from `@coursemap/ui/components/*`. `apps/web/ui/ui` holds Coursemap compositions, not a second primitive library.
-4. Follow `apps/web/ui/reui/README.md` when adding or updating upstream components. Preserve retained source and licence; review dependencies and keep only what the product needs.
+3. Import pinned primitives from `@coursemap/ui/primitives/*` and extended components from `@coursemap/ui/components/*`. `apps/web/ui/common` holds shared Coursemap compositions and `apps/web/ui/<area>` holds feature ones. Neither is a second primitive library.
+4. Follow `packages/ui/README.md` when adding or updating upstream components. Preserve retained source and licence; review dependencies and keep only what the product needs.
 5. Keep domain calculations outside visual components. Use `nextjs-development` when changing state or server/client boundaries.
 
 ## Preserve product meaning

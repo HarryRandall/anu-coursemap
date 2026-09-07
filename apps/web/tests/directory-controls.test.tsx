@@ -1,7 +1,7 @@
 import { expect, test, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { YearPicker } from "@/ui/ui/year-picker";
+import { YearPicker } from "@/ui/common/year-picker";
 import { DirectorySelectionBar } from "@/ui/admin/directory-selection-bar";
 import { TooltipProvider } from "@coursemap/ui/primitives/tooltip";
 import { setImportModel } from "@/lib/admin/settings-actions";

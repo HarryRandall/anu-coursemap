@@ -1,6 +1,6 @@
 "use client";
 
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 
 export type YearSelection = number | "all";
 

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { CalendarCheck2, Layers3 } from "lucide-react";
 import { Card, CardContent } from "@coursemap/ui/primitives/card";
-import { Hint } from "@/ui/ui/hint";
+import { Hint } from "@/ui/common/hint";
 import { cn } from "@/lib/cn";
 import { TrendChart, DonutChart, chartColours } from "./metric-charts";
 import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";

@@ -33,18 +33,18 @@ import { CatalogueIdentity } from "@/ui/admin/catalogue-table/catalogue-table";
 import { CatalogueRowActions } from "@/ui/admin/catalogue-table/catalogue-row-actions";
 import { CatalogueEmpty } from "@/ui/admin/catalogue-table/catalogue-empty";
 import { DirectorySelectionBar } from "@/ui/admin/directory-selection-bar";
-import { FilterBar } from "@/ui/ui/filter-bar";
-import { Pagination } from "@/ui/ui/pagination";
-import { SortMenu, type SortOption } from "@/ui/ui/sort-menu";
+import { FilterBar } from "@/ui/common/filter-bar";
+import { Pagination } from "@/ui/common/pagination";
+import { SortMenu, type SortOption } from "@/ui/common/sort-menu";
 
-import { YearPicker, type YearSelection } from "@/ui/ui/year-picker";
+import { YearPicker, type YearSelection } from "@/ui/common/year-picker";
 import type {
   AcademicYearOption,
   CourseDirectoryPage,
   CourseDirectoryRecord,
   CourseDirectorySort,
 } from "@/lib/coursemap/admin-course-imports";
-import { ConfirmDialog } from "@/ui/ui/confirm-dialog";
+import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import type { Tone } from "@/lib/ui";
 
 const SORT_OPTIONS: SortOption<CourseDirectorySort>[] = [

@@ -18,7 +18,7 @@ import { CatalogueIdentity } from "@/ui/admin/catalogue-table/catalogue-table";
 import { CatalogueRowActions } from "@/ui/admin/catalogue-table/catalogue-row-actions";
 import { CatalogueEmpty } from "@/ui/admin/catalogue-table/catalogue-empty";
 
-import { Pagination } from "@/ui/ui/pagination";
+import { Pagination } from "@/ui/common/pagination";
 import { ImportsToolbar } from "@/ui/admin/imports/imports-toolbar";
 import {
   isImportActive,

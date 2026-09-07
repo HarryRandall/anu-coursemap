@@ -3,7 +3,7 @@ import { AnuSourceDialog } from "@/ui/admin/anu-source-dialog";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Button } from "@coursemap/ui/primitives/button";
 import { Field } from "@coursemap/ui/primitives/field";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 import { Textarea } from "@coursemap/ui/primitives/textarea";
 import {
   Tabs,

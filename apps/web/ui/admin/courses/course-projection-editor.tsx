@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Button } from "@coursemap/ui/primitives/button";
 import { Textarea } from "@coursemap/ui/primitives/textarea";
-import { JsonCode } from "@/ui/ui/json-code";
+import { JsonCode } from "@/ui/common/json-code";
 import type { CourseSnapshotProjectionData as Projection } from "@/lib/course-import/project-snapshot";
 import { parseCourseSnapshotProjection } from "@/lib/course-import/snapshot-projection-contract";
 import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";

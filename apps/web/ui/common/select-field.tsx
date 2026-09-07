@@ -6,8 +6,8 @@ import {
   FieldDescription,
   FieldLabel,
 } from "@coursemap/ui/primitives/field";
-import { OptionPicker } from "@/ui/ui/option-picker";
-import type { OptionMenuItem } from "@/ui/ui/option-menu";
+import { OptionPicker } from "@/ui/common/option-picker";
+import type { OptionMenuItem } from "@/ui/common/option-menu";
 import { cn } from "@/lib/cn";
 
 export type SelectFieldOption<T extends string | number> = {

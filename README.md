@@ -29,5 +29,11 @@ local site origin in `apps/web/.env.local`, then use `pnpm dev`. See
 [environment example](apps/web/.env.example) for configuration and [package.json](package.json)
 for commands. Run `pnpm verify` before submitting changes.
 
+Dependency versions live only in the `catalog:` block of `pnpm-workspace.yaml`,
+so add or upgrade a package there rather than in a package manifest.
+
 [Contributing](CONTRIBUTING.md) · [Architecture](docs/architecture.md) ·
-[Database setup](supabase/README.md) · [Agent guide](AGENTS.md)
+[Catalogue workspaces](docs/catalogue-workspace-refresh.md) ·
+[Workspace migration](docs/workspace-migration.md) ·
+[Database setup](supabase/README.md) · [Security policy](SECURITY.md) ·
+[Agent guide](AGENTS.md)

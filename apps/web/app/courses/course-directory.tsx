@@ -13,7 +13,7 @@ import {
 } from "@/ui/admin/catalogue-table/catalogue-table";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import { cn } from "@/lib/cn";
-import { Pagination } from "@/ui/ui/pagination";
+import { Pagination } from "@/ui/common/pagination";
 import { CourseRowActions } from "./course-row-actions";
 
 function sessionLabels(sessions: string[]) {

@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartHoverCard } from "@/ui/ui/chart-tooltip";
+import { ChartHoverCard } from "@/ui/common/chart-tooltip";
 
 export const chartColours = {
   violet: "#9e77ed",

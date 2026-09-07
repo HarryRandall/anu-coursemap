@@ -10,7 +10,7 @@ import { loadAdminUserSummary } from "@/lib/admin/users";
 import { canManageCourseImports } from "@/lib/auth/viewer";
 import { loadAdminCatalogueSummary } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/ui/shell";
-import { StatTile } from "@/ui/ui/stat-tile";
+import { StatTile } from "@/ui/common/stat-tile";
 
 export const dynamic = "force-dynamic";
 

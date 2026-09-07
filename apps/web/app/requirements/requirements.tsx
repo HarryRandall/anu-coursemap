@@ -38,7 +38,7 @@ import { Progress } from "@coursemap/ui/primitives/progress";
 
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/ui/shell";
-import { CourseToken } from "@/ui/ui/course-token";
+import { CourseToken } from "@/ui/common/course-token";
 import { cn } from "@/lib/cn";
 import type {
   PlanCatalogue,

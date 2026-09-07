@@ -18,7 +18,7 @@ import {
   ArrowUpNarrowWide,
 } from "lucide-react";
 
-import { OptionMenu } from "@/ui/ui/option-menu";
+import { OptionMenu } from "@/ui/common/option-menu";
 
 export type SortOption<T extends string> = {
   value: T;

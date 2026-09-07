@@ -2,8 +2,8 @@ import { Badge } from "@coursemap/ui/components/badge";
 import type { ReactNode } from "react";
 import { ArrowDown, Search } from "lucide-react";
 
-import { CourseToken } from "@/ui/ui/course-token";
-import { StatusPill } from "@/ui/ui/status-pill";
+import { CourseToken } from "@/ui/common/course-token";
+import { StatusPill } from "@/ui/common/status-pill";
 import { cn } from "@/lib/cn";
 
 type CourseAccent = "blue" | "violet" | "mint" | "amber" | "rose" | "cyan";

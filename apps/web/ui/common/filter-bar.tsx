@@ -17,7 +17,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, Funnel, ListFilter, Search, X } from "lucide-react";
 
 import { encodeNegatableValue, parseNegatableValue } from "@/lib/filter-params";
-import { OptionMenu } from "@/ui/ui/option-menu";
+import { OptionMenu } from "@/ui/common/option-menu";
 
 export type FilterConfig = {
   key: string;

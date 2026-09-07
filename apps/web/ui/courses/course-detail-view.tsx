@@ -46,7 +46,7 @@ import {
   MessageSquareText,
   Plus,
 } from "lucide-react";
-import { Hint } from "@/ui/ui/hint";
+import { Hint } from "@/ui/common/hint";
 import { PrereqGraph } from "@/ui/prereq-graph";
 
 import type { CourseDetails } from "@/lib/coursemap/course-types";

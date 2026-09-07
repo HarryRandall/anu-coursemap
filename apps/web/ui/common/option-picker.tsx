@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@coursemap/ui/primitives/popover";
-import { OptionMenu, type OptionMenuItem } from "@/ui/ui/option-menu";
+import { OptionMenu, type OptionMenuItem } from "@/ui/common/option-menu";
 import { cn } from "@/lib/cn";
 
 /** Coursemap's single-value picker, composed from the shared filter menu. */

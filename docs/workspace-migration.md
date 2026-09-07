@@ -21,6 +21,21 @@ Browser fixtures delete their accounts, cascading their independent plans.
 Run pgTAP on freshly seeded data before directory integration tests, which
 exercise directory replacement semantics.
 
+## Dependency and script layout
+
+Third-party versions live only in the `catalog:` block of
+`pnpm-workspace.yaml`; package manifests reference `catalog:` and name no
+versions, so `apps/web` and `packages/ui` cannot drift apart. Database and
+repository-wide scripts belong to the root `package.json` and call `supabase`
+directly, because the Supabase project is at the repository root. Application
+scripts belong to `@coursemap/web` and the root exposes the documented ones
+through `pnpm --filter`.
+
+`packages/ui` exports subpaths by wildcard pattern, so a new vendored primitive
+needs no manifest edit. It remains the design-system layer only: shared
+Coursemap compositions live in `apps/web/ui/common` and feature components in
+`apps/web/ui/<area>`.
+
 ## Deployment
 
 The existing `coursemap` project retains its previous settings: repository root,
@@ -40,12 +55,22 @@ Queue topics, function paths, durations and retries remain unchanged in
 disabled queue publishing. Real authentication and persistence are verified
 against isolated local Supabase, not hosted user data.
 
-Keep existing required checks `Quality gate` and `Database gate`. Add `Browser
-gate` to branch protection only when this workflow has passed. GitHub branch
+CI runs four gates. `Quality gate` covers formatting, lint, types, unit and
+component tests and the production dependency audit; `Route gate` covers the
+demonstration and access builds with their Playwright checks; `Database gate`
+covers pgTAP, schema lint, generated types and catalogue integration; `Browser
+gate` covers authenticated journeys. The pnpm version comes from
+`packageManager` and the Node version from `.node-version`, so neither is
+restated in the workflow. Turborepo output is cached per gate through
+`actions/cache`.
+
+Keep existing required checks `Quality gate` and `Database gate`. `Route gate`
+replaces the build and rendering steps they previously contained, so add it to
+branch protection with `Browser gate` once both have passed. GitHub branch
 protection is not changed by this migration.
 
 For rollback after an authorised production cutover, restore the former root
 and automatic install/build settings together with the previous application
 commit. Never deploy a root setting that does not match its source layout.
 
-Preview validation: [workspace deployment](https://coursemap-workspace-preview-bv53zypx0-coursemap.vercel.app) built successfully. Login, logo and bundled CSS returned 200; `/plan` returned a 307 login redirect. The original project configuration remains unchanged.
+Preview validation: [workspace deployment](https://coursemap-workspace-preview-g95udjsbt-coursemap.vercel.app/) built successfully. Login, logo and bundled CSS returned 200; `/plan` returned a 307 login redirect. The original project configuration remains unchanged.

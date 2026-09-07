@@ -23,7 +23,7 @@ import {
   CourseDetailView,
 } from "@/ui/courses/course-detail-view";
 import { AppShell } from "@/ui/shell";
-import { DataTableEmpty, DataTableShell } from "@/ui/ui/data-table";
+import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
 import { persistedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
 import type { CourseDetails } from "@/lib/coursemap/course-types";

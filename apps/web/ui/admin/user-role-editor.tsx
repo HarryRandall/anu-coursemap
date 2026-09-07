@@ -1,7 +1,7 @@
 "use client";
 import { Card } from "@coursemap/ui/primitives/card";
 import { Button } from "@coursemap/ui/primitives/button";
-import { OptionPicker } from "@/ui/ui/option-picker";
+import { OptionPicker } from "@/ui/common/option-picker";
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";

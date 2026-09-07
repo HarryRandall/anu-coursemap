@@ -14,7 +14,7 @@ import {
 } from "@/ui/admin/catalogue-table/catalogue-table";
 import { CatalogueEmpty } from "@/ui/admin/catalogue-table/catalogue-empty";
 import { CatalogueRowActions } from "@/ui/admin/catalogue-table/catalogue-row-actions";
-import { GeneratedAvatar } from "@/ui/ui/generated-avatar";
+import { GeneratedAvatar } from "@/ui/common/generated-avatar";
 import type { AdminRole, AdminUser, AdminUserRole } from "@/lib/admin/users";
 
 function formatDate(value: string) {

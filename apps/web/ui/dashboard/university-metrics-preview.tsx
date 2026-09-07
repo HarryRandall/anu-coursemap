@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChartHoverCard } from "@/ui/ui/chart-tooltip";
+import { ChartHoverCard } from "@/ui/common/chart-tooltip";
 import { Card, CardContent } from "@coursemap/ui/primitives/card";
 import { Button } from "@coursemap/ui/primitives/button";
 
