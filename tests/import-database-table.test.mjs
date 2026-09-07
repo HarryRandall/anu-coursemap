@@ -68,3 +68,70 @@ test("formats quantities and local timestamps without changing identifiers or da
   assert.equal(format("active", false, "UTC"), "No");
   assert.equal(format("value", null, "UTC"), "null");
 });
+
+test("finds tables by their readable label or original key without altering their rows", async () => {
+  const {
+    filterImportDatabaseTables,
+    importDatabaseFieldLabel,
+    importDatabaseTableLabel,
+  } = await import("../lib/coursemap/import-database-labels.ts");
+  const rows = [{ id: 7, learningOutcomePositions: [1, 2] }];
+  const tables = [
+    { name: "course_assessment_items", rows },
+    { name: "course_learning_outcomes", rows: [] },
+  ];
+  assert.equal(
+    importDatabaseTableLabel("course_assessment_items"),
+    "Assessment",
+  );
+  assert.equal(
+    importDatabaseFieldLabel("academic_year_id"),
+    "Academic year ID",
+  );
+  assert.equal(
+    importDatabaseFieldLabel("learningOutcomePositions"),
+    "Learning Outcome Positions",
+  );
+  assert.deepEqual(filterImportDatabaseTables(tables, "", false), [tables[0]]);
+  assert.deepEqual(filterImportDatabaseTables(tables, "learning", false), []);
+  assert.deepEqual(
+    filterImportDatabaseTables(tables, "learning outcomes", true),
+    [tables[1]],
+  );
+  assert.deepEqual(
+    filterImportDatabaseTables(tables, "course_assessment", false),
+    [tables[0]],
+  );
+  assert.strictEqual(
+    filterImportDatabaseTables(tables, "assessment", false)[0].rows,
+    rows,
+  );
+});
+
+test("groups artefact attempts while keeping database projections in their own tab", async () => {
+  const { groupImportArtefacts } =
+    await import("../components/admin/imports/import-artefact-data.ts");
+  const artifact = (id, kind, attemptNumber) => ({
+    id,
+    kind,
+    attemptNumber,
+    mediaType: "application/json",
+  });
+  const first = artifact("first", "model_response", 1);
+  const second = artifact("second", "model_response", 2);
+  const html = artifact("html", "raw_html", 1);
+  const input = [
+    first,
+    artifact("projection", "database_projection", 1),
+    second,
+    html,
+  ];
+  assert.deepEqual(groupImportArtefacts(input), [
+    { kind: "raw_html", attempts: [html] },
+    { kind: "model_response", attempts: [second, first] },
+  ]);
+  assert.deepEqual(
+    input.map((entry) => entry.id),
+    ["first", "projection", "second", "html"],
+  );
+});
