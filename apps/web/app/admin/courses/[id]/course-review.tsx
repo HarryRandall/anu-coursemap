@@ -335,104 +335,108 @@ export function CourseReview({
           <h1 className="sr-only">
             Review {record.code} {projection?.snapshot.title}
           </h1>
-          <div className="mb-5 flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  ref={actionTriggerRef}
-                  size="icon-sm"
-                  variant="ghost"
-                  aria-label="Course actions"
-                >
-                  <Ellipsis aria-hidden="true" size={18} />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-52"
-                onCloseAutoFocus={(event) => {
-                  if (actionDialog) event.preventDefault();
-                }}
-              >
-                {needsExplicitConfirmation && canEdit ? (
-                  <DropdownMenuItem
-                    disabled={
-                      confirming || editingCourse || editingRuleKind !== null
-                    }
-                    onSelect={() => setActionDialog("review")}
+          {/* These actions apply to the course record, so they belong with
+              the course data rather than the pipeline or source views. */}
+          {activeTab === "course" ? (
+            <div className="mb-5 flex justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    ref={actionTriggerRef}
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label="Course actions"
                   >
-                    <CheckCircle2 aria-hidden="true" size={15} />
-                    Confirm review
-                  </DropdownMenuItem>
-                ) : null}
-                {isDraft ? (
+                    <Ellipsis aria-hidden="true" size={18} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-52"
+                  onCloseAutoFocus={(event) => {
+                    if (actionDialog) event.preventDefault();
+                  }}
+                >
+                  {needsExplicitConfirmation && canEdit ? (
+                    <DropdownMenuItem
+                      disabled={
+                        confirming || editingCourse || editingRuleKind !== null
+                      }
+                      onSelect={() => setActionDialog("review")}
+                    >
+                      <CheckCircle2 aria-hidden="true" size={15} />
+                      Confirm review
+                    </DropdownMenuItem>
+                  ) : null}
+                  {isDraft ? (
+                    <DropdownMenuItem
+                      disabled={
+                        !canPublish ||
+                        publishing ||
+                        editingCourse ||
+                        editingRuleKind !== null
+                      }
+                      onSelect={() => setActionDialog("publish")}
+                    >
+                      <Check aria-hidden="true" size={15} />
+                      Publish draft
+                    </DropdownMenuItem>
+                  ) : null}
+                  {(needsExplicitConfirmation && canEdit) || isDraft ? (
+                    <DropdownMenuSeparator />
+                  ) : null}
                   <DropdownMenuItem
+                    variant="destructive"
                     disabled={
-                      !canPublish ||
-                      publishing ||
+                      !canWrite ||
+                      !isActive ||
+                      archiving ||
                       editingCourse ||
                       editingRuleKind !== null
                     }
-                    onSelect={() => setActionDialog("publish")}
+                    onSelect={() => setActionDialog("archive")}
                   >
-                    <Check aria-hidden="true" size={15} />
-                    Publish draft
+                    <Archive aria-hidden="true" size={15} />
+                    Archive
                   </DropdownMenuItem>
-                ) : null}
-                {(needsExplicitConfirmation && canEdit) || isDraft ? (
-                  <DropdownMenuSeparator />
-                ) : null}
-                <DropdownMenuItem
-                  variant="destructive"
-                  disabled={
-                    !canWrite ||
-                    !isActive ||
-                    archiving ||
-                    editingCourse ||
-                    editingRuleKind !== null
-                  }
-                  onSelect={() => setActionDialog("archive")}
-                >
-                  <Archive aria-hidden="true" size={15} />
-                  Archive
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <ConfirmDialog
-              open={actionDialog === "review"}
-              onOpenChange={(open) => {
-                if (!open) setActionDialog(null);
-              }}
-              returnFocusRef={actionTriggerRef}
-              confirmLabel="Confirm review"
-              title={`Confirm review of ${record.code}?`}
-              description={`Confirm that ${record.code} ${record.year} has been checked against the stored ANU source. This creates a confirmed manual draft and resolves blocking checks.`}
-              onConfirm={confirmReviewedSnapshot}
-            />
-            <ConfirmDialog
-              open={actionDialog === "publish"}
-              onOpenChange={(open) => {
-                if (!open) setActionDialog(null);
-              }}
-              returnFocusRef={actionTriggerRef}
-              confirmLabel="Publish draft"
-              title={`Publish ${record.code} ${record.year}?`}
-              description={`Publish the current draft for ${record.year}. It will replace the student-facing version for this year.`}
-              onConfirm={publish}
-            />
-            <ConfirmDialog
-              open={actionDialog === "archive"}
-              onOpenChange={(open) => {
-                if (!open) setActionDialog(null);
-              }}
-              returnFocusRef={actionTriggerRef}
-              confirmLabel="Archive course year"
-              title={`Archive ${record.code} ${record.year}?`}
-              description={`Archive ${record.code} for ${record.year}. Students will no longer see it for this year. Saved versions and source artefacts will be kept.`}
-              destructive
-              onConfirm={archive}
-            />
-          </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <ConfirmDialog
+                open={actionDialog === "review"}
+                onOpenChange={(open) => {
+                  if (!open) setActionDialog(null);
+                }}
+                returnFocusRef={actionTriggerRef}
+                confirmLabel="Confirm review"
+                title={`Confirm review of ${record.code}?`}
+                description={`Confirm that ${record.code} ${record.year} has been checked against the stored ANU source. This creates a confirmed manual draft and resolves blocking checks.`}
+                onConfirm={confirmReviewedSnapshot}
+              />
+              <ConfirmDialog
+                open={actionDialog === "publish"}
+                onOpenChange={(open) => {
+                  if (!open) setActionDialog(null);
+                }}
+                returnFocusRef={actionTriggerRef}
+                confirmLabel="Publish draft"
+                title={`Publish ${record.code} ${record.year}?`}
+                description={`Publish the current draft for ${record.year}. It will replace the student-facing version for this year.`}
+                onConfirm={publish}
+              />
+              <ConfirmDialog
+                open={actionDialog === "archive"}
+                onOpenChange={(open) => {
+                  if (!open) setActionDialog(null);
+                }}
+                returnFocusRef={actionTriggerRef}
+                confirmLabel="Archive course year"
+                title={`Archive ${record.code} ${record.year}?`}
+                description={`Archive ${record.code} for ${record.year}. Students will no longer see it for this year. Saved versions and source artefacts will be kept.`}
+                destructive
+                onConfirm={archive}
+              />
+            </div>
+          ) : null}
 
           {message ? (
             <Alert

@@ -1,4 +1,3 @@
-import { Button } from "@coursemap/ui/primitives/button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, BookOpen, Lightbulb } from "lucide-react";
@@ -192,7 +191,7 @@ export default async function HelpArticlePage({
                           >
                             <span
                               aria-hidden="true"
-                              className="mt-1 grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary tabular-nums"
+                              className="mt-1 grid size-5 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] leading-none font-semibold text-primary tabular-nums"
                             >
                               {stepIndex + 1}
                             </span>
@@ -222,34 +221,6 @@ export default async function HelpArticlePage({
             })}
           </div>
 
-          <div className="mt-12 flex flex-wrap items-center gap-3 border-t border-border pt-8">
-            <Button asChild variant="default">
-              <Link href={article.productHref}>
-                {article.productLabel}
-                <ArrowRight size={16} aria-hidden="true" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/help#contact">Report a problem with this guide</Link>
-            </Button>
-          </div>
-
-          {related.length > 0 ? (
-            <section aria-labelledby="related-guides-heading" className="mt-12">
-              <h2
-                id="related-guides-heading"
-                className="text-base font-semibold tracking-tight text-foreground"
-              >
-                Related guides
-              </h2>
-              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                {related.map((item) => (
-                  <RelatedGuideCard key={item.slug} article={item} />
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
           {(previous || next) && (
             <nav
               aria-label="More help guides"
@@ -263,10 +234,25 @@ export default async function HelpArticlePage({
           )}
         </article>
 
-        <aside className="hidden lg:block">
-          <div className="sticky top-24">
+        <aside className="min-w-0 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
+          <div className="hidden lg:block">
             <ArticleToc items={tocItems} />
           </div>
+          {related.length > 0 ? (
+            <section aria-labelledby="related-guides-heading" className="mt-8">
+              <h2
+                id="related-guides-heading"
+                className="text-base font-semibold tracking-tight text-foreground"
+              >
+                Related guides
+              </h2>
+              <ul className="mt-4 grid gap-3">
+                {related.map((item) => (
+                  <RelatedGuideCard key={item.slug} article={item} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </aside>
       </div>
     </AppShell>

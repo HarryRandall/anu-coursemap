@@ -48,16 +48,6 @@ export function AcademicStructureImportTargetReview({
     >
       <CourseImportAutoRefresh active={active} />
       <div className="w-full px-4 pb-4 sm:px-6">
-        <div className="flex justify-end py-3">
-          <ImportInspectionActions
-            code={detail.target.code}
-            academicYear={detail.run.academicYear}
-            requestedModel={detail.run.requestedModel}
-            structureKind={detail.run.structureKind}
-            active={active}
-            workspaceHref={workspaceHref}
-          />
-        </div>
         <h1 className="sr-only">{detail.target.code} import</h1>
         <Tabs defaultValue="pipeline" className="gap-5">
           <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6">
@@ -85,6 +75,18 @@ export function AcademicStructureImportTargetReview({
                 processing={detail.target.processingStatus}
                 review={detail.target.reviewStatus}
               />
+              {/* The actions act on the run this header names, so they sit on
+                  its line rather than floating above the section tabs. */}
+              <div className="ms-auto">
+                <ImportInspectionActions
+                  code={detail.target.code}
+                  academicYear={detail.run.academicYear}
+                  requestedModel={detail.run.requestedModel}
+                  structureKind={detail.run.structureKind}
+                  active={active}
+                  workspaceHref={workspaceHref}
+                />
+              </div>
             </header>
             <AcademicStructureImportPipeline
               extractions={detail.extractions}

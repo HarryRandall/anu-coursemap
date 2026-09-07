@@ -43,6 +43,15 @@ const icons: Record<string, LucideIcon> = routeIcons;
 const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}[A-Z]?$/iu;
 
 /**
+ * Record identifiers carry no meaning for a reader. A page that knows the name
+ * behind one supplies it through `currentLabel`, but it only knows that once
+ * its data has loaded, so rendering the raw value in the meantime flashes a
+ * UUID into the breadcrumb. Drop the segment instead and let the name appear.
+ */
+const OPAQUE_ID_SEGMENT =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{24,}|\d+)$/iu;
+
+/**
  * Only course codes are shouted. Upper-casing every unmapped segment turned
  * ordinary path parts into headlines -- /admin/courses/imports read as
  * "IMPORTS".
@@ -67,6 +76,14 @@ function buildCrumbs(
     href += `/${segment}`;
     if (segmentLabels[segment] === null) return;
     const isLast = index === segments.length - 1;
+    const opaque =
+      segmentLabels[segment] === undefined && OPAQUE_ID_SEGMENT.test(segment);
+    if (opaque) {
+      // Hold the position so `currentLabel` still lands on this crumb once the
+      // page knows the name. Rendering shows a placeholder until then.
+      crumbs.push({ label: "", href: undefined });
+      return;
+    }
     const isAdminDashboard = admin && segment === "dashboard";
     const isAdminRooms = admin && segment === "rooms";
     const label =
@@ -143,7 +160,7 @@ export function Breadcrumbs({
                   ) : null}
                   <span className="truncate">{crumb.label}</span>
                 </Link>
-              ) : (
+              ) : crumb.label ? (
                 <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-semibold text-foreground">
                   {crumb.icon ? (
                     <crumb.icon
@@ -153,6 +170,11 @@ export function Breadcrumbs({
                   ) : null}
                   <span className="truncate">{crumb.label}</span>
                 </span>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="block h-3.5 w-20 animate-pulse rounded bg-muted-foreground/20"
+                />
               )}
             </li>
           </Fragment>

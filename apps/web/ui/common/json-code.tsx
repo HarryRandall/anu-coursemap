@@ -48,7 +48,20 @@ export function JsonCode({
   value: unknown;
   uncapped?: boolean;
 }) {
+  // JSON.stringify returns undefined, not a string, for undefined and for
+  // functions and symbols. An artefact that was never recorded reaches this
+  // component that way, so say so rather than failing to render the page.
   const json = JSON.stringify(value, null, 2);
+  if (json === undefined) {
+    return (
+      <p
+        aria-label={label}
+        className="border-t border-border bg-muted/40 px-5 py-4 text-[13px] text-muted-foreground italic sm:px-6 sm:py-5"
+      >
+        Nothing was recorded for this step.
+      </p>
+    );
+  }
 
   return (
     <pre
