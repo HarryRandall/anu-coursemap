@@ -29,10 +29,12 @@ type Action = {
 export function CatalogueRowActions({
   code,
   label,
+  disabled = false,
   extraActions = [],
   links,
   onSelectForImport,
 }: {
+  disabled?: boolean;
   code?: string;
   label?: string;
   extraActions?: { label: string; icon: ReactNode; onSelect: () => void }[];
@@ -72,6 +74,7 @@ export function CatalogueRowActions({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          disabled={disabled}
           aria-label={`Actions for ${targetLabel}`}
           size="icon-sm"
           variant="ghost"

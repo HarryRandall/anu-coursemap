@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { CourseUnitOptionsEditor } from "./course-unit-options-editor";
 import { AnuSourceDialog } from "@/ui/admin/common/anu-source-dialog";
+import { SectionNavigation } from "@/ui/common/section-navigation";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Button } from "@coursemap/ui/primitives/button";
@@ -274,6 +275,12 @@ export function CourseDataSections({
 
   return (
     <div className="space-y-5">
+      <SectionNavigation
+        sections={sections.map((section) => ({
+          id: `course-section-${section.key}`,
+          label: section.title,
+        }))}
+      />
       {sections.map((section) => {
         const isEditing = editing === section.key && draft !== null;
         const rows = rowsFor(section, isEditing ? draft : projection);
@@ -304,8 +311,9 @@ export function CourseDataSections({
             );
         return (
           <section
+            id={`course-section-${section.key}`}
             aria-label={section.title}
-            className="rounded-xl border border-border bg-card"
+            className="scroll-mt-44 rounded-xl border border-border bg-card"
             key={section.key}
           >
             <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
@@ -515,7 +523,7 @@ export function CourseDataSections({
                         <AlertDescription>{error}</AlertDescription>
                       </Alert>
                     ) : null}
-                    <div className="mt-5 flex justify-end gap-2 border-t border-border/60 pt-4">
+                    <div className="sticky bottom-0 z-10 mt-5 flex justify-end gap-2 border-t border-border/60 bg-card py-4">
                       <Button
                         disabled={saving}
                         onClick={() => {

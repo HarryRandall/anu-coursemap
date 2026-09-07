@@ -1,5 +1,6 @@
 "use client";
 
+import { ImportEmptyState } from "./import-empty-state";
 import { adminCourseDetailPath } from "@/lib/coursemap/course-routes";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Badge } from "@coursemap/ui/components/badge";
@@ -10,7 +11,7 @@ import { CourseImportArtifactViewer } from "@/ui/admin/imports/course-import-art
 import { CourseImportAutoRefresh } from "@/ui/admin/imports/course-import-auto-refresh";
 import { CourseImportPipeline } from "@/ui/admin/imports/course-import-pipeline";
 import { ImportInspectionActions } from "@/ui/admin/imports/import-inspection-actions";
-import { PanelTabs, SectionTabs } from "@/ui/common/section-tabs";
+import { PanelTabs } from "@/ui/common/section-tabs";
 import {
   ImportDiagnostics,
   ImportInspectionStatus,
@@ -20,17 +21,10 @@ import {
   CourseDetailView,
 } from "@/ui/courses/course-detail-view";
 import { AppShell } from "@/ui/shell";
-import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
+import { ImportSectionTabs } from "./import-section-tabs";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
 import { persistedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
-
-const importSectionTabs = [
-  { value: "pipeline", label: "Pipeline" },
-  { value: "source", label: "Source and artefacts" },
-  { value: "database", label: "Database rows" },
-  { value: "preview", label: "Course preview" },
-] as const;
 
 export function CourseImportTargetReview({
   detail,
@@ -53,11 +47,12 @@ export function CourseImportTargetReview({
       <AppShell
         admin
         fullBleed
+        fill
         currentBreadcrumbLabel={detail.target.courseCode}
-        tabs={<SectionTabs label="Import sections" tabs={importSectionTabs} />}
+        tabs={<ImportSectionTabs course />}
       >
         <CourseImportAutoRefresh active={active} />
-        <div className="w-full space-y-5 px-4 py-5 sm:px-6">
+        <div className="workspace-stack w-full px-4 py-5 sm:px-6">
           <h1 className="sr-only">{detail.target.courseCode} import</h1>
           {detail.target.errorSummary ? (
             <Alert variant="destructive">
@@ -65,19 +60,16 @@ export function CourseImportTargetReview({
               <AlertDescription>{detail.target.errorSummary}</AlertDescription>
             </Alert>
           ) : null}
-          <TabsContent value="pipeline" className="space-y-5">
+          <TabsContent value="pipeline" className="workspace-stack mt-0">
             <header className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-lg font-semibold">
                 {detail.target.courseCode}
               </span>
-              <Badge variant="outline">Run #{detail.run.runNumber}</Badge>
               <Badge variant="outline">{detail.run.academicYear}</Badge>
               <ImportInspectionStatus
                 processing={detail.target.processingStatus}
                 review={detail.target.reviewStatus}
               />
-              {/* The actions act on the run this header names, so they sit on
-                  its line rather than floating above the section tabs. */}
               <div className="ms-auto">
                 <ImportInspectionActions
                   code={detail.target.courseCode}
@@ -91,24 +83,28 @@ export function CourseImportTargetReview({
             <CourseImportPipeline
               extractions={detail.extractions}
               stages={detail.stages}
-            />
-            <ImportDiagnostics
-              items={detail.reviewItems
-                .filter((item) => item.issueCode !== "MANUAL_REVIEW_REQUIRED")
-                .map((item) => ({
-                  id: item.id,
-                  field: item.fieldPath,
-                  message: item.summary,
-                  sourceText: item.sourceExcerpt,
-                  values: item.newValue,
-                  isError: item.isBlocking,
-                }))}
+              diagnostics={
+                <ImportDiagnostics
+                  items={detail.reviewItems
+                    .filter(
+                      (item) => item.issueCode !== "MANUAL_REVIEW_REQUIRED",
+                    )
+                    .map((item) => ({
+                      id: item.id,
+                      field: item.fieldPath,
+                      message: item.summary,
+                      sourceText: item.sourceExcerpt,
+                      values: item.newValue,
+                      isError: item.isBlocking,
+                    }))}
+                />
+              }
             />
           </TabsContent>
-          <TabsContent value="source">
+          <TabsContent value="source" className="workspace-stack mt-0">
             <CourseImportArtifactViewer artifacts={detail.artifacts} />
           </TabsContent>
-          <TabsContent value="database">
+          <TabsContent value="database" className="workspace-stack mt-0">
             <CourseImportDatabaseRows
               artifacts={detail.artifacts}
               emptyLabel="0 rows"
@@ -122,13 +118,18 @@ export function CourseImportTargetReview({
               }
             />
           </TabsContent>
-          <TabsContent value="preview">
+          <TabsContent value="preview" className="workspace-stack mt-0">
             {previewCourse ? (
-              <Tabs className="gap-0" defaultValue="overview">
+              <Tabs className="workspace-stack gap-0" defaultValue="overview">
                 <PanelTabs>
                   <CourseDetailTabsList />
                 </PanelTabs>
-                <div className="py-5">
+                <div
+                  className="workspace-scroll py-5"
+                  role="region"
+                  aria-label="Course preview"
+                  tabIndex={0}
+                >
                   <CourseDetailView
                     course={previewCourse}
                     requisiteCompletion={{
@@ -139,12 +140,7 @@ export function CourseImportTargetReview({
                 </div>
               </Tabs>
             ) : (
-              <DataTableShell>
-                <DataTableEmpty
-                  title="No course preview"
-                  description="The import has not saved a course snapshot."
-                />
-              </DataTableShell>
+              <ImportEmptyState kind="preview" />
             )}
           </TabsContent>
         </div>

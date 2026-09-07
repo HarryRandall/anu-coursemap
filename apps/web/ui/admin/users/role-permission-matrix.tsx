@@ -117,7 +117,7 @@ export function RolePermissionMatrix({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="workspace-stack">
       <FilterBar
         searchPlaceholder="Search permissions or pages..."
         filters={[
@@ -141,141 +141,152 @@ export function RolePermissionMatrix({
           },
         ]}
       />
-      {groupedPermissions.length > 0 && visibleRoles.length > 0 ? (
-        groupedPermissions.map(([category, categoryPermissions]) => {
-          const expanded = !collapsed.has(category);
-          const regionId = `permissions-${category}`;
-          return (
-            <section
-              key={category}
-              className="overflow-hidden rounded-xl border border-border/80 bg-card"
-            >
-              <h2>
-                <button
-                  type="button"
-                  aria-expanded={expanded}
-                  aria-controls={regionId}
-                  className="flex min-h-14 w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
-                  onClick={() =>
-                    setCollapsed((previous) => {
-                      const next = new Set(previous);
-                      if (next.has(category)) next.delete(category);
-                      else next.add(category);
-                      return next;
-                    })
-                  }
-                >
-                  <ChevronDown
-                    aria-hidden="true"
-                    size={16}
-                    className={
-                      expanded
-                        ? "text-muted-foreground"
-                        : "-rotate-90 text-muted-foreground"
+      <div
+        className="workspace-scroll space-y-4"
+        role="region"
+        aria-label="Role permissions"
+        tabIndex={0}
+      >
+        {groupedPermissions.length > 0 && visibleRoles.length > 0 ? (
+          groupedPermissions.map(([category, categoryPermissions]) => {
+            const expanded = !collapsed.has(category);
+            const regionId = `permissions-${category}`;
+            return (
+              <section
+                key={category}
+                className="overflow-clip rounded-xl border border-border/80 bg-card"
+              >
+                <h2 className="sticky top-0 z-20 bg-card">
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={regionId}
+                    className="flex min-h-14 w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                    onClick={() =>
+                      setCollapsed((previous) => {
+                        const next = new Set(previous);
+                        if (next.has(category)) next.delete(category);
+                        else next.add(category);
+                        return next;
+                      })
                     }
-                  />
-                  <span className="flex-1 text-sm font-semibold text-foreground">
-                    {permissionArea(category)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {categoryPermissions.length}{" "}
-                    {categoryPermissions.length === 1
-                      ? "permission"
-                      : "permissions"}
-                  </span>
-                </button>
-              </h2>
-              <div id={regionId} hidden={!expanded}>
-                <DataTableShell className="!rounded-none !border-0 border-t !shadow-none">
-                  <Table
-                    className="table-fixed"
-                    style={{ minWidth: `${260 + visibleRoles.length * 110}px` }}
                   >
-                    <TableCaption className="sr-only">
-                      {permissionArea(category)} permissions by Coursemap role
-                    </TableCaption>
-                    <colgroup>
-                      <col />
-                      {visibleRoles.map((role) => (
-                        <col key={role.id} style={{ width: "110px" }} />
-                      ))}
-                    </colgroup>
-                    <TableHeader>
-                      <TableRow className="!h-10 hover:!bg-transparent">
-                        <TableHead>Permission</TableHead>
+                    <ChevronDown
+                      aria-hidden="true"
+                      size={16}
+                      className={
+                        expanded
+                          ? "text-muted-foreground"
+                          : "-rotate-90 text-muted-foreground"
+                      }
+                    />
+                    <span className="flex-1 text-sm font-semibold text-foreground">
+                      {permissionArea(category)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {categoryPermissions.length}{" "}
+                      {categoryPermissions.length === 1
+                        ? "permission"
+                        : "permissions"}
+                    </span>
+                  </button>
+                </h2>
+                <div id={regionId} hidden={!expanded}>
+                  <DataTableShell className="!rounded-none !border-0 border-t !shadow-none">
+                    <Table
+                      className="table-fixed"
+                      style={{
+                        minWidth: `${260 + visibleRoles.length * 110}px`,
+                      }}
+                    >
+                      <TableCaption className="sr-only">
+                        {permissionArea(category)} permissions by Coursemap role
+                      </TableCaption>
+                      <colgroup>
+                        <col />
                         {visibleRoles.map((role) => (
-                          <TableHead key={role.id} className="text-center">
-                            <RoleHeading role={role} />
-                          </TableHead>
+                          <col key={role.id} style={{ width: "110px" }} />
                         ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {categoryPermissions.map((permission) => (
-                        <TableRow
-                          key={permission.id}
-                          className="hover:!bg-transparent"
-                        >
-                          <TableHead
-                            scope="row"
-                            className="h-auto py-3 text-left font-normal tracking-normal whitespace-normal normal-case"
-                          >
-                            <span className="text-sm font-medium text-foreground">
-                              {permission.name}
-                            </span>
-                            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                              {permission.description}
-                            </p>
-                          </TableHead>
+                      </colgroup>
+                      <TableHeader>
+                        <TableRow className="!h-10 hover:!bg-transparent">
+                          <TableHead>Permission</TableHead>
                           {visibleRoles.map((role) => (
-                            <TableCell key={role.id} className="text-center">
-                              <div className="flex justify-center">
-                                <RolePermissionToggle
-                                  roleId={role.id}
-                                  roleKey={role.key}
-                                  roleName={role.name}
-                                  permissionId={permission.id}
-                                  permissionKey={permission.key}
-                                  permissionName={permission.name}
-                                  initialEnabled={grantKeys.has(
-                                    `${role.id}:${permission.id}`,
-                                  )}
-                                />
-                              </div>
-                            </TableCell>
+                            <TableHead key={role.id} className="text-center">
+                              <RoleHeading role={role} />
+                            </TableHead>
                           ))}
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </DataTableShell>
+                      </TableHeader>
+                      <TableBody>
+                        {categoryPermissions.map((permission) => (
+                          <TableRow
+                            key={permission.id}
+                            className="hover:!bg-transparent"
+                          >
+                            <TableHead
+                              scope="row"
+                              className="h-auto py-3 text-left font-normal tracking-normal whitespace-normal normal-case"
+                            >
+                              <span className="text-sm font-medium text-foreground">
+                                {permission.name}
+                              </span>
+                              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                                {permission.description}
+                              </p>
+                            </TableHead>
+                            {visibleRoles.map((role) => (
+                              <TableCell key={role.id} className="text-center">
+                                <div className="flex justify-center">
+                                  <RolePermissionToggle
+                                    roleId={role.id}
+                                    roleKey={role.key}
+                                    roleName={role.name}
+                                    permissionId={permission.id}
+                                    permissionKey={permission.key}
+                                    permissionName={permission.name}
+                                    initialEnabled={grantKeys.has(
+                                      `${role.id}:${permission.id}`,
+                                    )}
+                                  />
+                                </div>
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </DataTableShell>
+                </div>
+              </section>
+            );
+          })
+        ) : (
+          <DataTableShell>
+            <DataTableEmpty
+              title={
+                permissions.length
+                  ? "No matching permissions"
+                  : "No permissions"
+              }
+              description={
+                permissions.length
+                  ? "Try another search or remove a filter."
+                  : "Permissions will appear here when roles are configured."
+              }
+            />
+            {permissions.length > 0 && (
+              <div className="flex justify-center pb-5">
+                <Button asChild variant="outline">
+                  <ReuiLink href="/admin/roles">
+                    Clear search and filters
+                  </ReuiLink>
+                </Button>
               </div>
-            </section>
-          );
-        })
-      ) : (
-        <DataTableShell>
-          <DataTableEmpty
-            title={
-              permissions.length ? "No matching permissions" : "No permissions"
-            }
-            description={
-              permissions.length
-                ? "Try another search or remove a filter."
-                : "Permissions will appear here when roles are configured."
-            }
-          />
-          {permissions.length > 0 && (
-            <div className="flex justify-center pb-5">
-              <Button asChild variant="outline">
-                <ReuiLink href="/admin/roles">
-                  Clear search and filters
-                </ReuiLink>
-              </Button>
-            </div>
-          )}
-        </DataTableShell>
-      )}
+            )}
+          </DataTableShell>
+        )}
+      </div>
     </div>
   );
 }

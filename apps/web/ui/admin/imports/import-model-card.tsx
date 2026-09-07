@@ -1,17 +1,23 @@
 "use client";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@coursemap/ui/primitives/card";
-import { OptionPicker } from "@/ui/common/option-picker";
 
-import { useState, useTransition } from "react";
-import { Cpu } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { ChevronsUpDown, Cpu, Plus, Settings2 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@coursemap/ui/primitives/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@coursemap/ui/primitives/dropdown-menu";
 import { setImportModel } from "@/lib/admin/settings-actions";
+import type { ImportModel } from "@/lib/admin/import-model";
+import { cn } from "@/lib/cn";
+import { ImportModelLogo } from "./import-model-logo";
+import { ImportModelPrice } from "./import-model-price";
+import { ImportModelManager } from "./import-model-manager";
 
 const dateFormatter = new Intl.DateTimeFormat("en-AU", {
   day: "numeric",
@@ -20,98 +26,158 @@ const dateFormatter = new Intl.DateTimeFormat("en-AU", {
   timeZone: "Australia/Sydney",
 });
 
-/**
- * The model every course and structure import requests. Configured once here
- * rather than chosen per run, so two admins importing on the same day cannot
- * produce drafts from different models without noticing.
- */
 export function ImportModelCard({
   canManage,
-  configured,
   model,
-  options,
+  models,
   updatedAt,
+  error,
 }: {
   canManage: boolean;
-  configured: boolean;
   model: string;
-  options: string[];
+  models: ImportModel[];
   updatedAt: string | null;
+  error?: string | null;
 }) {
-  const [value, setValue] = useState(model);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [managerOpen, setManagerOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-
+  const router = useRouter();
+  const selected = models.find((entry) => entry.id === model);
   function choose(next: string) {
-    const previous = value;
-    setValue(next);
     startTransition(async () => {
-      const result = await setImportModel(next);
-      if (result.ok) {
+      try {
+        const result = await setImportModel(next);
+        if (!result.ok) {
+          toast.error(result.message);
+          return;
+        }
         toast.success(result.message);
-        return;
+        router.refresh();
+      } catch {
+        toast.error("The default model could not be saved. Try again.");
       }
-      setValue(previous);
-      toast.error(result.message);
     });
   }
-
   return (
-    <Card>
-      <CardHeader>
-        {<Cpu aria-hidden="true" size={16} />}
-        <CardTitle>
-          <h2>{"Import model"}</h2>
-        </CardTitle>
-        {Boolean(
-          "Every queued course and academic structure import requests this model.",
-        ) && (
-          <CardDescription>
-            {
-              "Every queued course and academic structure import requests this model."
-            }
-          </CardDescription>
-        )}
-      </CardHeader>
-      <CardContent className="pb-5">
-        <div className="max-w-sm">
-          <OptionPicker
-            value={"coursemap:" + String(value)}
-            onValueChange={(nextValue) => {
-              const option = options
-                .map((option) => ({
-                  label: option,
-                  value: option,
-                }))
-                .find(
-                  (option) => "coursemap:" + String(option.value) === nextValue,
-                );
-              if (option) choose(option.value);
-            }}
-            disabled={!canManage || pending || options.length === 0}
-            aria-label={"Import model"}
-            onPointerDown={(event) => event.stopPropagation()}
-            placeholder={"No model configured"}
-            items={options
-              .map((option) => ({
-                label: option,
-                value: option,
-              }))
-              .map((option) => ({
-                value: "coursemap:" + String(option.value),
-                label: option.label,
-              }))}
-          />
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          {options.length === 0
-            ? "Set COURSEMAP_OPENROUTER_MODELS to offer models here."
-            : !canManage
-              ? "Import management permission is required to change this."
-              : configured && updatedAt
-                ? `Last changed ${dateFormatter.format(new Date(updatedAt))}.`
-                : "Using the first model this deployment allows."}
+    <section
+      aria-label="Import settings"
+      className="flex min-w-0 flex-col items-start gap-3 py-1 sm:col-span-2"
+    >
+      <div className="space-y-1">
+        <h2 className="flex shrink-0 items-center gap-2 text-sm font-medium">
+          <Cpu aria-hidden="true" className="size-4 text-muted-foreground" />
+          Default import model
+        </h2>
+        {updatedAt ? (
+          <p className="text-xs text-muted-foreground">
+            Updated {dateFormatter.format(new Date(updatedAt))}
+          </p>
+        ) : null}
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            ref={triggerRef}
+            variant="outline"
+            className="h-auto min-h-12 w-full justify-between gap-3 py-2 sm:w-80"
+            disabled={!canManage || pending || Boolean(error)}
+            aria-label="Import model"
+          >
+            <span
+              className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold"
+              aria-hidden="true"
+            >
+              {selected ? (
+                <ImportModelLogo model={selected.id} className="size-6" />
+              ) : (
+                <Cpu className="size-4" />
+              )}
+            </span>
+            <span className="min-w-0 flex-1 text-left">
+              <span className="block truncate">
+                {selected?.name ?? "Add an import model"}
+              </span>
+              {selected ? (
+                <span className="block text-xs font-normal text-muted-foreground">
+                  {selected.provider}
+                </span>
+              ) : null}
+            </span>
+            {selected ? <ImportModelPrice model={selected} /> : null}
+            <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="flex max-w-[calc(100vw-2rem)] min-w-72 flex-col overflow-hidden">
+          <div className="max-h-63 min-h-0 overflow-y-auto overscroll-contain">
+            {models
+              .filter((entry) => entry.visible)
+              .map((entry) => (
+                <DropdownMenuItem
+                  key={entry.id}
+                  onSelect={() => choose(entry.id)}
+                  className={cn(
+                    "h-14 gap-3 py-2.5",
+                    entry.id === model
+                      ? "bg-primary/10 text-primary data-highlighted:bg-primary/10 data-highlighted:text-primary"
+                      : "data-highlighted:bg-accent data-highlighted:text-foreground",
+                  )}
+                  aria-label={`${entry.name}, ${entry.provider}${entry.id === model ? ", selected" : ""}`}
+                >
+                  <span
+                    className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold"
+                    aria-hidden="true"
+                  >
+                    <ImportModelLogo model={entry.id} className="size-6" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">
+                      {entry.name}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {entry.provider}
+                    </span>
+                  </span>
+                  <ImportModelPrice model={entry} />
+                </DropdownMenuItem>
+              ))}
+          </div>
+          <DropdownMenuSeparator className="shrink-0" />
+          <DropdownMenuItem
+            className="shrink-0"
+            onSelect={() => setManagerOpen(true)}
+          >
+            <Plus />
+            Add model
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="shrink-0"
+            onSelect={() => setManagerOpen(true)}
+          >
+            <Settings2 />
+            Manage models
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {error ? (
+        <p role="alert" className="w-full text-xs text-destructive">
+          {error}
         </p>
-      </CardContent>
-    </Card>
+      ) : null}
+      {!canManage ? (
+        <p className="w-full text-xs text-muted-foreground">
+          Import management permission is required to change this.
+        </p>
+      ) : null}
+      {canManage ? (
+        <ImportModelManager
+          open={managerOpen}
+          onOpenChange={setManagerOpen}
+          onCloseFocus={() => triggerRef.current?.focus()}
+          models={models}
+          selected={model}
+        />
+      ) : null}
+    </section>
   );
 }
