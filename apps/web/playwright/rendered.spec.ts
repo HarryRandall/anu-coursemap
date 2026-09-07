@@ -157,7 +157,7 @@ test("application pages share the wide content limit", async ({
   );
 });
 
-for (const colorScheme of ["light", "dark"]) {
+for (const colorScheme of ["light", "dark"] as const) {
   test(`course tab indicators switch without a stray line in ${colorScheme} mode`, async ({
     page,
   }) => {
