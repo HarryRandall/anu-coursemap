@@ -48,10 +48,8 @@ catalog:
 
   # Styling
   "@tailwindcss/postcss": 4.3.3
-  "@tailwindcss/typography": 0.5.20
   tailwindcss: 4.3.3
   tailwindcss-animate: 1.0.7
-  tailwindcss-react-aria-components: 2.2.0
 
   # Types
   "@types/geojson": 7946.0.16

@@ -10,6 +10,14 @@ extended ReUI components. Hooks and utilities are retained only when these
 components need them. Import through the `@coursemap/ui` package. There are no demo
 catalogues or component reference routes.
 
+`style-nova.css` retains only the sections for components this repository
+vendored. The 32 upstream sections for components Coursemap never took
+(questionnaire, bubble, attachment, combobox, menubar, drawer, navigation menu
+and the rest) were removed, which is the same policy already applied to the
+components themselves. Removing them cut 139 KB from the compiled stylesheet
+with no rendered difference. When taking a new component from upstream, copy
+its `MARK:` section across with it.
+
 Use ReUI defaults and the Nova stylesheet. `apps/web/app/globals.css` owns Coursemap's
 brand and theme values. `theme.css` maps tokens and adapts Radix state attributes
 to the Nova stylesheet. `icon-placeholder.tsx` resolves upstream icon names to

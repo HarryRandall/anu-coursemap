@@ -54,7 +54,6 @@
   "devDependencies": {
     "@playwright/test": "catalog:",
     "@tailwindcss/postcss": "catalog:",
-    "@tailwindcss/typography": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -68,7 +67,6 @@
     "jsdom": "catalog:",
     "tailwindcss": "catalog:",
     "tailwindcss-animate": "catalog:",
-    "tailwindcss-react-aria-components": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
