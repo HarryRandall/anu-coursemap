@@ -33,6 +33,7 @@ import {
   Banknote,
   CalendarClock,
   CircleHelp,
+  ArrowUpRight,
   ClipboardCheck,
   GitBranch,
   GraduationCap,
@@ -41,6 +42,7 @@ import {
   MessageSquareText,
   Plus,
 } from "lucide-react";
+import { Hint } from "@/ui/common/hint";
 import { PrereqGraph } from "@/ui/prereq-graph";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import {
@@ -53,6 +55,7 @@ import {
   formatDate,
   formatUpdatedAt,
   humanise,
+  sessionLabel,
   unitValueLabel,
 } from "@/ui/courses/course-detail-format";
 import {
@@ -159,38 +162,32 @@ export function CourseDetailView({
     <div className="w-full">
       <header className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
         <div className="min-w-0">
-          <p className="text-[11px] font-bold tracking-wider text-muted-foreground/80 uppercase">
-            {course.code} · {course.subject} · Level {course.level / 1000}
-          </p>
           <h1 className="mt-1 text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
             {course.name}
           </h1>
           <div className="mt-3 flex flex-wrap gap-1.5">
             <Badge variant={"outline"}>{course.year}</Badge>
             <Badge variant={"outline"}>{unitValueLabel(course)}</Badge>
-            <Badge variant={"outline"}>
-              {course.sessions.length
-                ? course.sessions.join(" · ")
-                : "Offering not listed"}
-            </Badge>
-            <Badge variant={"outline"}>{course.delivery}</Badge>
-            <Badge
-              variant={
-                badgeVariantForTone[
-                  course.offeringStatus === "offered" ? "success" : "warning"
-                ]
-              }
-            >
-              {course.offeringStatus === "offered"
-                ? `Offered in ${course.year}`
-                : course.offeringStatus === "not_offered"
-                  ? `Not offered in ${course.year}`
+            {Array.from(new Set(course.sessions)).map((session) => (
+              <Hint key={session} label={session}>
+                <Badge tabIndex={0} variant="outline">
+                  {sessionLabel(session)}
+                </Badge>
+              </Hint>
+            ))}
+            <Badge variant="outline">{course.delivery}</Badge>
+            {course.offeringStatus !== "offered" ? (
+              <Badge variant="warning-light">
+                {course.offeringStatus === "not_offered"
+                  ? "Not offered"
                   : "Offering unconfirmed"}
-            </Badge>
+              </Badge>
+            ) : null}
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            {course.school}
-            {course.college ? ` · ${course.college}` : ""}
+            {Array.from(
+              new Set([course.school, course.college].filter(Boolean)),
+            ).join(" · ")}
           </p>
         </div>
         <Button
@@ -308,9 +305,7 @@ export function CourseDetailView({
               </Card>
             ) : null}
 
-            {course.workloadText ||
-            course.inherentRequirements ||
-            course.prescribedTexts ? (
+            {course.workloadText || course.prescribedTexts ? (
               <Card>
                 <CardHeader>
                   <CardTitle>
@@ -328,17 +323,6 @@ export function CourseDetailView({
                         {course.workloadHours !== null
                           ? ` (${course.workloadHours} hours)`
                           : ""}
-                      </p>
-                    </section>
-                  ) : null}
-                  {course.inherentRequirements ? (
-                    <section>
-                      <h3 className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                        <ClipboardCheck size={15} aria-hidden="true" /> Inherent
-                        requirements
-                      </h3>
-                      <p className="mt-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground">
-                        {course.inherentRequirements}
                       </p>
                     </section>
                   ) : null}
@@ -369,8 +353,13 @@ export function CourseDetailView({
                     <Link
                       key={`${related.kind}:${related.code}`}
                       href={`/courses/${related.code}?year=${course.year}`}
-                      className="rounded-lg border border-border p-3 transition-colors hover:border-primary/25 hover:bg-primary/5"
+                      className="group relative rounded-lg border border-border p-3 pr-10 transition-colors hover:border-primary/25 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-ring"
                     >
+                      <ArrowUpRight
+                        aria-hidden="true"
+                        size={16}
+                        className="absolute top-3 right-3 text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                      />
                       <p className="font-mono text-[11px] font-semibold text-primary">
                         {related.code}
                       </p>
@@ -684,6 +673,16 @@ export function CourseDetailView({
                     text={course.corequisiteText}
                     availableCourseCodes={availableCourseCodes}
                   />
+                </p>
+              </div>
+            ) : null}
+            {course.inherentRequirements ? (
+              <div className="border-t border-border/60 pt-5">
+                <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Inherent requirements
+                </h3>
+                <p className="mt-2 whitespace-pre-line">
+                  {course.inherentRequirements}
                 </p>
               </div>
             ) : null}

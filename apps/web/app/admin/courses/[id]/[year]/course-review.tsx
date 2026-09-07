@@ -1,7 +1,11 @@
 "use client";
 
 import { adminCourseDetailPath } from "@/lib/coursemap/course-routes";
-import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
+import {
+  Alert,
+  AlertDescription,
+  AlertAction,
+} from "@coursemap/ui/components/alert";
 import { Badge } from "@coursemap/ui/components/badge";
 import { Button } from "@coursemap/ui/primitives/button";
 import {
@@ -24,6 +28,7 @@ import {
   Pencil,
   Ellipsis,
   Plus,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
@@ -162,6 +167,7 @@ export function CourseReview({
   const [actionDialog, setActionDialog] = useState<
     "review" | "publish" | "archive" | null
   >(null);
+  const [uncertaintyDismissed, setUncertaintyDismissed] = useState(false);
   const [activeTab, setActiveTab] = useState<CourseReviewTab>("course");
   const [editingRuleKind, setEditingRuleKind] =
     useState<EditableRuleKind | null>(null);
@@ -387,7 +393,8 @@ export function CourseReview({
             </Alert>
           ) : null}
           {record.snapshot?.has_critical_uncertainty &&
-          activeTab === "course" ? (
+          activeTab === "course" &&
+          !uncertaintyDismissed ? (
             <Alert className="mb-4" variant={"warning"}>
               <CircleAlert aria-hidden="true" />
               <AlertDescription>
@@ -395,6 +402,16 @@ export function CourseReview({
                 against the source, then use the explicit confirmation action
                 before publication.
               </AlertDescription>
+              <AlertAction>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Dismiss uncertainty warning"
+                  onClick={() => setUncertaintyDismissed(true)}
+                >
+                  <X aria-hidden="true" />
+                </Button>
+              </AlertAction>
             </Alert>
           ) : null}
 
@@ -589,7 +606,6 @@ export function CourseReview({
 
           <TabsContent className="mt-0" value="source">
             <div className="space-y-4">
-              <CourseImportArtifactViewer artifacts={record.artifacts} />
               <Panel label="Relational projection">
                 <details>
                   <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-foreground marker:content-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:px-6">
@@ -609,6 +625,7 @@ export function CourseReview({
                   />
                 </details>
               </Panel>
+              <CourseImportArtifactViewer artifacts={record.artifacts} />
             </div>
           </TabsContent>
 

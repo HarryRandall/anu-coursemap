@@ -215,9 +215,10 @@ export function CourseImportPipeline({
               </div>
             </dl>
             {extraction.error_summary ? (
-              <p className="mt-3 text-xs text-rose-700 dark:text-rose-300">
-                {extraction.error_summary}
-              </p>
+              <details className="mt-3 text-xs text-muted-foreground">
+                <summary className="cursor-pointer">Validation details</summary>
+                <p className="mt-2">{extraction.error_summary}</p>
+              </details>
             ) : null}
             {extraction.reused_from_extraction_id ? (
               <p className="mt-3 text-xs text-muted-foreground">

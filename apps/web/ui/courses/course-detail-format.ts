@@ -50,3 +50,15 @@ export function humanise(value: string) {
     .replaceAll("_", " ")
     .replace(/^./u, (letter) => letter.toUpperCase());
 }
+
+export function sessionLabel(session: string) {
+  const labels: Record<string, string> = {
+    "First Semester": "Sem 1",
+    "Second Semester": "Sem 2",
+    "Summer Session": "Summer",
+    "Autumn Session": "Autumn",
+    "Winter Session": "Winter",
+    "Spring Session": "Spring",
+  };
+  return labels[session] ?? session;
+}
