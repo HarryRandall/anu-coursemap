@@ -1,3 +1,4 @@
+import { AccessDeniedError } from "@/ui/errors/access-denied-error";
 import { notFound } from "next/navigation";
 import { IndoorEditor } from "@/ui/admin/rooms/indoor-editor";
 import { canManageRooms } from "@/lib/auth/viewer";
@@ -10,7 +11,7 @@ export default async function AdminRoomEditorPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  if (!(await canManageRooms())) notFound();
+  if (!(await canManageRooms())) return <AccessDeniedError />;
 
   const { slug } = await params;
   const data = await loadIndoorMapForBuilding(slug);

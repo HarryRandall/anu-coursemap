@@ -11,14 +11,16 @@ export default function AdminRoomEditorLoading() {
 
   return (
     <AppShell
+      loading
       admin
       fullBleed
+      fill
       breadcrumbSegmentLabels={{ [slug]: null }}
       tabs={<TabsLoading widths={["w-12", "w-20", "w-32", "w-16"]} />}
     >
       <div
         aria-busy="true"
-        className="flex min-h-[calc(100dvh-6.5rem)] flex-col bg-muted lg:h-[calc(100dvh-6.5rem)] lg:min-h-0"
+        className="flex min-h-[28rem] flex-1 flex-col bg-muted md:min-h-0"
       >
         <span className="sr-only">Loading floor plan</span>
         <div className="grid min-h-0 flex-1 lg:grid-cols-[22rem_minmax(0,1fr)]">

@@ -1,8 +1,6 @@
 import { AppShell } from "@/ui/shell";
-import {
-  RoadmapTimeline,
-  type RoadmapStage,
-} from "@/ui/roadmap/roadmap-timeline";
+import { RoadmapExplorer } from "@/ui/roadmap/roadmap-explorer";
+import type { RoadmapStage } from "@/lib/roadmap";
 
 const stages: RoadmapStage[] = [
   {
@@ -183,7 +181,7 @@ export default function RoadmapPage() {
     <AppShell>
       <div className="py-2 sm:py-4">
         <h1 className="sr-only">Roadmap</h1>
-        <RoadmapTimeline stages={stages} />
+        <RoadmapExplorer stages={stages} />
       </div>
     </AppShell>
   );

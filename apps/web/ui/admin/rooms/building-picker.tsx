@@ -26,6 +26,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPinned, Search } from "lucide-react";
 import { CampusMap } from "@/ui/rooms/campus-map";
+import { BuildingPickerLayout } from "./building-picker-layout";
 
 import { cn } from "@/lib/cn";
 import { indoorMapStatusTone } from "@/ui/admin/rooms/indoor-status";
@@ -161,150 +162,150 @@ export function BuildingPicker({
   }
 
   return (
-    <div className="grid min-h-0 w-full flex-1 gap-4 p-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
-      <aside className="flex max-h-64 min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card lg:max-h-none">
-        <div className="border-b border-border p-4">
-          <div className="relative">
-            <Search
-              aria-hidden="true"
-              className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground/80"
-              size={15}
-            />
-            <Input
-              aria-label="Search ANU buildings"
-              className="pl-9"
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search a building to map"
-              type="search"
-              value={query}
-            />
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground" role="status">
-            {terms.length > 0
-              ? `${results.length} of ${buildings.length} buildings`
-              : `${started.length} of ${buildings.length} buildings mapped`}
-          </p>
-        </div>
-
-        <nav
-          aria-label={
-            terms.length > 0 ? "Search results" : "Buildings with a map"
-          }
-          className="min-h-0 flex-1 overflow-y-auto p-2"
-        >
-          {listed.length === 0 ? (
-            <Empty className="mt-6 px-4">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  {terms.length > 0 ? (
-                    <Search aria-hidden="true" />
-                  ) : (
-                    <MapPinned aria-hidden="true" />
-                  )}
-                </EmptyMedia>
-                <EmptyTitle>
-                  {terms.length > 0 ? "Nothing found" : "No maps yet"}
-                </EmptyTitle>
-                <EmptyDescription>
-                  {terms.length > 0
-                    ? "Try a building number or a street name."
-                    : "Pick a building on the map to start its first floor plan."}
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <ul className="space-y-0.5">
-              {listed.slice(0, RESULT_LIMIT).map((place) => {
-                const summary = summaryByBuilding.get(place.id);
-                const updatedAt = formatUpdatedAt(summary?.updatedAt ?? null);
-                return (
-                  <li key={place.id}>
-                    <button
-                      className={cn(
-                        "flex min-h-11 w-full items-start gap-2 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
-                        place.slug === selectedSlug && "bg-primary/10",
-                      )}
-                      onClick={() => previewBuilding(place.slug)}
-                      type="button"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-foreground">
-                          {place.name}
-                        </span>
-                        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                          {summary
-                            ? `${summary.levelCount} level${summary.levelCount === 1 ? "" : "s"} · ${summary.roomCount} room${summary.roomCount === 1 ? "" : "s"}${updatedAt ? ` · ${updatedAt}` : ""}`
-                            : place.address}
-                        </span>
-                      </span>
-                      {summary ? (
-                        <Badge
-                          variant={
-                            badgeVariantForTone[
-                              indoorMapStatusTone(summary.status)
-                            ]
-                          }
-                        >
-                          {summary.status}
-                        </Badge>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {listed.length > RESULT_LIMIT ? (
-            <p className="px-2.5 py-2 text-[11px] text-muted-foreground">
-              {listed.length - RESULT_LIMIT} more. Keep typing to narrow it
-              down.
-            </p>
-          ) : null}
-        </nav>
-      </aside>
-
-      <main className="relative min-h-[30rem] min-w-0 overflow-hidden rounded-xl border lg:min-h-0">
-        <CampusMap
-          campus={mapData.campus}
-          features={mapData.features}
-          layers={mapData.layers}
-          indoorScene={indoorScene}
-          onClearSelection={clearSelection}
-          onSelect={(slug) => {
-            previewBuilding(slug);
-          }}
-          places={mapData.places}
-          route={null}
-          routeEndpoints={null}
-          selectedSlug={selectedSlug}
-          visibleLayerSlugs={visibleLayerSlugs}
-        />
-        {selectedBuilding ? (
-          <section
-            aria-label="Selected building"
-            className="absolute top-3 left-3 max-w-[calc(100%-5rem)] rounded-lg border bg-card/95 p-3 shadow-sm"
-          >
-            <h2 className="text-sm font-semibold">{selectedBuilding.name}</h2>
-            <p className="mt-1 text-xs text-muted-foreground" role="status">
-              {previewLoading
-                ? "Loading indoor preview…"
-                : (previewError ??
-                  (indoorScene ? "3D indoor preview" : "No indoor map yet"))}
-            </p>
-            <div className="mt-3 flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => editBuilding(selectedBuilding.slug)}
-              >
-                Edit indoor map
-              </Button>
-              <Button size="sm" variant="outline" onClick={clearSelection}>
-                Close
-              </Button>
+    <BuildingPickerLayout
+      rail={
+        <>
+          <div className="border-b border-border p-4">
+            <div className="relative">
+              <Search
+                aria-hidden="true"
+                className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground/80"
+                size={15}
+              />
+              <Input
+                aria-label="Search ANU buildings"
+                className="pl-9"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search a building to map"
+                type="search"
+                value={query}
+              />
             </div>
-          </section>
-        ) : null}
-      </main>
-    </div>
+            <p className="mt-2 text-xs text-muted-foreground" role="status">
+              {terms.length > 0
+                ? `${results.length} of ${buildings.length} buildings`
+                : `${started.length} of ${buildings.length} buildings mapped`}
+            </p>
+          </div>
+
+          <nav
+            aria-label={
+              terms.length > 0 ? "Search results" : "Buildings with a map"
+            }
+            className="min-h-0 flex-1 overflow-y-auto p-2"
+          >
+            {listed.length === 0 ? (
+              <Empty className="mt-6 px-4">
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    {terms.length > 0 ? (
+                      <Search aria-hidden="true" />
+                    ) : (
+                      <MapPinned aria-hidden="true" />
+                    )}
+                  </EmptyMedia>
+                  <EmptyTitle>
+                    {terms.length > 0 ? "Nothing found" : "No maps yet"}
+                  </EmptyTitle>
+                  <EmptyDescription>
+                    {terms.length > 0
+                      ? "Try a building number or a street name."
+                      : "Pick a building on the map to start its first floor plan."}
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <ul className="space-y-0.5">
+                {listed.slice(0, RESULT_LIMIT).map((place) => {
+                  const summary = summaryByBuilding.get(place.id);
+                  const updatedAt = formatUpdatedAt(summary?.updatedAt ?? null);
+                  return (
+                    <li key={place.id}>
+                      <button
+                        className={cn(
+                          "flex min-h-11 w-full items-start gap-2 rounded-md px-2.5 py-2 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+                          place.slug === selectedSlug && "bg-primary/10",
+                        )}
+                        onClick={() => previewBuilding(place.slug)}
+                        type="button"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {place.name}
+                          </span>
+                          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                            {summary
+                              ? `${summary.levelCount} level${summary.levelCount === 1 ? "" : "s"} · ${summary.roomCount} room${summary.roomCount === 1 ? "" : "s"}${updatedAt ? ` · ${updatedAt}` : ""}`
+                              : place.address}
+                          </span>
+                        </span>
+                        {summary ? (
+                          <Badge
+                            variant={
+                              badgeVariantForTone[
+                                indoorMapStatusTone(summary.status)
+                              ]
+                            }
+                          >
+                            {summary.status}
+                          </Badge>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {listed.length > RESULT_LIMIT ? (
+              <p className="px-2.5 py-2 text-[11px] text-muted-foreground">
+                {listed.length - RESULT_LIMIT} more. Keep typing to narrow it
+                down.
+              </p>
+            ) : null}
+          </nav>
+        </>
+      }
+    >
+      <CampusMap
+        campus={mapData.campus}
+        features={mapData.features}
+        layers={mapData.layers}
+        indoorScene={indoorScene}
+        onClearSelection={clearSelection}
+        onSelect={(slug) => {
+          previewBuilding(slug);
+        }}
+        places={mapData.places}
+        route={null}
+        routeEndpoints={null}
+        selectedSlug={selectedSlug}
+        visibleLayerSlugs={visibleLayerSlugs}
+      />
+      {selectedBuilding ? (
+        <section
+          aria-label="Selected building"
+          className="absolute top-3 left-3 max-w-[calc(100%-5rem)] rounded-lg border bg-card/95 p-3 shadow-sm"
+        >
+          <h2 className="text-sm font-semibold">{selectedBuilding.name}</h2>
+          <p className="mt-1 text-xs text-muted-foreground" role="status">
+            {previewLoading
+              ? "Loading indoor preview…"
+              : (previewError ??
+                (indoorScene ? "3D indoor preview" : "No indoor map yet"))}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => editBuilding(selectedBuilding.slug)}
+            >
+              Edit indoor map
+            </Button>
+            <Button size="sm" variant="outline" onClick={clearSelection}>
+              Close
+            </Button>
+          </div>
+        </section>
+      ) : null}
+    </BuildingPickerLayout>
   );
 }

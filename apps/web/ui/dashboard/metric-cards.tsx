@@ -533,7 +533,7 @@ export function MetricCardView({
         <p className="text-xs font-medium text-muted-foreground">
           {view.title}
         </p>
-        <div className="flex min-h-8 items-center justify-between gap-3">
+        <div className="flex min-h-8 flex-wrap items-center justify-between gap-3">
           <p className="text-xl font-semibold tracking-tight text-foreground tabular-nums">
             {view.value}{" "}
             {view.unit && (

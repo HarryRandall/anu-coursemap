@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { expectRoundedCorners } from "./rounded-corners";
 import { test, expect, login } from "./fixtures";
 
 test("public pages render catalogue data and safe authentication forms", async ({
@@ -212,6 +213,49 @@ test("course directory links retain the document while loading the course", asyn
     await page.evaluate(() => performance.timeOrigin),
     documentOrigin,
   );
+});
+
+// Exercise real painted surfaces rather than checking their class names.
+test("rounded table and map surfaces keep all four corners", async ({
+  page,
+  administrator,
+}) => {
+  test.setTimeout(90_000);
+  await login(page, administrator);
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/admin/roles");
+    const groups = page
+      .getByRole("region", { name: "Role permissions" })
+      .locator("section");
+    await expect(groups.first()).toBeVisible();
+    for (const group of await groups.all()) await expectRoundedCorners(group);
+    const firstGroup = groups.first();
+    await firstGroup.getByRole("button", { name: /Platform access/ }).click();
+    await expectRoundedCorners(firstGroup);
+
+    for (const route of [
+      "/courses",
+      "/admin/courses",
+      "/admin/users",
+      "/admin/courses/imports",
+    ]) {
+      await page.goto(route);
+      const surface = page.locator("[data-selectable]").first();
+      await expect(surface).toBeVisible();
+      await expectRoundedCorners(surface);
+    }
+    await page.goto("/admin/rooms");
+    await expectRoundedCorners(
+      page.locator('[data-slot="building-picker-rail"]'),
+    );
+    await expectRoundedCorners(
+      page.locator('[data-slot="building-picker-map"]'),
+    );
+  }
 });
 
 test("pointer selection clears picker rings while keyboard focus remains visible", async ({
