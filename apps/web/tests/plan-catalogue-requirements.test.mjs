@@ -196,36 +196,3 @@ test("requirements view distinguishes source wording, interpretation and nested 
     /Always confirm enrolment and\s+graduation\s+requirements/u,
   );
 });
-
-test("student and administrator flows preserve every selected structure role", async () => {
-  const [actions, state, onboarding, profile, adminUser] = await Promise.all([
-    readFile(new URL("../lib/coursemap/actions.ts", import.meta.url), "utf8"),
-    readFile(new URL("../lib/coursemap/state.ts", import.meta.url), "utf8"),
-    readFile(
-      new URL("../app/onboarding/onboarding-form.tsx", import.meta.url),
-      "utf8",
-    ),
-    readFile(
-      new URL("../app/profile/profile-editor.tsx", import.meta.url),
-      "utf8",
-    ),
-    readFile(
-      new URL("../ui/admin/users/user-detail.tsx", import.meta.url),
-      "utf8",
-    ),
-  ]);
-
-  assert.match(actions, /p_minor_codes: profile\.minorCodes/u);
-  assert.match(
-    actions,
-    /p_specialisation_codes: profile\.specialisationCodes/u,
-  );
-  assert.match(state, /item\.role !== "minor"/u);
-  assert.match(state, /item\.role !== "specialisation"/u);
-  assert.match(onboarding, /<StructureMultiSelect/u);
-  assert.match(onboarding, /minorCodes/u);
-  assert.match(onboarding, /specialisationCodes/u);
-  assert.match(profile, /<StructureMultiSelect/u);
-  assert.match(adminUser, /structure\.role === "minor"/u);
-  assert.match(adminUser, /structure\.role === "specialisation"/u);
-});

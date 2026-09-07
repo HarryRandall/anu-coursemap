@@ -56,6 +56,40 @@ export async function hasPrimaryPlan(viewer: AuthViewer) {
   }
 }
 
+export type PlanStructureSelection = {
+  role: string;
+  structure_year_id: number;
+};
+
+/**
+ * Resolves a plan's selected structures into the codes the profile stores.
+ * A structure without a resolvable code is dropped rather than recorded as a
+ * blank selection, and every minor and specialisation is kept.
+ */
+export function planStructureCodes(
+  structures: readonly PlanStructureSelection[],
+  codeByYear: ReadonlyMap<number, string | undefined>,
+  fallback: { degreeCode: string },
+) {
+  const codesFor = (role: string) =>
+    structures.flatMap((item) => {
+      if (item.role !== role) return [];
+      const code = codeByYear.get(item.structure_year_id);
+      return code ? [code] : [];
+    });
+  const codeForFirst = (role: string) =>
+    codeByYear.get(
+      structures.find((item) => item.role === role)?.structure_year_id ?? -1,
+    );
+
+  return {
+    degreeCode: codeForFirst("programme") ?? fallback.degreeCode,
+    majorCode: codeForFirst("major") ?? "",
+    minorCodes: codesFor("minor"),
+    specialisationCodes: codesFor("specialisation"),
+  };
+}
+
 export async function loadCoursemapState(
   viewer: AuthViewer,
 ): Promise<AppState> {
@@ -256,25 +290,8 @@ export async function loadCoursemapState(
         catalogueYear: yearResult.data?.year ?? state.profile.catalogueYear,
         studyLoad: plan.study_load === "part_time" ? "Part time" : "Full time",
         extensionYears: plan.extension_years,
-        degreeCode:
-          structureCodeByYear.get(
-            structures.find((item) => item.role === "programme")
-              ?.structure_year_id ?? -1,
-          ) ?? state.profile.degreeCode,
-        majorCode:
-          structureCodeByYear.get(
-            structures.find((item) => item.role === "major")
-              ?.structure_year_id ?? -1,
-          ) ?? "",
-        minorCodes: structures.flatMap((item) => {
-          if (item.role !== "minor") return [];
-          const code = structureCodeByYear.get(item.structure_year_id);
-          return code ? [code] : [];
-        }),
-        specialisationCodes: structures.flatMap((item) => {
-          if (item.role !== "specialisation") return [];
-          const code = structureCodeByYear.get(item.structure_year_id);
-          return code ? [code] : [];
+        ...planStructureCodes(structures, structureCodeByYear, {
+          degreeCode: state.profile.degreeCode,
         }),
       },
       attempts: [...plannedAttempts, ...recordedAttempts],
