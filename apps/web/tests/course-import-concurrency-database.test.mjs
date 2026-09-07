@@ -120,7 +120,7 @@ test(
           ) values (
             ${targets[0].source_id},
             ${targets[0].academic_year_id},
-            ${"google/gemini-test"},
+            ${"google/gemini-3.1-flash-lite"},
             ${"concurrency-test-parser"},
             ${"concurrency-test-prompt"},
             ${"course-snapshot.v1"},

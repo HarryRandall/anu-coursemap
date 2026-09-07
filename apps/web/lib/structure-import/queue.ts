@@ -1,8 +1,5 @@
 import type { MessageMetadata, RetryDirective } from "@vercel/queue";
-import {
-  assertAllowedOpenRouterModel,
-  configuredOpenRouterModels,
-} from "../course-import/openrouter.ts";
+import { assertOpenRouterModel } from "../course-import/openrouter.ts";
 import {
   ACADEMIC_STRUCTURE_KINDS,
   type AcademicStructureKind,
@@ -154,13 +151,12 @@ function parseStructureCodes(value: unknown) {
   return structureCodes;
 }
 
-function parseRequestedModel(value: unknown, env: NodeJS.ProcessEnv) {
+function parseRequestedModel(value: unknown, defaultModel: string) {
   if (
     value === undefined ||
     value === null ||
     (typeof value === "string" && value.trim() === "")
   ) {
-    const defaultModel = configuredOpenRouterModels(env)[0];
     if (!defaultModel) {
       throw new AcademicStructureImportRequestError(
         "Configure at least one valid OpenRouter model.",
@@ -180,7 +176,7 @@ function parseRequestedModel(value: unknown, env: NodeJS.ProcessEnv) {
     );
   }
   try {
-    return assertAllowedOpenRouterModel(requestedModel, env);
+    return assertOpenRouterModel(requestedModel);
   } catch {
     throw new AcademicStructureImportRequestError(
       "Choose a configured OpenRouter model.",
@@ -190,7 +186,7 @@ function parseRequestedModel(value: unknown, env: NodeJS.ProcessEnv) {
 
 export function parseAcademicStructureImportRequest(
   value: unknown,
-  env: NodeJS.ProcessEnv = process.env,
+  defaultModel = "",
 ): ParsedAcademicStructureImportRequest {
   if (!isRecord(value)) {
     throw new AcademicStructureImportRequestError(
@@ -202,7 +198,7 @@ export function parseAcademicStructureImportRequest(
     academicYear: parseAcademicYear(body),
     structureKind: parseStructureKind(body.structureKind),
     structureCodes: parseStructureCodes(body.structureCodes),
-    requestedModel: parseRequestedModel(body.requestedModel, env),
+    requestedModel: parseRequestedModel(body.requestedModel, defaultModel),
   };
 }
 

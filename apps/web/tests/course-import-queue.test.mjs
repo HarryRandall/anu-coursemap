@@ -31,7 +31,7 @@ test("normalises a course import request and applies the default model", () => {
         academicYear: 2026,
         courseCodes: [" comp1100 ", "MATH1013"],
       },
-      {},
+      "google/gemini-3.1-flash-lite",
     ),
     {
       academicYear: 2026,
@@ -41,18 +41,15 @@ test("normalises a course import request and applies the default model", () => {
   );
 });
 
-test("uses the first configured model as the request default", () => {
-  const env = {
-    COURSEMAP_OPENROUTER_MODELS:
-      "anthropic/claude-haiku-4.5,google/gemini-3.1-flash-lite",
-  };
+test("uses the database model as the request default", () => {
+  const defaultModel = "anthropic/claude-haiku-4.5";
   assert.equal(
     parseCourseImportRequest(
       {
         academicYear: 2026,
         courseCodes: ["COMP1100"],
       },
-      env,
+      defaultModel,
     ).requestedModel,
     "anthropic/claude-haiku-4.5",
   );
@@ -63,7 +60,7 @@ test("uses the first configured model as the request default", () => {
           academicYear: 2026,
           courseCodes: ["COMP1100"],
         },
-        { COURSEMAP_OPENROUTER_MODELS: "invalid" },
+        "",
       ),
     /at least one valid OpenRouter model/,
   );
@@ -74,6 +71,7 @@ test("accepts one uppercase ANU course-code variant suffix", () => {
     parseCourseImportRequest({
       academicYear: 2026,
       courseCodes: [" comp8900f ", "COMP8900P"],
+      requestedModel: "google/gemini-3.1-flash-lite",
     }).courseCodes,
     ["COMP8900F", "COMP8900P"],
   );
@@ -99,7 +97,7 @@ test("requires the snapshot-native academic year field", () => {
   );
 });
 
-test("only accepts OpenRouter models configured for this deployment", () => {
+test("validates model syntax before database admission", () => {
   assert.equal(
     parseCourseImportRequest(
       {
@@ -107,10 +105,7 @@ test("only accepts OpenRouter models configured for this deployment", () => {
         courseCodes: ["COMP1100"],
         requestedModel: "google/gemini-3.1-flash",
       },
-      {
-        COURSEMAP_OPENROUTER_MODELS:
-          "google/gemini-3.1-flash-lite,google/gemini-3.1-flash",
-      },
+      "google/gemini-3.1-flash-lite",
     ).requestedModel,
     "google/gemini-3.1-flash",
   );
@@ -120,9 +115,9 @@ test("only accepts OpenRouter models configured for this deployment", () => {
         {
           academicYear: 2026,
           courseCodes: ["COMP1100"],
-          requestedModel: "unconfigured/model",
+          requestedModel: "invalid model",
         },
-        {},
+        "google/gemini-3.1-flash-lite",
       ),
     /configured OpenRouter model/,
   );

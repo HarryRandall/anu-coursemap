@@ -7,7 +7,8 @@ import {
 export const ACADEMIC_STRUCTURE_IMPORT_PARSER_VERSION =
   "coursemap-academic-structure-parser.v4";
 export const ACADEMIC_STRUCTURE_IMPORT_PROMPT_VERSION =
-  "coursemap-academic-structure-prompt.v3";
+  "coursemap-academic-structure-prompt.v4";
+export const ACADEMIC_STRUCTURE_IMPORT_MAX_OUTPUT_TOKENS = 24_000;
 export const ACADEMIC_STRUCTURE_SNAPSHOT_SCHEMA_VERSION =
   "academic-structure-snapshot.v2";
 
@@ -52,6 +53,7 @@ Evidence and review:
 - Set method to model for every evidence item. This response is produced by the model, never by the deterministic extractor.
 - Confidence measures source support, not plausibility.
 - Add specific review items for ambiguity, unsupported wording, conflicts, malformed references or missing evidence.
+- Return compact JSON without indentation or unnecessary whitespace. Keep evidence excerpts concise and verbatim.
 - Do not include chain-of-thought, hidden reasoning, commentary or self-evaluation. Only return the schema fields.`;
 }
 

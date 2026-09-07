@@ -56,7 +56,7 @@ test("normalises one homogeneous structure import request", () => {
         structureKind: "major",
         structureCodes: [" soft-maj ", "COMP-MAJ"],
       },
-      {},
+      "google/gemini-3.1-flash-lite",
     ),
     {
       academicYear: 2026,
@@ -121,11 +121,8 @@ test("rejects invalid, duplicate and oversized selections", () => {
   );
 });
 
-test("uses only configured OpenRouter models", () => {
-  const env = {
-    COURSEMAP_OPENROUTER_MODELS:
-      "anthropic/claude-haiku-4.5,google/gemini-3.1-flash-lite",
-  };
+test("uses the database default and validates explicit model syntax", () => {
+  const defaultModel = "anthropic/claude-haiku-4.5";
   assert.equal(
     parseAcademicStructureImportRequest(
       {
@@ -133,7 +130,7 @@ test("uses only configured OpenRouter models", () => {
         structureKind: "programme",
         structureCodes: ["BCOMP"],
       },
-      env,
+      defaultModel,
     ).requestedModel,
     "anthropic/claude-haiku-4.5",
   );
@@ -144,9 +141,9 @@ test("uses only configured OpenRouter models", () => {
           academicYear: 2026,
           structureKind: "programme",
           structureCodes: ["BCOMP"],
-          requestedModel: "unconfigured/model",
+          requestedModel: "invalid model",
         },
-        env,
+        defaultModel,
       ),
     /configured OpenRouter model/,
   );

@@ -1,8 +1,5 @@
 import type { MessageMetadata, RetryDirective } from "@vercel/queue";
-import {
-  assertAllowedOpenRouterModel,
-  configuredOpenRouterModels,
-} from "./openrouter.ts";
+import { assertOpenRouterModel } from "./openrouter.ts";
 
 export const COURSE_IMPORT_QUEUE_TOPIC = "course-import-v1";
 export const COURSE_IMPORT_QUEUE_MESSAGE_VERSION = 1 as const;
@@ -134,13 +131,12 @@ function parseCourseCodes(value: unknown) {
   return courseCodes;
 }
 
-function parseRequestedModel(value: unknown, env: NodeJS.ProcessEnv) {
+function parseRequestedModel(value: unknown, defaultModel: string) {
   if (
     value === undefined ||
     value === null ||
     (typeof value === "string" && value.trim() === "")
   ) {
-    const defaultModel = configuredOpenRouterModels(env)[0];
     if (!defaultModel) {
       throw new CourseImportRequestError(
         "Configure at least one valid OpenRouter model.",
@@ -158,7 +154,7 @@ function parseRequestedModel(value: unknown, env: NodeJS.ProcessEnv) {
     );
   }
   try {
-    return assertAllowedOpenRouterModel(requestedModel, env);
+    return assertOpenRouterModel(requestedModel);
   } catch {
     throw new CourseImportRequestError("Choose a configured OpenRouter model.");
   }
@@ -166,7 +162,7 @@ function parseRequestedModel(value: unknown, env: NodeJS.ProcessEnv) {
 
 export function parseCourseImportRequest(
   value: unknown,
-  env: NodeJS.ProcessEnv = process.env,
+  defaultModel = "",
 ): ParsedCourseImportRequest {
   if (!isRecord(value)) {
     throw new CourseImportRequestError("Invalid course import request.");
@@ -175,7 +171,7 @@ export function parseCourseImportRequest(
   return {
     academicYear: parseAcademicYear(body),
     courseCodes: parseCourseCodes(body.courseCodes),
-    requestedModel: parseRequestedModel(body.requestedModel, env),
+    requestedModel: parseRequestedModel(body.requestedModel, defaultModel),
   };
 }
 

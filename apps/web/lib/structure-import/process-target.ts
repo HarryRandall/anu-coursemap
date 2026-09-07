@@ -46,12 +46,14 @@ import {
 } from "./markdown.ts";
 import { persistAcademicStructureSnapshotCandidate } from "./persist-snapshot.ts";
 import {
+  ACADEMIC_STRUCTURE_IMPORT_MAX_OUTPUT_TOKENS,
   ACADEMIC_STRUCTURE_IMPORT_PARSER_VERSION,
   ACADEMIC_STRUCTURE_IMPORT_PROMPT_VERSION,
   ACADEMIC_STRUCTURE_SNAPSHOT_SCHEMA_VERSION,
   buildAcademicStructureExtractionSystemPrompt,
   buildAcademicStructureExtractionUserPrompt,
 } from "./prompt.ts";
+import { academicStructureModelResponseError } from "./model-response-error.ts";
 import { projectAcademicStructureSnapshot } from "./project-snapshot.ts";
 import {
   AcademicStructureSourceError,
@@ -733,6 +735,7 @@ export async function processAcademicStructureImportTarget({
         modelInput: preparedInput.userPrompt,
         schema: ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA,
         schemaName: "academic_structure_extraction",
+        maxOutputTokens: ACADEMIC_STRUCTURE_IMPORT_MAX_OUTPUT_TOKENS,
       });
       const requestJson = stableStringify(requestBody);
       const modelResult = await runStage("model_extract", async (stageId) => {
@@ -859,6 +862,7 @@ export async function processAcademicStructureImportTarget({
             modelInput: preparedInput.userPrompt,
             schema: ACADEMIC_STRUCTURE_EXTRACTION_JSON_SCHEMA,
             schemaName: "academic_structure_extraction",
+            maxOutputTokens: ACADEMIC_STRUCTURE_IMPORT_MAX_OUTPUT_TOKENS,
             signal,
           });
           const responseArtifact = await persistArtifact({
@@ -904,15 +908,22 @@ export async function processAcademicStructureImportTarget({
               preparedInput.modelInput,
             )
           : [];
-        const valid = providerValidation.success && evidenceIssues.length === 0;
+        const responseError = academicStructureModelResponseError(
+          modelResult.result,
+        );
+        const valid =
+          !responseError &&
+          providerValidation.success &&
+          evidenceIssues.length === 0;
         const validationSummary = valid
           ? null
-          : providerValidation.success
-            ? evidenceIssues.join(" ").slice(0, 1_500)
-            : providerValidation.issues
-                .map(({ path, message }) => `${path} ${message}`)
-                .join("; ")
-                .slice(0, 1_500);
+          : (responseError ??
+            (providerValidation.success
+              ? evidenceIssues.join(" ").slice(0, 1_500)
+              : providerValidation.issues
+                  .map(({ path, message }) => `${path} ${message}`)
+                  .join("; ")
+                  .slice(0, 1_500)));
         await persistArtifact({
           stageId,
           stageName: "domain_validate",

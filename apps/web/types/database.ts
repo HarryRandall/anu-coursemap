@@ -4411,6 +4411,42 @@ export type Database = {
         }
         Relationships: []
       }
+      import_models: {
+        Row: {
+          enabled: boolean
+          id: string
+          input_usd_per_million: number | null
+          name: string
+          output_usd_per_million: number | null
+          pricing_updated_at: string | null
+          provider: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          id: string
+          input_usd_per_million?: number | null
+          name: string
+          output_usd_per_million?: number | null
+          pricing_updated_at?: string | null
+          provider: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          id?: string
+          input_usd_per_million?: number | null
+          name?: string
+          output_usd_per_million?: number | null
+          pricing_updated_at?: string | null
+          provider?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       offering_sessions: {
         Row: {
           academic_period_code: string
@@ -5040,6 +5076,10 @@ export type Database = {
           p_expected_published_snapshot_id: number
         }
         Returns: number
+      }
+      cancel_academic_structure_import: {
+        Args: { p_run_id: string }
+        Returns: undefined
       }
       confirm_course_manual_snapshot: {
         Args: {

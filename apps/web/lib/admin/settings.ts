@@ -1,50 +1,58 @@
-import { configuredOpenRouterModels } from "@/lib/course-import/openrouter";
 import { createClient } from "@/lib/supabase/server";
+import type { ImportModel } from "@/lib/admin/import-model";
 
 export const IMPORT_MODEL_SETTING_KEY = "imports.model";
-
 export type ImportModelSetting = {
-  /** The model every queued import uses until an admin changes it. */
   model: string;
-  /** Every model this deployment is allowed to call. */
   options: string[];
-  /** True once an admin has chosen a model rather than inheriting the first. */
+  models: ImportModel[];
   configured: boolean;
   updatedAt: string | null;
+  error: string | null;
 };
 
-/**
- * The active import model. The stored value only wins while it is still one
- * of the models this deployment allows, so trimming the env list cannot leave
- * imports pointing at a model the worker would reject.
- */
 export async function loadImportModelSetting(): Promise<ImportModelSetting> {
-  const options = configuredOpenRouterModels();
-  const fallback: ImportModelSetting = {
-    model: options[0] ?? "",
-    options,
+  const empty: ImportModelSetting = {
+    model: "",
+    options: [],
+    models: [],
     configured: false,
     updatedAt: null,
+    error: null,
   };
-
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("app_settings")
-      .select("value,updated_at")
-      .eq("key", IMPORT_MODEL_SETTING_KEY)
-      .maybeSingle();
-    if (error || !data) return fallback;
-
-    const stored = typeof data.value === "string" ? data.value : null;
-    if (!stored || !options.includes(stored)) return fallback;
+    const [catalogue, setting] = await Promise.all([
+      supabase
+        .from("import_models")
+        .select("*")
+        .eq("enabled", true)
+        .order("provider")
+        .order("name"),
+      supabase
+        .from("app_settings")
+        .select("value,updated_at")
+        .eq("key", IMPORT_MODEL_SETTING_KEY)
+        .maybeSingle(),
+    ]);
+    if (catalogue.error || setting.error)
+      throw new Error("The import models could not be loaded.");
+    const models = catalogue.data ?? [];
+    const options = models
+      .filter((model) => model.visible)
+      .map((model) => model.id);
+    const stored =
+      typeof setting.data?.value === "string" ? setting.data.value : "";
+    const configured = options.includes(stored);
     return {
-      model: stored,
+      model: configured ? stored : (options[0] ?? ""),
       options,
-      configured: true,
-      updatedAt: data.updated_at,
+      models,
+      configured,
+      updatedAt: setting.data?.updated_at ?? null,
+      error: null,
     };
   } catch {
-    return fallback;
+    return { ...empty, error: "The import models could not be loaded." };
   }
 }

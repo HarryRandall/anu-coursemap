@@ -1,5 +1,7 @@
 begin;
 
+insert into public.import_models(id,name,provider) values ('test/model', 'Test model', 'Test') on conflict do nothing;
+
 create extension if not exists pgtap with schema extensions;
 
 select extensions.plan(8);
