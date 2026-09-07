@@ -1,6 +1,4 @@
 import "server-only";
-
-import demoCampusMapData from "@/lib/rooms/demo-campus-map.json";
 import type {
   CampusMapCampus,
   CampusMapData,
@@ -17,7 +15,7 @@ import {
 import { readCampusIndoorDocument } from "@/lib/rooms/indoor-map-migrate";
 import { buildCampusRoomIndex } from "@/lib/rooms/indoor-room-index";
 import { batchCampusMapQueryValues } from "@/lib/rooms/campus-map-query";
-import { getSupabaseConfig, isDemoMode } from "@/lib/supabase/config";
+import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -160,38 +158,6 @@ function mapPlace(
   };
 }
 
-/** The demo bundle stores its indoor document as plain JSON. */
-type DemoCampusMapData = Omit<CampusMapData, "indoorMaps"> &
-  Readonly<{
-    indoorMaps?: readonly (Omit<
-      CampusMapData["indoorMaps"][number],
-      "document" | "status"
-    > &
-      Readonly<{
-        document: unknown;
-        status?: CampusMapData["indoorMaps"][number]["status"];
-      }>)[];
-  }>;
-
-function demoData(): CampusMapData {
-  const { indoorMaps = [], ...rest } =
-    demoCampusMapData as unknown as DemoCampusMapData;
-  // Read the demo document the same way a stored one is read, so demo mode
-  // exercises the real path rather than a shortcut.
-  const readMaps = indoorMaps
-    .filter((map) => (map.status ?? "published") === "published")
-    .map((map) => ({
-      ...map,
-      status: map.status ?? ("published" as const),
-      document: readCampusIndoorDocument(map.document),
-    }));
-  return {
-    ...rest,
-    indoorMaps: readMaps,
-    rooms: buildCampusRoomIndex(readMaps, rest.places),
-  };
-}
-
 function mapIndoorMap(row: IndoorMapRow) {
   return {
     id: row.id,
@@ -206,8 +172,6 @@ function mapIndoorMap(row: IndoorMapRow) {
 export async function loadCampusMapData(
   options: LoadCampusMapDataOptions = {},
 ): Promise<CampusMapLoadResult> {
-  if (isDemoMode()) return { data: demoData(), error: null };
-
   if (!getSupabaseConfig()) {
     return {
       data: EMPTY_CAMPUS_MAP_DATA,

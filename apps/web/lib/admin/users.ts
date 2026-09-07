@@ -1,5 +1,4 @@
 import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminUser = {
@@ -239,7 +238,6 @@ export type AdminUserSummary = {
 };
 
 export async function loadAdminUserSummary(): Promise<AdminUserSummary> {
-  if (isDemoMode()) return { history: [], users: 0 };
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("admin_users")

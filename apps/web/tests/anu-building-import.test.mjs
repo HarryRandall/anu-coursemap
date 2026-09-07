@@ -25,7 +25,7 @@ const [raw, demo, migration] = await Promise.all([
     "utf8",
   ).then(JSON.parse),
   readFile(
-    new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
+    new URL("../scripts/fixtures/campus-map.json", import.meta.url),
     "utf8",
   ).then(JSON.parse),
   readFile(

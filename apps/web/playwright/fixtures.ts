@@ -3,13 +3,44 @@ import { test as base, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import postgres from "postgres";
 import { localTestEnvironment } from "../scripts/local/test-environment.mjs";
+import { readFileSync } from "node:fs";
 
 type Account = { email: string; password: string; id: string };
 export const test = base.extend<{
+  indoorMap: { roomId: string; buildingSlug: string };
   student: Account;
   administrator: Account;
   planner: Account;
 }>({
+  page: async ({ page }, provide) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await provide(page);
+    expect(errors).toEqual([]);
+  },
+  indoorMap: async ({}, provide) => {
+    const sql = postgres(localTestEnvironment().COURSEMAP_DATABASE_URL, {
+      max: 1,
+    });
+    const fixture = JSON.parse(
+      readFileSync(
+        new URL("../scripts/fixtures/campus-map.json", import.meta.url),
+        "utf8",
+      ),
+    );
+    const map = fixture.indoorMaps[0];
+    const building = fixture.places.find(
+      (place: { id: string }) => place.id === map.buildingPlaceId,
+    );
+    const id = randomUUID();
+    try {
+      await sql`insert into public.campus_indoor_maps (id, building_place_id, name, status, document, published_at) values (${id}::uuid, ${map.buildingPlaceId}::uuid, 'Browser regression map', 'published', ${sql.json(map.document)}, now())`;
+      await provide({ buildingSlug: building.slug, roomId: "demo-room-1-1" });
+    } finally {
+      await sql`delete from public.campus_indoor_maps where id = ${id}::uuid`;
+      await sql.end();
+    }
+  },
   student: async ({}, provide) => {
     const env = localTestEnvironment();
     const client = createClient(

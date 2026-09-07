@@ -11,7 +11,6 @@ import {
 } from "./course-directory-policy.ts";
 import { assertSupportedCourseImportYear } from "./course-import-years.ts";
 import { ANU_PROGRAMS_AND_COURSES_SOURCE } from "./import-source.ts";
-import { isDemoMode } from "../supabase/config.ts";
 import {
   createHostedImportDatabaseClient,
   createLocalDatabaseClient,
@@ -413,24 +412,6 @@ async function refreshCourseDirectory(
   };
 }
 
-function demoResult(): CourseDirectoryRefreshResult {
-  return {
-    status: "succeeded",
-    counts: {
-      added: 12,
-      changed: 0,
-      checked: 12,
-      failed: 0,
-      unchanged: 0,
-    },
-    warningCount: 0,
-    errorCount: 0,
-  };
-}
-
-/**
- * Refresh the lightweight ANU course directory for one academic year.
- */
 export async function refreshCourseDirectoryForYear({
   academicYear,
   onProgress,
@@ -443,18 +424,6 @@ export async function refreshCourseDirectoryForYear({
   fetchImpl?: typeof fetch;
 }): Promise<CourseDirectoryRefreshResult> {
   assertSupportedCourseImportYear(academicYear);
-
-  if (isDemoMode()) {
-    await onProgress?.({
-      action: "fetching",
-      message: "Demo course directory",
-    });
-    await onProgress?.({
-      action: "complete",
-      message: "Demo course directory refreshed",
-    });
-    return demoResult();
-  }
 
   const sql =
     process.env.NODE_ENV === "development"

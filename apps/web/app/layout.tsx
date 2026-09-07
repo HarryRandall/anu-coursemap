@@ -8,8 +8,7 @@ import { SIDEBAR_STATE_COOKIE } from "@/ui/shell/sidebar-cookie";
 import { SidebarPreferenceProvider } from "@/ui/shell/sidebar-preference";
 import { getAuthContext } from "@/lib/auth/viewer";
 import { loadCoursemapState } from "@/lib/coursemap/state";
-import type { Attempt } from "@/lib/coursemap/types";
-import { getCanonicalSiteOrigin, isDemoMode } from "@/lib/supabase/config";
+import { getCanonicalSiteOrigin } from "@/lib/supabase/config";
 import "./globals.css";
 import { AppProvider } from "./providers";
 
@@ -61,13 +60,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const demoMode = isDemoMode();
   const { viewer, canAccessAdmin } = await getAuthContext();
-  const initialState =
-    !demoMode && viewer ? await loadCoursemapState(viewer) : undefined;
-  const demoInitialAttempts: Attempt[] | undefined = demoMode
-    ? (await import("@/lib/catalogue")).initialAttempts
-    : undefined;
+  const initialState = viewer ? await loadCoursemapState(viewer) : undefined;
   // The sidebar writes its open state to a cookie; reading it here keeps a
   // collapsed rail collapsed on the next server render.
   const sidebarDefaultOpen =
@@ -92,10 +86,8 @@ export default async function RootLayout({
         </Script>
         <AppThemeProvider>
           <AppProvider
-            demoMode={demoMode}
             viewer={viewer}
             canAccessAdmin={canAccessAdmin}
-            demoInitialAttempts={demoInitialAttempts}
             initialState={initialState}
           >
             <SidebarPreferenceProvider defaultOpen={sidebarDefaultOpen}>

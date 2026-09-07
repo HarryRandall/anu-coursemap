@@ -19,7 +19,7 @@
     "test:unit": "turbo run test:unit",
     "test:e2e": "pnpm --filter @coursemap/web test:e2e:build && pnpm --filter @coursemap/web test:e2e",
     "test:catalogue-db": "turbo run test:catalogue-db",
-    "verify": "pnpm check && pnpm test && pnpm --filter @coursemap/web test:build:demo && pnpm --filter @coursemap/web test:rendered && pnpm --filter @coursemap/web test:build:auth && pnpm --filter @coursemap/web test:auth-access && git diff --check",
+    "verify": "pnpm check && pnpm test && pnpm --filter @coursemap/web test:build:auth && pnpm --filter @coursemap/web test:auth-access && git diff --check",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "node apps/web/scripts/local/reset-preview.mjs",

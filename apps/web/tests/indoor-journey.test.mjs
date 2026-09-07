@@ -13,7 +13,7 @@ const indoorMap = modules["indoor-map"];
 
 const demo = JSON.parse(
   await readFile(
-    new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
+    new URL("../scripts/fixtures/campus-map.json", import.meta.url),
     "utf8",
   ),
 );

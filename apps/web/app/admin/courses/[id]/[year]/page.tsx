@@ -7,7 +7,6 @@ import { adminCourseDetailPath } from "@/lib/coursemap/course-routes";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import { loadPublishedCoursesByCodes } from "@/lib/coursemap/published-courses";
 import { prerequisiteCodesFromSnapshotProjection } from "@/lib/coursemap/snapshot-prerequisite-codes";
-import { isDemoMode } from "@/lib/supabase/config";
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -45,11 +44,10 @@ export default async function AdminCourseDetailPage({
   // Codes remain valid entry points, but permanent links use the stable course
   // identity and selected academic year.
   if (
-    !isDemoMode() &&
-    (id !== record.publicId ||
-      requestedYear !== record.year ||
-      (requestedSnapshotId !== undefined &&
-        requestedSnapshotId !== record.currentSnapshotId))
+    id !== record.publicId ||
+    requestedYear !== record.year ||
+    (requestedSnapshotId !== undefined &&
+      requestedSnapshotId !== record.currentSnapshotId)
   ) {
     redirect(
       adminCourseDetailPath({
@@ -83,8 +81,8 @@ export default async function AdminCourseDetailPage({
   return (
     <CourseReview
       key={`${record.courseYearId}:${record.currentSnapshotId ?? "none"}`}
-      canWrite={!isDemoMode() && canWrite}
-      canReviewImports={!isDemoMode() && canViewImports}
+      canWrite={canWrite}
+      canReviewImports={canViewImports}
       previewCourse={toStudentPreviewCourseYear(record, publishedPrerequisites)}
       record={record}
     />

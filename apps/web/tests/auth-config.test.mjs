@@ -6,12 +6,10 @@ const {
   getSiteOriginForRequest,
   getSupabaseConfig,
   getSupabaseCookieOptions,
-  isDemoMode,
 } = await import("../lib/supabase/config.ts");
 
 const origin = "http://127.0.0.1:3218";
 const configVariableNames = [
-  "COURSEMAP_DEMO_MODE",
   "NEXT_PUBLIC_SITE_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
@@ -38,44 +36,6 @@ function withEnvironment(overrides, callback) {
     });
   }
 }
-
-test("enables demo mode only for exact true on a local origin", () => {
-  for (const [value, expected] of [
-    [undefined, false],
-    ["", false],
-    ["false", false],
-    ["TRUE", false],
-    [" true ", false],
-    ["1", false],
-    ["true", true],
-  ]) {
-    withEnvironment(
-      {
-        COURSEMAP_DEMO_MODE: value,
-        NEXT_PUBLIC_SITE_URL: origin,
-        VERCEL: undefined,
-      },
-      () => assert.equal(isDemoMode(), expected, String(value)),
-    );
-  }
-
-  withEnvironment(
-    {
-      COURSEMAP_DEMO_MODE: "true",
-      NEXT_PUBLIC_SITE_URL: "https://coursemap.example",
-      VERCEL: undefined,
-    },
-    () => assert.equal(isDemoMode(), false),
-  );
-  withEnvironment(
-    {
-      COURSEMAP_DEMO_MODE: "true",
-      NEXT_PUBLIC_SITE_URL: origin,
-      VERCEL: "1",
-    },
-    () => assert.equal(isDemoMode(), false),
-  );
-});
 
 test("parses only complete HTTP Supabase configuration", () => {
   const cases = [

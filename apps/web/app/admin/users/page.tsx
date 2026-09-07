@@ -1,18 +1,16 @@
 import {
   Card,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@coursemap/ui/primitives/card";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { Suspense } from "react";
 import { UserDirectory } from "@/ui/admin/users/user-directory";
 import { AppShell } from "@/ui/shell";
-
 import { FilterBar } from "@/ui/common/filter-bar";
 import { loadAdminUserManagement } from "@/lib/admin/users";
 import { getAuthContext } from "@/lib/auth/viewer";
-import { isDemoMode } from "@/lib/supabase/config";
 
 function Notice({
   title,
@@ -72,17 +70,6 @@ export default async function AdminUsersPage({
   const params = await searchParams;
   const query = (first(params.q) ?? "").trim().toLowerCase();
   const role = first(params.role) ?? "";
-  if (isDemoMode()) {
-    return (
-      <AppShell admin>
-        <h1 className="sr-only">Users and access</h1>
-        <Notice
-          title="User management is unavailable in demo mode"
-          description="Connect Coursemap to Supabase and sign in as a catalogue administrator to manage database-backed roles."
-        />
-      </AppShell>
-    );
-  }
 
   const { viewer } = await getAuthContext();
   if (!viewer) return null;

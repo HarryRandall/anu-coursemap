@@ -1,5 +1,4 @@
 import type { AcademicStructureKind } from "../structure-import/contract.ts";
-import { isDemoMode } from "../supabase/config.ts";
 import {
   createHostedImportDatabaseClient,
   createLocalDatabaseClient,
@@ -569,23 +568,6 @@ async function refreshAcademicStructureDirectory(
   };
 }
 
-function demoResult(): AcademicStructureDirectoryRefreshResult {
-  return {
-    status: "succeeded",
-    counts: {
-      added: 12,
-      changed: 0,
-      checked: 12,
-      failed: 0,
-      unchanged: 0,
-    },
-    warningCount: 0,
-    errorCount: 0,
-    receivedItemCount: 12,
-    uniqueItemCount: 12,
-  };
-}
-
 export async function refreshAcademicStructureDirectoryForYear({
   academicYear,
   structureKind,
@@ -602,18 +584,6 @@ export async function refreshAcademicStructureDirectoryForYear({
   assertSupportedAcademicStructureImportYear(academicYear);
   if (!isAcademicStructureDirectoryKind(structureKind)) {
     throw new TypeError("Choose programme, major, minor or specialisation.");
-  }
-
-  if (isDemoMode()) {
-    await onProgress?.({
-      action: "fetching",
-      message: `Demo ${structureKindLabel(structureKind, 1)} directory`,
-    });
-    await onProgress?.({
-      action: "complete",
-      message: `Demo ${structureKindLabel(structureKind, 1)} directory refreshed`,
-    });
-    return demoResult();
   }
 
   const sql =

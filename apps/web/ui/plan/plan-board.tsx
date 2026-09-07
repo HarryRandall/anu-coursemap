@@ -88,7 +88,7 @@ function StatusMark({
 }
 export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   const overloadFocus = useReturnFocus();
-  const { demoMode, state, reorderAttempt, notify } = useCoursemap();
+  const { state, reorderAttempt, notify } = useCoursemap();
   const [picker, setPicker] = useState<PickerState | null>(null);
   const [overloadTerm, setOverloadTerm] = useState<string | null>(null);
   const [pendingDrop, setPendingDrop] = useState<PendingDrop | null>(null);
@@ -103,8 +103,7 @@ export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
   );
-  const timelineDegree =
-    degree ?? (demoMode ? catalogue.degrees[0] : undefined);
+  const timelineDegree = degree ?? undefined;
   const degreeYears = useMemo(
     () =>
       planTimelineYears({

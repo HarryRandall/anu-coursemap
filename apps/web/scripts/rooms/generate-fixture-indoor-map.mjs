@@ -1,13 +1,4 @@
-/**
- * Generates the demo indoor map bundled with `lib/rooms/demo-campus-map.json`.
- *
- * Demo mode has no database, so without a document here nothing indoor is
- * reachable in demo mode and none of it can be asserted by the rendered HTML
- * tests. The plan is laid out against a real ANU building footprint so the
- * fixture exercises the same projection the editor uses.
- *
- * Run with: node scripts/rooms/generate-demo-indoor-map.mjs
- */
+/** Generates the indoor map used by the campus-map regression fixture. */
 import { readFile, writeFile } from "node:fs/promises";
 import { loadLibModules } from "../../tests/helpers/lib-modules.mjs";
 
@@ -19,7 +10,7 @@ const CORRIDOR_HALF_WIDTH = 12;
 const LEVEL_HEIGHT_METRES = 3.6;
 
 const demoPath = new URL(
-  "../../lib/rooms/demo-campus-map.json",
+  "../../scripts/fixtures/campus-map.json",
   import.meta.url,
 );
 

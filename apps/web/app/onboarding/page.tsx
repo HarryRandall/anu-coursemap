@@ -8,18 +8,14 @@ import { Card } from "@coursemap/ui/primitives/card";
 import ReuiLink from "next/link";
 import { redirect } from "next/navigation";
 import { CircleAlert } from "lucide-react";
-
 import { getAuthViewer } from "@/lib/auth/viewer";
 import { loadOnboardingCatalogue } from "@/lib/coursemap/onboarding-catalogue";
-import { isDemoMode } from "@/lib/supabase/config";
 import { hasPrimaryPlan } from "@/lib/coursemap/state";
 import { OnboardingForm } from "./onboarding-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
-  if (isDemoMode()) redirect("/plan");
-
   const viewer = await getAuthViewer();
   if (!viewer) redirect("/login?next=%2Fonboarding");
   if (await hasPrimaryPlan(viewer)) redirect("/dashboard");

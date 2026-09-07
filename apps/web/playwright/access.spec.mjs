@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 
 import { test } from "./request-fixture.mjs";
 
-const origin = "http://127.0.0.1:4218";
+const origin = "http://127.0.0.1:4318";
 
 function request(api, path, init = {}) {
   return api(`${origin}${path}`, init);
 }
 
-test("keeps anonymous public routes available without demo data", async ({
+test("keeps anonymous public routes available when the database is unavailable", async ({
   request: api,
 }) => {
   const responses = await Promise.all(
@@ -149,4 +149,24 @@ test("removed reference routes stay unavailable without a session", async ({
       path,
     );
   }
+});
+
+test("rejects malformed auth callbacks and cross-origin logout", async ({
+  request: api,
+}) => {
+  for (const path of [
+    "/auth/callback?code=&code=duplicate",
+    "/auth/confirm?token_hash=value&type=magiclink",
+  ]) {
+    const response = await request(api, path, { redirect: "manual" });
+    assert.equal(response.status, 303);
+    assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
+  }
+  const response = await request(api, "/auth/logout", {
+    method: "POST",
+    headers: { origin: "https://evil.example" },
+    redirect: "manual",
+  });
+  assert.equal(response.status, 403);
+  assert.match(response.headers.get("cache-control") ?? "", /no-store/i);
 });

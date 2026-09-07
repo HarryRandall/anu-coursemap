@@ -1,6 +1,5 @@
 "use client";
 import { Toaster } from "@coursemap/ui/primitives/sonner";
-
 import { toast } from "sonner";
 import {
   createContext,
@@ -11,7 +10,6 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-
 import type { AuthViewer } from "@/lib/auth/viewer";
 import type { Attempt, AttemptStatus } from "@/lib/coursemap/types";
 import {
@@ -49,7 +47,6 @@ type ToastTone = "success" | "warning" | "info";
 type AppContextValue = {
   state: AppState;
   ready: boolean;
-  demoMode: boolean;
   canAccessAdmin: boolean;
   updateProfile: (profile: Partial<Profile>) => Promise<CoursemapActionResult>;
   setPlanExtensionYears: (
@@ -74,82 +71,10 @@ type AppContextValue = {
   removeAttempt: (attemptId: string) => Promise<CoursemapActionResult>;
   togglePermission: (attemptId: string) => void;
   toggleOverloadApproval: (attemptId: string) => void;
-  resetDemo: () => void;
   notify: (message: string, tone?: ToastTone) => void;
 };
 
-const DEMO_STORAGE_KEY = "coursemap.demo.v1";
-const EMPTY_DEMO_INITIAL_ATTEMPTS: Attempt[] = [];
-
-const statusPriority: Record<AttemptStatus, number> = {
-  completed: 4,
-  enrolled: 3,
-  planned: 2,
-  failed: 1,
-};
-
-function normaliseAttempts(attempts: Attempt[]) {
-  const selected = new Map<string, Attempt[]>();
-
-  attempts.forEach((attempt) => {
-    const current = selected.get(attempt.courseCode) ?? [];
-    const limit = 1;
-
-    if (current.length < limit) {
-      selected.set(attempt.courseCode, [...current, attempt]);
-      return;
-    }
-
-    const lowestPriority = current.reduce(
-      (lowest, item, index) =>
-        statusPriority[item.status] < statusPriority[current[lowest].status]
-          ? index
-          : lowest,
-      0,
-    );
-    if (
-      statusPriority[attempt.status] >
-      statusPriority[current[lowestPriority].status]
-    ) {
-      const replacement = [...current];
-      replacement[lowestPriority] = attempt;
-      selected.set(attempt.courseCode, replacement);
-    }
-  });
-
-  const selectedIds = new Set(
-    [...selected.values()].flat().map((attempt) => attempt.id),
-  );
-  return attempts.filter((attempt) => selectedIds.has(attempt.id));
-}
-
-function createDemoState(initialAttempts: Attempt[]): AppState {
-  return {
-    schemaVersion: 1,
-    profile: {
-      name: "Harry Student",
-      studentId: "u7499609",
-      email: "harry.student@anu.edu.au",
-      commencementYear: new Date().getFullYear(),
-      catalogueYear: new Date().getFullYear(),
-      degreeCode: "",
-      majorCode: "",
-      minorCodes: [],
-      specialisationCodes: [],
-      studyLoad: "Full time",
-      extensionYears: 0,
-    },
-    attempts: normaliseAttempts(initialAttempts),
-  };
-}
-
-function createInitialState(
-  demoMode: boolean,
-  viewer: AuthViewer | null,
-  demoInitialAttempts: Attempt[],
-) {
-  if (demoMode) return createDemoState(demoInitialAttempts);
-
+function createInitialState(viewer: AuthViewer | null) {
   return {
     schemaVersion: 1,
     profile: {
@@ -171,37 +96,21 @@ function createInitialState(
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-function isValidStoredState(value: unknown): value is AppState {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<AppState>;
-  return (
-    candidate.schemaVersion === 1 &&
-    Boolean(candidate.profile) &&
-    Array.isArray(candidate.attempts)
-  );
-}
-
 export function AppProvider({
   children,
-  demoMode,
   viewer,
   canAccessAdmin,
-  demoInitialAttempts = EMPTY_DEMO_INITIAL_ATTEMPTS,
   initialState: suppliedInitialState,
 }: {
   children: React.ReactNode;
-  demoMode: boolean;
   viewer: AuthViewer | null;
   canAccessAdmin: boolean;
-  demoInitialAttempts?: Attempt[];
   initialState?: AppState;
 }) {
   const router = useRouter();
   const initialState = useMemo(
-    () =>
-      suppliedInitialState ??
-      createInitialState(demoMode, viewer, demoInitialAttempts),
-    [demoInitialAttempts, demoMode, suppliedInitialState, viewer],
+    () => suppliedInitialState ?? createInitialState(viewer),
+    [suppliedInitialState, viewer],
   );
   const [state, setState] = useState<AppState>(initialState);
   const [ready, setReady] = useState(false);
@@ -209,61 +118,16 @@ export function AppProvider({
   useEffect(() => {
     let cancelled = false;
 
-    if (!demoMode) {
-      window.queueMicrotask(() => {
-        if (!cancelled) {
-          setState(initialState);
-          setReady(true);
-        }
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    try {
-      const stored = window.localStorage.getItem(DEMO_STORAGE_KEY);
-      if (stored) {
-        const parsed: unknown = JSON.parse(stored);
-        if (isValidStoredState(parsed)) {
-          window.queueMicrotask(() => {
-            if (!cancelled) {
-              setState({
-                ...parsed,
-                profile: {
-                  ...parsed.profile,
-                  minorCodes: Array.isArray(parsed.profile.minorCodes)
-                    ? parsed.profile.minorCodes
-                    : [],
-                  specialisationCodes: Array.isArray(
-                    parsed.profile.specialisationCodes,
-                  )
-                    ? parsed.profile.specialisationCodes
-                    : [],
-                },
-                attempts: normaliseAttempts(parsed.attempts),
-              });
-            }
-          });
-        }
+    window.queueMicrotask(() => {
+      if (!cancelled) {
+        setState(initialState);
+        setReady(true);
       }
-    } catch {
-      window.localStorage.removeItem(DEMO_STORAGE_KEY);
-    } finally {
-      window.queueMicrotask(() => {
-        if (!cancelled) setReady(true);
-      });
-    }
+    });
     return () => {
       cancelled = true;
     };
-  }, [demoMode, initialState]);
-
-  useEffect(() => {
-    if (demoMode && ready) {
-      window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(state));
-    }
-  }, [demoMode, ready, state]);
+  }, [initialState]);
 
   useEffect(() => {
     if (!viewer) return;
@@ -284,14 +148,13 @@ export function AppProvider({
   const updateProfile = useCallback(
     async (profile: Partial<Profile>) => {
       const nextProfile = { ...state.profile, ...profile };
-      if (!demoMode) {
-        const result = await saveProfileAndPlan(nextProfile);
-        if (!result.ok) return result;
-      }
+
+      const result = await saveProfileAndPlan(nextProfile);
+      if (!result.ok) return result;
       setState((current) => ({ ...current, profile: nextProfile }));
       return { ok: true, message: "Profile and academic plan saved" };
     },
-    [demoMode, state.profile],
+    [state.profile],
   );
 
   const addCourse = useCallback(
@@ -302,13 +165,7 @@ export function AppProvider({
       if (occurrenceCount >= 1) {
         return { ok: false, message: `${courseCode} is already in your plan` };
       }
-      const result = demoMode
-        ? {
-            ok: true,
-            id: `a-${courseCode.toLowerCase()}-${termId}-${state.attempts.length + 1}`,
-            message: `${courseCode} added to the plan`,
-          }
-        : await addPlanCourse(courseCode, termId, academicYear);
+      const result = await addPlanCourse(courseCode, termId, academicYear);
       if (!result.ok || !result.id) return result;
       setState((current) => ({
         ...current,
@@ -323,37 +180,32 @@ export function AppProvider({
           },
         ],
       }));
-      if (!demoMode) router.refresh();
+      router.refresh();
       return result;
     },
-    [demoMode, router, state.attempts],
+    [router, state.attempts],
   );
 
-  const setPlanExtensionYears = useCallback(
-    async (extensionYears: number) => {
-      const nextExtensionYears = Math.max(0, Math.min(10, extensionYears));
-      if (!demoMode) {
-        const result =
-          await setCurrentUserPlanExtensionYears(nextExtensionYears);
-        if (!result.ok) return result;
-      }
-      setState((current) => ({
-        ...current,
-        profile: {
-          ...current.profile,
-          extensionYears: nextExtensionYears,
-        },
-      }));
-      return {
-        ok: true,
-        message:
-          nextExtensionYears === 0
-            ? "Plan timeline restored to the programme duration"
-            : `Plan extended by ${nextExtensionYears} ${nextExtensionYears === 1 ? "year" : "years"}`,
-      };
-    },
-    [demoMode],
-  );
+  const setPlanExtensionYears = useCallback(async (extensionYears: number) => {
+    const nextExtensionYears = Math.max(0, Math.min(10, extensionYears));
+
+    const result = await setCurrentUserPlanExtensionYears(nextExtensionYears);
+    if (!result.ok) return result;
+    setState((current) => ({
+      ...current,
+      profile: {
+        ...current.profile,
+        extensionYears: nextExtensionYears,
+      },
+    }));
+    return {
+      ok: true,
+      message:
+        nextExtensionYears === 0
+          ? "Plan timeline restored to the programme duration"
+          : `Plan extended by ${nextExtensionYears} ${nextExtensionYears === 1 ? "year" : "years"}`,
+    };
+  }, []);
 
   const reorderAttempt = useCallback(
     async (attemptId: string, termId: string, beforeAttemptId?: string) => {
@@ -387,14 +239,14 @@ export function AppProvider({
 
         return { ...current, attempts: remaining };
       });
-      if (demoMode) return { ok: true, message: "Course moved" };
+
       const result = await movePlanCourse(attemptId, termId, beforeAttemptId);
       if (!result.ok) {
         setState((current) => ({ ...current, attempts: previousAttempts }));
       }
       return result;
     },
-    [demoMode, state.attempts],
+    [state.attempts],
   );
 
   const updateAttempt = useCallback(
@@ -406,37 +258,26 @@ export function AppProvider({
     ) => {
       const attempt = state.attempts.find((item) => item.id === attemptId);
       if (!attempt) return { ok: false, message: "Course was not found" };
-      if (!demoMode && attempt.status !== "planned") {
+      if (attempt.status !== "planned") {
         return {
           ok: false,
           message: "Recorded attempts stay in your academic history",
         };
       }
-      if (!demoMode && status === "planned") {
+      if (status === "planned") {
         return {
           ok: false,
           message: "Recorded attempts stay in your academic history",
         };
       }
       const savedMark =
-        status === "completed"
-          ? demoMode
-            ? (mark ?? attempt.mark ?? 68)
-            : mark
-          : status === "failed"
-            ? demoMode
-              ? (mark ?? attempt.mark ?? 42)
-              : mark
-            : undefined;
-      const result =
-        !demoMode && status !== "planned"
-          ? await recordCourseAttempt(
-              attemptId,
-              status,
-              savedMark,
-              attemptedUnits ?? attempt.unitsAttempted,
-            )
-          : { ok: true, id: attemptId, message: "Academic history updated" };
+        status === "completed" || status === "failed" ? mark : undefined;
+      const result = await recordCourseAttempt(
+        attemptId,
+        status,
+        savedMark,
+        attemptedUnits ?? attempt.unitsAttempted,
+      );
       if (!result.ok) return result;
       const storedUnitsAttempted =
         result.unitsAttempted ?? attemptedUnits ?? attempt.unitsAttempted;
@@ -444,11 +285,9 @@ export function AppProvider({
         result.unitsEarned ??
         (status === "completed"
           ? storedUnitsAttempted
-          : status === "planned"
+          : storedUnitsAttempted === undefined
             ? attempt.unitsEarned
-            : storedUnitsAttempted === undefined
-              ? attempt.unitsEarned
-              : 0);
+            : 0);
       setState((current) => ({
         ...current,
         attempts: current.attempts.map((attempt) =>
@@ -467,7 +306,7 @@ export function AppProvider({
       }));
       return result;
     },
-    [demoMode, state.attempts],
+    [state.attempts],
   );
 
   const removeAttempt = useCallback(
@@ -480,12 +319,7 @@ export function AppProvider({
         };
       }
       if (!attempt) return { ok: false, message: "Course was not found" };
-      const result = demoMode
-        ? {
-            ok: true,
-            message: `${attempt.courseCode} removed from the plan`,
-          }
-        : await removePlanCourse(attemptId);
+      const result = await removePlanCourse(attemptId);
       if (!result.ok) return result;
       setState((current) => ({
         ...current,
@@ -493,7 +327,7 @@ export function AppProvider({
       }));
       return result;
     },
-    [demoMode, state.attempts],
+    [state.attempts],
   );
 
   const togglePermission = useCallback((attemptId: string) => {
@@ -518,15 +352,10 @@ export function AppProvider({
     }));
   }, []);
 
-  const resetDemo = useCallback(() => {
-    if (demoMode) setState(createDemoState(demoInitialAttempts));
-  }, [demoInitialAttempts, demoMode]);
-
   const value = useMemo<AppContextValue>(
     () => ({
       state,
       ready,
-      demoMode,
       canAccessAdmin,
       updateProfile,
       setPlanExtensionYears,
@@ -536,13 +365,11 @@ export function AppProvider({
       removeAttempt,
       togglePermission,
       toggleOverloadApproval,
-      resetDemo,
       notify,
     }),
     [
       state,
       ready,
-      demoMode,
       canAccessAdmin,
       updateProfile,
       setPlanExtensionYears,
@@ -552,7 +379,6 @@ export function AppProvider({
       removeAttempt,
       togglePermission,
       toggleOverloadApproval,
-      resetDemo,
       notify,
     ],
   );

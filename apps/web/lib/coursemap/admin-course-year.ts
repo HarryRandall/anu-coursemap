@@ -1,9 +1,7 @@
 import type { PendingCatalogueImport } from "./pending-catalogue-import";
 import "server-only";
-
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
 import type { CourseImportArtifact } from "@/lib/coursemap/admin-course-imports";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -688,7 +686,6 @@ export async function loadAdminCourseYear(
   const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
   const code = publicId ? null : value.toUpperCase();
   if (!publicId && !COURSE_CODE_PATTERN.test(code ?? "")) return null;
-  if (isDemoMode()) return null;
 
   const supabase = await createClient();
   const courseQuery = supabase.from("courses").select("id,code,public_id");

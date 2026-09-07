@@ -1,7 +1,5 @@
 import "server-only";
-
 import type { UniversityCalendarEventRecord } from "@/lib/coursemap/university-calendar";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 
 export type UniversityCalendarData = {
@@ -34,8 +32,6 @@ function currentCanberraYear() {
 export async function loadPublishedUniversityCalendar(
   requestedYear?: number,
 ): Promise<UniversityCalendarData> {
-  if (isDemoMode()) return emptyData(requestedYear);
-
   const client = createPublicClient();
   const { data: yearRows, error: yearsError } = await client
     .from("university_calendar_events")

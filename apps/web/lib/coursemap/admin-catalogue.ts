@@ -1,7 +1,6 @@
 import type { PendingCatalogueImport } from "./pending-catalogue-import";
 import { originalStructureImportSnapshotId } from "./structure-snapshot-ancestry";
 import "server-only";
-
 import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
 import {
   parseAcademicStructureManualSnapshotProjection,
@@ -11,7 +10,6 @@ import {
   isAcademicStructureKind,
   type AcademicStructureKind,
 } from "@/lib/structure-import/contract";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminCatalogueSummary = {
@@ -31,18 +29,7 @@ const STRUCTURE_KINDS = [
   "specialisation",
 ] as const;
 
-const emptyCatalogueSummary = (): AdminCatalogueSummary => ({
-  courseDrafts: 0,
-  courseHistory: [],
-  courses: 0,
-  draftHistory: [],
-  programmeHistory: [],
-  programmes: 0,
-  structureDrafts: 0,
-});
-
 export async function loadAdminCatalogueSummary(): Promise<AdminCatalogueSummary> {
-  if (isDemoMode()) return emptyCatalogueSummary();
   const supabase = await createClient();
   const [
     courses,
@@ -225,7 +212,6 @@ export async function loadAdminStructureReview(
   const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
   const code = publicId ? null : value.toUpperCase();
   if (!publicId && !/^[A-Z0-9][A-Z0-9-]*$/.test(code ?? "")) return null;
-  if (isDemoMode()) return null;
 
   const supabase = await createClient();
   let structureQuery = supabase

@@ -1,4 +1,3 @@
-import { isDemoMode } from "../supabase/config.ts";
 import {
   createHostedImportDatabaseClient,
   createLocalDatabaseClient,
@@ -63,9 +62,8 @@ function configuredImportDatabaseUrl() {
 }
 
 export async function createAcademicStructureImportDatabaseClient() {
-  return isDemoMode() ||
-    (process.env.NODE_ENV === "development" &&
-      !process.env.COURSEMAP_IMPORT_DATABASE_URL?.trim())
+  return process.env.NODE_ENV === "development" &&
+    !process.env.COURSEMAP_IMPORT_DATABASE_URL?.trim()
     ? createLocalDatabaseClient()
     : createHostedImportDatabaseClient(configuredImportDatabaseUrl());
 }

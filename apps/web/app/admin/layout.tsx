@@ -1,14 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth/viewer";
-import { isDemoMode } from "@/lib/supabase/config";
 
 export default async function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  if (isDemoMode()) return children;
-
   const { viewer, canAccessAdmin } = await getAuthContext();
   if (!viewer) {
     redirect("/login?next=%2Fadmin%2Fdashboard");

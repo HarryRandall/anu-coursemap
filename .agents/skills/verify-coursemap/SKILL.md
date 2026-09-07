@@ -21,8 +21,8 @@ Run the relevant test file with `pnpm --filter @coursemap/web exec vitest run te
 pnpm verify
 ```
 
-This runs formatting, lint, types, unit and component tests, the demo build and
-rendered checks, the auth build and access checks, then `git diff --check`.
+This runs formatting, lint, types, unit and component tests, the production build
+and anonymous access checks, then `git diff --check`.
 CI splits the same work across the quality, route, database and browser gates.
 Do not run the builds concurrently: they share `apps/web/.next`.
 

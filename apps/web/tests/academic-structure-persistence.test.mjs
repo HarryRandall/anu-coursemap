@@ -10,7 +10,6 @@ import { projectAcademicStructureSnapshot } from "../lib/structure-import/projec
 test("development import workers honour the configured hosted database", async () => {
   const overrides = {
     NODE_ENV: "development",
-    COURSEMAP_DEMO_MODE: "false",
     COURSEMAP_IMPORT_DATABASE_URL:
       "postgres://postgres:example@db.example.supabase.co:5432/postgres",
   };
