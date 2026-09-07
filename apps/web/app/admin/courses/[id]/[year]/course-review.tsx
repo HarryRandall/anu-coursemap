@@ -387,7 +387,7 @@ export function CourseReview({
             </Alert>
           ) : null}
           {record.snapshot?.has_critical_uncertainty &&
-          (activeTab === "pipeline" || activeTab === "source") ? (
+          activeTab === "course" ? (
             <Alert className="mb-4" variant={"warning"}>
               <CircleAlert aria-hidden="true" />
               <AlertDescription>
