@@ -332,9 +332,10 @@ export function CourseReview({
       <AppShell
         showThemeToggle={false}
         admin
-        // The identifier segment carries the course code, the year segment
-        // reads as itself, and the open tab is appended.
-        breadcrumbSegmentLabels={{ [record.publicId]: record.code }}
+        breadcrumbSegmentLabels={{
+          [record.publicId]: record.code,
+          [String(record.year)]: null,
+        }}
         breadcrumbTrailingLabel={
           courseReviewTabs.find((tab) => tab.value === activeTab)?.label
         }
