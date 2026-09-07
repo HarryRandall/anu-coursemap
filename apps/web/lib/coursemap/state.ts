@@ -16,6 +16,7 @@ type CourseAttemptRow = {
   course_snapshot_id: number;
   id: string;
   mark: number | null;
+  grade?: string | null;
   status: string;
   units_attempted: number;
   units_earned: number;
@@ -145,7 +146,7 @@ export async function loadCoursemapState(
         supabase
           .from("course_attempts")
           .select(
-            "id,course_id,course_snapshot_id,academic_period_id,status,mark,units_attempted,units_earned",
+            "id,course_id,course_snapshot_id,academic_period_id,status,mark,grade,units_attempted,units_earned",
           )
           .eq("owner_id", viewer.id)
           .order("created_at"),
@@ -262,7 +263,9 @@ export async function loadCoursemapState(
       if (
         !code ||
         !period ||
-        !["completed", "failed", "enrolled"].includes(attempt.status)
+        !["completed", "failed", "enrolled", "withdrawn", "credited"].includes(
+          attempt.status,
+        )
       )
         return [];
       return [
@@ -274,8 +277,12 @@ export async function loadCoursemapState(
           courseCode: code,
           snapshotId: attempt.course_snapshot_id,
           termId: `${period.calendar_year}-${period.code.toLowerCase()}`,
-          status: attempt.status as "completed" | "failed" | "enrolled",
+          status: (attempt.status === "credited"
+            ? "completed"
+            : attempt.status) as
+            "completed" | "failed" | "enrolled" | "withdrawn",
           mark: attempt.mark ?? undefined,
+          resultCode: attempt.grade ?? undefined,
           unitsAttempted: Number(attempt.units_attempted),
           unitsEarned: Number(attempt.units_earned),
         },

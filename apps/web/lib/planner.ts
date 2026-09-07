@@ -122,6 +122,10 @@ export function completedCodes(attempts: Attempt[]) {
   );
 }
 
+export function isActiveAttempt(attempt: Attempt) {
+  return attempt.status !== "failed" && attempt.status !== "withdrawn";
+}
+
 type PrerequisiteEvaluation = {
   missingCodes: string[];
   state: "satisfied" | "unsatisfied" | "unknown";
@@ -137,7 +141,7 @@ function prerequisiteAttempts(
   return attempts.filter(
     (candidate) =>
       candidate.id !== attempt.id &&
-      candidate.status !== "failed" &&
+      isActiveAttempt(candidate) &&
       (allowConcurrent
         ? orderOf(candidate.termId, catalogue) <= targetOrder
         : orderOf(candidate.termId, catalogue) < targetOrder),
@@ -377,6 +381,7 @@ export function statusLabel(status: EffectiveStatus) {
     failed: "Failed",
     planned: "Planned",
     enrolled: "In progress",
+    withdrawn: "Withdrawn",
     blocked: "Blocked",
     approval: "Approval needed",
   }[status];
@@ -403,7 +408,7 @@ export function mappedUnits(
 ) {
   const latest = new Map<string, Attempt>();
   attempts
-    .filter((attempt) => attempt.status !== "failed")
+    .filter(isActiveAttempt)
     .forEach((attempt) => latest.set(attempt.courseCode, attempt));
   return [...latest.values()].reduce((total, attempt) => {
     const course = planningCourseForAttempt(attempt, catalogue);
@@ -426,7 +431,7 @@ export function unitsByCalendarYear(
   return years.map((year) => {
     const inYear = attempts.filter((attempt) => {
       const term = availableTerms.find((item) => item.id === attempt.termId);
-      return term?.year === year && attempt.status !== "failed";
+      return term?.year === year && isActiveAttempt(attempt);
     });
     const completed = inYear
       .filter((attempt) => attempt.status === "completed")
@@ -477,7 +482,7 @@ export function termLoad(
   const entries = attempts.filter(
     (attempt) =>
       attempt.termId === termId &&
-      attempt.status !== "failed" &&
+      isActiveAttempt(attempt) &&
       attempt.id !== ignoreAttemptId,
   );
   return {
@@ -507,8 +512,7 @@ export function termHasCapacity(
 
 function activeAttemptFor(attempts: Attempt[], courseCode: string) {
   return attempts.find(
-    (attempt) =>
-      attempt.courseCode === courseCode && attempt.status !== "failed",
+    (attempt) => attempt.courseCode === courseCode && isActiveAttempt(attempt),
   );
 }
 

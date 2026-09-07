@@ -33,14 +33,14 @@ function UnitsBar({
       <span
         className={cn(
           "block h-full transition-[width]",
-          overLimit ? "bg-destructive" : "bg-primary",
+          overLimit ? "bg-destructive" : "bg-success",
         )}
         style={{ width: `${completed}%` }}
       />
       <span
         className={cn(
           "block h-full transition-[width]",
-          overLimit ? "bg-destructive/40" : "bg-primary/35",
+          overLimit ? "bg-destructive/40" : "bg-primary",
         )}
         style={{ width: `${planned}%` }}
       />

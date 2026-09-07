@@ -1,239 +1,301 @@
 "use client";
-import { useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { BookOpenCheck, CircleAlert, ListChecks } from "lucide-react";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@coursemap/ui/components/alert";
+import { useRouter } from "next/navigation";
+import { Plus, X } from "lucide-react";
 import { Button } from "@coursemap/ui/primitives/button";
-import { Card } from "@coursemap/ui/primitives/card";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@coursemap/ui/primitives/empty";
+import { Tabs, TabsTrigger, TabsContent } from "@coursemap/ui/primitives/tabs";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/ui/shell";
-import type { PlanCatalogue } from "@/lib/coursemap/plan-catalogue";
+import { OutlinedTabsList } from "@/ui/common/outlined-tabs-list";
+import type {
+  PlanCatalogue,
+  PlanStructureKind,
+} from "@/lib/coursemap/plan-catalogue";
+import type {
+  OnboardingCatalogue,
+  ProgrammeOption,
+} from "@/lib/coursemap/onboarding-catalogue";
+import type { SelectableStructureKind } from "@/lib/coursemap/programme-structure-options";
+import type { Course } from "@/lib/coursemap/types";
 import { requirementTreeProgress } from "@/lib/coursemap/requirement-progress";
-import type { Attempt } from "@/lib/coursemap/types";
-import { degreeUnitProgress, planningCourseForAttempt } from "@/lib/planner";
-import { OverallProgressCard } from "@/ui/requirements/overall-progress-card";
-import { PlanCoursesCard } from "@/ui/requirements/plan-courses-card";
-import {
-  hasRequirementContent,
-  structureKindOrder,
-} from "@/ui/requirements/requirement-presentation";
-import { RuleSummaryCard } from "@/ui/requirements/rule-summary-card";
-import { StructureRequirementsCard } from "@/ui/requirements/structure-requirements-card";
+import { requirementCourseStatus } from "@/lib/coursemap/requirement-display";
+import { degreeUnitProgress } from "@/lib/planner";
+import { RequirementGroupView } from "@/ui/requirements/requirement-tree";
+import { StructureProgress } from "@/ui/requirements/structure-progress";
+import { StructureEmptyState } from "@/ui/requirements/structure-empty-state";
+import { StructureChoices } from "@/ui/requirements/structure-choices";
+import { TermChooser } from "@/ui/overlays/term-chooser";
 
-export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
-  const { state } = useCoursemap();
+const sections = [
+  { kind: "programme", label: "Degree" },
+  { kind: "major", label: "Major" },
+  { kind: "minor", label: "Minors" },
+  { kind: "specialisation", label: "Specialisations" },
+] as const;
+
+export function Requirements({
+  catalogue,
+  choices,
+}: {
+  catalogue: PlanCatalogue;
+  choices: OnboardingCatalogue;
+}) {
+  const { state, updateProfile, notify } = useCoursemap();
+  const router = useRouter();
+  const [tab, setTab] = useState<PlanStructureKind>("programme");
+  const [choosing, setChoosing] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [addingCourse, setAddingCourse] = useState<Course | null>(null);
   const degree = catalogue.degrees.find(
     (item) => item.code === state.profile.degreeCode,
   );
-  const unitTarget = degree?.units ?? null;
-  const progress = degreeUnitProgress(
-    state.attempts,
-    unitTarget ?? 0,
-    catalogue,
+  const programme = choices.degrees.find(
+    (item) =>
+      item.code === state.profile.degreeCode &&
+      item.catalogueYear === catalogue.academicYear,
   );
-
-  const courses = useMemo(
-    () =>
-      state.attempts
-        .map((attempt) => ({
-          attempt,
-          course: planningCourseForAttempt(attempt, catalogue),
-        }))
-        .filter(
-          (
-            entry,
-          ): entry is {
-            attempt: Attempt;
-            course: NonNullable<ReturnType<typeof planningCourseForAttempt>>;
-          } => Boolean(entry.course),
-        ),
-    [catalogue, state.attempts],
+  const selected = {
+    programme: [state.profile.degreeCode].filter(Boolean),
+    major: [state.profile.majorCode].filter(Boolean),
+    minor: state.profile.minorCodes,
+    specialisation: state.profile.specialisationCodes,
+  };
+  const selectedCodes = new Set(Object.values(selected).flat());
+  const attemptStatuses = new Map(
+    [...new Set(state.attempts.map((attempt) => attempt.courseCode))].flatMap(
+      (code) => {
+        const status = requirementCourseStatus(code, state.attempts);
+        return status ? [[code, status] as const] : [];
+      },
+    ),
   );
-  const attemptStatusByCode = useMemo(
-    () =>
-      new Map(
-        state.attempts.map((attempt) => [attempt.courseCode, attempt.status]),
-      ),
-    [state.attempts],
-  );
-  const selectedStructureCodes = useMemo(
-    () =>
-      new Set(
-        [
-          state.profile.degreeCode,
-          state.profile.majorCode,
-          ...state.profile.minorCodes,
-          ...state.profile.specialisationCodes,
-        ].filter(Boolean),
-      ),
-    [
-      state.profile.degreeCode,
-      state.profile.majorCode,
-      state.profile.minorCodes,
-      state.profile.specialisationCodes,
-    ],
-  );
-  const selectedRequirements = useMemo(
-    () =>
-      catalogue.structureRequirements
-        .filter((requirement) =>
-          selectedStructureCodes.has(requirement.structureCode),
-        )
-        .toSorted(
-          (left, right) =>
-            structureKindOrder[left.structureKind] -
-              structureKindOrder[right.structureKind] ||
-            left.structureCode.localeCompare(right.structureCode),
-        ),
-    [catalogue.structureRequirements, selectedStructureCodes],
-  );
-  const progressByStructure = useMemo(
-    () =>
-      new Map(
-        selectedRequirements.map((requirements) => [
-          requirements.snapshotId,
-          requirementTreeProgress({
-            root: requirements.root,
-            attempts: state.attempts,
-            catalogue,
-          }),
-        ]),
-      ),
-    [catalogue, selectedRequirements, state.attempts],
-  );
-
-  const programmeRequirements = selectedRequirements.find(
-    (requirement) => requirement.structureKind === "programme",
-  );
-  const structuresMissingRequirements = catalogue.structures.filter(
-    (structure) =>
-      structure.kind !== "programme" &&
-      selectedStructureCodes.has(structure.code) &&
-      !selectedRequirements.some(
-        (requirements) =>
-          requirements.structureCode === structure.code &&
-          hasRequirementContent(requirements),
-      ),
-  );
-  const hasPublishedProgrammeRequirements = programmeRequirements
-    ? hasRequirementContent(programmeRequirements)
-    : catalogue.structureRequirements.length === 0 &&
-      catalogue.programmeRequirementsImported;
-  const structuresWithContent = selectedRequirements.filter(
-    hasRequirementContent,
-  );
-
-  if (!degree) {
-    return (
-      <AppShell>
-        <div className="mx-auto w-full">
-          <h1 className="sr-only">Requirements</h1>
-          <Card>
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <ListChecks aria-hidden="true" />
-                </EmptyMedia>
-                <EmptyTitle>Choose a published degree</EmptyTitle>
-                <EmptyDescription>
-                  Select a published degree in onboarding to see its rules.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button asChild variant="outline">
-                  <Link href="/onboarding">Start onboarding</Link>
-                </Button>
-              </EmptyContent>
-            </Empty>
-          </Card>
-        </div>
-      </AppShell>
-    );
+  const options = {
+    major: choices.majors.filter(
+      (item) =>
+        item.catalogueYear === catalogue.academicYear &&
+        programme?.majorCodes.includes(item.code),
+    ),
+    minor: choices.minors.filter(
+      (item) =>
+        item.catalogueYear === catalogue.academicYear &&
+        programme?.minorCodes.includes(item.code),
+    ),
+    specialisation: choices.specialisations.filter(
+      (item) =>
+        item.catalogueYear === catalogue.academicYear &&
+        programme?.specialisationCodes.includes(item.code),
+    ),
+  };
+  function changeTab(kind: PlanStructureKind) {
+    setTab(kind);
+    setChoosing(false);
   }
-
+  async function chooseStructure(
+    kind: SelectableStructureKind,
+    option: ProgrammeOption,
+  ) {
+    if (pending) return;
+    setPending(true);
+    try {
+      const patch =
+        kind === "major"
+          ? { majorCode: option.code }
+          : kind === "minor"
+            ? {
+                minorCodes: [
+                  ...new Set([...state.profile.minorCodes, option.code]),
+                ],
+              }
+            : {
+                specialisationCodes: [
+                  ...new Set([
+                    ...state.profile.specialisationCodes,
+                    option.code,
+                  ]),
+                ],
+              };
+      const result = await updateProfile(patch);
+      notify(result.message, result.ok ? "success" : "warning");
+      if (result.ok) {
+        setChoosing(false);
+        router.refresh();
+      }
+    } catch {
+      notify("Your selection could not be saved. Try again.", "warning");
+    } finally {
+      setPending(false);
+    }
+  }
+  const fillEmpty =
+    tab !== "programme" && selected[tab].length === 0 && !choosing;
   return (
-    <AppShell>
-      <div className="mx-auto w-full">
+    <Tabs
+      value={tab}
+      onValueChange={(value) => changeTab(value as PlanStructureKind)}
+      className="block"
+    >
+      <AppShell fill>
         <h1 className="sr-only">Requirements</h1>
-
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
-          <div className="min-w-0 space-y-5">
-            {!hasPublishedProgrammeRequirements ? (
-              <Alert variant="warning">
-                <CircleAlert aria-hidden="true" />
-                <AlertTitle>
-                  Published programme requirements are not available yet
-                </AlertTitle>
-                <AlertDescription>
-                  Coursemap will not substitute sample core, elective or major
-                  buckets for this programme&apos;s official rules.
-                </AlertDescription>
-              </Alert>
-            ) : null}
-
-            {structuresMissingRequirements.map((structure) => (
-              <Alert
-                key={`${structure.kind}-${structure.code}`}
-                variant="warning"
-              >
-                <CircleAlert aria-hidden="true" />
-                <AlertTitle>
-                  Published {structure.kind} requirements are not available yet
-                </AlertTitle>
-                <AlertDescription>
-                  Coursemap will show {structure.name}&apos;s reviewed source
-                  rules once its published snapshot includes them.
-                </AlertDescription>
-              </Alert>
-            ))}
-
-            {structuresWithContent.map((requirements) => (
-              <StructureRequirementsCard
-                context={{
-                  catalogue,
-                  attemptStatusByCode,
-                  selectedStructureCodes,
-                  progress:
-                    progressByStructure.get(requirements.snapshotId) ??
-                    new Map(),
-                }}
-                key={`${requirements.structureKind}-${requirements.snapshotId}`}
-                requirements={requirements}
-              />
-            ))}
-
-            <p className="flex items-center gap-2 text-xs text-muted-foreground/80">
-              <BookOpenCheck aria-hidden="true" size={14} />
-              Progress here is indicative. Always confirm enrolment and
-              graduation requirements with ANU.
-            </p>
-          </div>
-
-          <aside
-            aria-label="Progress summary"
-            className="space-y-4 lg:sticky lg:top-20"
+        {degree && (
+          <StructureProgress
+            name={programme?.name ?? degree.name}
+            code={degree.code}
+            year={catalogue.academicYear}
+            target={degree.units ?? null}
+            progress={degreeUnitProgress(
+              state.attempts,
+              degree.units ?? 0,
+              catalogue,
+            )}
+          />
+        )}
+        <OutlinedTabsList className="mb-5" aria-label="Requirement sections">
+          {sections.map(({ kind, label }) => (
+            <TabsTrigger key={kind} value={kind}>
+              {label}
+              {selected[kind].length > 1 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  {selected[kind].length}
+                </span>
+              )}
+            </TabsTrigger>
+          ))}
+        </OutlinedTabsList>
+        {sections.map(({ kind, label }) => (
+          <TabsContent
+            key={kind}
+            value={kind}
+            className={`workspace-scroll mt-0 ${fillEmpty ? "flex flex-col" : "space-y-6"}`}
           >
-            <OverallProgressCard progress={progress} unitTarget={unitTarget} />
-            <RuleSummaryCard
-              progressByStructure={progressByStructure}
-              structures={structuresWithContent}
-            />
-            <PlanCoursesCard courses={courses} />
-          </aside>
-        </div>
-      </div>
-    </AppShell>
+            {kind !== "programme" &&
+            selected[kind].length > 0 &&
+            (choosing ||
+              options[kind].some((item) => !selectedCodes.has(item.code))) ? (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pending}
+                  onClick={() => setChoosing(!choosing)}
+                >
+                  {choosing ? (
+                    <X size={14} aria-hidden="true" />
+                  ) : (
+                    <Plus size={14} aria-hidden="true" />
+                  )}
+                  {choosing
+                    ? "Close choices"
+                    : kind === "major"
+                      ? "Change major"
+                      : `Add ${kind}`}
+                </Button>
+              </div>
+            ) : null}
+            {kind !== "programme" &&
+            selected[kind].length === 0 &&
+            !choosing ? (
+              <StructureEmptyState
+                kind={kind}
+                available={options[kind].length > 0}
+                onChoose={() => setChoosing(true)}
+              />
+            ) : null}
+            {kind !== "programme" && choosing ? (
+              <StructureChoices
+                key={kind}
+                kind={kind}
+                options={options[kind].filter(
+                  (item) => !selectedCodes.has(item.code),
+                )}
+                pending={pending}
+                onSelect={(option) => void chooseStructure(kind, option)}
+              />
+            ) : null}
+            {kind === "programme" && !degree ? (
+              <div className="rounded-xl border border-border bg-card p-8 text-center">
+                <h2 className="text-lg font-semibold">Choose your degree</h2>
+                <Button asChild className="mt-4">
+                  <Link href="/onboarding">Set up your plan</Link>
+                </Button>
+              </div>
+            ) : null}
+            {selected[kind].map((code) => {
+              const requirements = catalogue.structureRequirements.find(
+                (item) =>
+                  item.structureCode === code && item.structureKind === kind,
+              );
+              const structure = catalogue.structures.find(
+                (item) => item.code === code && item.kind === kind,
+              );
+              const option =
+                kind === "programme"
+                  ? programme
+                  : [
+                      ...choices.majors,
+                      ...choices.minors,
+                      ...choices.specialisations,
+                    ].find(
+                      (item) =>
+                        item.code === code &&
+                        item.catalogueYear === catalogue.academicYear,
+                    );
+              const target =
+                kind === "programme"
+                  ? (degree?.units ?? null)
+                  : (option?.units ?? null);
+              const treeProgress = requirementTreeProgress({
+                root: requirements?.root ?? null,
+                attempts: state.attempts,
+                catalogue,
+              });
+              return (
+                <div key={code} className="space-y-5">
+                  {kind !== "programme" && (
+                    <h2 className="text-base font-semibold">
+                      {structure?.name ?? option?.name ?? code}
+                      {target !== null && (
+                        <span className="ml-2 text-sm font-normal text-muted-foreground">
+                          {target} units
+                        </span>
+                      )}
+                    </h2>
+                  )}
+                  {requirements?.root ? (
+                    <RequirementGroupView
+                      group={requirements.root}
+                      context={{
+                        catalogue,
+                        progress: treeProgress,
+                        attemptStatusByCode: attemptStatuses,
+                        selectedStructureCodes: selectedCodes,
+                        unitTarget: target,
+                        onAddCourse: setAddingCourse,
+                      }}
+                    />
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                      Your {label.toLowerCase()} is selected.{" "}
+                      <Link
+                        className="font-medium text-primary hover:underline"
+                        href="/plan"
+                      >
+                        Continue planning courses
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </TabsContent>
+        ))}
+        {addingCourse ? (
+          <TermChooser
+            course={addingCourse}
+            onClose={() => setAddingCourse(null)}
+          />
+        ) : null}
+      </AppShell>
+    </Tabs>
   );
 }

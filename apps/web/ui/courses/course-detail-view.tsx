@@ -32,7 +32,6 @@ import {
   BookOpen,
   Banknote,
   CalendarClock,
-  CircleHelp,
   ArrowUpRight,
   ClipboardCheck,
   GitBranch,
@@ -143,20 +142,6 @@ export function CourseDetailView({
   const hasPrerequisiteWording =
     course.prerequisiteText.trim().length > 0 &&
     !/^No prerequisites listed\.?$/iu.test(course.prerequisiteText.trim());
-
-  const ruleStatus = !hasPrerequisiteWording
-    ? "No prerequisite course codes were detected in the imported source."
-    : requisiteProgress && requisiteCompletion.isAuthenticated
-      ? requisiteProgress.satisfied
-        ? "Your recorded study and programme meet this imported prerequisite matrix. Confirm final enrolment eligibility with ANU."
-        : "Your recorded study and programme do not yet meet this imported prerequisite matrix. Planned and enrolled courses are not counted."
-      : structuredRule
-        ? "Sign in and record your completed courses and programme to see whether you meet this prerequisite matrix."
-        : requisiteSummary
-          ? "Coursemap identified the unit and course conditions shown below. Confirm eligibility with the official ANU source."
-          : course.reviewState === "verified"
-            ? "The source record is verified. Read the ANU wording below for the exact requirement."
-            : "The source wording is shown exactly as imported. Its AND, OR, mark and permission logic is not verified yet.";
 
   return (
     <div className="w-full">
@@ -516,15 +501,6 @@ export function CourseDetailView({
             <CardTitle>
               <h2>{"Prerequisite chain and unlocks"}</h2>
             </CardTitle>
-            {Boolean(
-              "Detected course references stay visible even before their course records are imported.",
-            ) && (
-              <CardDescription>
-                {
-                  "Detected course references stay visible even before their course records are imported."
-                }
-              </CardDescription>
-            )}
           </CardHeader>
           <CardContent className="border-t border-border/60 px-0 pt-5 pb-0">
             <PrereqGraph
@@ -543,78 +519,8 @@ export function CourseDetailView({
             <CardTitle>
               <h2>{"Requisites and compatibility"}</h2>
             </CardTitle>
-            {Boolean(
-              <>
-                An exact Coursemap summary is shown when the wording can be read
-                safely. The official wording remains alongside it.
-              </>,
-            ) && (
-              <CardDescription>
-                {
-                  <>
-                    An exact Coursemap summary is shown when the wording can be
-                    read safely. The official wording remains alongside it.
-                  </>
-                }
-              </CardDescription>
-            )}
-            {Boolean(
-              <Badge
-                variant={
-                  badgeVariantForTone[
-                    structuredRule ||
-                    requisiteSummary ||
-                    course.reviewState === "verified"
-                      ? "success"
-                      : "warning"
-                  ]
-                }
-              >
-                {structuredRule
-                  ? requisiteCompletion.isAuthenticated
-                    ? "Eligibility checked"
-                    : "Structured rule"
-                  : requisiteSummary
-                    ? "Structured summary"
-                    : course.reviewState === "verified"
-                      ? "Source reviewed"
-                      : "Rule logic unknown"}
-              </Badge>,
-            ) && (
-              <CardAction>
-                {
-                  <Badge
-                    variant={
-                      badgeVariantForTone[
-                        structuredRule ||
-                        requisiteSummary ||
-                        course.reviewState === "verified"
-                          ? "success"
-                          : "warning"
-                      ]
-                    }
-                  >
-                    {structuredRule
-                      ? requisiteCompletion.isAuthenticated
-                        ? "Eligibility checked"
-                        : "Structured rule"
-                      : requisiteSummary
-                        ? "Structured summary"
-                        : course.reviewState === "verified"
-                          ? "Source reviewed"
-                          : "Rule logic unknown"}
-                  </Badge>
-                }
-              </CardAction>
-            )}
           </CardHeader>
           <CardContent className="space-y-5 border-t border-border/60 pt-5 text-[13px] leading-relaxed text-foreground/80">
-            <Alert className="rounded-xl p-4" variant={"warning"}>
-              <CircleHelp aria-hidden="true" />
-              <AlertDescription className="text-amber-900 dark:text-amber-300">
-                {ruleStatus}
-              </AlertDescription>
-            </Alert>
             {requisiteProgress && requisiteCompletion.isAuthenticated ? (
               <div>
                 <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -633,7 +539,7 @@ export function CourseDetailView({
               <div>
                 <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                   {structuredRule
-                    ? "Imported requirement matrix"
+                    ? "Prerequisite requirements"
                     : "Coursemap summary"}
                 </h3>
                 <div className="mt-2">
@@ -864,7 +770,7 @@ export function CourseDetailView({
                     <CalendarClock aria-hidden="true" />
                   </EmptyMedia>
                   <EmptyTitle>
-                    No course offering is listed in the imported catalogue yet.
+                    No course offering is listed for this year.
                   </EmptyTitle>
                 </EmptyHeader>
               </Empty>
@@ -879,15 +785,6 @@ export function CourseDetailView({
             <CardTitle>
               <h2>{"Student experience and self-review"}</h2>
             </CardTitle>
-            {Boolean(
-              "Shared placeholder while course-specific SELT and student feedback are imported.",
-            ) && (
-              <CardDescription>
-                {
-                  "Shared placeholder while course-specific SELT and student feedback are imported."
-                }
-              </CardDescription>
-            )}
           </CardHeader>
           <CardContent className="space-y-5 border-t border-border/60 pt-5">
             <Alert className="rounded-xl p-4" variant={"default"}>
@@ -896,9 +793,7 @@ export function CourseDetailView({
                 No course-specific ratings are shown yet
               </AlertTitle>
               <AlertDescription className="text-[13px] text-muted-foreground">
-                This is deliberately not a made-up score. Once authorised source
-                data is imported, it will appear here with its year and
-                provenance.
+                No student ratings are available for this course.
               </AlertDescription>
             </Alert>
             <div>

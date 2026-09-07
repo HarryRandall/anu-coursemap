@@ -1,0 +1,54 @@
+.art {
+  width: 240px;
+  height: 170px;
+  flex-shrink: 0;
+  stroke-width: 1.6;
+}
+.surface {
+  fill: var(--background);
+  stroke: var(--border);
+}
+.line {
+  stroke: var(--border);
+}
+.dashed {
+  stroke: var(--border);
+  stroke-dasharray: 3 6;
+}
+.accent {
+  stroke: var(--primary);
+}
+.tint {
+  fill: color-mix(in srgb, var(--primary) 8%, var(--background));
+  stroke: var(--primary);
+}
+.float {
+  animation: drift 6s ease-in-out infinite;
+}
+.sway {
+  transform-origin: 120px 85px;
+  animation: wander 8s ease-in-out infinite;
+}
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes wander {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .art * {
+    animation: none;
+  }
+}

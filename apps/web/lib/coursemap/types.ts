@@ -49,7 +49,8 @@ export type Major = {
   courseCodes: string[];
 };
 
-export type AttemptStatus = "completed" | "failed" | "planned" | "enrolled";
+export type AttemptStatus =
+  "completed" | "failed" | "planned" | "enrolled" | "withdrawn";
 
 export type Attempt = {
   academicYear?: number;
@@ -63,6 +64,7 @@ export type Attempt = {
   termId: string;
   status: AttemptStatus;
   mark?: number;
+  resultCode?: string;
   permissionApproved?: boolean;
   overloadApproved?: boolean;
 };

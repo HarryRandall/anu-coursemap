@@ -54,6 +54,7 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "enrolled", label: "Enrolled" },
   { value: "planned", label: "Planned" },
   { value: "failed", label: "Failed" },
+  { value: "withdrawn", label: "Withdrawn" },
 ];
 
 const STATUS_LABEL: Record<AttemptStatus, string> = {
@@ -61,6 +62,7 @@ const STATUS_LABEL: Record<AttemptStatus, string> = {
   enrolled: "Enrolled",
   planned: "Planned",
   failed: "Failed",
+  withdrawn: "Withdrawn",
 };
 
 const STATUS_TONE: Record<AttemptStatus, keyof typeof badgeVariantForTone> = {
@@ -68,6 +70,7 @@ const STATUS_TONE: Record<AttemptStatus, keyof typeof badgeVariantForTone> = {
   enrolled: "info",
   planned: "brand",
   failed: "danger",
+  withdrawn: "neutral",
 };
 
 /** ANU grade bands for a numeric mark. */
@@ -84,7 +87,10 @@ function gradeFor(mark: number) {
 }
 
 function weightedAverage(entries: Entry[]) {
-  const marked = entries.filter((entry) => entry.attempt.mark !== undefined);
+  const marked = entries.filter(
+    (entry) =>
+      entry.attempt.status !== "withdrawn" && entry.attempt.mark !== undefined,
+  );
   const units = marked.reduce((total, entry) => total + entry.units, 0);
   if (units === 0) return null;
   return Math.round(
@@ -182,6 +188,7 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
     ...band,
     count: entries.filter(
       (entry) =>
+        entry.attempt.status !== "withdrawn" &&
         entry.attempt.mark !== undefined &&
         gradeFor(entry.attempt.mark).grade === band.grade,
     ).length,
@@ -199,7 +206,10 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
         .filter((e) => e.attempt.status === "completed")
         .reduce((total, e) => total + e.units, 0),
       planned: inYear
-        .filter((e) => e.attempt.status !== "completed")
+        .filter(
+          (e) =>
+            e.attempt.status === "planned" || e.attempt.status === "enrolled",
+        )
         .reduce((total, e) => total + e.units, 0),
     };
   });

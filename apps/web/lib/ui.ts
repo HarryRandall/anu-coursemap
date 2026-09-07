@@ -59,6 +59,7 @@ export const statusTone: Record<EffectiveStatus, Tone> = {
   failed: "danger",
   planned: "info",
   enrolled: "info",
+  withdrawn: "neutral",
   blocked: "warning",
   approval: "warning",
 };

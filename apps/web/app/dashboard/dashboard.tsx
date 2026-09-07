@@ -1,13 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { TriangleAlert } from "lucide-react";
 import { useMemo } from "react";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@coursemap/ui/primitives/alert";
 import { useCoursemap } from "@/app/providers";
 import { DegreeProgressHero } from "@/ui/dashboard/degree-progress-hero";
 import {
@@ -226,21 +219,6 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
       <div className="mx-auto flex flex-col gap-6">
         <h1 className="sr-only">Dashboard</h1>
 
-        {unitTarget === null && (
-          <Alert>
-            <TriangleAlert
-              aria-hidden="true"
-              className="text-amber-600 dark:text-amber-400"
-            />
-            <AlertTitle>Unit target not recorded</AlertTitle>
-            <AlertDescription>
-              {progress.completed} completed and {progress.planned} planned
-              units are mapped, but the published programme has no total unit
-              target, so no completion percentage can be calculated.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <section aria-label="Your metrics" className="flex flex-col gap-4">
           {previewMetrics ? (
             <UniversityMetricsPreview />
@@ -254,16 +232,19 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
           )}
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)]">
+        <div
+          className={
+            buckets.length > 0
+              ? "grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)]"
+              : "grid gap-4"
+          }
+        >
           <DegreeProgressHero
             progress={progress}
             unitTarget={unitTarget}
             enrolledUnits={enrolledUnits}
           />
-          <RequirementsPanel
-            buckets={buckets}
-            requirementsImported={catalogue.programmeRequirementsImported}
-          />
+          <RequirementsPanel buckets={buckets} />
         </div>
 
         {previewMetrics ? (
@@ -287,23 +268,6 @@ export function Dashboard({ catalogue }: { catalogue: PlanCatalogue }) {
           />
           <MonthCalendar events={calendarEvents} />
         </div>
-
-        {!catalogue.programmeRequirementsImported && (
-          <Alert>
-            <TriangleAlert aria-hidden="true" className="text-primary" />
-            <AlertTitle>Programme rules are not imported yet</AlertTitle>
-            <AlertDescription>
-              Rule coverage and requirement checking appear once the official
-              source has been imported and reviewed.{" "}
-              <Link
-                href="/admin"
-                className="font-medium text-primary underline-offset-2 hover:underline"
-              >
-                Open the admin console
-              </Link>
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
     </AppShell>
   );

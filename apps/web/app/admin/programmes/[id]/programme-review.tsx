@@ -30,6 +30,7 @@ import { publishStructureSnapshot } from "@/lib/coursemap/catalogue-publication-
 import type { AdminStructureReviewRecord } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/ui/shell";
 import { StructureRequirementDiagram } from "@/ui/admin/academic-structures/requirement-diagram";
+import { SectionNavigation } from "@/ui/common/section-navigation";
 import { PendingImportProposals } from "@/ui/admin/imports/pending-import-proposals";
 import { JsonCode } from "@/ui/common/json-code";
 import {
@@ -46,6 +47,8 @@ import {
   StructureSectionContent,
   detailSections,
 } from "@/ui/admin/academic-structures/structure-section-content";
+
+import { StructurePlanningDiagnostics } from "@/ui/admin/academic-structures/structure-planning-diagnostics";
 
 export function ProgrammeReview({
   canEdit: canWrite,
@@ -68,6 +71,10 @@ export function ProgrammeReview({
     tone: "success" | "danger";
   } | null>(null);
   const [tab, setTab] = useState("details");
+  const [requirementView, setRequirementView] = useState("builder");
+  const diagramOpen =
+    tab === "requirements" && requirementView === "diagram" && editing === null;
+  const contained = tab === "preview" || tab === "source" || diagramOpen;
   const isDraft = record.draftSnapshotId === record.id;
   const isPublished = record.publishedSnapshotId === record.id;
   const canEdit = canWrite && (isDraft || isPublished);
@@ -113,6 +120,7 @@ export function ProgrammeReview({
   return (
     <Tabs className="block" value={tab} onValueChange={setTab}>
       <AppShell
+        fill={contained}
         admin
         currentBreadcrumbLabel={record.name}
         tabs={
@@ -134,7 +142,11 @@ export function ProgrammeReview({
           </TabsList>
         }
       >
-        <div className="mx-auto w-full min-w-0 space-y-5 pb-10">
+        <div
+          className={
+            contained ? "workspace-stack" : "mx-auto w-full min-w-0 space-y-5"
+          }
+        >
           <h1 className="sr-only">
             Review {record.code} {record.name}
           </h1>
@@ -207,20 +219,37 @@ export function ProgrammeReview({
               <AlertDescription>{message.text}</AlertDescription>
             </Alert>
           ) : null}
-          {canReviewImports ? (
+          {canReviewImports && tab === "details" ? (
             <PendingImportProposals
               pendingImports={record.pendingImports}
               currentDraftSnapshotId={record.draftSnapshotId}
               structureKind={record.kind}
             />
           ) : null}
+          <StructurePlanningDiagnostics
+            projection={record.projection}
+            compact={contained}
+          />
           <TabsContent className="mt-0 space-y-5" value="details">
+            <SectionNavigation
+              sections={detailSections.map((section) => ({
+                id: `structure-section-${section.key}`,
+                label: section.label,
+              }))}
+            />
             {detailSections.map(({ key, label }) =>
               editing === key ? (
-                <div key={key}>{editor(key)}</div>
+                <div
+                  key={key}
+                  id={`structure-section-${key}`}
+                  className="scroll-mt-44"
+                >
+                  {editor(key)}
+                </div>
               ) : (
                 <section
-                  className="rounded-xl border border-border bg-card"
+                  className="scroll-mt-44 rounded-xl border border-border bg-card"
+                  id={`structure-section-${key}`}
                   key={key}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
@@ -247,11 +276,14 @@ export function ProgrammeReview({
               ),
             )}
           </TabsContent>
-          <TabsContent className="mt-0" value="requirements">
+          <TabsContent
+            className={diagramOpen ? "workspace-stack mt-0" : "mt-0"}
+            value="requirements"
+          >
             {editing === "requirements" ? (
               editor("requirements")
             ) : (
-              <div className="space-y-5">
+              <div className={diagramOpen ? "workspace-stack" : "space-y-5"}>
                 <div className="flex items-center justify-between gap-3">
                   <SourceText record={record} section="requirements" />
                   {canEdit ? (
@@ -266,7 +298,11 @@ export function ProgrammeReview({
                   ) : null}
                 </div>
 
-                <Tabs defaultValue="builder">
+                <Tabs
+                  value={requirementView}
+                  onValueChange={setRequirementView}
+                  className={diagramOpen ? "workspace-stack" : undefined}
+                >
                   <TabsList aria-label="Requirement view">
                     <TabsTrigger value="builder">Rule builder</TabsTrigger>
                     <TabsTrigger value="diagram">Diagram</TabsTrigger>
@@ -284,8 +320,9 @@ export function ProgrammeReview({
                       )}
                     </section>
                   </TabsContent>
-                  <TabsContent value="diagram">
+                  <TabsContent value="diagram" className="workspace-stack">
                     <StructureRequirementDiagram
+                      contained
                       projection={record.projection}
                     />
                   </TabsContent>
@@ -293,7 +330,11 @@ export function ProgrammeReview({
               </div>
             )}
           </TabsContent>
-          <TabsContent className="mt-0 space-y-6" value="preview">
+          <TabsContent
+            className="workspace-scroll mt-0 space-y-6"
+            value="preview"
+            tabIndex={0}
+          >
             <header>
               <p className="text-sm font-medium text-muted-foreground">
                 {record.code} · {record.kind} · {record.year}
@@ -338,7 +379,11 @@ export function ProgrammeReview({
               ))}
             </section>
           </TabsContent>
-          <TabsContent className="mt-0 space-y-5" value="source">
+          <TabsContent
+            className="workspace-scroll mt-0 space-y-5"
+            value="source"
+            tabIndex={0}
+          >
             <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-base font-semibold">Source</h2>
@@ -386,6 +431,7 @@ export function ProgrammeReview({
               </summary>
               <JsonCode
                 label="Field evidence"
+                uncapped
                 value={record.projection.evidence}
               />
             </details>
