@@ -23,6 +23,23 @@ disagree, follow the surrounding code and say so.
 - One responsibility per module. When a file grows a second responsibility,
   split it rather than adding a section comment.
 
+## One component per file
+
+A file defines one component. When a second independent component appears,
+move it to its own kebab-case file named after it. A component that only its
+own file can reach cannot be tested, reviewed or reused on its own.
+
+Two exceptions:
+
+- Compound components that form a single API stay together:
+  `Alert`/`AlertTitle`/`AlertDescription`, `Card`/`CardHeader`. Splitting these
+  breaks the idiom the vendored primitives follow.
+- `packages/ui` is vendored and kept diffable against upstream. Never
+  restructure it.
+
+Private helper functions inside one cohesive component are fine. A long file
+is not itself a reason to split; a second component in it is.
+
 ## Comments
 
 Most modules contain no comments at all, and that is correct. Add one only when
