@@ -1,6 +1,5 @@
 "use client";
 import { badgeVariantForTone } from "@/lib/ui";
-
 import { Badge } from "@coursemap/ui/components/badge";
 import { Button } from "@coursemap/ui/primitives/button";
 import {
@@ -28,36 +27,42 @@ import {
   TabsList,
   TabsTrigger,
 } from "@coursemap/ui/primitives/tabs";
-
 import Link from "next/link";
 import {
   BookOpen,
   Banknote,
   CalendarClock,
-  CheckCircle2,
-  Circle,
   CircleHelp,
   ClipboardCheck,
   GitBranch,
   GraduationCap,
   Library,
-  LockKeyhole,
   MapPin,
   MessageSquareText,
   Plus,
 } from "lucide-react";
-import { Hint } from "@/ui/common/hint";
 import { PrereqGraph } from "@/ui/prereq-graph";
-
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import {
   evaluateRequisiteExpression,
   type CompletedRequisiteCourse,
-  type RequisiteCondition,
-  type RequisiteExpression,
-  type RequisiteProgress,
   parseRequisiteSummary,
 } from "@/lib/coursemap/requisite-summary";
+import {
+  feeValue,
+  formatDate,
+  formatUpdatedAt,
+  humanise,
+  unitValueLabel,
+} from "@/ui/courses/course-detail-format";
+import {
+  CourseReferenceChips,
+  CourseReferenceText,
+} from "@/ui/courses/course-reference";
+import {
+  RequisiteExpressionSummary,
+  RequisiteProgressSummary,
+} from "@/ui/courses/requisite-summary";
 
 export const courseDetailTabs = [
   { id: "overview", label: "Overview", icon: BookOpen },
@@ -65,15 +70,17 @@ export const courseDetailTabs = [
   { id: "offerings", label: "Offerings", icon: CalendarClock },
   { id: "student-review", label: "Student review", icon: MessageSquareText },
 ] as const;
-
 export type CourseTab = (typeof courseDetailTabs)[number]["id"];
-
 export function courseTabFromSearch(value: string | null): CourseTab {
   return courseDetailTabs.some((tab) => tab.id === value)
     ? (value as CourseTab)
     : "overview";
 }
 
+/**
+ * The tab strip is shared so the admin preview shows exactly the tabs a
+ * student sees, in the same order and with the same labels.
+ */
 /**
  * The tab strip is shared so the admin preview shows exactly the tabs a
  * student sees, in the same order and with the same labels.
@@ -90,362 +97,13 @@ export function CourseDetailTabsList() {
     </TabsList>
   );
 }
-
-function formatUpdatedAt(value: string | null) {
-  if (!value) return "Not listed";
-  return new Intl.DateTimeFormat("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
-}
-
-function formatDate(value: string | null) {
-  if (!value) return null;
-  return new Intl.DateTimeFormat("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(value));
-}
-
-function unitValueLabel(course: CourseDetails) {
-  if (course.unitValue.kind === "fixed") {
-    return `${course.unitValue.units} units`;
-  }
-  if (course.unitValue.kind === "range") {
-    return `${course.unitValue.minimumUnits}-${course.unitValue.maximumUnits} units`;
-  }
-  if (course.unitValue.kind === "variable") {
-    return course.unitValue.options.length
-      ? `${course.unitValue.options.map((option) => option.units).join(" or ")} units`
-      : "Variable units";
-  }
-  return "Units not listed";
-}
-
-function feeValue(fee: CourseDetails["fees"][number]) {
-  if (fee.amount !== null) {
-    return new Intl.NumberFormat("en-AU", {
-      style: "currency",
-      currency: fee.currency ?? "AUD",
-      maximumFractionDigits: fee.amount % 1 === 0 ? 0 : 2,
-    }).format(fee.amount);
-  }
-  if (fee.studentContributionBand !== null) {
-    return `Student contribution band ${fee.studentContributionBand}`;
-  }
-  return fee.sourceText ?? "See the ANU source";
-}
-
-function humanise(value: string) {
-  return value
-    .replaceAll("_", " ")
-    .replace(/^./u, (letter) => letter.toUpperCase());
-}
-
-function CourseReferenceText({
-  academicYear,
-  text,
-  availableCourseCodes,
-}: {
-  academicYear: number;
-  text: string;
-  availableCourseCodes: ReadonlySet<string>;
-}) {
-  return text.split(/([A-Z]{4}\d{4}[A-Z]?)/gu).map((part, index) => {
-    if (!/^[A-Z]{4}\d{4}[A-Z]?$/u.test(part)) {
-      return <span key={index}>{part}</span>;
-    }
-    if (availableCourseCodes.has(part)) {
-      return (
-        <Link
-          key={index}
-          href={`/courses/${part}?year=${academicYear}`}
-          prefetch={false}
-          className="rounded font-mono font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:text-primary"
-        >
-          {part}
-        </Link>
-      );
-    }
-    return (
-      <Hint
-        key={index}
-        label={`${part} is referenced by ANU but has not been imported yet`}
-      >
-        <span className="inline-flex items-center gap-1 rounded bg-muted px-1 font-mono font-semibold text-muted-foreground">
-          <LockKeyhole size={10} aria-hidden="true" />
-          {part}
-          <span className="sr-only">Not imported yet</span>
-        </span>
-      </Hint>
-    );
-  });
-}
-
-function CourseReferenceChips({
-  academicYear,
-  course,
-  availableCourseCodes,
-}: {
-  academicYear: number;
-  course: CourseDetails;
-  availableCourseCodes: ReadonlySet<string>;
-}) {
-  if (course.prerequisiteCodes.length === 0) return null;
-  return (
-    <div className="mt-5 border-t border-border/60 pt-4">
-      <h3 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        Detected course references
-      </h3>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {course.prerequisiteCodes.map((reference) =>
-          availableCourseCodes.has(reference) ? (
-            <Link
-              key={reference}
-              href={`/courses/${reference}?year=${academicYear}`}
-              prefetch={false}
-              className="rounded-md bg-primary/10 px-2 py-1 font-mono text-xs font-semibold text-primary ring-1 ring-primary/20 hover:bg-primary/15"
-            >
-              {reference}
-            </Link>
-          ) : (
-            <Hint
-              key={reference}
-              label={`${reference} has not been imported yet`}
-            >
-              <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-muted-foreground ring-1 ring-border">
-                <LockKeyhole size={11} aria-hidden="true" />
-                {reference}
-                <span className="sr-only">Not imported yet</span>
-              </span>
-            </Hint>
-          ),
-        )}
-      </div>
-    </div>
-  );
-}
-
-function RequisiteConditionText({
-  academicYear,
-  condition,
-  availableCourseCodes,
-}: {
-  academicYear: number;
-  condition: RequisiteCondition;
-  availableCourseCodes: ReadonlySet<string>;
-}) {
-  if (condition.kind === "course") {
-    return (
-      <>
-        Complete{" "}
-        <CourseReferenceText
-          academicYear={academicYear}
-          text={condition.code}
-          availableCourseCodes={availableCourseCodes}
-        />
-      </>
-    );
-  }
-  if (condition.kind === "level_units") {
-    return (
-      <>
-        Complete at least {condition.units} units of {condition.level}-level
-        {condition.subject ? ` ${condition.subject}` : ""} courses
-      </>
-    );
-  }
-  if (condition.kind === "units_total") {
-    return <>Complete at least {condition.units} units of study</>;
-  }
-  if (condition.kind === "programme_enrolment") {
-    return (
-      <>
-        Be enrolled in {condition.name}{" "}
-        <span className="font-mono font-semibold">({condition.code})</span>
-      </>
-    );
-  }
-  return (
-    <>
-      Complete at least {condition.units} units of {condition.subject}-coded
-      courses
-    </>
-  );
-}
-
-function RequisiteExpressionSummary({
-  academicYear,
-  expression,
-  availableCourseCodes,
-}: {
-  academicYear: number;
-  expression: RequisiteExpression;
-  availableCourseCodes: ReadonlySet<string>;
-}) {
-  if (expression.kind !== "group") {
-    return (
-      <RequisiteConditionText
-        academicYear={academicYear}
-        condition={expression}
-        availableCourseCodes={availableCourseCodes}
-      />
-    );
-  }
-
-  const title =
-    expression.operator === "all_of"
-      ? "Complete all of the following"
-      : "Complete one of the following";
-  return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <p className="text-xs font-semibold text-foreground/90">{title}</p>
-      <ul className="mt-2 space-y-2 border-l border-border pl-3 text-xs text-foreground/80">
-        {expression.conditions.map((condition, index) => (
-          <li key={index}>
-            <RequisiteExpressionSummary
-              academicYear={academicYear}
-              expression={condition}
-              availableCourseCodes={availableCourseCodes}
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function RequisiteProgressSummary({
-  academicYear,
-  progress,
-  availableCourseCodes,
-}: {
-  academicYear: number;
-  progress: RequisiteProgress;
-  availableCourseCodes: ReadonlySet<string>;
-}) {
-  if (progress.kind === "course") {
-    return (
-      <div className="flex items-start gap-2">
-        {progress.satisfied ? (
-          <CheckCircle2
-            aria-label="Completed"
-            className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300"
-            size={16}
-          />
-        ) : (
-          <Circle
-            aria-label="Not completed"
-            className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
-            size={16}
-          />
-        )}
-        <span>
-          Complete{" "}
-          <CourseReferenceText
-            academicYear={academicYear}
-            text={progress.code}
-            availableCourseCodes={availableCourseCodes}
-          />
-        </span>
-      </div>
-    );
-  }
-
-  if (
-    progress.kind === "subject_units" ||
-    progress.kind === "level_units" ||
-    progress.kind === "units_total"
-  ) {
-    const description =
-      progress.kind === "subject_units"
-        ? `${progress.subject}-coded units completed`
-        : progress.kind === "level_units"
-          ? `${progress.level}-level${progress.subject ? ` ${progress.subject}` : ""} units completed`
-          : "units of study completed";
-    return (
-      <div className="flex items-start gap-2">
-        {progress.satisfied ? (
-          <CheckCircle2
-            aria-label="Completed"
-            className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300"
-            size={16}
-          />
-        ) : (
-          <Circle
-            aria-label="Not completed"
-            className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
-            size={16}
-          />
-        )}
-        <span>
-          {progress.completedUnits} of {progress.requiredUnits} {description}
-        </span>
-      </div>
-    );
-  }
-
-  if (progress.kind === "programme_enrolment") {
-    return (
-      <div className="flex items-start gap-2">
-        {progress.satisfied ? (
-          <CheckCircle2
-            aria-label="Enrolled"
-            className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-300"
-            size={16}
-          />
-        ) : (
-          <Circle
-            aria-label="Not enrolled"
-            className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
-            size={16}
-          />
-        )}
-        <span>
-          Be enrolled in {progress.name}{" "}
-          <span className="font-mono font-semibold">({progress.code})</span>
-        </span>
-      </div>
-    );
-  }
-
-  const title =
-    progress.operator === "all_of"
-      ? "Complete all of the following"
-      : "Complete one of the following";
-  return (
-    <div className="rounded-lg border border-border bg-card p-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-foreground/90">{title}</p>
-        <Badge
-          variant={
-            badgeVariantForTone[progress.satisfied ? "success" : "warning"]
-          }
-        >
-          {progress.satisfied ? "Met" : "Not met"}
-        </Badge>
-      </div>
-      <ul className="mt-3 space-y-2 border-l border-border pl-3 text-xs text-foreground/80">
-        {progress.conditions.map((condition, index) => (
-          <li key={index}>
-            <RequisiteProgressSummary
-              academicYear={academicYear}
-              progress={condition}
-              availableCourseCodes={availableCourseCodes}
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 const EMPTY_CODES: ReadonlySet<string> = new Set();
 
+/**
+ * The student-facing body of a course page. The student route and the admin
+ * import review both render this component, so a draft preview cannot drift
+ * away from what a student will actually see.
+ */
 /**
  * The student-facing body of a course page. The student route and the admin
  * import review both render this component, so a draft preview cannot drift

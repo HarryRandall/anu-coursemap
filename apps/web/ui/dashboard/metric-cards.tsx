@@ -1,5 +1,4 @@
 "use client";
-
 import type { ReactNode } from "react";
 import { CalendarCheck2, Layers3 } from "lucide-react";
 import { Card, CardContent } from "@coursemap/ui/primitives/card";
@@ -9,10 +8,7 @@ import { TrendChart, DonutChart, chartColours } from "./metric-charts";
 import type { DashboardTermPoint } from "@/lib/coursemap/dashboard-series";
 import type { RequirementBucketProgress } from "@/lib/coursemap/requirement-progress";
 import { STANDARD_TERM_UNITS, type DegreeUnitProgress } from "@/lib/planner";
-
-/* ------------------------------------------------------------------ */
-/* Registry                                                            */
-/* ------------------------------------------------------------------ */
+import { MiniBars, Ring, TickMeter } from "@/ui/dashboard/metric-visuals";
 
 export type MetricId =
   | "load"
@@ -27,7 +23,6 @@ export type MetricId =
   | "next-term"
   | "load-balance"
   | "finish";
-
 export const METRIC_ORDER: readonly MetricId[] = [
   "load",
   "coverage",
@@ -42,7 +37,6 @@ export const METRIC_ORDER: readonly MetricId[] = [
   "load-balance",
   "finish",
 ];
-
 export const METRIC_OPTIONS: Record<
   MetricId,
   { title: string; blurb: string }
@@ -96,7 +90,6 @@ export const METRIC_OPTIONS: Record<
     blurb: "When the current plan runs out of scheduled semesters.",
   },
 };
-
 export const DEFAULT_METRIC_IDS: readonly MetricId[] = [
   "load",
   "coverage",
@@ -106,9 +99,7 @@ export const DEFAULT_METRIC_IDS: readonly MetricId[] = [
 /* ------------------------------------------------------------------ */
 /* Inputs                                                              */
 /* ------------------------------------------------------------------ */
-
 export type MetricCourse = { code: string; units: number; ready: boolean };
-
 export type MetricInputs = {
   unitTarget: number | null;
   progress: DegreeUnitProgress;
@@ -130,61 +121,6 @@ export type MetricInputs = {
 /* ------------------------------------------------------------------ */
 /* Small visuals                                                       */
 /* ------------------------------------------------------------------ */
-
-function Ring({ percent, label }: { percent: number; label: string }) {
-  const value = Math.max(0, Math.min(100, percent));
-  return (
-    <DonutChart
-      segments={[
-        { name: label, value, fill: chartColours.green },
-        { name: "Remaining (%)", value: 100 - value, fill: chartColours.muted },
-      ]}
-    />
-  );
-}
-
-function TickMeter({
-  percent,
-  label,
-  steps = 20,
-}: {
-  percent: number;
-  label: string;
-  steps?: number;
-}) {
-  const filled = (Math.max(0, Math.min(100, percent)) / 100) * steps;
-  return (
-    <div className="flex h-3 gap-1" role="img" aria-label={label}>
-      {Array.from({ length: steps }, (_, index) => (
-        <span
-          key={index}
-          className="relative flex-1 overflow-hidden rounded-xs bg-muted"
-        >
-          <span
-            className="absolute inset-y-0 left-0 bg-current"
-            style={{
-              width: `${Math.max(0, Math.min(1, filled - index)) * 100}%`,
-            }}
-          />
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function MiniBars({
-  points,
-}: {
-  points: readonly { label: string; units: number }[];
-  label: string;
-}) {
-  return <TrendChart points={points} kind="bar" colour={chartColours.blue} />;
-}
-
-/* ------------------------------------------------------------------ */
-/* View model                                                          */
-/* ------------------------------------------------------------------ */
-
 export type MetricView = {
   id: MetricId;
   title: string;
@@ -196,15 +132,12 @@ export type MetricView = {
   /** Rendered between the value and the note. */
   body?: ReactNode;
 };
-
 function courseWord(count: number) {
   return count === 1 ? "course" : "courses";
 }
-
 function semesterWord(count: number) {
   return count === 1 ? "semester" : "semesters";
 }
-
 export function buildMetricViews(
   inputs: MetricInputs,
 ): Record<MetricId, MetricView> {
@@ -540,7 +473,6 @@ export function buildMetricViews(
 /* ------------------------------------------------------------------ */
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
-
 const metricTones: Record<MetricId, string> = {
   load: "text-sky-600 dark:text-sky-400",
   coverage: "text-violet-600 dark:text-violet-400",
@@ -555,7 +487,6 @@ const metricTones: Record<MetricId, string> = {
   "load-balance": "text-amber-600 dark:text-amber-400",
   finish: "text-rose-600 dark:text-rose-400",
 };
-
 export function MetricCardView({
   view,
   compact = false,

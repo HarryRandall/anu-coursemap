@@ -22,7 +22,6 @@ import {
   type NodeProps,
   type NodeTypes,
 } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
 import { ChevronDown, Plus } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {

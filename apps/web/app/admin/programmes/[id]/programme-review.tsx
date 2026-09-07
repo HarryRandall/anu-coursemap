@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Tabs,
   TabsContent,
@@ -17,7 +16,6 @@ import {
 } from "@coursemap/ui/primitives/dropdown-menu";
 import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 import ReuiLink from "next/link";
-
 import {
   Check,
   CheckCircle2,
@@ -27,256 +25,27 @@ import {
   Ellipsis,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { publishStructureSnapshot } from "@/lib/coursemap/catalogue-publication-actions";
-import type {
-  AdminStructureReviewCondition,
-  AdminStructureReviewGroup,
-  AdminStructureReviewRecord,
-} from "@/lib/coursemap/admin-catalogue";
-import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
+import type { AdminStructureReviewRecord } from "@/lib/coursemap/admin-catalogue";
 import { AppShell } from "@/ui/shell";
-
 import { StructureRequirementDiagram } from "@/ui/admin/academic-structures/requirement-diagram";
-import { structureSectionSourceTexts } from "@/lib/coursemap/structure-source-text";
-import { AnuSourceDialog } from "@/ui/admin/common/anu-source-dialog";
 import { PendingImportProposals } from "@/ui/admin/imports/pending-import-proposals";
 import { JsonCode } from "@/ui/common/json-code";
 import {
   AcademicStructureManualSnapshotEditor,
   type StructureEditorSection,
 } from "@/ui/admin/academic-structures/manual-snapshot-editor";
-
-function formatDate(value: string | null) {
-  if (!value) return "Not recorded";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "Australia/Sydney",
-  }).format(date);
-}
-
-function Row({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="grid gap-1 border-b border-border/60 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
-      <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-sm leading-6 text-foreground">
-        {value || (
-          <span className="text-muted-foreground/80">Not provided</span>
-        )}
-      </dd>
-    </div>
-  );
-}
-
-function conditionText(condition: AdminStructureReviewCondition) {
-  if (condition.optionCodes.length > 1) {
-    return `${condition.kind === "structure_list" ? "Choose a structure from" : "Choose courses from"}: ${condition.optionCodes.join(", ")}`;
-  }
-  if (condition.courseCode) {
-    return (
-      <>
-        Complete{" "}
-        <Link
-          className="font-mono font-semibold text-primary hover:text-primary"
-          href={`/admin/courses/${condition.courseCode}`}
-        >
-          {condition.courseCode}
-        </Link>
-      </>
-    );
-  }
-  if (condition.targetStructureCode && condition.targetStructureKind) {
-    return (
-      <>
-        Complete{" "}
-        <Link
-          className="font-mono font-semibold text-primary hover:text-primary"
-          href={adminAcademicStructureDetailPath({
-            kind: condition.targetStructureKind,
-            publicId: condition.targetStructureCode,
-          })}
-        >
-          {condition.targetStructureCode}
-        </Link>
-      </>
-    );
-  }
-
-  const level =
-    condition.minimumLevel && condition.maximumLevel
-      ? `${condition.minimumLevel} to ${condition.maximumLevel} level `
-      : condition.minimumLevel
-        ? `${condition.minimumLevel} level or above `
-        : "";
-  const units = condition.minimumUnits
-    ? `${condition.minimumUnits} units `
-    : "";
-  const subject = condition.subjectCode ? `of ${condition.subjectCode} ` : "";
-  const summary = `${units}${subject}${level}`.trim();
-  return summary
-    ? `Complete ${summary}`
-    : (condition.sourceText ?? "Condition");
-}
-
-function GroupCard({ group }: { group: AdminStructureReviewGroup }) {
-  return (
-    <section className="border-b border-border/60 px-5 py-4 last:border-b-0 sm:px-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold text-foreground">{group.name}</h3>
-        <span className="font-mono text-xs text-muted-foreground">
-          {group.code}
-        </span>
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {group.operator === "all_of" ? "Complete all of" : "Complete any of"}
-        {group.minimumUnits ? ` · at least ${group.minimumUnits} units` : ""}
-        {group.minimumCount ? ` · at least ${group.minimumCount} items` : ""}
-      </p>
-      {group.description ? (
-        <p className="mt-2 text-sm leading-6 text-foreground/80">
-          {group.description}
-        </p>
-      ) : null}
-      {group.conditions.length ? (
-        <ul className="mt-3 space-y-1.5 border-l border-border pl-4 text-sm text-foreground/80">
-          {group.conditions.map((condition) => (
-            <li key={condition.id}>{conditionText(condition)}</li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-sm text-muted-foreground">
-          No conditions were imported for this group.
-        </p>
-      )}
-    </section>
-  );
-}
-
-const detailSections: { key: StructureEditorSection; label: string }[] = [
-  { key: "details", label: "Overview" },
-  { key: "summary", label: "Course information" },
-  { key: "sections", label: "Content" },
-  { key: "outcomes", label: "Learning outcomes" },
-  { key: "fees", label: "Fees" },
-  { key: "relationships", label: "Related programmes and plans" },
-];
-
-function StructureSectionContent({
-  record,
-  section,
-}: {
-  record: AdminStructureReviewRecord;
-  section: StructureEditorSection;
-}) {
-  const projection = record.projection;
-  switch (section) {
-    case "details":
-      return (
-        <dl className="grid gap-x-8 sm:grid-cols-2">
-          <Row label="Name" value={record.name} />
-          <Row label="Code" value={record.code} />
-          <Row label="Units" value={record.units} />
-          <Row label="College" value={projection.snapshot.college} />
-          <div className="sm:col-span-2">
-            <Row
-              label="Introduction"
-              value={projection.snapshot.introduction}
-            />
-            <Row label="Description" value={record.description} />
-          </div>
-        </dl>
-      );
-    case "summary":
-      return (
-        <dl>
-          {projection.summaryFields.map((field) => (
-            <Row
-              key={`${field.fieldKey}:${field.valuePosition}`}
-              label={field.label}
-              value={field.fieldValue}
-            />
-          ))}
-        </dl>
-      );
-    case "sections":
-      return (
-        <div className="space-y-5">
-          {projection.sections.map((item) => (
-            <section key={item.sectionKey}>
-              <h3 className="mb-2 text-sm font-semibold">{item.heading}</h3>
-              <p className="text-sm leading-7 whitespace-pre-wrap">
-                {item.markdown}
-              </p>
-            </section>
-          ))}
-        </div>
-      );
-    case "outcomes":
-      return (
-        <ol className="list-decimal space-y-3 pl-5 text-sm leading-7">
-          {projection.learningOutcomes.map((item) => (
-            <li key={item.position}>{item.outcomeText}</li>
-          ))}
-        </ol>
-      );
-    case "fees":
-      return (
-        <dl>
-          {projection.fees.map((item) => (
-            <Row
-              key={item.position}
-              label={item.sourceLabel ?? item.audience.replaceAll("_", " ")}
-              value={
-                item.amount === null
-                  ? item.sourceText
-                  : `${item.currency ?? "AUD"} ${item.amount.toLocaleString("en-AU")} (${item.basis})`
-              }
-            />
-          ))}
-        </dl>
-      );
-    case "relationships":
-      return (
-        <ul className="space-y-3 text-sm">
-          {projection.relationships.map((item) => (
-            <li key={item.position}>
-              <span className="font-medium">{item.targetCode}</span>
-              {item.targetTitle ? ` · ${item.targetTitle}` : ""}
-            </li>
-          ))}
-        </ul>
-      );
-    default:
-      return null;
-  }
-}
-
-function SourceText({
-  record,
-  section,
-}: {
-  record: AdminStructureReviewRecord;
-  section: StructureEditorSection;
-}) {
-  const texts = structureSectionSourceTexts(
-    record.sourceOriginalProjection,
-    section,
-  );
-  return (
-    <AnuSourceDialog
-      title={section === "requirements" ? "Requirements" : "ANU source text"}
-      texts={texts}
-      sourceUrl={record.source?.canonicalUrl}
-    />
-  );
-}
+import { GroupCard } from "@/ui/admin/academic-structures/structure-requirement-group-card";
+import {
+  Row,
+  SourceText,
+  formatDate,
+} from "@/ui/admin/academic-structures/structure-review-fields";
+import {
+  StructureSectionContent,
+  detailSections,
+} from "@/ui/admin/academic-structures/structure-section-content";
 
 export function ProgrammeReview({
   canEdit: canWrite,
