@@ -27,6 +27,7 @@ function GuideCard({ article }: { article: HelpArticle }) {
     <li className="h-full">
       <Link
         href={`/help/${article.slug}`}
+        prefetch={true}
         className="group flex h-full flex-col rounded-xl border border-border bg-card p-5 shadow-xs transition hover:border-input hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
       >
         <span

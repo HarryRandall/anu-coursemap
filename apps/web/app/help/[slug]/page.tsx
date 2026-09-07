@@ -32,6 +32,7 @@ function RelatedGuideCard({ article }: { article: HelpArticle }) {
     <li>
       <Link
         href={`/help/${article.slug}`}
+        prefetch={true}
         className="group flex h-full items-start gap-4 rounded-xl border border-border bg-card p-5 shadow-xs transition hover:border-input hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
       >
         <span
@@ -67,6 +68,7 @@ function AdjacentLink({
     <Link
       rel={next ? "next" : "prev"}
       href={`/help/${article.slug}`}
+      prefetch={true}
       className={cn(
         "group flex min-w-0 flex-1 flex-col rounded-xl border border-border bg-card p-4 shadow-xs transition hover:border-input hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
         next ? "items-end text-right sm:col-start-2" : "items-start",
@@ -105,8 +107,6 @@ export default async function HelpArticlePage({
   if (!article) notFound();
 
   const category = helpCategoryById(article.category);
-  const tint = helpCategoryTints[article.category];
-  const Icon = helpTopicIcons[article.slug] ?? BookOpen;
   const { previous, next } = adjacentHelpArticles(article.slug);
   const related = relatedHelpArticles(article.slug);
   const tocItems = article.sections.map((section) => ({
@@ -116,33 +116,23 @@ export default async function HelpArticlePage({
 
   return (
     <AppShell currentBreadcrumbLabel={article.title}>
-      <div className="mx-auto grid max-w-6xl items-start gap-10 py-2 sm:py-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10">
+      <div
+        key={article.slug}
+        className="mx-auto grid max-w-6xl animate-fade-in items-start gap-10 py-2 sm:py-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10"
+      >
         <article className="max-w-3xl min-w-0">
           <h1 className="sr-only">{article.title}</h1>
 
-          <header className="flex items-start gap-4 sm:gap-5">
-            <span
-              className={cn(
-                "grid size-12 shrink-0 place-items-center rounded-xl sm:size-14",
-                tint.tile,
-              )}
+          <header className="space-y-3">
+            <Link
+              href="/help"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              <Icon size={24} aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <Link
-                href="/help"
-                className={cn(
-                  "inline-flex h-6 items-center rounded-full px-2.5 text-[11px] font-semibold tracking-wide uppercase ring-1 transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                  tint.chip,
-                )}
-              >
-                {category.label}
-              </Link>
-              <p className="mt-2 text-lg leading-snug font-medium tracking-tight text-foreground sm:text-xl">
-                {article.description}
-              </p>
-            </div>
+              {category.label}
+            </Link>
+            <p className="text-xl leading-snug font-medium tracking-tight text-foreground sm:text-2xl">
+              {article.description}
+            </p>
           </header>
 
           <div className="mt-10 space-y-8 sm:mt-12 sm:space-y-10">
@@ -194,10 +184,11 @@ export default async function HelpArticlePage({
                         <Image
                           src={section.image.src}
                           loading="eager"
+                          unoptimized
                           alt={section.image.alt}
-                          width={480}
+                          width={484}
                           height={285}
-                          className="h-auto w-full rounded-lg border border-border"
+                          className="h-auto w-full max-w-md rounded-lg border border-border"
                         />
                         <figcaption className="mt-2 text-sm leading-6 text-muted-foreground">
                           {section.image.caption}
@@ -206,7 +197,7 @@ export default async function HelpArticlePage({
                     ) : null}
                     {section.videoPlaceholder ? (
                       <figure className="mt-6">
-                        <div className="flex aspect-video flex-col items-center justify-center gap-3 rounded-lg bg-muted px-6 text-center">
+                        <div className="flex aspect-video flex-col items-center justify-center gap-3 rounded-lg border-2 border-dotted border-border bg-muted px-6 text-center">
                           <Video
                             className="size-8 text-muted-foreground"
                             aria-hidden="true"

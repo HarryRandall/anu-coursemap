@@ -2,12 +2,7 @@
 
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Badge } from "@coursemap/ui/components/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@coursemap/ui/primitives/tabs";
+import { Tabs, TabsContent } from "@coursemap/ui/primitives/tabs";
 import { CircleAlert } from "lucide-react";
 import { AcademicStructureImportArtifactViewer } from "@/ui/admin/imports/academic-structure-import-artifact-viewer";
 import {
@@ -18,6 +13,7 @@ import { AcademicStructureImportPipeline } from "@/ui/admin/imports/academic-str
 import { AcademicStructureImportPreview } from "@/ui/admin/imports/academic-structure-import-preview";
 import { CourseImportAutoRefresh } from "@/ui/admin/imports/course-import-auto-refresh";
 import { ImportInspectionActions } from "@/ui/admin/imports/import-inspection-actions";
+import { SectionTabs } from "@/ui/common/section-tabs";
 import {
   ImportDiagnostics,
   ImportInspectionStatus,
@@ -25,6 +21,13 @@ import {
 import { AppShell } from "@/ui/shell";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
+
+const importSectionTabs = [
+  { value: "pipeline", label: "Pipeline" },
+  { value: "source", label: "Source and artefacts" },
+  { value: "database", label: "Database rows" },
+  { value: "candidate", label: "Preview" },
+] as const;
 
 export function AcademicStructureImportTargetReview({
   detail,
@@ -40,24 +43,17 @@ export function AcademicStructureImportTargetReview({
       })
     : null;
   return (
-    <AppShell
-      admin
-      fullBleed
-      currentBreadcrumbLabel={detail.target.code}
-      showThemeToggle={false}
-    >
-      <CourseImportAutoRefresh active={active} />
-      <div className="w-full px-4 pb-4 sm:px-6">
-        <h1 className="sr-only">{detail.target.code} import</h1>
-        <Tabs defaultValue="pipeline" className="gap-5">
-          <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6">
-            <TabsList aria-label="Import sections" variant="line">
-              <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-              <TabsTrigger value="source">Source and artefacts</TabsTrigger>
-              <TabsTrigger value="database">Database rows</TabsTrigger>
-              <TabsTrigger value="candidate">Preview</TabsTrigger>
-            </TabsList>
-          </div>
+    <Tabs defaultValue="pipeline" className="gap-0">
+      <AppShell
+        admin
+        fullBleed
+        currentBreadcrumbLabel={detail.target.code}
+        showThemeToggle={false}
+        tabs={<SectionTabs label="Import sections" tabs={importSectionTabs} />}
+      >
+        <CourseImportAutoRefresh active={active} />
+        <div className="w-full space-y-5 px-4 py-5 sm:px-6">
+          <h1 className="sr-only">{detail.target.code} import</h1>
           {detail.target.errorSummary ? (
             <Alert variant="destructive">
               <CircleAlert aria-hidden="true" />
@@ -125,8 +121,8 @@ export function AcademicStructureImportTargetReview({
           <TabsContent value="candidate">
             <AcademicStructureImportPreview detail={detail} />
           </TabsContent>
-        </Tabs>
-      </div>
-    </AppShell>
+        </div>
+      </AppShell>
+    </Tabs>
   );
 }

@@ -30,6 +30,14 @@ export function ArticleToc({ items }: { items: ArticleTocItem[] }) {
           current = item.id;
         }
       }
+      const scrollingElement =
+        document.scrollingElement ?? document.documentElement;
+      const atPageEnd =
+        scrollingElement.scrollHeight > window.innerHeight &&
+        window.scrollY + window.innerHeight >=
+          scrollingElement.scrollHeight - 2;
+      const lastSection = items.at(-1);
+      if (atPageEnd && lastSection) current = lastSection.id;
       setActiveId(current);
     };
 

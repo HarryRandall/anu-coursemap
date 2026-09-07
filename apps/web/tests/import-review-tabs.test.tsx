@@ -6,8 +6,15 @@ import { CourseImportTargetReview } from "@/ui/admin/imports/course-import-targe
 import { AcademicStructureImportTargetReview } from "@/ui/admin/imports/academic-structure-import-target-review";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
+// The stub mirrors the real shell's contract: it renders the section tab bar
+// from the `tabs` slot as well as the page body.
 vi.mock("@/ui/shell", () => ({
-  AppShell: ({ children }: { children: ReactNode }) => <main>{children}</main>,
+  AppShell: ({ children, tabs }: { children: ReactNode; tabs?: ReactNode }) => (
+    <main>
+      {tabs}
+      {children}
+    </main>
+  ),
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),

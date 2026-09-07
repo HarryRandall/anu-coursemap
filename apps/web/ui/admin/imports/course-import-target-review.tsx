@@ -2,18 +2,14 @@
 
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Badge } from "@coursemap/ui/components/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@coursemap/ui/primitives/tabs";
+import { Tabs, TabsContent } from "@coursemap/ui/primitives/tabs";
 import { CircleAlert } from "lucide-react";
 import { CourseImportDatabaseRows } from "@/ui/admin/imports/course-import-database-rows";
 import { CourseImportArtifactViewer } from "@/ui/admin/imports/course-import-artifact-viewer";
 import { CourseImportAutoRefresh } from "@/ui/admin/imports/course-import-auto-refresh";
 import { CourseImportPipeline } from "@/ui/admin/imports/course-import-pipeline";
 import { ImportInspectionActions } from "@/ui/admin/imports/import-inspection-actions";
+import { PanelTabs, SectionTabs } from "@/ui/common/section-tabs";
 import {
   ImportDiagnostics,
   ImportInspectionStatus,
@@ -27,6 +23,13 @@ import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
 import { persistedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
+
+const importSectionTabs = [
+  { value: "pipeline", label: "Pipeline" },
+  { value: "source", label: "Source and artefacts" },
+  { value: "database", label: "Database rows" },
+  { value: "preview", label: "Course preview" },
+] as const;
 
 export function CourseImportTargetReview({
   detail,
@@ -42,33 +45,17 @@ export function CourseImportTargetReview({
     ? `/admin/courses/${detail.target.coursePublicId}?year=${detail.run.academicYear}`
     : null;
   return (
-    <AppShell
-      admin
-      fullBleed
-      currentBreadcrumbLabel={detail.target.courseCode}
-      showThemeToggle={false}
-    >
-      <CourseImportAutoRefresh active={active} />
-      <div className="w-full px-4 pb-4 sm:px-6">
-        <div className="flex justify-end py-3">
-          <ImportInspectionActions
-            code={detail.target.courseCode}
-            academicYear={detail.run.academicYear}
-            requestedModel={detail.run.requestedModel}
-            active={active}
-            workspaceHref={workspaceHref}
-          />
-        </div>
-        <h1 className="sr-only">{detail.target.courseCode} import</h1>
-        <Tabs defaultValue="pipeline" className="gap-5">
-          <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6">
-            <TabsList aria-label="Import sections" variant="line">
-              <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-              <TabsTrigger value="source">Source and artefacts</TabsTrigger>
-              <TabsTrigger value="database">Database rows</TabsTrigger>
-              <TabsTrigger value="preview">Course preview</TabsTrigger>
-            </TabsList>
-          </div>
+    <Tabs defaultValue="pipeline" className="gap-0">
+      <AppShell
+        admin
+        fullBleed
+        currentBreadcrumbLabel={detail.target.courseCode}
+        showThemeToggle={false}
+        tabs={<SectionTabs label="Import sections" tabs={importSectionTabs} />}
+      >
+        <CourseImportAutoRefresh active={active} />
+        <div className="w-full space-y-5 px-4 py-5 sm:px-6">
+          <h1 className="sr-only">{detail.target.courseCode} import</h1>
           {detail.target.errorSummary ? (
             <Alert variant="destructive">
               <CircleAlert aria-hidden="true" />
@@ -86,6 +73,17 @@ export function CourseImportTargetReview({
                 processing={detail.target.processingStatus}
                 review={detail.target.reviewStatus}
               />
+              {/* The actions act on the run this header names, so they sit on
+                  its line rather than floating above the section tabs. */}
+              <div className="ms-auto">
+                <ImportInspectionActions
+                  code={detail.target.courseCode}
+                  academicYear={detail.run.academicYear}
+                  requestedModel={detail.run.requestedModel}
+                  active={active}
+                  workspaceHref={workspaceHref}
+                />
+              </div>
             </header>
             <CourseImportPipeline
               extractions={detail.extractions}
@@ -124,9 +122,9 @@ export function CourseImportTargetReview({
           <TabsContent value="preview">
             {previewCourse ? (
               <Tabs className="gap-0" defaultValue="overview">
-                <div className="overflow-x-auto border-b border-border">
+                <PanelTabs>
                   <CourseDetailTabsList />
-                </div>
+                </PanelTabs>
                 <div className="py-5">
                   <CourseDetailView
                     course={previewCourse}
@@ -147,8 +145,8 @@ export function CourseImportTargetReview({
               </DataTableShell>
             )}
           </TabsContent>
-        </Tabs>
-      </div>
-    </AppShell>
+        </div>
+      </AppShell>
+    </Tabs>
   );
 }

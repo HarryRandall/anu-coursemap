@@ -129,9 +129,9 @@ export const helpArticles: HelpArticle[] = [
         body: "The board groups your plan by year and study period. Each period shows its courses and unit total. Start with the period you want to plan, then use Add course in an empty slot or the plus button beside its heading.",
         image: {
           src: "/help/plan-study-period.png",
-          alt: "A plan board showing semester unit totals, Add course slots and a course placed in Second Semester.",
+          alt: "An empty semester with its unit total, Add course slots and a plus button beside its heading.",
           caption:
-            "Example plan board. Use an empty slot or a period's plus button to start finding a course. Dates, courses and units depend on your plan.",
+            "An empty study period. Use an Add course slot or the plus button beside the heading. Dates and units depend on your plan.",
         },
       },
       {
