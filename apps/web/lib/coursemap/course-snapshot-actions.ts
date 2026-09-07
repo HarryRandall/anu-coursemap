@@ -124,7 +124,7 @@ function revalidateCourse({
 }) {
   revalidatePath("/admin/courses");
   revalidatePath(`/admin/courses/${coursePublicId}`);
-  revalidatePath(`/admin/courses/${coursePublicId}?year=${year}`);
+  revalidatePath(`/admin/courses/${coursePublicId}/${year}`);
   revalidatePath("/courses");
   revalidatePath(`/courses/${code}`);
   revalidatePath("/plan");

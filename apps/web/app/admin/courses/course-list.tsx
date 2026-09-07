@@ -1,4 +1,5 @@
 "use client";
+import { adminCourseDetailPath } from "@/lib/coursemap/course-routes";
 import { badgeVariantForTone } from "@/lib/ui";
 
 import { Badge } from "@coursemap/ui/components/badge";
@@ -585,7 +586,10 @@ export function AdminCourseDirectory({
                         href={
                           record.coursePublicId &&
                           record.draftSnapshotId !== null
-                            ? `/admin/courses/${record.coursePublicId}?year=${record.year}`
+                            ? adminCourseDetailPath({
+                                publicId: record.coursePublicId,
+                                year: record.year,
+                              })
                             : record.publishedSnapshotId !== null
                               ? `/courses/${record.code}?year=${record.year}`
                               : undefined
@@ -618,7 +622,10 @@ export function AdminCourseDirectory({
                             ? [
                                 {
                                   label: "Preview draft",
-                                  href: `/admin/courses/${record.coursePublicId}?year=${record.year}`,
+                                  href: adminCourseDetailPath({
+                                    publicId: record.coursePublicId,
+                                    year: record.year,
+                                  }),
                                 },
                               ]
                             : []),

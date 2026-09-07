@@ -1,5 +1,6 @@
 "use client";
 
+import { adminCourseDetailPath } from "@/lib/coursemap/course-routes";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Badge } from "@coursemap/ui/components/badge";
 import { Tabs, TabsContent } from "@coursemap/ui/primitives/tabs";
@@ -42,7 +43,10 @@ export function CourseImportTargetReview({
     detail.target.processingStatus,
   );
   const workspaceHref = detail.target.coursePublicId
-    ? `/admin/courses/${detail.target.coursePublicId}?year=${detail.run.academicYear}`
+    ? adminCourseDetailPath({
+        publicId: detail.target.coursePublicId,
+        year: detail.run.academicYear,
+      })
     : null;
   return (
     <Tabs defaultValue="pipeline" className="gap-0">

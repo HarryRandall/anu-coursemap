@@ -88,7 +88,7 @@ test("administrator can inspect course review tabs", async ({
       page.getByRole("button", { name: /Academic year/ }),
     ).toBeVisible();
   }
-  await page.goto("/admin/courses/COMP1100?year=2026");
+  await page.goto("/admin/courses/COMP1100/2026");
   for (const name of [
     "Course data",
     "Requisites",

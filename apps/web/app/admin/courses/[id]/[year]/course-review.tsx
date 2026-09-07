@@ -1,5 +1,6 @@
 "use client";
 
+import { adminCourseDetailPath } from "@/lib/coursemap/course-routes";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Badge } from "@coursemap/ui/components/badge";
 import { Button } from "@coursemap/ui/primitives/button";
@@ -216,10 +217,12 @@ export function CourseReview({
     : [];
 
   function chooseSnapshot(snapshotId: number) {
-    const suffix =
-      snapshotId === record.activeSnapshotId ? "" : `&snapshot=${snapshotId}`;
     router.push(
-      `/admin/courses/${record.publicId}?year=${record.year}${suffix}`,
+      adminCourseDetailPath({
+        publicId: record.publicId,
+        year: record.year,
+        snapshotId: snapshotId === record.activeSnapshotId ? null : snapshotId,
+      }),
     );
   }
 
