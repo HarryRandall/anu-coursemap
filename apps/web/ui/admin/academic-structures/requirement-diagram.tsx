@@ -14,7 +14,9 @@ import { AcademicStructureManualSnapshotProjection as Projection } from "@/lib/s
 
 export function StructureRequirementDiagram({
   projection,
+  contained = false,
 }: {
+  contained?: boolean;
   projection: Projection;
 }) {
   const colorMode = useGraphColorMode();
@@ -134,7 +136,11 @@ export function StructureRequirementDiagram({
     );
   return (
     <div
-      className="h-[36rem] overflow-hidden rounded-xl border border-border"
+      className={
+        contained
+          ? "h-[32rem] overflow-hidden rounded-xl border border-border md:h-auto md:min-h-0 md:flex-1"
+          : "h-[36rem] overflow-hidden rounded-xl border border-border"
+      }
       aria-label="Requirement diagram"
     >
       <ReactFlow

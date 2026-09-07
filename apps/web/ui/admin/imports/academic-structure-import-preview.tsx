@@ -1,3 +1,4 @@
+import { ImportEmptyState } from "./import-empty-state";
 import { Badge } from "@coursemap/ui/components/badge";
 import {
   Card,
@@ -34,11 +35,7 @@ export function AcademicStructureImportPreview({
     detail.relationalData.academic_structure_unmodelled_requirements.length > 0;
   const snapshot = detail.candidateSnapshot;
   if (!snapshot) {
-    return (
-      <p className="py-8 text-sm text-muted-foreground">
-        No imported snapshot is available.
-      </p>
-    );
+    return <ImportEmptyState kind="preview" />;
   }
   const fields = detail.relationalData.academic_structure_summary_fields;
   const sections = detail.relationalData.academic_structure_snapshot_sections;

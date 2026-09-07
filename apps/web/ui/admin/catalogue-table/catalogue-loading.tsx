@@ -30,7 +30,7 @@ export function CatalogueLoading({
           ? ["Import", "Year", "Outcome", "Change", "Started", "Actions"]
           : ["Select", noun, "Year", "Status", "Units", "Actions"];
   return (
-    <AppShell admin={layout !== "public-courses"} fill>
+    <AppShell loading admin={layout !== "public-courses"} fill>
       <div
         aria-busy="true"
         className="mx-auto flex min-h-0 w-full flex-1 flex-col gap-4"
@@ -46,7 +46,7 @@ export function CatalogueLoading({
         <DataTableShell
           imports={imports}
           layout={layout}
-          selectable={!layout}
+          selectable={!imports && !layout}
           footer={
             <div className="flex h-8 items-center justify-between">
               <Skeleton className="h-3 w-24" />
@@ -60,11 +60,14 @@ export function CatalogueLoading({
               <TableRow>
                 {columns.map((column) => (
                   <TableHead key={column}>
-                    {column === "Select" || column === "Actions" ? (
-                      <span className="sr-only">{column}</span>
-                    ) : (
-                      column
-                    )}
+                    <span className="sr-only">{column}</span>
+                    {column !== "Actions" ? (
+                      <Skeleton
+                        className={
+                          column === "Select" ? "size-4" : "h-3 w-16 max-w-full"
+                        }
+                      />
+                    ) : null}
                   </TableHead>
                 ))}
               </TableRow>

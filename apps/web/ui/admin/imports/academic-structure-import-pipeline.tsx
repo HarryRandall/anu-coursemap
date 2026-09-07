@@ -1,3 +1,5 @@
+import { ImportEmptyState } from "./import-empty-state";
+import type { ReactNode } from "react";
 import { badgeVariantForTone } from "@/lib/ui";
 import { Badge } from "@coursemap/ui/components/badge";
 import {
@@ -18,7 +20,7 @@ import {
   TableRow,
 } from "@coursemap/ui/primitives/table";
 
-import { DataTableEmpty, DataTableShell } from "@/ui/common/data-table";
+import { DataTableShell } from "@/ui/common/data-table";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import type { Tone } from "@/lib/ui";
 
@@ -61,102 +63,103 @@ function cost(value: number | null) {
 
 export function AcademicStructureImportPipeline({
   extractions,
+  diagnostics,
   stages,
 }: {
   extractions: AcademicStructureImportTargetDetail["extractions"];
+  diagnostics?: ReactNode;
   stages: AcademicStructureImportTargetDetail["stages"];
 }) {
   return (
-    <div className="space-y-4">
-      {stages.length ? (
-        <DataTableShell>
-          <Table className="min-w-[760px]">
-            <TableCaption className="sr-only">
-              Academic structure import stages
-            </TableCaption>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-16">Step</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Attempts</TableHead>
-                <TableHead className="text-right">Duration</TableHead>
-                <TableHead>Error</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stages.map((stage) => (
-                <TableRow key={stage.id}>
-                  <TableCell className="text-xs text-muted-foreground tabular-nums">
-                    {stage.position + 1}
-                  </TableCell>
-                  <TableCell className="text-xs font-medium text-foreground/90">
-                    {readable(stage.stage_name)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={badgeVariantForTone[statusTone(stage.status)]}
-                    >
-                      {readable(stage.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
-                    {stage.attempt_count}
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
-                    {duration(stage.started_at, stage.completed_at)}
-                  </TableCell>
-                  <TableCell className="max-w-72 truncate text-xs text-rose-700 dark:text-rose-300">
-                    {stage.error_summary ?? "None"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </DataTableShell>
-      ) : (
-        <DataTableShell>
-          <DataTableEmpty
-            description="Stages appear after the background worker starts."
-            title="No pipeline stages"
-          />
-        </DataTableShell>
-      )}
-
-      {extractions.length === 0 ? (
-        <DataTableShell>
-          <DataTableEmpty
-            description="Model, token and cost details appear when an extraction attempt is recorded."
-            title="No model extraction yet"
-          />
-        </DataTableShell>
-      ) : (
-        extractions.map((extraction) => (
-          <Card key={extraction.id}>
-            <CardHeader>
-              <CardTitle>
-                <h2>
-                  {extraction.resolved_model ?? extraction.requested_model}
-                </h2>
-              </CardTitle>
-              {Boolean(
-                `Extraction attempt ${extraction.extraction_number}`,
-              ) && (
-                <CardDescription>{`Extraction attempt ${extraction.extraction_number}`}</CardDescription>
-              )}
-              {Boolean(
-                <Badge
-                  variant={
-                    badgeVariantForTone[
-                      statusTone(extraction.validation_status)
-                    ]
-                  }
-                >
-                  {readable(extraction.validation_status)}
-                </Badge>,
-              ) && (
-                <CardAction>
-                  {
+    <div className="workspace-stack">
+      <div
+        className="workspace-scroll space-y-4"
+        role="region"
+        aria-label="Import pipeline"
+        tabIndex={0}
+      >
+        <div
+          className="min-w-0 overflow-x-auto"
+          role="region"
+          aria-label="Pipeline stages"
+          data-scroll-kind="table"
+          tabIndex={0}
+        >
+          {stages.length ? (
+            <DataTableShell>
+              <Table className="min-w-[760px]">
+                <TableCaption className="sr-only">
+                  Academic structure import stages
+                </TableCaption>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-16">Step</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Attempts</TableHead>
+                    <TableHead className="text-right">Duration</TableHead>
+                    <TableHead>Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stages.map((stage) => (
+                    <TableRow key={stage.id}>
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">
+                        {stage.position + 1}
+                      </TableCell>
+                      <TableCell className="text-xs font-medium text-foreground/90">
+                        {readable(stage.stage_name)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            badgeVariantForTone[statusTone(stage.status)]
+                          }
+                        >
+                          {readable(stage.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
+                        {stage.attempt_count}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
+                        {duration(stage.started_at, stage.completed_at)}
+                      </TableCell>
+                      <TableCell className="max-w-72 truncate text-xs text-rose-700 dark:text-rose-300">
+                        {stage.error_summary ?? "None"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </DataTableShell>
+          ) : (
+            <ImportEmptyState kind="pipeline" />
+          )}
+        </div>
+        <div
+          className="min-w-0 space-y-4"
+          role="region"
+          aria-label="Extraction attempts and issues"
+          tabIndex={0}
+        >
+          {extractions.length === 0 ? (
+            <ImportEmptyState kind="model" />
+          ) : (
+            extractions.map((extraction) => (
+              <Card key={extraction.id}>
+                <CardHeader>
+                  <CardTitle>
+                    <h2>
+                      {extraction.resolved_model ?? extraction.requested_model}
+                    </h2>
+                  </CardTitle>
+                  {Boolean(
+                    `Extraction attempt ${extraction.extraction_number}`,
+                  ) && (
+                    <CardDescription>{`Extraction attempt ${extraction.extraction_number}`}</CardDescription>
+                  )}
+                  {Boolean(
                     <Badge
                       variant={
                         badgeVariantForTone[
@@ -165,67 +168,82 @@ export function AcademicStructureImportPipeline({
                       }
                     >
                       {readable(extraction.validation_status)}
-                    </Badge>
-                  }
-                </CardAction>
-              )}
-            </CardHeader>
-            <CardContent>
-              <dl className="grid gap-3 text-xs sm:grid-cols-3 lg:grid-cols-7">
-                <div>
-                  <dt className="text-muted-foreground">Requested model</dt>
-                  <dd className="mt-1 font-mono break-all text-foreground/90">
-                    {extraction.requested_model}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Input</dt>
-                  <dd className="mt-1 tabular-nums">
-                    {tokens(extraction.input_tokens)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Cached input</dt>
-                  <dd className="mt-1 tabular-nums">
-                    {tokens(extraction.cached_input_tokens)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Output</dt>
-                  <dd className="mt-1 tabular-nums">
-                    {tokens(extraction.output_tokens)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Reasoning</dt>
-                  <dd className="mt-1 tabular-nums">
-                    {tokens(extraction.reasoning_tokens)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Cost</dt>
-                  <dd className="mt-1 tabular-nums">
-                    {cost(extraction.cost_usd)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Latency</dt>
-                  <dd className="mt-1 tabular-nums">
-                    {extraction.latency_milliseconds === null
-                      ? "Not recorded"
-                      : `${extraction.latency_milliseconds}ms`}
-                  </dd>
-                </div>
-              </dl>
-              {extraction.validation_summary ? (
-                <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                  {extraction.validation_summary}
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-        ))
-      )}
+                    </Badge>,
+                  ) && (
+                    <CardAction>
+                      {
+                        <Badge
+                          variant={
+                            badgeVariantForTone[
+                              statusTone(extraction.validation_status)
+                            ]
+                          }
+                        >
+                          {readable(extraction.validation_status)}
+                        </Badge>
+                      }
+                    </CardAction>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 xl:grid-cols-4">
+                    <div>
+                      <dt className="text-muted-foreground">Requested model</dt>
+                      <dd className="mt-1 font-mono break-all text-foreground/90">
+                        {extraction.requested_model}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Input</dt>
+                      <dd className="mt-1 tabular-nums">
+                        {tokens(extraction.input_tokens)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Cached input</dt>
+                      <dd className="mt-1 tabular-nums">
+                        {tokens(extraction.cached_input_tokens)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Output</dt>
+                      <dd className="mt-1 tabular-nums">
+                        {tokens(extraction.output_tokens)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Reasoning</dt>
+                      <dd className="mt-1 tabular-nums">
+                        {tokens(extraction.reasoning_tokens)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Cost</dt>
+                      <dd className="mt-1 tabular-nums">
+                        {cost(extraction.cost_usd)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Latency</dt>
+                      <dd className="mt-1 tabular-nums">
+                        {extraction.latency_milliseconds === null
+                          ? "Not recorded"
+                          : `${extraction.latency_milliseconds}ms`}
+                      </dd>
+                    </div>
+                  </dl>
+                  {extraction.validation_summary ? (
+                    <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                      {extraction.validation_summary}
+                    </p>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ))
+          )}
+          {diagnostics}
+        </div>
+      </div>
     </div>
   );
 }

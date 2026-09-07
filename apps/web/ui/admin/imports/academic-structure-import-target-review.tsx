@@ -13,21 +13,14 @@ import { AcademicStructureImportPipeline } from "@/ui/admin/imports/academic-str
 import { AcademicStructureImportPreview } from "@/ui/admin/imports/academic-structure-import-preview";
 import { CourseImportAutoRefresh } from "@/ui/admin/imports/course-import-auto-refresh";
 import { ImportInspectionActions } from "@/ui/admin/imports/import-inspection-actions";
-import { SectionTabs } from "@/ui/common/section-tabs";
 import {
   ImportDiagnostics,
   ImportInspectionStatus,
 } from "@/ui/admin/imports/import-inspection-status";
 import { AppShell } from "@/ui/shell";
+import { ImportSectionTabs } from "./import-section-tabs";
 import type { AcademicStructureImportTargetDetail } from "@/lib/coursemap/admin-academic-structure-imports";
 import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
-
-const importSectionTabs = [
-  { value: "pipeline", label: "Pipeline" },
-  { value: "source", label: "Source and artefacts" },
-  { value: "database", label: "Database rows" },
-  { value: "candidate", label: "Preview" },
-] as const;
 
 export function AcademicStructureImportTargetReview({
   detail,
@@ -47,11 +40,12 @@ export function AcademicStructureImportTargetReview({
       <AppShell
         admin
         fullBleed
+        fill
         currentBreadcrumbLabel={detail.target.code}
-        tabs={<SectionTabs label="Import sections" tabs={importSectionTabs} />}
+        tabs={<ImportSectionTabs />}
       >
         <CourseImportAutoRefresh active={active} />
-        <div className="w-full space-y-5 px-4 py-5 sm:px-6">
+        <div className="workspace-stack w-full px-4 py-5 sm:px-6">
           <h1 className="sr-only">{detail.target.code} import</h1>
           {detail.target.errorSummary ? (
             <Alert variant="destructive">
@@ -59,7 +53,7 @@ export function AcademicStructureImportTargetReview({
               <AlertDescription>{detail.target.errorSummary}</AlertDescription>
             </Alert>
           ) : null}
-          <TabsContent value="pipeline" className="space-y-5">
+          <TabsContent value="pipeline" className="workspace-stack mt-0">
             <header className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-lg font-semibold">
                 {detail.target.code}
@@ -86,25 +80,27 @@ export function AcademicStructureImportTargetReview({
             <AcademicStructureImportPipeline
               extractions={detail.extractions}
               stages={detail.stages}
-            />
-            <ImportDiagnostics
-              items={detail.reviewItems
-                .filter((item) => item.field_key !== "$")
-                .map((item) => ({
-                  id: item.id,
-                  field: item.field_key,
-                  message: item.message,
-                  sourceText: item.source_text,
-                  isError: item.severity === "error",
-                }))}
+              diagnostics={
+                <ImportDiagnostics
+                  items={detail.reviewItems
+                    .filter((item) => item.field_key !== "$")
+                    .map((item) => ({
+                      id: item.id,
+                      field: item.field_key,
+                      message: item.message,
+                      sourceText: item.source_text,
+                      isError: item.severity === "error",
+                    }))}
+                />
+              }
             />
           </TabsContent>
-          <TabsContent value="source">
+          <TabsContent value="source" className="workspace-stack mt-0">
             <AcademicStructureImportArtifactViewer
               artifacts={detail.artifacts}
             />
           </TabsContent>
-          <TabsContent value="database">
+          <TabsContent value="database" className="workspace-stack mt-0">
             <AcademicStructureImportDatabaseRows
               artifacts={detail.artifacts}
               emptyLabel="0 rows"
@@ -117,7 +113,11 @@ export function AcademicStructureImportTargetReview({
               }
             />
           </TabsContent>
-          <TabsContent value="candidate">
+          <TabsContent
+            value="candidate"
+            className="workspace-scroll mt-0"
+            tabIndex={0}
+          >
             <AcademicStructureImportPreview detail={detail} />
           </TabsContent>
         </div>

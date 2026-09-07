@@ -61,13 +61,15 @@ export default async function AdminOverviewPage() {
           />
         </div>
 
-        <ImportModelCard
-          canManage={canManageImports}
-          configured={importModel.configured}
-          model={importModel.model}
-          options={importModel.options}
-          updatedAt={importModel.updatedAt}
-        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <ImportModelCard
+            canManage={canManageImports}
+            model={importModel.model}
+            models={importModel.models}
+            error={importModel.error}
+            updatedAt={importModel.updatedAt}
+          />
+        </div>
       </div>
     </AppShell>
   );

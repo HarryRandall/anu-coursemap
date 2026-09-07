@@ -18,6 +18,7 @@ import { cn } from "@/lib/cn";
 import { toast } from "sonner";
 import { setImportModel } from "@/lib/admin/settings-actions";
 
+import { ImportModelLogo } from "@/ui/admin/imports/import-model-logo";
 import { OptionMenu } from "@/ui/common/option-menu";
 
 function ModelName({ model }: { model: string }) {
@@ -189,6 +190,7 @@ export function DirectorySelectionBar({
                     disabled={!canManageModel || savingModel}
                     type="button"
                   >
+                    <ImportModelLogo model={model} className="size-4" />
                     <ModelName model={model} />
                     <ChevronDown
                       aria-hidden="true"
@@ -209,6 +211,7 @@ export function DirectorySelectionBar({
                 items={modelOptions.map((option) => ({
                   value: option,
                   label: option,
+                  icon: <ImportModelLogo model={option} className="size-4" />,
                   render: <ModelName model={option} />,
                 }))}
                 onSelect={chooseModel}

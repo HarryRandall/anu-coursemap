@@ -1,27 +1,32 @@
 "use client";
-import { Button } from "@coursemap/ui/primitives/button";
 
+import { Button } from "@coursemap/ui/primitives/button";
+import Link from "next/link";
+import { ErrorState } from "@/ui/common/error-state";
 import { AppShell } from "@/ui/shell";
 
-import { CatalogueEmpty } from "./catalogue-empty";
-import { DataTableShell } from "./catalogue-table";
-
-export function CatalogueError({ reset }: { reset: () => void }) {
+export function CatalogueError({
+  error,
+  reset,
+}: {
+  error?: Error & { digest?: string };
+  reset: () => void;
+}) {
   return (
     <AppShell admin fill>
-      <div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
-        <DataTableShell>
-          <CatalogueEmpty
-            error
-            title="Couldn't load this list."
-            description="The catalogue data could not be read. Try again to reload it."
-          >
-            <Button onClick={reset} variant="outline" type="button">
-              Try again
-            </Button>
-          </CatalogueEmpty>
-        </DataTableShell>
-      </div>
+      <ErrorState
+        code={error?.digest ? "500 · Server error" : undefined}
+        title="We couldn't load this list"
+        description="The catalogue data could not be loaded. Try again, or return to the admin overview."
+        reference={error?.digest}
+      >
+        <Button onClick={reset} type="button">
+          Try again
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/admin/dashboard">Back to overview</Link>
+        </Button>
+      </ErrorState>
     </AppShell>
   );
 }

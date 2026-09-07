@@ -1,6 +1,4 @@
 .source {
-  height: max(24rem, calc(100dvh - 14rem));
-  overflow: auto;
   padding: 20px;
   font-family: var(--font-mono);
   font-size: 13px;

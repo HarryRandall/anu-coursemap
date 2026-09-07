@@ -141,7 +141,7 @@ Changes move through focused branches and pull requests. GitHub Actions checks f
 
 Copy `apps/web/.env.example` to `apps/web/.env.local`. Catalogue import credentials
 are only needed when running imports. Select the active extraction model in admin;
-`COURSEMAP_OPENROUTER_MODELS` controls the allowed choices.
+`public.import_models` stores enabled model choices and USD token rates. Admins add, refresh and disable models through the dashboard. `app_settings[imports.model]` stores the default. New runs validate the enabled catalogue in the database; accepted runs retain their requested model even after it is disabled. Price badges estimate one target at 10,000 input and 2,000 output tokens, with a short estimate tooltip. Pricing timestamps remain stored with the rates. OpenRouter supplies rates when a model is added or refreshed. Import models can be hidden from selection without removing them from management. Visibility is stored in the catalogue and enforced when choosing a default or queuing new imports. The current default must remain visible. Refreshing pricing preserves visibility.
 
 Local catalogue scripts read the database port from `supabase/config.toml`.
 `COURSEMAP_DATABASE_URL` overrides that connection, with `DATABASE_URL` as a

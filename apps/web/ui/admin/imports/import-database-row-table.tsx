@@ -1,7 +1,6 @@
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -45,10 +44,10 @@ export function ImportDatabaseRowTable({
   const table = normaliseImportDatabaseTable(rows);
   const single = table.rows.length === 1;
   return (
-    <Table className="text-sm">
-      <TableCaption className="sr-only">
-        {importDatabaseTableLabel(tableName)} database rows
-      </TableCaption>
+    <Table
+      aria-label={`${importDatabaseTableLabel(tableName)} database rows`}
+      className="text-sm"
+    >
       <TableHeader>
         <TableRow className="hover:bg-transparent">
           {(single ? ["Field", "Value"] : table.columns).map((column) => (

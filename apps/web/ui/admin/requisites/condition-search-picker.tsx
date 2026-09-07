@@ -93,8 +93,10 @@ export function SearchPicker({
       modal
       onOpenChange={(next) => {
         setIsOpen(next);
-        if (next) setQuery("");
-        else setResults([]);
+        if (next) {
+          setQuery("");
+          setResults([]);
+        }
       }}
       open={isOpen}
     >

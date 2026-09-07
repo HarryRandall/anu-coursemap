@@ -208,8 +208,8 @@ export function AdminUserDetail({
         currentBreadcrumbLabel={data.user.displayName}
         tabs={tabs}
       >
-        <div className="mx-auto w-full min-w-0 space-y-5 pb-8">
-          <header className="flex items-center gap-3">
+        <div className="mx-auto w-full min-w-0 space-y-5">
+          <header className="sticky top-[6.5rem] z-20 flex items-center gap-3 bg-background py-2">
             <GeneratedAvatar
               name={data.user.displayName}
               email={data.user.email}
@@ -507,71 +507,81 @@ export function AdminUserDetail({
                   />
                 ) : null}
                 <DataTableShell>
-                  <Table className="min-w-[640px] text-sm">
-                    <caption className="sr-only">
-                      Planned courses and recorded course attempts
-                    </caption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="pl-5">Course</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Semester</TableHead>
-                        <TableHead className="text-right">Units</TableHead>
-                        <TableHead className="pr-5 text-right">Mark</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredCourses.length ? (
-                        filteredCourses.map((course) => (
-                          <TableRow key={course.id}>
-                            <TableCell className="py-4 pl-5">
-                              <CatalogueIdentity
-                                code={course.code}
-                                title={course.title}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  badgeVariantForTone[
-                                    statuses[
-                                      course.status as AdminUserCourseStatus
-                                    ].tone
-                                  ]
-                                }
-                              >
-                                {statuses[course.status].label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {course.calendarYear !== null && course.periodCode
-                                ? `${course.periodShortName ?? course.periodName ?? course.periodCode} ${course.calendarYear}`
-                                : "Unscheduled"}
-                            </TableCell>
-                            <TableCell className="text-right tabular-nums">
-                              {course.units}
-                            </TableCell>
-                            <TableCell className="pr-5 text-right tabular-nums">
-                              {course.mark ?? (
-                                <span aria-label="No mark recorded">-</span>
-                              )}
+                  <div
+                    className="max-h-[32rem] overflow-auto"
+                    role="region"
+                    aria-label="User courses"
+                    tabIndex={0}
+                  >
+                    <Table className="min-w-[640px] text-sm">
+                      <caption className="sr-only">
+                        Planned courses and recorded course attempts
+                      </caption>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="pl-5">Course</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Semester</TableHead>
+                          <TableHead className="text-right">Units</TableHead>
+                          <TableHead className="pr-5 text-right">
+                            Mark
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredCourses.length ? (
+                          filteredCourses.map((course) => (
+                            <TableRow key={course.id}>
+                              <TableCell className="py-4 pl-5">
+                                <CatalogueIdentity
+                                  code={course.code}
+                                  title={course.title}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    badgeVariantForTone[
+                                      statuses[
+                                        course.status as AdminUserCourseStatus
+                                      ].tone
+                                    ]
+                                  }
+                                >
+                                  {statuses[course.status].label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {course.calendarYear !== null &&
+                                course.periodCode
+                                  ? `${course.periodShortName ?? course.periodName ?? course.periodCode} ${course.calendarYear}`
+                                  : "Unscheduled"}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {course.units}
+                              </TableCell>
+                              <TableCell className="pr-5 text-right tabular-nums">
+                                {course.mark ?? (
+                                  <span aria-label="No mark recorded">-</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell
+                              colSpan={5}
+                              className="h-24 text-center text-muted-foreground"
+                            >
+                              {data.study.courses.length
+                                ? "No matching courses"
+                                : "No courses recorded yet"}
                             </TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell
-                            colSpan={5}
-                            className="h-24 text-center text-muted-foreground"
-                          >
-                            {data.study.courses.length
-                              ? "No matching courses"
-                              : "No courses recorded yet"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </DataTableShell>
               </section>
             ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { ImportEmptyState } from "./import-empty-state";
 import { useMemo, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
@@ -53,21 +54,16 @@ export function ImportArtefactViewer({
       ? parseImportArtefact(content)
       : null;
 
-  if (!group || !artifact)
-    return (
-      <p className="p-6 text-sm text-muted-foreground">
-        No artefacts saved yet.
-      </p>
-    );
+  if (!group || !artifact) return <ImportEmptyState kind="source" />;
 
   return (
     <Tabs
       orientation="vertical"
       value={group.kind}
       onValueChange={setActiveKind}
-      className="min-w-0 flex-col gap-4 md:flex-row"
+      className="min-w-0 flex-col gap-4 md:min-h-0 md:flex-1 md:flex-row"
     >
-      <div className="shrink-0 md:w-52">
+      <div className="shrink-0 md:min-h-0 md:w-52 md:overflow-y-auto md:pr-2">
         <div className="md:hidden">
           <OptionPicker
             value={group.kind}
@@ -90,7 +86,7 @@ export function ImportArtefactViewer({
             <TabsTrigger
               key={entry.kind}
               value={entry.kind}
-              className="min-h-11 w-full shrink-0 justify-start rounded-md px-3 text-left text-sm"
+              className="min-h-9 w-full shrink-0 justify-start rounded-md px-3 text-left text-sm"
             >
               {importArtefactLabels[entry.kind] ??
                 entry.kind.replaceAll("_", " ")}
@@ -98,10 +94,13 @@ export function ImportArtefactViewer({
           ))}
         </TabsList>
       </div>
-      <TabsContent value={group.kind} className="min-w-0 flex-1">
-        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+      <TabsContent
+        value={group.kind}
+        className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col"
+      >
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card">
           {group.attempts.length > 1 && (
-            <div className="border-b border-border p-3">
+            <div className="shrink-0 border-b border-border p-3">
               <OptionPicker
                 value={artifact.id}
                 onValueChange={(id) =>
@@ -116,42 +115,49 @@ export function ImportArtefactViewer({
               />
             </div>
           )}
-          {error ? (
-            <div className="space-y-3 p-4">
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-              <Button type="button" variant="outline" onClick={retry}>
-                Retry loading
-              </Button>
-            </div>
-          ) : loading ? (
-            <div
-              role="status"
-              className="flex h-[max(24rem,calc(100dvh-14rem))] items-center justify-center gap-2 text-sm text-muted-foreground"
-            >
-              <LoaderCircle
-                size={17}
-                aria-hidden="true"
-                className="animate-spin motion-reduce:animate-none"
+          <ArtefactViewport label={`${label} content`}>
+            {error ? (
+              <div className="space-y-3 p-4">
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+                <Button type="button" variant="outline" onClick={retry}>
+                  Retry loading
+                </Button>
+              </div>
+            ) : loading ? (
+              <div
+                role="status"
+                className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground"
+              >
+                <LoaderCircle
+                  size={17}
+                  aria-hidden="true"
+                  className="animate-spin motion-reduce:animate-none"
+                />
+                Loading artefact...
+              </div>
+            ) : parsed !== null ? (
+              <>
+                {artifact.kind === "change_set" ? (
+                  <PersistenceDecision value={parsed} />
+                ) : (
+                  <JsonCode
+                    label={`${label} JSON`}
+                    value={parsed}
+                    uncapped
+                    borderTop={false}
+                  />
+                )}
+              </>
+            ) : (
+              <SourceCode
+                content={content ?? ""}
+                kind={artifact.kind}
+                label={`${label} content`}
               />
-              Loading artefact...
-            </div>
-          ) : parsed !== null ? (
-            <ArtefactViewport label={`${label} content`}>
-              {artifact.kind === "change_set" ? (
-                <PersistenceDecision value={parsed} />
-              ) : (
-                <JsonCode label={`${label} JSON`} value={parsed} uncapped />
-              )}
-            </ArtefactViewport>
-          ) : (
-            <SourceCode
-              content={content ?? ""}
-              kind={artifact.kind}
-              label={`${label} content`}
-            />
-          )}
+            )}
+          </ArtefactViewport>
         </section>
       </TabsContent>
     </Tabs>

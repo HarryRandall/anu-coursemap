@@ -133,7 +133,12 @@ export function UserActivityTimeline() {
           }))}
         />
       </div>
-      <Card className="p-4 sm:p-5">
+      <Card
+        className="max-h-[32rem] overflow-auto p-4 sm:p-5"
+        role="region"
+        aria-label="User activity"
+        tabIndex={0}
+      >
         <Timeline
           value={events.length}
           aria-label="Mock activity events"
