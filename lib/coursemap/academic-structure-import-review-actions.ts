@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canManageCourseImports, canWriteCatalogue } from "@/lib/auth/viewer";
+import { canManageCourseImports } from "@/lib/auth/viewer";
 import type { CoursemapActionResult } from "@/lib/coursemap/actions";
 import {
   allAdminAcademicStructureCollectionPaths,
@@ -13,13 +13,6 @@ type ReviewDecisionInput = {
   runId: string;
   targetId: string;
   reviewNote?: string;
-};
-
-type PublishInput = {
-  runId: string;
-  targetId: string;
-  structureYearId: number;
-  snapshotId: number;
 };
 
 const UUID_PATTERN =
@@ -53,28 +46,13 @@ function reviewErrorMessage(error: unknown) {
   return "Coursemap could not save the review decision.";
 }
 
-function publicationErrorMessage(error: unknown) {
-  if (typeof error === "object" && error !== null && "message" in error) {
-    const message = String(error.message);
-    if (/exact current draft/i.test(message)) {
-      return "The draft changed before publication. Refresh and review the current draft.";
-    }
-    if (/blocking review items|critical uncertainty/i.test(message)) {
-      return "Resolve blocking review items and critical uncertainty before publishing.";
-    }
-    if (/publication permission/i.test(message)) {
-      return "Catalogue publication permission is required.";
-    }
-  }
-  return "Coursemap could not publish this academic structure.";
-}
-
 function revalidateImport(targetId: string) {
   for (const path of allAdminAcademicStructureImportPaths(targetId)) {
     revalidatePath(path);
   }
   for (const path of allAdminAcademicStructureCollectionPaths()) {
     revalidatePath(path);
+    revalidatePath(`${path}/[id]`, "page");
   }
 }
 
@@ -124,44 +102,4 @@ export async function rejectAcademicStructureImportTarget(
   input: ReviewDecisionInput,
 ) {
   return decide("rejected", input);
-}
-
-export async function publishAcademicStructureDraft(
-  input: PublishInput,
-): Promise<CoursemapActionResult> {
-  if (!(await canWriteCatalogue())) {
-    return {
-      ok: false,
-      message: "Catalogue publication permission is required.",
-    };
-  }
-  if (
-    !validUuid(input.runId) ||
-    !validUuid(input.targetId) ||
-    !Number.isInteger(input.structureYearId) ||
-    input.structureYearId <= 0 ||
-    !Number.isInteger(input.snapshotId) ||
-    input.snapshotId <= 0
-  ) {
-    return { ok: false, message: "Choose a valid academic structure draft." };
-  }
-
-  try {
-    const supabase = await createClient();
-    const { error } = await supabase.rpc(
-      "publish_academic_structure_snapshot",
-      {
-        p_structure_year_id: input.structureYearId,
-        p_snapshot_id: input.snapshotId,
-      },
-    );
-    if (error) throw error;
-    revalidateImport(input.targetId);
-    return {
-      ok: true,
-      message: "The current draft is now published.",
-    };
-  } catch (error) {
-    return { ok: false, message: publicationErrorMessage(error) };
-  }
 }

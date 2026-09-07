@@ -22,7 +22,7 @@ export function ArtefactViewport({
         aria-label={label}
         role="region"
         tabIndex={0}
-        className="max-h-[min(65vh,40rem)] overflow-auto overscroll-contain focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+        className="h-[max(24rem,calc(100dvh-16rem))] overflow-auto overscroll-contain focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
       >
         {children}
       </div>

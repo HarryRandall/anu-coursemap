@@ -7,42 +7,28 @@ import {
   TableHeader,
   TableRow,
 } from "@reui/ui/table";
-import { DataTableShell } from "@/components/ui/data-table";
 import { normaliseImportDatabaseTable } from "@/lib/coursemap/import-database-table";
+import {
+  importDatabaseFieldLabel,
+  importDatabaseTableLabel,
+} from "@/lib/coursemap/import-database-labels";
+import { formatImportDatabaseValue } from "@/lib/coursemap/import-database-value";
 
-function DatabaseCellValue({ value }: { value: unknown }) {
-  if (value === undefined) {
-    return <span className="text-muted-foreground/80">Not present</span>;
-  }
-  if (value === null) {
-    return <span className="font-mono text-muted-foreground/80">null</span>;
-  }
-  if (typeof value === "object") {
-    const serialised = JSON.stringify(value);
-    return (
-      <pre
-        className="block h-8 max-w-[28rem] min-w-48 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap text-foreground/80"
-        title={serialised}
-      >
-        {serialised}
-      </pre>
-    );
-  }
-  if (typeof value === "string") {
-    return value.length ? (
-      <span
-        className="block h-8 max-w-[28rem] min-w-32 [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 text-xs leading-6 whitespace-nowrap"
-        title={value}
-      >
-        {value}
-      </span>
-    ) : (
-      <span className="font-mono text-muted-foreground/80">&quot;&quot;</span>
-    );
-  }
+function DatabaseCellValue({
+  column,
+  value,
+  timezone,
+}: {
+  column: string;
+  value: unknown;
+  timezone: string;
+}) {
   return (
-    <span className="block h-8 max-w-[28rem] [scrollbar-width:thin] overflow-x-auto overflow-y-hidden py-1 font-mono text-xs leading-6 whitespace-nowrap">
-      {String(value)}
+    <span
+      title={typeof value === "object" ? JSON.stringify(value) : String(value)}
+      className="block max-w-xl min-w-0 [overflow-wrap:anywhere] break-words whitespace-pre-wrap"
+    >
+      {formatImportDatabaseValue(column, value, timezone)}
     </span>
   );
 }
@@ -50,45 +36,69 @@ function DatabaseCellValue({ value }: { value: unknown }) {
 export function ImportDatabaseRowTable({
   rows,
   tableName,
+  timezone = "UTC",
 }: {
   rows: readonly unknown[];
   tableName: string;
+  timezone?: string;
 }) {
   const table = normaliseImportDatabaseTable(rows);
-
+  const single = table.rows.length === 1;
   return (
-    <DataTableShell className="rounded-none border-x-0 border-b-0 shadow-none">
-      <Table className="min-w-max">
-        <TableCaption className="sr-only">
-          {tableName} database rows
-        </TableCaption>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            {table.columns.map((column) => (
-              <TableHead
-                className="max-w-[28rem] font-mono tracking-normal normal-case"
-                key={column}
-              >
-                {column}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {table.rows.map((row, rowIndex) => (
-            <TableRow className="h-12" key={rowIndex}>
-              {table.columns.map((column) => (
-                <TableCell
-                  className="h-12 max-w-[28rem] overflow-hidden py-0 align-middle"
-                  key={column}
-                >
-                  <DatabaseCellValue value={row[column]} />
-                </TableCell>
-              ))}
-            </TableRow>
+    <Table className="text-sm">
+      <TableCaption className="sr-only">
+        {importDatabaseTableLabel(tableName)} database rows
+      </TableCaption>
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          {(single ? ["Field", "Value"] : table.columns).map((column) => (
+            <TableHead
+              key={column}
+              title={column}
+              className="h-11 bg-muted/30 px-4 font-medium"
+            >
+              {importDatabaseFieldLabel(column)}
+            </TableHead>
           ))}
-        </TableBody>
-      </Table>
-    </DataTableShell>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {single
+          ? table.columns.map((column) => (
+              <TableRow key={column}>
+                <TableHead
+                  scope="row"
+                  title={column}
+                  className="w-1/3 min-w-40 px-4 py-3 align-top font-normal whitespace-normal text-muted-foreground"
+                >
+                  {importDatabaseFieldLabel(column)}
+                </TableHead>
+                <TableCell className="px-4 py-3 align-top whitespace-normal">
+                  <DatabaseCellValue
+                    column={column}
+                    value={table.rows[0][column]}
+                    timezone={timezone}
+                  />
+                </TableCell>
+              </TableRow>
+            ))
+          : table.rows.map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {table.columns.map((column) => (
+                  <TableCell
+                    key={column}
+                    className="min-w-32 px-4 py-3 align-top whitespace-normal"
+                  >
+                    <DatabaseCellValue
+                      column={column}
+                      value={row[column]}
+                      timezone={timezone}
+                    />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+      </TableBody>
+    </Table>
   );
 }

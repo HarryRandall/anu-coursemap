@@ -628,15 +628,8 @@ join public.course_source_pages as documents
  and documents.external_key = courses.code
 where years.year = 2026;
 
-insert into public.course_unit_options (
-  course_snapshot_id,
-  position,
-  units,
-  label,
-  source_text
-)
-select snapshots.id, 1, 6, '6 units', '6 units'
-from public.course_snapshots as snapshots;
+-- Fixed-unit courses store their single value on the snapshot. Unit options
+-- are reserved for courses whose unit value is variable.
 
 insert into public.course_fees (
   course_snapshot_id,

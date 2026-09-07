@@ -1,422 +1,27 @@
 "use client";
-import { badgeVariantForTone } from "@/lib/ui";
 
 import { Alert, AlertDescription } from "@reui/components/alert";
 import { Badge } from "@reui/components/badge";
-import { Button } from "@reui/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardAction,
-} from "@reui/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@reui/ui/tabs";
-import ReuiLink from "next/link";
-
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { Check, CircleAlert, Clock3, Pencil, X } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { CourseImportDatabaseRows } from "@/components/admin/imports/course-import-database-rows";
 import { CourseImportArtifactViewer } from "@/components/admin/imports/course-import-artifact-viewer";
 import { CourseImportAutoRefresh } from "@/components/admin/imports/course-import-auto-refresh";
 import { CourseImportPipeline } from "@/components/admin/imports/course-import-pipeline";
+import { ImportInspectionActions } from "@/components/admin/imports/import-inspection-actions";
+import {
+  ImportDiagnostics,
+  ImportInspectionStatus,
+} from "@/components/admin/imports/import-inspection-status";
 import {
   CourseDetailTabsList,
   CourseDetailView,
 } from "@/components/courses/course-detail-view";
 import { AppShell } from "@/components/shell";
-
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DataTableEmpty, DataTableShell } from "@/components/ui/data-table";
-
-import {
-  acceptCourseImportTarget,
-  rejectCourseImportTarget,
-} from "@/lib/coursemap/course-import-review-actions";
 import type { CourseImportTargetDetail } from "@/lib/coursemap/admin-course-imports";
-import {
-  countOpenBlockingReviewItems,
-  courseImportConfidenceTone,
-} from "@/lib/coursemap/course-import-review-state";
 import { persistedCourseDatabaseTables } from "@/lib/coursemap/course-import-database-view";
-import {
-  compactCourseSnapshotChanges,
-  compareCourseSnapshotProjections,
-} from "@/lib/coursemap/course-snapshot-diff";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
-import type { Tone } from "@/lib/ui";
-
-function readable(value: string) {
-  const words = value.replaceAll("_", " ");
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-function statusTone(status: string): Tone {
-  if (status === "failed" || status === "cancelled" || status === "rejected") {
-    return "danger";
-  }
-  if (status === "queued" || status === "processing" || status === "running") {
-    return "info";
-  }
-  if (status === "ready_for_review" || status === "pending") return "warning";
-  if (status === "accepted" || status === "succeeded" || status === "valid") {
-    return "success";
-  }
-  return "neutral";
-}
-
-function confidence(value: number | null) {
-  return value === null
-    ? "Not scored"
-    : `${Math.round(value * 100)}% confidence`;
-}
-
-function comparisonValue(value: unknown) {
-  if (value === undefined || value === null) return "Not recorded";
-  if (typeof value === "string") return value;
-  return JSON.stringify(value, null, 2) ?? String(value);
-}
-
-function fieldLabel(fieldPath: string) {
-  const label = fieldPath
-    .replaceAll(".", " · ")
-    .replace(
-      /\[(\d+)\]/gu,
-      (_, index: string) => ` · item ${Number(index) + 1}`,
-    )
-    .replace(/([a-z\d])([A-Z])/gu, "$1 $2")
-    .replace(/^snapshot · /u, "Course details · ");
-  const sentence = `${label.charAt(0).toUpperCase()}${label.slice(1).toLowerCase()}`;
-  return sentence
-    .replace(/\banu\b/giu, "ANU")
-    .replace(/\beftsl\b/giu, "EFTSL")
-    .replace(/\bgpa\b/giu, "GPA")
-    .replace(/\bwam\b/giu, "WAM")
-    .replace(" · item ", " item ");
-}
-
-function changeSection(fieldPath: string) {
-  const root = fieldPath.replace(/^snapshot\./u, "").split(/[.[]/u)[0];
-  const sections: Record<string, string> = {
-    courseCode: "Course details",
-    academicYear: "Course details",
-    title: "Course details",
-    unitValueKind: "Course details",
-    units: "Course details",
-    minimumUnits: "Course details",
-    maximumUnits: "Course details",
-    eftsl: "Course details",
-    level: "Course details",
-    subjectCode: "Course details",
-    subjectName: "Course details",
-    school: "Course details",
-    college: "Course details",
-    academicCareer: "Course details",
-    convenerText: "Course details",
-    deliverySummary: "Course details",
-    offeringStatus: "Course details",
-    sourceUpdatedAt: "Course details",
-    introduction: "Course content",
-    description: "Course content",
-    workloadText: "Course content",
-    workloadHours: "Course content",
-    inherentRequirements: "Course content",
-    prescribedTexts: "Course content",
-    unitOptions: "Unit options",
-    fees: "Fees",
-    areasOfInterest: "Areas and attributes",
-    attributes: "Areas and attributes",
-    relatedCourses: "Related courses",
-    courseOffering: "Offerings",
-    offeringSessions: "Offerings",
-    learningOutcomes: "Learning outcomes",
-    assessmentItems: "Assessment",
-    assessmentOutcomes: "Assessment",
-    rules: "Requisites",
-    ruleGroups: "Requisites",
-    ruleConditions: "Requisites",
-    ruleConditionCourses: "Requisites",
-    ruleCourseReferences: "Requisites",
-  };
-  return sections[root ?? ""] ?? "Other fields";
-}
-
-function ReviewItems({ detail }: { detail: CourseImportTargetDetail }) {
-  if (detail.reviewItems.length === 0) {
-    return (
-      <DataTableShell>
-        <DataTableEmpty
-          description="The import did not record any ambiguity, conflict or validation warning."
-          title="No additional checks"
-        />
-      </DataTableShell>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {detail.reviewItems.map((item) => (
-        <Card key={item.id}>
-          <CardHeader>
-            <CardTitle>
-              <h2>{item.summary}</h2>
-            </CardTitle>
-            {Boolean(
-              `${fieldLabel(item.fieldPath)} · ${confidence(item.confidence)}`,
-            ) && (
-              <CardDescription>{`${fieldLabel(item.fieldPath)} · ${confidence(item.confidence)}`}</CardDescription>
-            )}
-            {Boolean(
-              <div className="flex flex-wrap gap-1.5">
-                {item.isBlocking ? (
-                  <Badge variant={"destructive-light"}>Blocking</Badge>
-                ) : null}
-                <Badge
-                  variant={
-                    badgeVariantForTone[
-                      item.importance === "critical" ||
-                      item.importance === "high"
-                        ? "warning"
-                        : "neutral"
-                    ]
-                  }
-                >
-                  {readable(item.importance)}
-                </Badge>
-                <Badge variant={badgeVariantForTone[statusTone(item.status)]}>
-                  {readable(item.status)}
-                </Badge>
-              </div>,
-            ) && (
-              <CardAction>
-                {
-                  <div className="flex flex-wrap gap-1.5">
-                    {item.isBlocking ? (
-                      <Badge variant={"destructive-light"}>Blocking</Badge>
-                    ) : null}
-                    <Badge
-                      variant={
-                        badgeVariantForTone[
-                          item.importance === "critical" ||
-                          item.importance === "high"
-                            ? "warning"
-                            : "neutral"
-                        ]
-                      }
-                    >
-                      {readable(item.importance)}
-                    </Badge>
-                    <Badge
-                      variant={badgeVariantForTone[statusTone(item.status)]}
-                    >
-                      {readable(item.status)}
-                    </Badge>
-                  </div>
-                }
-              </CardAction>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {item.sourceExcerpt ? (
-              <div>
-                <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Source evidence
-                </p>
-                <blockquote className="mt-1 border-l-2 border-input pl-3 text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
-                  {item.sourceExcerpt}
-                </blockquote>
-              </div>
-            ) : null}
-            {item.oldValue !== null || item.newValue !== null ? (
-              <div className="grid gap-3 md:grid-cols-2">
-                <div className="min-w-0 rounded-lg border border-border bg-muted/50 px-3 py-2">
-                  <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                    Saved value
-                  </p>
-                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
-                    {comparisonValue(item.oldValue)}
-                  </pre>
-                </div>
-                <div className="min-w-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
-                  <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
-                    Imported value
-                  </p>
-                  <pre className="mt-1 font-mono text-xs break-words whitespace-pre-wrap text-foreground/90">
-                    {comparisonValue(item.newValue)}
-                  </pre>
-                </div>
-              </div>
-            ) : null}
-            {item.resolutionNote ? (
-              <p className="text-xs leading-5 text-muted-foreground">
-                <span className="font-medium text-foreground/90">
-                  Resolution:
-                </span>{" "}
-                {item.resolutionNote}
-              </p>
-            ) : null}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
-function ReviewChanges({ detail }: { detail: CourseImportTargetDetail }) {
-  const changes = useMemo(() => {
-    const leafChanges = compareCourseSnapshotProjections(
-      detail.previousSnapshot?.projection ?? null,
-      detail.candidateProjection,
-    );
-    return compactCourseSnapshotChanges(
-      leafChanges,
-      detail.previousSnapshot?.projection ?? null,
-      detail.candidateProjection,
-    );
-  }, [detail.candidateProjection, detail.previousSnapshot]);
-  const previousLabel = detail.previousSnapshot?.label ?? "No saved snapshot";
-  const groupedChanges = useMemo(() => {
-    const groups = new Map<string, typeof changes>();
-    for (const change of changes) {
-      const section = changeSection(change.fieldPath);
-      groups.set(section, [...(groups.get(section) ?? []), change]);
-    }
-    return [...groups.entries()];
-  }, [changes]);
-
-  return (
-    <div className="space-y-6">
-      <section className="space-y-3" aria-labelledby="review-checks-title">
-        <div>
-          <h2
-            className="text-sm font-semibold text-foreground"
-            id="review-checks-title"
-          >
-            Checks requiring confirmation
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            These are extraction warnings or safety checks, not additional
-            course fields. Blocking checks must be considered before accepting
-            the candidate as a draft.
-          </p>
-        </div>
-        <ReviewItems detail={detail} />
-      </section>
-
-      <section className="space-y-3" aria-labelledby="snapshot-changes-title">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h2
-              className="text-sm font-semibold text-foreground"
-              id="snapshot-changes-title"
-            >
-              Course differences
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Imported values compared with {previousLabel.toLowerCase()}.
-            </p>
-          </div>
-          <Badge
-            variant={
-              badgeVariantForTone[changes.length === 0 ? "neutral" : "brand"]
-            }
-          >
-            {changes.length} review{changes.length === 1 ? "change" : "changes"}
-          </Badge>
-        </div>
-
-        {!detail.candidateProjection ? (
-          <DataTableShell>
-            <DataTableEmpty
-              description="The comparison becomes available after relational candidate rows have been saved."
-              title="No candidate projection"
-            />
-          </DataTableShell>
-        ) : changes.length === 0 ? (
-          <DataTableShell>
-            <DataTableEmpty
-              description={`The relational candidate matches ${previousLabel.toLowerCase()}.`}
-              title="No saved field changes"
-            />
-          </DataTableShell>
-        ) : (
-          <div className="space-y-3">
-            {groupedChanges.map(([section, sectionChanges], sectionIndex) => (
-              <details
-                className="group overflow-hidden rounded-xl border border-border bg-card shadow-xs"
-                key={section}
-                open={sectionIndex === 0}
-              >
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-foreground marker:content-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                  <span>{section}</span>
-                  <span className="flex items-center gap-2">
-                    <Badge variant={"outline"}>
-                      {sectionChanges.length}{" "}
-                      {sectionChanges.length === 1 ? "change" : "changes"}
-                    </Badge>
-                    <span
-                      aria-hidden="true"
-                      className="text-muted-foreground/80 transition-transform group-open:rotate-90"
-                    >
-                      ›
-                    </span>
-                  </span>
-                </summary>
-                <div className="divide-y divide-border/60 border-t border-border/60">
-                  {sectionChanges.map((change) => (
-                    <div
-                      className="space-y-3 p-4 sm:p-5"
-                      key={change.fieldPath}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-foreground">
-                          {fieldLabel(change.fieldPath)}
-                        </p>
-                        <Badge
-                          variant={
-                            badgeVariantForTone[
-                              change.kind === "added"
-                                ? "success"
-                                : change.kind === "removed"
-                                  ? "danger"
-                                  : "warning"
-                            ]
-                          }
-                        >
-                          {readable(change.kind)}
-                        </Badge>
-                      </div>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="min-w-0 rounded-lg border border-border bg-muted/50 px-3 py-2">
-                          <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                            {previousLabel}
-                          </p>
-                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-foreground/80">
-                            {comparisonValue(change.before)}
-                          </pre>
-                        </div>
-                        <div className="min-w-0 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2">
-                          <p className="text-[10px] font-medium tracking-wide text-primary uppercase">
-                            Imported candidate
-                          </p>
-                          <pre className="mt-1 max-h-64 overflow-auto font-mono text-xs break-words whitespace-pre-wrap text-foreground/90">
-                            {comparisonValue(change.after)}
-                          </pre>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
 
 export function CourseImportTargetReview({
   detail,
@@ -425,275 +30,114 @@ export function CourseImportTargetReview({
   detail: CourseImportTargetDetail;
   previewCourse: CourseDetails | null;
 }) {
-  const router = useRouter();
-  const [message, setMessage] = useState<{
-    tone: "success" | "danger";
-    text: string;
-  } | null>(null);
   const active = ["queued", "processing"].includes(
     detail.target.processingStatus,
   );
-  const canDecide =
-    detail.target.processingStatus === "ready_for_review" &&
-    detail.target.reviewStatus === "pending";
-  const accepted = detail.target.reviewStatus === "accepted";
-  const openBlockingReviewCount = countOpenBlockingReviewItems(
-    detail.reviewItems,
-  );
-  const courseWorkspaceHref = detail.target.coursePublicId
+  const workspaceHref = detail.target.coursePublicId
     ? `/admin/courses/${detail.target.coursePublicId}?year=${detail.run.academicYear}`
     : null;
-
-  async function decide(decision: "accept" | "reject") {
-    const action =
-      decision === "accept"
-        ? acceptCourseImportTarget
-        : rejectCourseImportTarget;
-    const result = await action({
-      runId: detail.run.id,
-      targetId: detail.target.id,
-      expectedBaselineDraftSnapshotId: detail.target.baselineDraftSnapshotId,
-      expectedCurrentDraftSnapshotId: detail.target.currentDraftSnapshotId,
-      resolutionNote: "",
-    });
-    setMessage({
-      tone: result.ok ? "success" : "danger",
-      text: result.message,
-    });
-    if (result.ok) router.refresh();
-  }
-
   return (
     <AppShell
-      actions={
-        canDecide || accepted ? (
-          <div className="flex items-center gap-2">
-            {canDecide ? (
-              <>
-                <ConfirmDialog
-                  confirmLabel="Reject candidate"
-                  description="The imported snapshot stays in the audit history. The current draft and published course do not change."
-                  destructive
-                  onConfirm={() => decide("reject")}
-                  title={`Reject ${detail.target.courseCode}?`}
-                  trigger={
-                    <Button size="sm" variant="destructive" type="button">
-                      <X aria-hidden="true" size={15} />
-                      Reject
-                    </Button>
-                  }
-                />
-                <ConfirmDialog
-                  confirmLabel="Accept as draft"
-                  description="This makes the candidate the current draft. Students will not see it until you publish it separately."
-                  onConfirm={() => decide("accept")}
-                  title={`Accept ${detail.target.courseCode} as draft?`}
-                  trigger={
-                    <Button size="sm" variant="default" type="button">
-                      <Check aria-hidden="true" size={15} />
-                      Accept as draft
-                    </Button>
-                  }
-                />
-              </>
-            ) : null}
-            {accepted && courseWorkspaceHref ? (
-              <Button asChild size="sm" variant="default">
-                <ReuiLink href={courseWorkspaceHref}>
-                  <Pencil aria-hidden="true" size={15} />
-                  Open course workspace
-                </ReuiLink>
-              </Button>
-            ) : accepted ? (
-              <Button
-                disabled
-                size="sm"
-                title="The permanent course identity is unavailable"
-                variant="outline"
-                type="button"
-              >
-                <Pencil aria-hidden="true" size={15} />
-                Course workspace
-              </Button>
-            ) : null}
-          </div>
-        ) : undefined
-      }
       admin
       fullBleed
       currentBreadcrumbLabel={detail.target.courseCode}
+      showThemeToggle={false}
     >
       <CourseImportAutoRefresh active={active} />
-      <div className="w-full px-4 pb-10 sm:px-6">
-        <h1 className="sr-only">Review{detail.target.courseCode} import</h1>
-
+      <div className="w-full px-4 pb-4 sm:px-6">
+        <div className="flex justify-end py-3">
+          <ImportInspectionActions
+            code={detail.target.courseCode}
+            academicYear={detail.run.academicYear}
+            requestedModel={detail.run.requestedModel}
+            active={active}
+            workspaceHref={workspaceHref}
+          />
+        </div>
+        <h1 className="sr-only">{detail.target.courseCode} import</h1>
         <Tabs defaultValue="pipeline" className="gap-5">
           <div className="-mx-4 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6">
-            <TabsList aria-label="Import review sections" variant="line">
+            <TabsList aria-label="Import sections" variant="line">
               <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-              <TabsTrigger value="changes">Review</TabsTrigger>
               <TabsTrigger value="source">Source and artefacts</TabsTrigger>
               <TabsTrigger value="database">Database rows</TabsTrigger>
               <TabsTrigger value="preview">Course preview</TabsTrigger>
             </TabsList>
           </div>
-
-          {message ? (
-            <Alert
-              variant={
-                (
-                  {
-                    neutral: "default",
-                    brand: "info",
-                    danger: "destructive",
-                    success: "success",
-                    warning: "warning",
-                  } as const
-                )[message.tone]
-              }
-            >
-              <AlertDescription>{message.text}</AlertDescription>
-            </Alert>
-          ) : null}
           {detail.target.errorSummary ? (
-            <Alert variant={"destructive"}>
+            <Alert variant="destructive">
               <CircleAlert aria-hidden="true" />
-              <AlertDescription>
-                {detail.target.errorCode ? `${detail.target.errorCode}: ` : ""}
-                {detail.target.errorSummary}
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          {active ? (
-            <Alert variant={"info"}>
-              <Clock3 aria-hidden="true" />
-              <AlertDescription>
-                This course is still running. Saved stages and artefacts update
-                automatically.
-              </AlertDescription>
-            </Alert>
-          ) : null}
-          {openBlockingReviewCount > 0 ? (
-            <Alert variant={"warning"}>
-              <CircleAlert aria-hidden="true" />
-              <AlertDescription>
-                {openBlockingReviewCount} open blocking review{" "}
-                {openBlockingReviewCount === 1 ? "item needs" : "items need"}{" "}
-                administrator confirmation. Review the source and candidate
-                before accepting this as the draft. Publication remains a
-                separate action.
-              </AlertDescription>
+              <AlertDescription>{detail.target.errorSummary}</AlertDescription>
             </Alert>
           ) : null}
           <TabsContent value="pipeline" className="space-y-5">
             <header className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-lg font-semibold text-foreground">
+              <span className="font-mono text-lg font-semibold">
                 {detail.target.courseCode}
               </span>
-              <Badge variant={"outline"}>Run #{detail.run.runNumber}</Badge>
-              <Badge variant={"outline"}>{detail.run.academicYear}</Badge>
-              <Badge
-                variant={
-                  badgeVariantForTone[
-                    statusTone(detail.target.processingStatus)
-                  ]
-                }
-              >
-                {readable(detail.target.processingStatus)}
-              </Badge>
-              <Badge
-                variant={
-                  badgeVariantForTone[statusTone(detail.target.reviewStatus)]
-                }
-              >
-                {readable(detail.target.reviewStatus)}
-              </Badge>
-              {detail.candidateSnapshot?.overall_confidence !== null &&
-              detail.candidateSnapshot?.overall_confidence !== undefined ? (
-                <Badge
-                  variant={
-                    badgeVariantForTone[
-                      courseImportConfidenceTone(
-                        detail.candidateSnapshot.overall_confidence,
-                        openBlockingReviewCount,
-                      )
-                    ]
-                  }
-                >
-                  {Math.round(
-                    detail.candidateSnapshot.overall_confidence * 100,
-                  )}
-                  % confidence
-                </Badge>
-              ) : null}
+              <Badge variant="outline">Run #{detail.run.runNumber}</Badge>
+              <Badge variant="outline">{detail.run.academicYear}</Badge>
+              <ImportInspectionStatus
+                processing={detail.target.processingStatus}
+                review={detail.target.reviewStatus}
+              />
             </header>
             <CourseImportPipeline
               extractions={detail.extractions}
               stages={detail.stages}
             />
-          </TabsContent>
-          <TabsContent value="changes">
-            <ReviewChanges detail={detail} />
+            <ImportDiagnostics
+              items={detail.reviewItems
+                .filter((item) => item.issueCode !== "MANUAL_REVIEW_REQUIRED")
+                .map((item) => ({
+                  id: item.id,
+                  field: item.fieldPath,
+                  message: item.summary,
+                  sourceText: item.sourceExcerpt,
+                  values: item.newValue,
+                  isError: item.isBlocking,
+                }))}
+            />
           </TabsContent>
           <TabsContent value="source">
-            <div className="space-y-4">
-              <CourseImportArtifactViewer artifacts={detail.artifacts} />
-            </div>
+            <CourseImportArtifactViewer artifacts={detail.artifacts} />
           </TabsContent>
           <TabsContent value="database">
-            {detail.candidateSnapshot ? (
-              <div className="space-y-3">
-                <p className="text-xs leading-5 text-muted-foreground">
-                  These are the exact candidate rows saved in Postgres.
-                </p>
-                <CourseImportDatabaseRows
-                  emptyLabel="0 rows"
-                  tables={persistedCourseDatabaseTables({
-                    snapshot: detail.candidateSnapshot,
-                    relationalData: detail.relationalData,
-                  })}
-                />
-              </div>
-            ) : (
-              <DataTableShell>
-                <DataTableEmpty
-                  description="Database rows appear after the candidate snapshot is saved."
-                  title="No candidate rows"
-                />
-              </DataTableShell>
-            )}
+            <CourseImportDatabaseRows
+              artifacts={detail.artifacts}
+              emptyLabel="0 rows"
+              tables={
+                detail.candidateSnapshot
+                  ? persistedCourseDatabaseTables({
+                      snapshot: detail.candidateSnapshot,
+                      relationalData: detail.relationalData,
+                    })
+                  : []
+              }
+            />
           </TabsContent>
           <TabsContent value="preview">
             {previewCourse ? (
-              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-                <Alert className="m-4" variant={"default"}>
-                  <AlertDescription>
-                    This is the full student-facing course view using the
-                    candidate data. Planning actions are disabled and nothing is
-                    published from this tab.
-                  </AlertDescription>
-                </Alert>
-                <Tabs className="gap-0" defaultValue="overview">
-                  <div className="border-y border-border px-4 sm:px-5">
-                    <CourseDetailTabsList />
-                  </div>
-                  <div className="p-4 sm:p-6">
-                    <CourseDetailView
-                      course={previewCourse}
-                      fullWidth
-                      requisiteCompletion={{
-                        completedCourses: [],
-                        isAuthenticated: false,
-                      }}
-                    />
-                  </div>
-                </Tabs>
-              </div>
+              <Tabs className="gap-0" defaultValue="overview">
+                <div className="overflow-x-auto border-b border-border">
+                  <CourseDetailTabsList />
+                </div>
+                <div className="py-5">
+                  <CourseDetailView
+                    course={previewCourse}
+                    fullWidth
+                    requisiteCompletion={{
+                      completedCourses: [],
+                      isAuthenticated: false,
+                    }}
+                  />
+                </div>
+              </Tabs>
             ) : (
               <DataTableShell>
                 <DataTableEmpty
-                  description="A preview becomes available after the candidate snapshot is saved."
-                  title="No candidate preview"
+                  title="No course preview"
+                  description="The import has not saved a course snapshot."
                 />
               </DataTableShell>
             )}

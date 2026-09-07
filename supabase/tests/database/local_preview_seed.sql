@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(12);
+select extensions.plan(13);
 
 select extensions.is(
   (
@@ -156,6 +156,18 @@ select extensions.ok(
     where published_snapshot_id is not null
   ) = 5,
   'the preview keeps plans empty while publishing every selectable structure fixture'
+);
+
+select extensions.ok(
+  not exists (
+    select 1 from public.course_snapshots as snapshots
+    join public.course_unit_options as options on options.course_snapshot_id = snapshots.id
+    join public.course_years as years on years.id = snapshots.course_year_id
+    join public.courses as courses on courses.id = years.course_id
+    where courses.code in ('COMP1100', 'COMP1110')
+      and snapshots.unit_value_kind = 'fixed'
+  ),
+  'fixed-unit preview courses have no variable unit options'
 );
 
 select * from extensions.finish();

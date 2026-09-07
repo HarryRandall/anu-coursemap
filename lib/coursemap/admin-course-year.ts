@@ -1,3 +1,4 @@
+import type { PendingCatalogueImport } from "./pending-catalogue-import";
 import "server-only";
 
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
@@ -63,12 +64,14 @@ export type AdminCourseYearRecord = {
     targetId: string;
   } | null;
   lifecycleStatus: string;
+  pendingImports: PendingCatalogueImport[];
   projection: CourseSnapshotProjectionData | null;
   publicId: string;
   publishedProjection: CourseSnapshotProjectionData | null;
   publishedSnapshotId: number | null;
   snapshot: SnapshotRow | null;
   sourcePage: SourcePageRow | null;
+  sourceOriginalProjection: CourseSnapshotProjectionData | null;
   snapshotHistory: AdminCourseSnapshotOption[];
   year: number;
 };
@@ -768,6 +771,18 @@ export async function loadAdminCourseYear(
       ? (snapshotById.get(ancestryCursor.based_on_snapshot_id) ?? null)
       : null;
   }
+  const currentDraftAncestry = new Set<number>();
+  let draftAncestor =
+    selectedYear.draftSnapshotId === null
+      ? undefined
+      : snapshotById.get(selectedYear.draftSnapshotId);
+  while (draftAncestor && !currentDraftAncestry.has(draftAncestor.id)) {
+    currentDraftAncestry.add(draftAncestor.id);
+    draftAncestor =
+      draftAncestor.based_on_snapshot_id === null
+        ? undefined
+        : snapshotById.get(draftAncestor.based_on_snapshot_id);
+  }
   const [projection, publishedProjection] = await Promise.all([
     snapshot
       ? loadCourseSnapshotProjection(snapshot, course.code, selectedYear.year)
@@ -782,6 +797,21 @@ export async function loadAdminCourseYear(
         ? loadCourseSnapshotProjection(snapshot, course.code, selectedYear.year)
         : null,
   ]);
+
+  // Imported snapshots are immutable. An edited descendant must never become
+  // the fallback labelled as ANU's original wording.
+  const originalImportSnapshot = ancestrySnapshotIds
+    .map((id) => snapshotById.get(id))
+    .find((ancestor) => ancestor?.origin === "import");
+  const sourceOriginalProjection = originalImportSnapshot
+    ? originalImportSnapshot.id === snapshot?.id
+      ? projection
+      : await loadCourseSnapshotProjection(
+          originalImportSnapshot,
+          course.code,
+          selectedYear.year,
+        )
+    : null;
 
   const [sourceResult, evidenceResult, blockingReviewsResult] =
     await Promise.all([
@@ -812,6 +842,18 @@ export async function loadAdminCourseYear(
   if (sourceResult.error) throw sourceResult.error;
   if (evidenceResult.error) throw evidenceResult.error;
   if (blockingReviewsResult.error) throw blockingReviewsResult.error;
+
+  const { data: pendingTargets, error: pendingError } = await supabase
+    .from("course_import_targets")
+    .select(
+      "id,run_id,candidate_snapshot_id,baseline_draft_snapshot_id,baseline_published_snapshot_id,review_status,created_at",
+    )
+    .eq("course_year_id", selectedYear.courseYearId)
+    .eq("processing_status", "ready_for_review")
+    .eq("review_status", "pending")
+    .not("candidate_snapshot_id", "is", null)
+    .order("created_at", { ascending: false });
+  if (pendingError) throw pendingError;
 
   let importTarget: AdminCourseYearRecord["importTarget"] = null;
   let artifacts: CourseImportArtifact[] = [];
@@ -882,6 +924,25 @@ export async function loadAdminCourseYear(
     evidence: evidenceResult.data ?? [],
     importTarget,
     lifecycleStatus: selectedYear.lifecycleStatus,
+    pendingImports: (pendingTargets ?? []).flatMap((target) =>
+      target.candidate_snapshot_id === null
+        ? []
+        : [
+            {
+              targetId: target.id,
+              runId: target.run_id,
+              candidateSnapshotId: target.candidate_snapshot_id,
+              isCurrentDraftSource: currentDraftAncestry.has(
+                target.candidate_snapshot_id,
+              ),
+              baselineDraftSnapshotId: target.baseline_draft_snapshot_id,
+              baselinePublishedSnapshotId:
+                target.baseline_published_snapshot_id,
+              reviewStatus: target.review_status,
+              createdAt: target.created_at,
+            },
+          ],
+    ),
     projection,
     publicId: course.public_id,
     publishedProjection,
@@ -895,6 +956,7 @@ export async function loadAdminCourseYear(
       snapshotNumber: item.snapshot_number,
     })),
     sourcePage: sourceResult.data,
+    sourceOriginalProjection,
     year: selectedYear.year,
   };
 }

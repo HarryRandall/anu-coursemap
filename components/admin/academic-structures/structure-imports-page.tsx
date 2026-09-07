@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { AcademicStructureImportTargetReview } from "@/components/admin/imports/academic-structure-import-target-review";
 import { ImportsList } from "@/components/admin/imports/imports-list";
-import { canWriteCatalogue } from "@/lib/auth/viewer";
 import {
   parseImportListSearchParams,
   type ImportListSearchParams,
@@ -91,15 +90,10 @@ export async function AcademicStructureImportReviewPage({
   params: Promise<{ targetId: string }>;
 }) {
   const { targetId } = await params;
-  const [detail, canPublish] = await Promise.all([
-    loadAcademicStructureImportTargetDetail({ structureKind: kind, targetId }),
-    canWriteCatalogue(),
-  ]);
+  const detail = await loadAcademicStructureImportTargetDetail({
+    structureKind: kind,
+    targetId,
+  });
   if (!detail) notFound();
-  return (
-    <AcademicStructureImportTargetReview
-      canPublish={canPublish}
-      detail={detail}
-    />
-  );
+  return <AcademicStructureImportTargetReview detail={detail} />;
 }

@@ -1,3 +1,4 @@
+import type { CourseExtractionConflict } from "./merge.ts";
 import type postgres from "postgres";
 import type { CourseExtraction } from "./contract.ts";
 import type {
@@ -198,6 +199,7 @@ async function recordCandidateReviewItems(
     candidateSnapshotId,
     projectionSha256,
     extraction,
+    conflicts = [],
     currentDraftSnapshotId,
     currentPublishedSnapshotId,
   }: {
@@ -205,6 +207,7 @@ async function recordCandidateReviewItems(
     candidateSnapshotId: number;
     projectionSha256: string;
     extraction: CourseExtraction;
+    conflicts?: readonly CourseExtractionConflict[];
     currentDraftSnapshotId: number | null;
     currentPublishedSnapshotId: number | null;
   },
@@ -295,6 +298,9 @@ async function recordCandidateReviewItems(
       ({ fieldKey }) => fieldKey === review.fieldKey,
     );
     const value = pathValue(extraction, review.fieldKey);
+    const conflict = conflicts.find(
+      ({ fieldKey }) => fieldKey === review.fieldKey,
+    );
     await tx`
       insert into public.course_review_items (
         target_id,
@@ -323,9 +329,15 @@ async function recordCandidateReviewItems(
         ${review.message},
         ${tx.json(
           toJsonValue(
-            value === undefined || value === null
-              ? { extractionState: review.kind }
-              : value,
+            conflict
+              ? {
+                  deterministicValue: conflict.deterministicValue,
+                  modelValue: conflict.modelValue,
+                  retained: "deterministic",
+                }
+              : value === undefined || value === null
+                ? { extractionState: review.kind }
+                : value,
           ),
         )},
         ${supportingEvidence?.sourceLocator ?? null},
@@ -349,11 +361,13 @@ export async function persistCourseSnapshotCandidate(
     sourcePageId,
     projection,
     extraction,
+    conflicts = [],
   }: {
     claim: ClaimedCourseImportTarget;
     sourcePageId: number;
     projection: CourseSnapshotProjection;
     extraction: CourseExtraction;
+    conflicts?: readonly CourseExtractionConflict[];
   },
 ): Promise<PersistedCourseSnapshotCandidate> {
   if (
@@ -508,6 +522,7 @@ export async function persistCourseSnapshotCandidate(
         candidateSnapshotId,
         projectionSha256: projection.projectionSha256,
         extraction,
+        conflicts,
         currentDraftSnapshotId,
         currentPublishedSnapshotId,
       });
@@ -1083,6 +1098,7 @@ export async function persistCourseSnapshotCandidate(
       candidateSnapshotId,
       projectionSha256: projection.projectionSha256,
       extraction,
+      conflicts,
       currentDraftSnapshotId,
       currentPublishedSnapshotId,
     });

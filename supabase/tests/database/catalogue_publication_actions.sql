@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(5);
+select extensions.plan(6);
 
 select extensions.ok(
   has_function_privilege(
@@ -74,6 +74,19 @@ cross join (values
   (repeat('b', 64), 'Blocked draft', 'required')
 ) as hashes(semantic_hash, name, confirmation_status)
 where structures.code = 'PBLS-TEST';
+
+-- A pending candidate must not be publishable when the draft pointer is null.
+select set_config('request.jwt.claim.sub', '96000000-0000-4000-8000-000000000001', true);
+select set_config('request.jwt.claim.role', 'authenticated', true);
+set local role authenticated;
+select extensions.throws_ok(
+  format('select public.publish_academic_structure_snapshot(%s, %s)',
+    (select structure_year_id from public.academic_structure_snapshots where name = 'Publishable draft'),
+    (select id from public.academic_structure_snapshots where name = 'Publishable draft')),
+  '55000', 'Publish the exact current draft.',
+  'a candidate cannot be published without a current draft'
+);
+reset role;
 
 update public.academic_structure_years as structure_years
 set draft_snapshot_id = snapshots.id
