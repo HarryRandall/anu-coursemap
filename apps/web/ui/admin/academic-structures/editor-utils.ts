@@ -1,5 +1,19 @@
 import type { AcademicStructureManualSnapshotProjection as Projection } from "@/lib/structure-import/manual-snapshot";
 
+export type { Projection };
+export type Group = Projection["requirementGroups"][number];
+export type Condition = Projection["requirementConditions"][number];
+export type RequirementOption = Projection["requirementOptions"][number];
+
+/** Structure kinds a requirement can point at. Shared with the relationships editor. */
+
+export const structureKindOptions = [
+  { value: "programme", label: "Programme" },
+  { value: "major", label: "Major" },
+  { value: "minor", label: "Minor" },
+  { value: "specialisation", label: "Specialisation" },
+] as const;
+
 export function nullableText(value: string) {
   return value.trim() ? value : null;
 }

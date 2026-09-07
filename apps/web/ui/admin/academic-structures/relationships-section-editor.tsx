@@ -6,7 +6,7 @@ import { OptionPicker } from "@/ui/common/option-picker";
 import { Plus, Trash2 } from "lucide-react";
 import type { AcademicStructureManualSnapshotProjection as Projection } from "@/lib/structure-import/manual-snapshot";
 import { CollectionHeader, ProvenanceFields } from "./source-fields-editor";
-import { structureKindOptions } from "./requirement-group-editor";
+import { structureKindOptions } from "./editor-utils";
 import { nullableText } from "./editor-utils";
 
 export function RelationshipsSectionEditor({
