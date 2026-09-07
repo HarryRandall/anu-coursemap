@@ -1,39 +1,117 @@
+<div align="center">
+
+<img src="apps/web/public/logo.svg" alt="" width="72" />
+
 # Coursemap
 
-An independent ANU course and degree planner with prerequisite exploration,
-progress tracking, campus Room Finder and university key dates. Catalogue
-imports are reviewed and published through the admin workspace.
+**Plan an ANU degree you can actually explain.**
 
-Built with Next.js, React, TypeScript, Tailwind CSS and ReUI. Supabase provides
-the database, authentication and storage; Vercel hosts the app and import queues.
+Prerequisite paths, requirement audits, campus room finding and every key date,
+in one place that updates when the catalogue does.
 
-Coursemap is not an official ANU system. Use the ANU catalogue and academic
-advice to confirm your study requirements.
+[![CI](https://github.com/HarryRandall/anu-coursemap/actions/workflows/ci.yml/badge.svg)](https://github.com/HarryRandall/anu-coursemap/actions/workflows/ci.yml)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![Built with pnpm](https://img.shields.io/badge/pnpm-workspaces-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
 
-## Development
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/plan-dark.png" />
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/plan-light.png" />
+  <img src="docs/images/plan-dark.png" alt="The Coursemap plan board showing a three-year degree plan laid out by year and semester, with unit totals per semester." width="900" />
+</picture>
 
-Use Node.js 24, pnpm 12.3.4, Docker and the Supabase CLI version pinned in [CI](.github/workflows/ci.yml).
+</div>
+
+## What it does
+
+Degree planning at ANU usually means a PDF, a spreadsheet and a lot of hope.
+Coursemap replaces that with something that checks its own work.
+
+- **Plan board.** Drag courses across years and semesters. Unit loads total
+  themselves, and a course whose prerequisites are not met is flagged in place
+  with a suggested fix.
+- **Requirement audits.** Your plan is checked against the published programme
+  rules, so you find the gap in second year rather than in final year.
+- **Prerequisite graphs.** See what a course unlocks and what it needs first.
+- **Room finder.** Find a room on campus, including a 3D view inside the
+  building rather than a flat floor plan.
+- **Key dates.** The ANU university calendar, scraped through a reviewable
+  pipeline instead of copied by hand.
+- **Catalogue administration.** Imports are proposals. A human reviews every
+  extraction before it is published, and nothing overwrites a working draft
+  silently.
+
+<div align="center">
+  <img src="docs/images/courses-dark.png" alt="The Coursemap course directory listing courses with their codes, requisites, availability and unit values." width="820" />
+</div>
+
+> [!NOTE]
+> Coursemap is an independent tool and not an official ANU system. Confirm your
+> study plan against Programs and Courses and your college's academic advice.
+
+## Quick start
+
+You need Node 24, Docker and the Supabase CLI. pnpm comes from the
+`packageManager` field, so any recent pnpm can bootstrap it.
 
 ```bash
-pnpm install --frozen-lockfile
+pnpm install
 cp apps/web/.env.example apps/web/.env.local
-pnpm db:start
-pnpm dev:local
+pnpm db:start      # local Supabase stack
+pnpm db:reset      # migrations plus demonstration fixtures
+pnpm dev:local     # http://127.0.0.1:3000
 ```
 
-Open [127.0.0.1:3000](http://127.0.0.1:3000) and sign up. For a disposable preview
-catalogue, `pnpm db:reset` resets the local database and loads demonstration data.
+Sign up at `/signup` and the local stack issues a session straight away. To run
+against a hosted Supabase project instead, put its URL and publishable key in
+`apps/web/.env.local` and use `pnpm dev`.
 
-For a hosted project, configure its matching URL and publishable key plus your
-local site origin in `apps/web/.env.local`, then use `pnpm dev`. See
-[environment example](apps/web/.env.example) for configuration and [package.json](package.json)
-for commands. Run `pnpm verify` before submitting changes.
+## How it is built
 
-Dependency versions live only in the `catalog:` block of `pnpm-workspace.yaml`,
-so add or upgrade a package there rather than in a package manifest.
+A pnpm workspace with Turborepo task caching.
 
-[Contributing](CONTRIBUTING.md) · [Architecture](docs/architecture.md) ·
+```
+apps/web        Next.js 16 App Router application
+  app/          routes, layouts and their colocated page components
+  ui/common/    Coursemap components shared across areas
+  ui/<area>/    components for one feature area
+  lib/          domain logic, data access and parsing
+packages/ui     vendored ReUI design system, primitives and theme
+supabase/       migrations, RLS policies and pgTAP tests
+```
+
+Two rules keep it honest. `packages/ui` knows nothing about courses or plans,
+which a test enforces. Every dependency version lives in the `catalog:` block of
+`pnpm-workspace.yaml`, so no package can drift onto its own version of React.
+
+Domain logic stays out of components, durable data stays in Postgres behind Row
+Level Security, and the service-role key never reaches the browser.
+
+## Commands
+
+| Command          | What it does                                   |
+| ---------------- | ---------------------------------------------- |
+| `pnpm dev:local` | Development server against local Supabase      |
+| `pnpm check`     | Formatting, lint and strict types              |
+| `pnpm test`      | Unit and component tests                       |
+| `pnpm test:e2e`  | Authenticated browser journeys                 |
+| `pnpm db:reset`  | Rebuild the local database and reseed fixtures |
+| `pnpm db:test`   | pgTAP database tests                           |
+| `pnpm db:types`  | Regenerate committed database types            |
+| `pnpm verify`    | The full gate, and what CI runs                |
+
+Run `pnpm verify` before opening a pull request.
+
+## Documentation
+
+[Contributing](CONTRIBUTING.md) ·
+[Architecture](docs/architecture.md) ·
 [Catalogue workspaces](docs/catalogue-workspace-refresh.md) ·
-[Workspace migration](docs/workspace-migration.md) ·
-[Database setup](supabase/README.md) · [Security policy](SECURITY.md) ·
+[Workspace layout](docs/workspace-migration.md) ·
+[Database setup](supabase/README.md) ·
+[Security policy](SECURITY.md) ·
 [Agent guide](AGENTS.md)
+
+<div align="center">
+<sub>Screenshots use demonstration fixtures, not real student records.</sub>
+</div>
