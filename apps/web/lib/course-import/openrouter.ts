@@ -198,30 +198,10 @@ function routerMetadata(value: unknown): OpenRouterRouterMetadata | null {
   };
 }
 
-export function configuredOpenRouterModels(
-  env: NodeJS.ProcessEnv = process.env,
-) {
-  const configured = env.COURSEMAP_OPENROUTER_MODELS;
-  if (configured === undefined || configured.trim() === "") {
-    return [DEFAULT_OPENROUTER_MODEL];
-  }
-  return [
-    ...new Set(
-      configured
-        .split(",")
-        .map((model) => model.trim().toLowerCase())
-        .filter((model) => MODEL_SLUG_PATTERN.test(model)),
-    ),
-  ];
-}
-
-export function assertAllowedOpenRouterModel(
-  model: string,
-  env: NodeJS.ProcessEnv = process.env,
-) {
+export function assertOpenRouterModel(model: string) {
   const normalised = model.trim().toLowerCase();
-  if (!configuredOpenRouterModels(env).includes(normalised)) {
-    throw new TypeError("Choose a configured OpenRouter model.");
+  if (normalised.length > 120 || !MODEL_SLUG_PATTERN.test(normalised)) {
+    throw new TypeError("The OpenRouter model identifier is invalid.");
   }
   return normalised;
 }
@@ -239,7 +219,6 @@ export function buildOpenRouterCourseRequestBody({
   schema,
   schemaName = "course_extraction",
   maxOutputTokens = 12_000,
-  env = process.env,
 }: {
   model: string;
   systemPrompt: string;
@@ -249,7 +228,7 @@ export function buildOpenRouterCourseRequestBody({
   maxOutputTokens?: number;
   env?: NodeJS.ProcessEnv;
 }): OpenRouterCourseRequestBody {
-  const requestedModel = assertAllowedOpenRouterModel(model, env);
+  const requestedModel = assertOpenRouterModel(model);
   if (!systemPrompt.trim() || !modelInput.trim()) {
     throw new TypeError(
       "OpenRouter extraction requires a prompt and course input.",
@@ -349,7 +328,7 @@ export function restoreOpenRouterCourseExtraction(
   const structured = parseStructuredContent(audit.content as string | null);
   return {
     generationId: typeof audit.id === "string" ? audit.id : null,
-    requestedModel: assertAllowedOpenRouterModel(requestedModel),
+    requestedModel: assertOpenRouterModel(requestedModel),
     resolvedModel: audit.model,
     finishReason:
       typeof audit.finishReason === "string" ? audit.finishReason : null,

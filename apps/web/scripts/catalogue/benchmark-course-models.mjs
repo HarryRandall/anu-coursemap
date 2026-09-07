@@ -27,7 +27,7 @@ import {
   courseModelCanonicalisationReviewItem,
 } from "../../lib/course-import/model-canonical.ts";
 import {
-  assertAllowedOpenRouterModel,
+  assertOpenRouterModel,
   buildOpenRouterCourseRequestBody,
   extractCourseWithOpenRouter,
   restoreOpenRouterCourseExtraction,
@@ -157,7 +157,7 @@ export function validateBenchmarkRuntimeOptions(value, env = process.env) {
     if (typeof model !== "string") {
       throw new TypeError("Every benchmark model must be a string.");
     }
-    return assertAllowedOpenRouterModel(model, env);
+    return assertOpenRouterModel(model);
   });
   if (models.length < 2 || models.length > MAX_MODELS) {
     throw new TypeError(

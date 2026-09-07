@@ -104,9 +104,9 @@ test("editing a first structure draft preserves its review and confirms without 
         const [directory] =
           await tx`insert into public.academic_structure_directory_entries ${tx({ academic_year_id: year.id, source_id: source.id, source_page_id: page.id, structure_kind: kind, code, title: parsed.title, source_url: "https://programsandcourses.anu.edu.au/2026/major/" + code })} returning id`;
         const [run] =
-          await tx`insert into public.academic_structure_import_runs ${tx({ source_id: source.id, academic_year_id: year.id, structure_kind: kind, requested_model: "local/fixture", parser_version: "local-fixture", prompt_version: "local-fixture", schema_version: projection.schemaVersion, target_count: 1, queued_count: 1, initiated_by: actor })} returning id`;
+          await tx`insert into public.academic_structure_import_runs ${tx({ source_id: source.id, academic_year_id: year.id, structure_kind: kind, requested_model: "google/gemini-3.1-flash-lite", parser_version: "local-fixture", prompt_version: "local-fixture", schema_version: projection.schemaVersion, target_count: 1, queued_count: 1, initiated_by: actor })} returning id`;
         const [target] =
-          await tx`insert into public.academic_structure_import_targets ${tx({ run_id: run.id, academic_year_id: year.id, directory_entry_id: directory.id, position: 0, structure_kind: kind, structure_code: code, requested_model: "local/fixture" })} returning id`;
+          await tx`insert into public.academic_structure_import_targets ${tx({ run_id: run.id, academic_year_id: year.id, directory_entry_id: directory.id, position: 0, structure_kind: kind, structure_code: code, requested_model: "google/gemini-3.1-flash-lite" })} returning id`;
         const workerId = randomUUID(),
           messageId = "draft-lifecycle-test";
         const claim = await claimAcademicStructureImportTarget(tx, {

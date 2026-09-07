@@ -508,14 +508,14 @@ test("validates every exported runtime option and model candidate", () => {
           help: false,
           execute: false,
           suitePath: "/tmp/suite.json",
-          models: [MODEL_ONE, "openai/unconfigured"],
+          models: [MODEL_ONE, "invalid model"],
           maxPaidCalls: null,
           maxCostUsd: null,
           outputPath: "/tmp/report.json",
         },
         MODEL_ENV,
       ),
-    /configured OpenRouter model/,
+    /model identifier is invalid/,
   );
   assert.throws(
     () =>

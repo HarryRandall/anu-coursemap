@@ -1,3 +1,4 @@
+import { loadImportModelSetting } from "@/lib/admin/settings";
 import { canManageCourseImports } from "@/lib/auth/viewer";
 import { recordCourseImportDispatch } from "@/lib/course-import/import-store";
 import {
@@ -74,7 +75,11 @@ async function startQueuedImport(request: Request) {
 
   let input;
   try {
-    input = parseCourseImportRequest(body);
+    const setting = await loadImportModelSetting();
+    if (setting.error) return jsonError(setting.error, 503);
+    input = parseCourseImportRequest(body, setting.model);
+    if (!setting.options.includes(input.requestedModel))
+      return jsonError("Choose an enabled import model.", 400);
   } catch (error) {
     return jsonError(
       error instanceof CourseImportRequestError

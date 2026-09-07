@@ -1,4 +1,6 @@
 "use client";
+
+import { StopStructureImport } from "@/ui/admin/imports/stop-structure-import";
 import { badgeVariantForTone } from "@/lib/ui";
 
 import { Badge } from "@coursemap/ui/components/badge";
@@ -434,6 +436,9 @@ export function StructureDirectoryList({
               </Link>
             ) : null}
           </div>
+          {data.activeRun ? (
+            <StopStructureImport runId={data.activeRun.id} />
+          ) : null}
           <YearPicker
             allowAll
             onChange={chooseYear}

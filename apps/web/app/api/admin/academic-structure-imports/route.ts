@@ -1,3 +1,4 @@
+import { loadImportModelSetting } from "@/lib/admin/settings";
 import { canManageCatalogueImports } from "@/lib/auth/viewer";
 import { recordAcademicStructureImportDispatch } from "@/lib/structure-import/import-store";
 import {
@@ -93,7 +94,11 @@ async function startQueuedImport(request: Request) {
 
   let input;
   try {
-    input = parseAcademicStructureImportRequest(body);
+    const setting = await loadImportModelSetting();
+    if (setting.error) return jsonError(setting.error, 503);
+    input = parseAcademicStructureImportRequest(body, setting.model);
+    if (!setting.options.includes(input.requestedModel))
+      return jsonError("Choose an enabled import model.", 400);
   } catch (error) {
     return jsonError(
       error instanceof AcademicStructureImportRequestError
@@ -344,4 +349,30 @@ export async function PATCH(request: Request) {
       500,
     );
   }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await canManageCatalogueImports())) {
+    return jsonError("Import permission is required.", 403);
+  }
+  let runId: string;
+  try {
+    runId = parseReconciliationRequest(await request.json());
+  } catch {
+    return jsonError(
+      "A valid academic structure import run ID is required.",
+      400,
+    );
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_academic_structure_import", {
+    p_run_id: runId,
+  });
+  if (error) {
+    return jsonError(
+      "The import run could not be stopped.",
+      error.code === "42501" ? 403 : error.code === "P0002" ? 404 : 500,
+    );
+  }
+  return Response.json({ runId, status: "stopped" });
 }

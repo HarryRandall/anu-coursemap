@@ -6,8 +6,7 @@ import {
   OPENROUTER_REQUEST_TIMEOUT_MS,
   OpenRouterConfigurationError,
   OpenRouterRequestError,
-  assertAllowedOpenRouterModel,
-  configuredOpenRouterModels,
+  assertOpenRouterModel,
   extractCourseWithOpenRouter,
   restoreOpenRouterCourseExtraction,
 } from "../lib/course-import/openrouter.ts";
@@ -23,34 +22,14 @@ test("bounds each OpenRouter request within the queue delivery budget", () => {
   assert.equal(OPENROUTER_REQUEST_TIMEOUT_MS, 35_000);
 });
 
-test("normalises a configured OpenRouter model allowlist", () => {
-  const env = {
-    COURSEMAP_OPENROUTER_MODELS:
-      " OPENAI/GPT-5-MINI , google/gemini-2.5-flash-lite,invalid,OPENAI/GPT-5-MINI ",
-  };
-  assert.deepEqual(configuredOpenRouterModels(env), [
-    "openai/gpt-5-mini",
-    "google/gemini-2.5-flash-lite",
-  ]);
+test("validates saved model identifiers without an environment allow-list", () => {
   assert.equal(
-    assertAllowedOpenRouterModel(" GOOGLE/GEMINI-2.5-FLASH-LITE ", env),
-    "google/gemini-2.5-flash-lite",
+    assertOpenRouterModel(" ANTHROPIC/CLAUDE-HAIKU-4.5 "),
+    "anthropic/claude-haiku-4.5",
   );
   assert.throws(
-    () => assertAllowedOpenRouterModel("openai/unconfigured", env),
-    /configured OpenRouter model/,
-  );
-});
-
-test("falls back to Gemini only when the model setting is unset or empty", () => {
-  assert.deepEqual(configuredOpenRouterModels({}), [DEFAULT_OPENROUTER_MODEL]);
-  assert.deepEqual(
-    configuredOpenRouterModels({ COURSEMAP_OPENROUTER_MODELS: "   " }),
-    [DEFAULT_OPENROUTER_MODEL],
-  );
-  assert.deepEqual(
-    configuredOpenRouterModels({ COURSEMAP_OPENROUTER_MODELS: "invalid" }),
-    [],
+    () => assertOpenRouterModel("invalid"),
+    /identifier is invalid/,
   );
 });
 
