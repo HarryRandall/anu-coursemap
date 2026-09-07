@@ -1,0 +1,4 @@
+interface:
+  display_name: "Next.js Development"
+  short_description: "Build Coursemap routes and React data flow"
+  default_prompt: "Use $nextjs-development for Coursemap routes, state and application boundaries."

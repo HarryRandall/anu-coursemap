@@ -1,46 +1,37 @@
 # Coursemap agent guide
 
-## Project
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for contribution conventions and the delivery workflow. Use Node.js 24 and npm.
 
-Coursemap is a Next.js App Router application for discovering ANU courses, understanding prerequisite paths and building degree plans. Supabase provides authentication and the persistent Postgres data model. Vercel is the deployment target.
+## Find the right code
 
-## Working conventions
+| Area                                    | Location                                     |
+| --------------------------------------- | -------------------------------------------- |
+| Routes, layouts and HTTP handlers       | `app/`, `proxy.ts`                           |
+| Product UI and retained ReUI components | `components/`                                |
+| Domain logic and integrations           | `lib/`                                       |
+| Database migrations and policies        | `supabase/`                                  |
+| Application tests                       | `tests/`                                     |
+| Application and data boundaries         | [docs/architecture.md](docs/architecture.md) |
 
-- Use British English, straight apostrophes and no em dashes in prose, comments and commit messages.
-- Use Node.js 24 and npm. Keep the lockfile committed.
-- Keep server components as the default and client boundaries narrow.
-- Prefer feature-oriented modules and concrete imports over broad barrel files.
-- Add or change database objects only through forward-only files in `supabase/migrations`.
-- Regenerate committed Supabase database types after schema changes.
-- Never commit secrets. Update `.env.example` whenever a required variable changes.
-- Do not store catalogue or durable plan data in hardcoded runtime arrays or browser storage.
-- Preserve unrelated user changes and inspect the working tree before switching branches.
+## Choose the relevant skill
 
-## Quality gate
+Load skills for the work in scope, rather than every skill for every task.
 
-Use the `$verify-coursemap` skill and run `npm run verify` before hand-off. The full gate is formatting, linting, type checking, tests, production build and `git diff --check`. Add browser verification for behaviour changes and Supabase adviser checks for database changes.
+| Task                                                     | Skill                                                            |
+| -------------------------------------------------------- | ---------------------------------------------------------------- |
+| Next.js routes, React state, data flow and module design | [nextjs-development](.agents/skills/nextjs-development/SKILL.md) |
+| Product pages, components, styling and accessibility     | [coursemap-ui](.agents/skills/coursemap-ui/SKILL.md)             |
+| Choosing, writing or reviewing tests                     | [coursemap-testing](.agents/skills/coursemap-testing/SKILL.md)   |
+| Schema, RLS, auth, clients or generated database types   | [supabase-change](.agents/skills/supabase-change/SKILL.md)       |
+| ANU source ingestion and catalogue publication           | [catalogue-import](.agents/skills/catalogue-import/SKILL.md)     |
+| Final checks and delivery evidence                       | [verify-coursemap](.agents/skills/verify-coursemap/SKILL.md)     |
 
-## UI
+## Repository safeguards
 
-Read `components/AGENTS.md` and use `$coursemap-ui` for interface work. Use the pinned ReUI components through concrete `@reui` imports. Keep custom components only for Coursemap-specific behaviour and compositions. Preserve the direct course-selection experience and prerequisite exploration while improving structure and accessibility.
-
-## Auth and onboarding
-
-- `/login` and `/signup` share the `AuthShell` split layout and the email-and-password Supabase flow.
-- Social sign-in buttons are placeholders until OAuth ships: they announce that the provider is coming soon and must never start a broken flow.
-- Onboarding is optional. New sign-ups land on `/onboarding`, which offers a "Skip for now" link, and students without a primary plan see the dashboard empty state instead of a forced redirect. Keep `/onboarding` in the proxy's protected prefixes.
-
-## Supabase
-
-Use `$supabase-change` for schema, RLS, auth, client or generated-type work. Every exposed table requires explicit grants and RLS. Never expose a service-role key to the browser. Use the official SSR client pattern and verified claims for protected server access.
-
-## Catalogue data
-
-Use `$catalogue-import` for source ingestion. Keep catalogue years, versions, provenance and import runs explicit. Treat ambiguous source material as review work, not an excuse to invent authoritative data.
-
-## Git and delivery
-
-- Use small branches prefixed with `feat/`, `fix/` or `refactor/`.
-- Use conventional commits such as `feat:`, `fix:` and `refactor:`.
-- Open a pull request for each coherent change and merge only after required checks pass.
-- Do not force-push shared branches or use destructive Git commands without explicit approval.
+- Inspect the working tree before editing or switching branches. Preserve unrelated changes and use an isolated worktree when another task is active.
+- Follow [components/AGENTS.md](components/AGENTS.md) for interface work. Retained ReUI source has its own update procedure; do not replace it with duplicate primitives.
+- Keep durable catalogue and plan data in the database, not hardcoded runtime arrays or browser storage.
+- Keep secrets out of source and browser bundles. Update `.env.example` when configuration requirements change.
+- Regenerate database types through the documented command rather than editing generated output.
+- Local changes do not authorise hosted database mutations or deployment. Follow the user's requested delivery scope; do not force-push shared branches or use destructive Git commands without explicit approval.
+- Run `npm run verify` before hand-off. Report blocked checks explicitly; a build or static check does not prove browser behaviour or production health.

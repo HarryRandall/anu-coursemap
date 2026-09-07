@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coursemap Testing"
+  short_description: "Choose and write meaningful regression tests"
+  default_prompt: "Use $coursemap-testing to choose and implement regression coverage."
