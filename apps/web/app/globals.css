@@ -1,0 +1,396 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* ------------------------------------------------------------------ */
+/* ReUI foundations                                                    */
+/* ------------------------------------------------------------------ */
+/* ReUI component styles use the product theme values defined below. */
+@import "@coursemap/ui/theme.css";
+@source "../../../packages/ui";
+
+/* Product motion, then corrections to the stylesheets imported above.
+   Both are imported here so they land after what they override. */
+@import "./animations.css";
+@import "./vendor.css";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+/* The vendored theme declares data-active as a presence check, but React
+   renders boolean attributes literally, so ReUI components that write
+   data-active={false} still carry data-active="false" and match it. The
+   sidebar menu buttons do exactly that and every resting item picked up the
+   accent background. Redeclare the variant so an explicit "false" never
+   counts as active; later declarations win, and the vendored source stays
+   untouched. */
+@custom-variant data-active (&:is([data-active]:not([data-active="false"]), [data-state="active"]));
+
+@utility transition-inherit-all {
+  transition-property: inherit;
+  transition-duration: inherit;
+  transition-timing-function: inherit;
+}
+
+@utility scrollbar-hide {
+  &::-webkit-scrollbar {
+    display: none;
+    -webkit-appearance: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ReUI uses this shadcn utility name inside its Nova style preset. */
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Design tokens (Tailwind v4 @theme)                                  */
+/* ------------------------------------------------------------------ */
+@theme {
+  --container-8xl: 96rem;
+
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 1rem;
+
+  --animate-caret-blink: caret-blink 1s infinite;
+
+  @keyframes caret-blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    51%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  --font-sans:
+    var(--font-geist-sans), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* Brand — refined violet. The ReUI semantic tokens (--primary and friends)
+     are the preferred way to colour new work; this ramp remains for the
+     legacy components that predate the overhaul. */
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(18, 18, 22, 0.05);
+  --shadow-sm:
+    0 1px 2px rgba(18, 18, 22, 0.04), 0 2px 8px rgba(18, 18, 22, 0.035);
+  --shadow-md:
+    0 8px 24px rgba(18, 18, 22, 0.08), 0 2px 7px rgba(18, 18, 22, 0.04);
+  --shadow-lg:
+    0 24px 60px rgba(12, 12, 16, 0.18), 0 8px 24px rgba(12, 12, 16, 0.08);
+
+  /* Motion */
+  --animate-modal-in: modal-in 160ms ease-out;
+  --animate-drawer-in-right: drawer-in-right 200ms
+    cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-drawer-out-right: drawer-out-right 160ms ease-in;
+  --animate-drawer-in-left: drawer-in-left 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-drawer-out-left: drawer-out-left 160ms ease-in;
+  --animate-toast-in: toast-in 180ms ease-out;
+  --animate-fade-in: fade-in 140ms ease-out;
+  --animate-fade-out: fade-out 100ms ease-in;
+  --animate-modal-out: modal-out 120ms ease-in;
+  --animate-drop-slot-in: drop-slot-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-spin-slow: spin 900ms linear infinite;
+  --animate-count-pop: count-pop 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-limit-nudge: limit-nudge 420ms ease-out;
+  --animate-limit-flash: limit-flash 900ms ease-out;
+  --animate-limit-ring: limit-ring 900ms ease-out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Product theme — ReUI semantic tokens                                */
+/* ------------------------------------------------------------------ */
+/* ReUI semantic tokens with Coursemap violet branding. */
+:root {
+  --radius: 0.375rem;
+  --skeleton: color-mix(in oklab, var(--foreground) 12%, var(--background));
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: var(--background);
+  /* One tooltip surface for Radix tooltips and chart hover cards. */
+  --tooltip: oklch(1 0 0);
+  --tooltip-foreground: oklch(0.145 0 0);
+  --tooltip-border: oklch(0.922 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: var(--background);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.541 0.281 293.009);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: var(--background);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: var(--background);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: var(--color-red-800);
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-900);
+  --info: var(--color-violet-500);
+  --info-foreground: var(--color-violet-900);
+  --warning: var(--color-yellow-500);
+  --warning-foreground: var(--color-yellow-900);
+  --invert: var(--color-zinc-900);
+  --invert-foreground: var(--color-zinc-50);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.702 0.183 293.541);
+  --surface: oklch(0.98 0 0);
+  --surface-foreground: var(--foreground);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.96 0 0);
+  --code-number: oklch(0.56 0 0);
+  --selection: var(--color-violet-100);
+  --selection-foreground: var(--foreground);
+  --chart-1: oklch(0.541 0.281 293.009);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.6 0.118 184.704);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.541 0.281 293.009);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.702 0.183 293.541);
+}
+
+.dark-mode {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: var(--background);
+  --tooltip: oklch(0 0 0);
+  --tooltip-foreground: oklch(1 0 0);
+  --tooltip-border: oklch(1 0 0 / 18%);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: var(--background);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.606 0.25 292.717);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: var(--background);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: var(--background);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: color-mix(in oklab, var(--foreground) 7%, var(--background));
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: var(--color-red-400);
+  --success: var(--color-emerald-400);
+  --success-foreground: var(--color-emerald-950);
+  --info: var(--color-violet-400);
+  --info-foreground: var(--color-violet-950);
+  --warning: var(--color-yellow-400);
+  --warning-foreground: var(--color-yellow-950);
+  --invert: var(--color-zinc-50);
+  --invert-foreground: var(--color-zinc-900);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.541 0.281 293.009);
+  --surface: oklch(0.205 0 0);
+  --code-highlight: oklch(0.269 0 0);
+  --code-number: oklch(0.708 0 0);
+  --selection: oklch(0.371 0 0);
+  --chart-1: oklch(0.606 0.25 292.717);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  /* The sidebar and topbar share the page ground in dark so the chrome reads
+     as one surface and the cards carry the elevation. */
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.606 0.25 292.717);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.541 0.281 293.009);
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark-mode {
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* No `scrollbar-gutter: stable` here. It reserved a bar's width on every
+       page, including ones that never scroll, on top of what the bar itself
+       already took. */
+    overflow-y: auto;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  p {
+    text-wrap: pretty;
+  }
+
+  h1 {
+    text-wrap: balance;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  /* Refined scrollbars — for panes inside the page, never the document one.
+     Both engines drop their overlay scrollbar for any scroller an author
+     styles, and the classic bar that replaces it permanently takes its width
+     out of the layout. Style the root and every page loses that strip down
+     its right edge; leave it alone and macOS floats the bar over the content
+     the way it does on any other site. `html` and `body` are both excluded
+     because the viewport's bar can be steered by either. */
+  *:not(html, body) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-zinc-300) transparent;
+  }
+  *:not(html, body)::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *:not(html, body)::-webkit-scrollbar-thumb {
+    background: var(--color-zinc-300);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+  *:not(html, body)::-webkit-scrollbar-thumb:hover {
+    background: var(--color-zinc-400);
+    background-clip: content-box;
+  }
+  .dark-mode *:not(html, body) {
+    scrollbar-color: var(--color-zinc-600) transparent;
+  }
+  .dark-mode *:not(html, body)::-webkit-scrollbar-thumb {
+    background: var(--color-zinc-600);
+    background-clip: content-box;
+  }
+  .dark-mode *:not(html, body)::-webkit-scrollbar-thumb:hover {
+    background: var(--color-zinc-500);
+    background-clip: content-box;
+  }
+}
+
+.landing-mesh {
+  background-color: #fafafa;
+  background-image:
+    radial-gradient(
+      ellipse 70% 55% at 12% 8%,
+      rgba(167, 139, 250, 0.38),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 88% 12%,
+      rgba(125, 211, 252, 0.34),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 72% 88%,
+      rgba(251, 207, 232, 0.42),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 40% 35% at 8% 78%,
+      rgba(167, 243, 208, 0.22),
+      transparent 50%
+    );
+}
+
+.brand-wordmark {
+  font-family: ui-rounded, "SF Pro Rounded", "Avenir Next", var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* Keep the search surface steady while its results change. */
+.find-dialog[data-state="open"] {
+  animation: find-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.find-dialog[data-state="closed"] {
+  animation: find-out 120ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .find-dialog[data-state] {
+    animation: none;
+  }
+}
+
+.find-command-list {
+  overscroll-behavior: contain;
+  scroll-padding-block: 0.25rem;
+}

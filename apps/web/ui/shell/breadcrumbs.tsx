@@ -1,0 +1,207 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { BookOpen, ChevronRight, type LucideIcon } from "lucide-react";
+import { Fragment } from "react";
+import { routeIcons } from "@/ui/shell/route-icons";
+
+type Crumb = { label: string; href?: string; icon?: LucideIcon };
+
+const labels: Record<string, string> = {
+  dashboard: "Home",
+  plan: "Plan",
+  requirements: "Requirements",
+  courses: "Courses",
+  academic: "Academic",
+  calendar: "Calendar",
+  "key-dates": "Key dates",
+  roadmap: "Roadmap",
+  rooms: "Room finder",
+  help: "Help centre",
+  timetable: "Timetable",
+  profile: "Profile",
+  admin: "Admin",
+  programmes: "Programmes",
+  majors: "Majors",
+  minors: "Minors",
+  specialisations: "Specialisations",
+  users: "Users",
+  roles: "Roles",
+  imports: "Imports",
+  sync: "Sync",
+  changes: "Changes",
+};
+
+/**
+ * Each crumb carries the same icon its sidebar entry uses, read from the
+ * shared route icon map. Admin dashboard and indoor maps are the two admin
+ * segments whose icon differs from the student route of the same name.
+ */
+const icons: Record<string, LucideIcon> = routeIcons;
+
+const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}[A-Z]?$/iu;
+
+/**
+ * Record identifiers carry no meaning for a reader. A page that knows the name
+ * behind one supplies it through `currentLabel`, but it only knows that once
+ * its data has loaded, so rendering the raw value in the meantime flashes a
+ * UUID into the breadcrumb. Drop the segment instead and let the name appear.
+ */
+const OPAQUE_ID_SEGMENT =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{24,}|\d+)$/iu;
+
+/** An academic year is a number a reader understands, not an identifier. */
+const YEAR_SEGMENT = /^(?:19|20|21)\d{2}$/u;
+
+function isOpaqueId(segment: string) {
+  return OPAQUE_ID_SEGMENT.test(segment) && !YEAR_SEGMENT.test(segment);
+}
+
+/**
+ * Only course codes are shouted. Upper-casing every unmapped segment turned
+ * ordinary path parts into headlines -- /admin/courses/imports read as
+ * "IMPORTS".
+ */
+function fallbackLabel(segment: string) {
+  const value = decodeURIComponent(segment);
+  if (COURSE_CODE_SEGMENT.test(value)) return value.toUpperCase();
+  const words = value.replace(/[-_]+/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function buildCrumbs(
+  pathname: string,
+  segmentLabels: Record<string, string | null> = {},
+): { crumbs: Crumb[]; admin: boolean } {
+  const segments = pathname.split("/").filter(Boolean);
+  const admin = segments[0] === "admin";
+  const crumbs: Crumb[] = [];
+  let href = "";
+
+  segments.forEach((segment, index) => {
+    href += `/${segment}`;
+    if (segmentLabels[segment] === null) return;
+    const isLast = index === segments.length - 1;
+    const opaque = segmentLabels[segment] === undefined && isOpaqueId(segment);
+    if (opaque) {
+      // Hold the position so `currentLabel` still lands on this crumb once the
+      // page knows the name. Rendering shows a placeholder until then.
+      crumbs.push({ label: "", href: undefined });
+      return;
+    }
+    const isAdminDashboard = admin && segment === "dashboard";
+    const isAdminRooms = admin && segment === "rooms";
+    const label =
+      segmentLabels[segment] ??
+      (isAdminDashboard
+        ? "Dashboard"
+        : isAdminRooms
+          ? "Indoor maps"
+          : (labels[segment] ?? fallbackLabel(segment)));
+    const icon = isAdminDashboard
+      ? routeIcons["admin-dashboard"]
+      : isAdminRooms
+        ? routeIcons["admin-rooms"]
+        : (icons[segment] ??
+          (COURSE_CODE_SEGMENT.test(segment) ? BookOpen : undefined));
+    crumbs.push({
+      icon,
+      label,
+      href: isLast
+        ? undefined
+        : admin && index === 0
+          ? "/admin/dashboard"
+          : href,
+    });
+  });
+
+  if (admin && segments.length === 1) {
+    crumbs[0] = { label: "Admin", icon: routeIcons.admin };
+  }
+
+  return { crumbs, admin };
+}
+
+export function Breadcrumbs({
+  currentLabel,
+  segmentLabels,
+  trailingLabel,
+}: {
+  currentLabel?: string;
+  /** Relabels a route segment, or hides it when the value is null. */
+  segmentLabels?: Record<string, string | null>;
+  /**
+   * The section within the page, such as the open tab. It is not a path
+   * segment, so it is appended rather than read from the URL.
+   */
+  trailingLabel?: string;
+}) {
+  const pathname = usePathname();
+  const { crumbs } = buildCrumbs(pathname, segmentLabels);
+  const named = currentLabel
+    ? crumbs.map((crumb, index) =>
+        index === crumbs.length - 1 ? { ...crumb, label: currentLabel } : crumb,
+      )
+    : crumbs;
+  const visibleCrumbs = trailingLabel
+    ? [
+        ...named.map((crumb, index) =>
+          index === named.length - 1 && !crumb.href
+            ? { ...crumb, href: pathname }
+            : crumb,
+        ),
+        { label: trailingLabel },
+      ]
+    : named;
+
+  return (
+    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
+      <ol className="flex min-w-0 items-center gap-1.5 overflow-visible py-0.5">
+        {visibleCrumbs.map((crumb, index) => (
+          <Fragment key={index}>
+            {index > 0 && (
+              <ChevronRight
+                aria-hidden="true"
+                className={`block size-3.5 shrink-0 text-muted-foreground/40 ${currentLabel ? "hidden sm:block" : ""}`}
+              />
+            )}
+            <li
+              className={`min-w-0 overflow-visible ${currentLabel && index < visibleCrumbs.length - 1 ? "hidden sm:block" : ""}`}
+            >
+              {crumb.href ? (
+                <Link
+                  href={crumb.href}
+                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-medium text-muted-foreground transition hover:text-foreground"
+                >
+                  {crumb.icon ? (
+                    <crumb.icon
+                      aria-hidden="true"
+                      className="block size-3.5 shrink-0 text-muted-foreground/70"
+                    />
+                  ) : null}
+                  <span className="truncate">{crumb.label}</span>
+                </Link>
+              ) : crumb.label ? (
+                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-semibold text-foreground">
+                  {crumb.icon ? (
+                    <crumb.icon
+                      aria-hidden="true"
+                      className="block size-3.5 shrink-0 text-muted-foreground"
+                    />
+                  ) : null}
+                  <span className="truncate">{crumb.label}</span>
+                </span>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="block h-3.5 w-20 animate-pulse rounded bg-muted-foreground/20"
+                />
+              )}
+            </li>
+          </Fragment>
+        ))}
+      </ol>
+    </nav>
+  );
+}

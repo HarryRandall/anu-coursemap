@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coursemap Conventions"
+  short_description: "Match the existing house style and file placement"
+  default_prompt: "Use $coursemap-conventions to match Coursemap's code and prose conventions."

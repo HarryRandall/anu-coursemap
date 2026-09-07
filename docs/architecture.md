@@ -10,6 +10,14 @@ Coursemap has three product areas:
 
 Next.js owns routing, server rendering and mutations. Supabase Auth owns identity. Supabase Postgres is the durable source of truth. Vercel builds and serves the application.
 
+## Workspace structure
+
+- `apps/web` owns Next.js routes, application UI, domain modules, assets, scripts and tests.
+- `packages/ui` owns retained ReUI primitives, extended components, supporting hooks and compatibility styles. It exports TypeScript source through concrete subpaths and cannot import application code.
+- Root tooling owns pnpm, Turbo, Prettier, CI and shared commands. Supabase remains at the root.
+- Next.js transpiles `@coursemap/ui`; Tailwind explicitly scans its sources. Product branding remains in `apps/web/app/globals.css`, with keyframes in `animations.css` and third-party corrections in `vendor.css`.
+- Turbo caches build, lint, type checking and unit tests. Build inputs include application environment files and relevant environment variables. Development, database operations and Playwright run uncached.
+
 ## Application structure
 
 - Route components load data on the server by default.
@@ -77,7 +85,7 @@ dispatched targets that have remained queued for more than 30 minutes.
 
 The private `course-import-artifacts` bucket is declared in
 `supabase/config.toml`. A production rollout managed outside Supabase's GitHub
-integration must run `npm run db:storage:buckets:linked` against the linked
+integration must run `pnpm db:storage:buckets:linked` against the linked
 project after applying migrations and before enabling directory refreshes or
 queue publishing. Database migrations alone do not create that hosted bucket.
 
@@ -94,6 +102,28 @@ Ambiguous source material remains reviewable instead of being flattened into
 plausible but incorrect rules. Deterministic values win model conflicts, model
 claims require evidence from the selected academic year's source, and related
 course codes create identities only rather than recursive imports.
+
+## University calendar
+
+Fetch a reviewable manifest from the [ANU university calendar](https://www.anu.edu.au/directories/university-calendar), then import it into local Supabase:
+
+```bash
+pnpm calendar:fetch --year 2026 --output .catalogue-cache/anu-calendar-2026.json
+pnpm calendar:import .catalogue-cache/anu-calendar-2026.json
+```
+
+Change the year and filename together. The import script refuses hosted database
+connections. Each manifest keeps the source URL, retrieval time, content hash and
+parser diagnostics.
+
+A clean import publishes validated events idempotently using year, date and title,
+and archives previously published events missing from the manifest. A manifest
+with error diagnostics records a failed run and leaves published events untouched.
+Review diagnostics and removals before importing. Calendar publication differs
+from the draft-review workflow for course and academic-structure snapshots.
+
+Academic periods inferred from class dates still need verification against the
+official calendar; importing calendar events does not itself reconcile them.
 
 ## Access model
 

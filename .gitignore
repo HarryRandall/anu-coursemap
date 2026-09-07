@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,15 +11,15 @@
 !.yarn/versions
 
 # testing
-/coverage
-/playwright-report
-/test-results
+**/coverage
+**/playwright-report
+**/test-results
 /.playwright-cli
 
 # next.js
-/.next/
+**/.next/
 /out/
-/public/maplibre/
+/apps/web/public/maplibre/
 
 # misc
 .DS_Store
@@ -50,5 +50,8 @@ yarn-error.log*
 
 # local build and tooling state
 /.catalogue-cache/
-/.turbo/
-/dist/
+**/.turbo/
+**/dist/
+
+**/playwright/.auth/
+/apps/web/.catalogue-cache/

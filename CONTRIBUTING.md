@@ -6,8 +6,8 @@ Coursemap is currently a private project. Keep changes focused, reviewable and r
 
 1. Create a branch prefixed with `feat/`, `fix/` or `refactor/`.
 2. Make one coherent change and update tests and documentation with it.
-3. Run `npm run verify`. For database changes, also run `npm run db:reset`,
-   `npm run db:test`, `npm run db:lint` and `npm run db:types`.
+3. Run `pnpm verify`. For database changes, also run `pnpm db:reset`,
+   `pnpm db:test`, `pnpm db:lint` and `pnpm db:types`.
 4. Open a pull request using the repository template.
 5. Merge only after required checks pass.
 

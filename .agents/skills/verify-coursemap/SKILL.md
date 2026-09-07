@@ -1,40 +1,46 @@
 ---
 name: verify-coursemap
-description: Run and report the complete Coursemap quality gate. Use before committing, opening or merging a pull request, after dependency or database changes, and whenever a user asks whether the repository is healthy or ready to deploy.
+description: Run and report Coursemap's delivery checks before hand-off, commits or pull requests, or when assessing readiness. Use coursemap-testing for test design and implementation.
 ---
 
 # Verify Coursemap
 
-## Overview
+Use Node.js 24 and the scripts in `package.json`. Work in the task's checkout so
+build output and generated files do not interfere with another active task.
 
-Validate the smallest relevant scope during development, then run the full reproducible gate before hand-off. Report exactly what passed, failed or could not be verified.
+## During development
 
-## Fast feedback
+Run the relevant test file with `pnpm --filter @coursemap/web exec vitest run tests/<name>.test.mjs`, or use
+`pnpm test:unit`. Run `pnpm check` for formatting, lint and types.
 
-Run these while iterating:
+`pnpm test` runs unit and component coverage. Browser journeys and database tests have separate commands.
 
-```bash
-npm run lint
-npm run typecheck
-npm test
-```
-
-Run focused test commands where the repository provides them. Do not describe a static check as runtime proof.
-
-## Full gate
-
-From a clean install when practical, run:
+## Before hand-off
 
 ```bash
-npm run verify
+pnpm verify
 ```
 
-When Supabase files changed, also run migration tests, regenerate database types and review the linked project's security and performance advisers. When UI behaviour changed, smoke-test the affected desktop and mobile flows in a real browser.
+This runs formatting, lint, types, unit and component tests, the demo build and
+rendered checks, the auth build and access checks, then `git diff --check`.
+CI splits the same work across the quality, route, database and browser gates.
+Do not run the builds concurrently: they share `apps/web/.next`.
 
-## Reporting
+Additional checks depend on the change:
 
-- Name each command and its outcome.
-- Separate focused checks from the full gate.
-- State when network, credentials or an unavailable service prevented verification.
-- Include warnings that affect deployment even if the command exited successfully.
-- Do not claim production readiness while migrations, environment variables or external redirects remain unapplied.
+- Database/schema changes: follow `supabase-change` for local migration tests, schema lint, generated types and relevant adviser checks. Running documentation checks does not require resetting a database.
+- Authenticated browser journeys: start a dedicated local Supabase stack, seed its fixtures and run `pnpm test:e2e`. Never reuse another task's database or web server.
+- UI behaviour: exercise the changed flow in a real browser on desktop and a narrow viewport. Rendered HTTP tests do not replace interaction checks.
+- New configuration or dependencies: verify the documented setup and affected build path.
+
+If the full command stops early, report which later stages did not run. Run
+independent useful checks where possible, without claiming that they complete
+the gate. Distinguish pre-existing failures using evidence from the base commit;
+do not assume they are unrelated merely because the edited files are different.
+
+## Report evidence
+
+State the checks that passed, failed or were blocked, and material warnings.
+Separate local verification, CI, deployment and observed production behaviour.
+Inspect the final diff for generated churn, accidental credentials and unrelated
+files. Do not treat successful local checks as permission to publish or deploy.

@@ -1,162 +1,118 @@
+<div align="center">
+
+<img src="apps/web/public/logo.svg" alt="" width="72" />
+
 # Coursemap
 
-Coursemap helps ANU students discover courses, understand prerequisite paths and build a degree plan they can explain. It is being rebuilt as a private, production-minded Next.js application backed by Supabase and intended for Vercel.
+**Plan an ANU degree you can actually explain.**
 
-> [!NOTE]
-> Coursemap is an independent planning tool. It is not an official ANU system and does not replace the Programs and Courses catalogue or academic advice.
+Prerequisite paths, requirement audits, campus room finding and every key date,
+in one place that updates when the catalogue does.
+
+[![CI](https://github.com/HarryRandall/anu-coursemap/actions/workflows/ci.yml/badge.svg)](https://github.com/HarryRandall/anu-coursemap/actions/workflows/ci.yml)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![Built with pnpm](https://img.shields.io/badge/pnpm-workspaces-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/plan-dark.png" />
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/plan-light.png" />
+  <img src="docs/images/plan-dark.png" alt="The Coursemap plan board showing a three-year degree plan laid out by year and semester, with unit totals per semester." width="900" />
+</picture>
+
+</div>
 
 ## What it does
 
-- searches and filters versioned course information
-- visualises prerequisite relationships and missing requirements
-- separates planned courses from completed attempts
-- audits a plan against degree and major requirements
-- provides reviewable catalogue administration and import workflows
+Degree planning at ANU usually means a PDF, a spreadsheet and a lot of hope.
+Coursemap replaces that with something that checks its own work.
 
-The existing course-selection and prerequisite experiences are intentionally being preserved while the prototype data and browser-only state are moved to a secure, multi-user data model.
+- **Plan board.** Drag courses across years and semesters. Unit loads total
+  themselves, and a course whose prerequisites are not met is flagged in place
+  with a suggested fix.
+- **Requirement audits.** Your plan is checked against the published programme
+  rules, so you find the gap in second year rather than in final year.
+- **Prerequisite graphs.** See what a course unlocks and what it needs first.
+- **Room finder.** Find a room on campus, including a 3D view inside the
+  building rather than a flat floor plan.
+- **Key dates.** The ANU university calendar, scraped through a reviewable
+  pipeline instead of copied by hand.
+- **Catalogue administration.** Imports are proposals. A human reviews every
+  extraction before it is published, and nothing overwrites a working draft
+  silently.
 
-## Stack
+<div align="center">
+  <img src="docs/images/courses-dark.png" alt="The Coursemap course directory listing courses with their codes, requisites, availability and unit values." width="820" />
+</div>
 
-- [Next.js](https://nextjs.org/) App Router with React and TypeScript
-- [Tailwind CSS](https://tailwindcss.com/) with shadcn and Radix primitives
-- [Supabase](https://supabase.com/) for Postgres, authentication and Row Level Security
-- [Vercel](https://vercel.com/) for previews and production deployment
-- GitHub Actions for repository checks
+> [!NOTE]
+> Coursemap is an independent tool and not an official ANU system. Confirm your
+> study plan against Programs and Courses and your college's academic advice.
 
-## Local development
+## Quick start
 
-Requirements:
-
-- Node.js 24
-- npm 10
-- Docker Desktop and the local Coursemap Supabase stack
-- Supabase CLI 2.x for local database migrations and tests
+You need Node 24, Docker and the Supabase CLI. pnpm comes from the
+`packageManager` field, so any recent pnpm can bootstrap it.
 
 ```bash
-supabase start
-cp .env.example .env.local
-npm install
-npm run dev
+pnpm install
+cp apps/web/.env.example apps/web/.env.local
+pnpm db:start      # local Supabase stack
+pnpm db:reset      # migrations plus demonstration fixtures
+pnpm dev:local     # http://127.0.0.1:3000
 ```
 
-For local Supabase, replace the publishable-key placeholder with the local
-`Publishable` value from `supabase status`. To use the hosted development
-project, set `NEXT_PUBLIC_SUPABASE_URL` and
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to its API URL and publishable key. Then
-open [http://localhost:3000](http://localhost:3000). Do not commit `.env.local`
-or any Supabase secret key.
+Sign up at `/signup` and the local stack issues a session straight away. To run
+against a hosted Supabase project instead, put its URL and publishable key in
+`apps/web/.env.local` and use `pnpm dev`.
 
-Student and admin routes require an account in the configured Supabase project
-when `COURSEMAP_DEMO_MODE=false`. Create an email-and-password account at
-`/signup`. New accounts are offered the optional `/onboarding` wizard and can
-skip straight to the dashboard. Local email confirmations are disabled in
-`supabase/config.toml` so the account receives a session immediately. Disable
-**Confirm email** under **Authentication > Sign In / Providers > Email** in a
-hosted Supabase project before enabling password-only sign-up there. Exact
-`COURSEMAP_DEMO_MODE=true` is reserved for the isolated prototype fixture and
-rendered CI tests.
+## How it is built
 
-The first catalogue administrator is granted once through the reviewed SQL in
-`supabase/README.md`. That administrator can then manage user role assignments
-at `/admin/users` and edit database-managed role permissions at `/admin/roles`.
+A pnpm workspace with Turborepo task caching.
 
-The Sydney hosted development project has the complete migration history,
-Row Level Security policies and the reviewed 2026 BCOMP and SOFT-MAJ structure
-seed. Its Auth redirect configuration accepts the trusted local callback.
+```
+apps/web        Next.js 16 App Router application
+  app/          routes, layouts and their colocated page components
+  ui/common/    Coursemap components shared across areas
+  ui/<area>/    components for one feature area
+  lib/          domain logic, data access and parsing
+packages/ui     vendored ReUI design system, primitives and theme
+supabase/       migrations, RLS policies and pgTAP tests
+```
+
+Two rules keep it honest. `packages/ui` knows nothing about courses or plans,
+which a test enforces. Every dependency version lives in the `catalog:` block of
+`pnpm-workspace.yaml`, so no package can drift onto its own version of React.
+
+Domain logic stays out of components, durable data stays in Postgres behind Row
+Level Security, and the service-role key never reaches the browser.
 
 ## Commands
 
-| Command                    | Purpose                                        |
-| -------------------------- | ---------------------------------------------- |
-| `npm run dev`              | Start the development server                   |
-| `npm run dev:local`        | Start port 3000 with local Supabase settings   |
-| `npm run db:start`         | Start the full local Supabase stack            |
-| `npm run db:reset`         | Rebuild the local database from migrations     |
-| `npm run db:test`          | Run local pgTAP database tests                 |
-| `npm run db:lint`          | Run strict local schema linting                |
-| `npm run db:types`         | Regenerate committed local database types      |
-| `npm run db:grant-preview` | Grant one local user draft catalogue access    |
-| `npm run calendar:fetch`   | Fetch the ANU university calendar for a year   |
-| `npm run calendar:import`  | Import a calendar manifest into local Supabase |
-| `npm run format:check`     | Check repository formatting                    |
-| `npm run lint`             | Run ESLint and accessibility rules             |
-| `npm run typecheck`        | Run strict TypeScript checks                   |
-| `npm test`                 | Run unit, build and rendered-route tests       |
-| `npm run check`            | Run formatting, linting and type checks        |
-| `npm run verify`           | Run the complete local quality gate            |
-| `npm run build`            | Create the Vercel-compatible production build  |
+| Command          | What it does                                   |
+| ---------------- | ---------------------------------------------- |
+| `pnpm dev:local` | Development server against local Supabase      |
+| `pnpm check`     | Formatting, lint and strict types              |
+| `pnpm test`      | Unit and component tests                       |
+| `pnpm test:e2e`  | Authenticated browser journeys                 |
+| `pnpm db:reset`  | Rebuild the local database and reseed fixtures |
+| `pnpm db:test`   | pgTAP database tests                           |
+| `pnpm db:types`  | Regenerate committed database types            |
+| `pnpm verify`    | The full gate, and what CI runs                |
 
-Course imports start from **Admin > Courses**. Refreshing a year stores the
-lightweight ANU code and title directory without creating detailed course
-records. An administrator can then select up to ten courses for a durable
-background run. Each target preserves its fetched source, transformations,
-model extraction, validation and relational snapshot for review. Publication
-is always a separate administrator action.
+Run `pnpm verify` before opening a pull request.
 
-### University calendar key dates
+## Documentation
 
-The `/key-dates` page shows the official ANU university calendar for a year:
-teaching periods, examination windows, enrolment and fee deadlines, graduations
-and public holidays. Events are scraped from the
-[ANU university calendar](https://www.anu.edu.au/directories/university-calendar)
-with a reviewable manifest-then-import pipeline:
+[Contributing](CONTRIBUTING.md) ·
+[Architecture](docs/architecture.md) ·
+[Catalogue workspaces](docs/catalogue-workspace-refresh.md) ·
+[Review design](docs/catalogue-review-design.md) ·
+[Workspace layout](docs/workspace-migration.md) ·
+[Database setup](supabase/README.md) ·
+[Security policy](SECURITY.md) ·
+[Agent guide](AGENTS.md)
 
-```bash
-npm run calendar:fetch -- --year 2026 --output .catalogue-cache/anu-calendar-2026.json
-npm run calendar:import -- .catalogue-cache/anu-calendar-2026.json
-```
-
-Each manifest keeps the canonical source URL, retrieval time, content hash and
-parser diagnostics. The importer records a catalogue import run and a calendar
-source document, publishes validated events idempotently through their natural
-key (year, date, title), and archives previously published events that a clean
-manifest no longer contains. A manifest with error diagnostics records a failed
-run and leaves published events untouched.
-
-The development cutover deliberately clears previous course identities,
-versions, plans, attempts and programme rows. The canonical course schema then
-starts empty: `courses` owns stable codes, `course_years` owns one academic
-year and `course_snapshots` owns each immutable imported or manually edited
-state. Rich fees, offerings, assessments, outcomes and requisite trees belong
-to an exact snapshot. `course_source_pages` and import artefacts retain the
-source and every transformation used to produce it.
-
-Draft course snapshots remain hidden by RLS until an authorised reviewer has
-inspected the source, model output, relational projection and review items,
-then explicitly publishes the snapshot. Student plan and attempt RPCs accept
-only an explicit course year and preserve the exact published snapshot used at
-the time. Programmes, majors, minors and specialisations use separate admin
-routes backed by the same year-specific directory, durable import, immutable
-draft review and explicit publication workflow.
-
-ANU Programs and Courses pages remain the authoritative source. Coursemap
-stores normalised facts with immutable provenance, not a replacement
-catalogue. Imported snapshots remain drafts until an authorised reviewer
-explicitly confirms uncertain fields and publishes them. Any public
-redistribution of captured ANU source content needs a separate rights decision
-before it is enabled.
-
-Shared academic periods are currently inferred from course class start and end
-dates, retained as draft provenance and flagged for review. They must be
-verified against the official ANU University Calendar before publication. The
-university calendar itself is imported as `university_calendar_events` through
-`npm run calendar:fetch` and `npm run calendar:import`; a later forward
-migration can align academic periods with those verified dates.
-
-## Repository guide
-
-- `app/` contains App Router routes and layouts.
-- `components/` contains product components and shared UI primitives.
-- `lib/` contains domain and integration code.
-- `supabase/` contains database migrations, seed tooling and local configuration.
-- `.agents/skills/` contains repeatable workflows for UI, Supabase, catalogue import and verification work.
-- `docs/architecture.md` records the intended boundaries and data model.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and [SECURITY.md](SECURITY.md) for private vulnerability reporting.
-
-## Status
-
-Private alpha. The native Next.js foundation, local Supabase authentication,
-owner-scoped student plan persistence and review-first course import workflow
-are in place. The hosted development database is intentionally disposable and
-starts with no detailed course or programme records after the clean cutover.
+<div align="center">
+<sub>Screenshots use demonstration fixtures, not real student records.</sub>
+</div>

@@ -17,11 +17,11 @@ Turn authoritative ANU source material into idempotent, versioned Coursemap reco
 4. Upsert through stable natural keys inside a transaction. Do not delete previously published data merely because a source is temporarily incomplete.
 5. Send ambiguities, conflicts and unsupported rule expressions to a review queue with the original source fragment.
 6. Compare created, changed, unchanged, rejected and missing counts against the previous successful run.
-7. Publish only after referential, domain and spot-check validation passes.
+7. For courses and academic structures, keep imported candidates as drafts for explicit administrator review and a separate publication action. The calendar manifest importer publishes validated events directly; inspect diagnostics and removals before running it. See `docs/architecture.md`.
 
 ## Data rules
 
-- Key course identity separately from year-specific course versions.
+- Key course identity separately from year-specific course records and immutable snapshots.
 - Model teaching periods and offerings explicitly.
 - Preserve nested prerequisite logic using rule groups and conditions. Do not flatten `all of`, `any of` and minimum-count rules into a single list.
 - Version degree and programme structures independently from a student's plan.
@@ -34,4 +34,4 @@ Turn authoritative ANU source material into idempotent, versioned Coursemap reco
 - Check broken course references, duplicate natural keys, impossible units and malformed rule trees.
 - Re-run the same input and confirm the second run is a no-op.
 - Review a sample of transformed records against the original source before publishing.
-- Keep captured test fixtures under `tests/fixtures` with their source dates and provenance; never serve fixture data from the production path.
+- Keep captured test fixtures under `apps/web/tests/fixtures` with their source dates and provenance; never serve fixture data from the production path.
