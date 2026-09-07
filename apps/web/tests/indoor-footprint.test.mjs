@@ -798,7 +798,7 @@ test("keeps valid canonical content on a secondary footprint part", () => {
 test("fits every seeded Copland space and connector into its real footprint", async () => {
   const [campus, coplandV1] = await Promise.all([
     readFile(
-      new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
+      new URL("../scripts/fixtures/campus-map.json", import.meta.url),
       "utf8",
     ).then(JSON.parse),
     readFile(

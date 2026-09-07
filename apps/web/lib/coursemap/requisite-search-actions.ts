@@ -5,7 +5,6 @@ import {
   canManageCourseImports,
   canWriteCourses,
 } from "@/lib/auth/viewer";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export type RequisiteCourseSearchResult = {
@@ -25,7 +24,6 @@ export async function searchRequisiteCourses(
   if (!(await canWriteCourses()) && !(await canManageCourseImports())) {
     return [];
   }
-  if (isDemoMode()) return [];
 
   try {
     const supabase = await createClient();
@@ -120,41 +118,12 @@ export type RequisiteProgrammeSearchResult = {
   years: number[];
 };
 
-const DEMO_REQUISITE_PROGRAMME_RESULTS: RequisiteProgrammeSearchResult[] = [
-  {
-    code: "BCOMP",
-    kind: "programme",
-    title: "Bachelor of Computing",
-    years: [2027, 2026],
-  },
-  {
-    code: "BACCT",
-    kind: "programme",
-    title: "Bachelor of Accounting",
-    years: [2026],
-  },
-  {
-    code: "SOFT-MAJ",
-    kind: "major",
-    title: "Software Development",
-    years: [2026],
-  },
-];
-
-/** Searches saved programme references for requisite editing. */
 export async function searchRequisiteProgrammes(
   query: string,
 ): Promise<RequisiteProgrammeSearchResult[]> {
   const term = query.trim().toUpperCase();
   if (term.length < 2) return [];
   if (!(await canManageCatalogueImports())) return [];
-  if (isDemoMode()) {
-    return DEMO_REQUISITE_PROGRAMME_RESULTS.filter(
-      (result) =>
-        result.code.includes(term) ||
-        (result.title?.toUpperCase().includes(term) ?? false),
-    );
-  }
 
   try {
     const supabase = await createClient();

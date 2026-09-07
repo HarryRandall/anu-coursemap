@@ -1,8 +1,6 @@
 import "server-only";
-
 import type { Database } from "@/types/database";
 import type { AcademicStructureKind } from "@/lib/structure-import/contract";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export const ACADEMIC_STRUCTURE_IMPORT_YEARS = Array.from(
@@ -203,10 +201,6 @@ export function academicStructureDirectoryRecordStatus(
 export async function loadAcademicStructureYearOptions(
   structureKind: AcademicStructureKind,
 ): Promise<AcademicStructureYearOption[]> {
-  if (isDemoMode()) {
-    return ACADEMIC_STRUCTURE_IMPORT_YEARS.toReversed().map(defaultYear);
-  }
-
   const supabase = await createClient();
   const { data: years, error: yearsError } = await supabase
     .from("academic_years")
@@ -287,7 +281,7 @@ export async function loadAcademicStructureDirectoryPage({
       years[0]!)
     : (years.find((option) => option.year === year) ?? years[0]!);
 
-  if (isDemoMode() || selectedYear.id === null) {
+  if (selectedYear.id === null) {
     return {
       kind: structureKind,
       year: selectedYear,

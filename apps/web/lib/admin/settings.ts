@@ -1,5 +1,4 @@
 import { configuredOpenRouterModels } from "@/lib/course-import/openrouter";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export const IMPORT_MODEL_SETTING_KEY = "imports.model";
@@ -27,7 +26,6 @@ export async function loadImportModelSetting(): Promise<ImportModelSetting> {
     configured: false,
     updatedAt: null,
   };
-  if (isDemoMode()) return fallback;
 
   try {
     const supabase = await createClient();

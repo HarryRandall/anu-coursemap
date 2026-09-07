@@ -136,3 +136,18 @@ official calendar; importing calendar events does not itself reconcile them.
 ## Delivery
 
 Changes move through focused branches and pull requests. GitHub Actions checks formatting, linting, types, tests and the production build. Vercel creates preview deployments and promotes `main` after checks. Supabase schema changes remain forward-only migrations in the same pull request as their application code.
+
+## Local configuration
+
+Copy `apps/web/.env.example` to `apps/web/.env.local`. Catalogue import credentials
+are only needed when running imports. Select the active extraction model in admin;
+`COURSEMAP_OPENROUTER_MODELS` controls the allowed choices.
+
+Local catalogue scripts read the database port from `supabase/config.toml`.
+`COURSEMAP_DATABASE_URL` overrides that connection, with `DATABASE_URL` as a
+fallback. Both overrides must resolve to loopback; hosted connections are refused.
+This is separate from `COURSEMAP_IMPORT_DATABASE_URL`, used by the application import worker.
+
+Room Finder uses built-in map style, terrain and walking-route endpoints. Optional
+`NEXT_PUBLIC_ROOM_MAP_STYLE_URL`, `NEXT_PUBLIC_ROOM_MAP_TERRAIN_URL` and
+`ROOM_MAP_ROUTING_URL` overrides are available when using another provider.

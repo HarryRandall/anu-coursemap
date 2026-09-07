@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { getSupabaseConfig, isDemoMode } from "@/lib/supabase/config";
+import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthViewer = {
@@ -13,7 +13,6 @@ export type AuthContext = {
 };
 
 export const getAuthContext = cache(async (): Promise<AuthContext> => {
-  if (isDemoMode()) return { viewer: null, canAccessAdmin: true };
   if (!getSupabaseConfig()) {
     return { viewer: null, canAccessAdmin: false };
   }
@@ -52,7 +51,6 @@ export async function getAuthViewer(): Promise<AuthViewer | null> {
 }
 
 async function currentUserHasPermission(requiredPermission: string) {
-  if (isDemoMode()) return true;
   if (!getSupabaseConfig()) return false;
 
   try {
@@ -92,7 +90,6 @@ export async function canWriteCatalogue() {
 
 /** Check the narrower permission required to manage Room Finder data. */
 export async function canManageRooms() {
-  if (isDemoMode()) return true;
   if (!getSupabaseConfig()) return false;
 
   try {

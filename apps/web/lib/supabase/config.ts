@@ -14,17 +14,6 @@ export class SupabaseConfigurationError extends Error {
 
 const TRUSTED_SITE_ALIASES = new Set(["https://anucoursemap.vercel.app"]);
 
-export function isDemoMode() {
-  if (process.env.COURSEMAP_DEMO_MODE !== "true" || process.env.VERCEL) {
-    return false;
-  }
-
-  const origin = getCanonicalSiteOrigin();
-  if (!origin) return false;
-  const hostname = new URL(origin).hostname;
-  return hostname === "localhost" || hostname === "127.0.0.1";
-}
-
 export function getSupabaseConfig(): SupabasePublicConfig | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const publishableKey =

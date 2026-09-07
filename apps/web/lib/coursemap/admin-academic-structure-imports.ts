@@ -1,7 +1,5 @@
 import "server-only";
-
 import type { Database } from "@/types/database";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import {
   DEFAULT_IMPORT_LIST_SORT,
@@ -172,9 +170,6 @@ export async function loadAcademicStructureImportPage({
 }): Promise<AcademicStructureImportPage> {
   const page = safePage(requestedPage);
   const safePageSize = Math.min(Math.max(Math.trunc(pageSize), 1), 50);
-  if (isDemoMode()) {
-    return { records: [], page, pageSize: safePageSize, total: 0 };
-  }
 
   const supabase = await createClient();
   const from = (page - 1) * safePageSize;
@@ -393,7 +388,6 @@ export async function loadAcademicStructureImportTargetDetail({
   structureKind: AcademicStructureImportKind;
   targetId: string;
 }): Promise<AcademicStructureImportTargetDetail | null> {
-  if (isDemoMode()) return null;
   const supabase = await createClient();
   const { data: targetData, error: targetError } = await supabase
     .from("academic_structure_import_targets")

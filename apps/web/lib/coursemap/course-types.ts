@@ -134,7 +134,7 @@ export type CourseDetails = {
   assessments: CourseAssessment[];
   attributes: CourseAttribute[];
   code: string;
-  /** Published snapshot backing this course, absent only for demo data. */
+  /** Published snapshot backing this course, when available. */
   snapshotId?: number;
   college: string | null;
   name: string;

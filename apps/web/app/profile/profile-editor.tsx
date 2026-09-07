@@ -13,7 +13,6 @@ import {
   CalendarClock,
   GraduationCap,
   LogOut,
-  RotateCcw,
   Save,
   TriangleAlert,
   UserRound,
@@ -41,7 +40,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "@coursemap/ui/primitives/tabs";
-
 import { useCoursemap, type Profile } from "@/app/providers";
 import { StructureMultiSelect } from "@/ui/profile/structure-multi-select";
 import { AppShell } from "@/ui/shell";
@@ -80,8 +78,7 @@ export function ProfileEditor({
 }: {
   catalogue: OnboardingCatalogue;
 }) {
-  const { demoMode, notify, ready, resetDemo, state, updateProfile } =
-    useCoursemap();
+  const { notify, ready, state, updateProfile } = useCoursemap();
   const searchParams = useSearchParams();
   const section = sectionFromParam(searchParams.get("tab"));
   const [draft, setDraft] = useState<Profile>(state.profile);
@@ -406,9 +403,7 @@ export function ProfileEditor({
                       <h2>Account</h2>
                     </CardTitle>
                     <CardDescription>
-                      {demoMode
-                        ? "Demo mode keeps this plan in your browser only."
-                        : "Signed in with email and password."}
+                      {"Signed in with email and password."}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-5 pt-5 sm:grid-cols-2">
@@ -424,19 +419,7 @@ export function ProfileEditor({
                       </FieldDescription>
                     </Field>
                     <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-                      {demoMode ? (
-                        <Button
-                          onClick={() => {
-                            resetDemo();
-                            notify("Demo plan reset", "info");
-                          }}
-                          type="button"
-                          variant="outline"
-                        >
-                          <RotateCcw aria-hidden="true" size={15} />
-                          Reset demo data
-                        </Button>
-                      ) : (
+                      {
                         // Associated with the standalone logout form below so
                         // it never submits the profile form it sits inside.
                         <Button
@@ -447,7 +430,7 @@ export function ProfileEditor({
                           <LogOut aria-hidden="true" size={15} />
                           Sign out
                         </Button>
-                      )}
+                      }
                     </div>
                   </CardContent>
                 </Card>
@@ -565,14 +548,14 @@ export function ProfileEditor({
             </div>
           ) : null}
         </form>
-        {!demoMode ? (
+        {
           <form
             action="/auth/logout"
             hidden
             id="profile-logout"
             method="post"
           />
-        ) : null}
+        }
       </AppShell>
     </Tabs>
   );

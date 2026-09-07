@@ -1,8 +1,6 @@
 import "server-only";
-
 import type { Database } from "@/types/database";
 import type { Course, Degree, Major, Term } from "@/lib/coursemap/types";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import {
   courseFromSnapshotProjection,
@@ -330,50 +328,6 @@ export async function loadPublishedPlanCatalogue(
   courseSelections: readonly { code: string; year: number }[] = [],
   selectedStructureYearIds: readonly number[] = [],
 ): Promise<PlanCatalogue> {
-  if (isDemoMode()) {
-    const {
-      courses: demoCourses,
-      degrees: demoDegrees,
-      majors: demoMajors,
-      terms: demoTerms,
-    } = await import("@/lib/catalogue");
-    const planningYears = [
-      ...new Set(
-        demoTerms
-          .filter((term) => term.id !== "unscheduled")
-          .map((term) => term.year),
-      ),
-    ];
-    const annualDemoCourses = demoCourses.flatMap((course) =>
-      planningYears.map((year) => ({
-        ...course,
-        year,
-        sourceUrl: course.sourceUrl.replace(/\/\d{4}\//u, `/${year}/`),
-      })),
-    );
-    return {
-      academicYear: planningYears.at(0) ?? null,
-      courses: annualDemoCourses,
-      terms: demoTerms,
-      degrees: demoDegrees,
-      majors: demoMajors,
-      structures: [
-        ...demoDegrees.map((degree) => ({
-          code: degree.code,
-          kind: "programme" as const,
-          name: degree.name,
-        })),
-        ...demoMajors.map((major) => ({
-          code: major.code,
-          kind: "major" as const,
-          name: major.name,
-        })),
-      ],
-      programmeRequirementsImported: true,
-      structureRequirements: [],
-    };
-  }
-
   const supabase = createPublicClient();
   const academicYearRecord = await loadAcademicYearRecord(
     supabase,
@@ -653,8 +607,6 @@ export async function loadPublishedPlanCatalogue(
 
 /** Loads the academic rules year saved on the signed-in user's primary plan. */
 export async function loadCurrentUserPlanCatalogue(): Promise<PlanCatalogue> {
-  if (isDemoMode()) return loadPublishedPlanCatalogue();
-
   const viewer = await getAuthViewer();
   if (!viewer) return loadPublishedPlanCatalogue();
 

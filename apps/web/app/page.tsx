@@ -5,17 +5,16 @@ import { LandingFooter } from "@/ui/landing/landing-footer";
 import { LandingHeader } from "@/ui/landing/landing-header";
 import { LandingHero } from "@/ui/landing/landing-hero";
 import { getAuthViewer } from "@/lib/auth/viewer";
-import { isDemoMode } from "@/lib/supabase/config";
 import { redirect } from "next/navigation";
 
 export default async function Home() {
   const viewer = await getAuthViewer();
   // Signed-in students go straight to the app; onboarding is offered from the
   // dashboard empty state rather than forced here.
-  if (!isDemoMode() && viewer) {
+  if (viewer) {
     redirect("/dashboard");
   }
-  const canOpenPlan = isDemoMode() || viewer !== null;
+  const canOpenPlan = viewer !== null;
 
   return (
     <main className="min-h-dvh bg-white">

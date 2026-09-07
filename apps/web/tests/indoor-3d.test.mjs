@@ -614,7 +614,7 @@ test("recognises a footprint-shaped legacy structural wall as the perimeter", ()
 test("replaces the Copland sample pentagon with its stored vector footprint", async () => {
   const [campus, coplandV1] = await Promise.all([
     readFile(
-      new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
+      new URL("../scripts/fixtures/campus-map.json", import.meta.url),
       "utf8",
     ).then(JSON.parse),
     readFile(

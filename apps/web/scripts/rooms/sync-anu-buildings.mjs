@@ -9,7 +9,7 @@ const rawSnapshotPath = resolve(
   projectRoot,
   "scripts/fixtures/anu-acton-buildings-overpass.json",
 );
-const demoDataPath = resolve(projectRoot, "lib/rooms/demo-campus-map.json");
+const demoDataPath = resolve(projectRoot, "scripts/fixtures/campus-map.json");
 const initialMigrationFilename =
   "20260828170200_import_anu_acton_buildings.sql";
 

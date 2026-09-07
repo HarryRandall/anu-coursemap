@@ -4,9 +4,8 @@ import {
   safeInternalRedirect,
 } from "@/lib/auth/redirect";
 import {
-  getSupabaseConfig,
   getSiteOriginForRequest,
-  isDemoMode,
+  getSupabaseConfig,
 } from "@/lib/supabase/config";
 import { createRequestClient } from "@/lib/supabase/request";
 
@@ -68,8 +67,6 @@ export async function proxy(request: NextRequest) {
     request: { headers: request.headers },
   });
   const protectedRoute = isProtectedRoute(request.nextUrl.pathname);
-
-  if (isDemoMode()) return response;
 
   if (!getSupabaseConfig()) {
     return protectedRoute ? signInRedirect(request, "configuration") : response;

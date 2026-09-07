@@ -17,7 +17,7 @@ const routing = modules["routing"];
 
 const demoData = JSON.parse(
   await readFile(
-    new URL("../lib/rooms/demo-campus-map.json", import.meta.url),
+    new URL("../scripts/fixtures/campus-map.json", import.meta.url),
     "utf8",
   ),
 );

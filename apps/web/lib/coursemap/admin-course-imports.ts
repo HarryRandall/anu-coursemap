@@ -1,6 +1,5 @@
 import type { Database, Json } from "@/types/database";
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import {
   DEFAULT_IMPORT_LIST_SORT,
@@ -243,8 +242,6 @@ function defaultAcademicYear(year: number): AcademicYearOption {
 }
 
 export async function loadAcademicYearOptions(): Promise<AcademicYearOption[]> {
-  if (isDemoMode()) return COURSE_IMPORT_YEARS.map(defaultAcademicYear);
-
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("academic_years")
@@ -306,7 +303,7 @@ export async function loadCourseDirectoryPage({
       years[0]!)
     : (years.find((option) => option.year === year) ?? years[0]!);
 
-  if (isDemoMode() || selectedYear.id === null) {
+  if (selectedYear.id === null) {
     return {
       year: selectedYear,
       allYears,
@@ -491,14 +488,6 @@ export async function loadCourseImportPage({
 } = {}): Promise<CourseImportPage> {
   const currentPage = safePage(page);
   const currentPageSize = Math.min(100, Math.max(10, Math.floor(pageSize)));
-  if (isDemoMode()) {
-    return {
-      records: [],
-      page: currentPage,
-      pageSize: currentPageSize,
-      total: 0,
-    };
-  }
 
   const supabase = await createClient();
   const start = (currentPage - 1) * currentPageSize;
@@ -763,7 +752,6 @@ export async function loadCourseImportTargetDetail({
 }: {
   targetId: string;
 }): Promise<CourseImportTargetDetail | null> {
-  if (isDemoMode()) return null;
   const supabase = await createClient();
   const { data: targetData, error: targetError } = await supabase
     .from("course_import_targets")

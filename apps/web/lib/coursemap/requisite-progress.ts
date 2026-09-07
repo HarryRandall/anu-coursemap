@@ -1,7 +1,5 @@
 import "server-only";
-
 import { getAuthViewer } from "@/lib/auth/viewer";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import type { CompletedRequisiteCourse } from "./requisite-summary";
 
@@ -24,14 +22,6 @@ type CourseRow = { code: string; id: number };
  * course can help a plan, but cannot satisfy wording that requires completion.
  */
 export async function loadCurrentUserRequisiteCompletion(): Promise<RequisiteCompletionSnapshot> {
-  if (isDemoMode()) {
-    return {
-      completedCourses: [],
-      enrolledProgrammeCodes: [],
-      isAuthenticated: false,
-    };
-  }
-
   const viewer = await getAuthViewer();
   if (!viewer) {
     return {

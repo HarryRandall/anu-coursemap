@@ -2,17 +2,17 @@
 
 ## Regression coverage
 
-| Responsibility                                                         | Replacement                                                         |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Domain calculations and parser regressions                             | Vitest Node discovery with direct TypeScript imports                |
-| Serial catalogue persistence and concurrency                           | Vitest database project plus the existing pgTAP suite               |
-| HTTP rendering, legacy redirects and access checks                     | Playwright demo and access projects with managed production servers |
-| Import artefact loading, retry and database projections                | `apps/web/tests/import-viewers.test.tsx`                            |
-| Read-only course and structure inspection tabs                         | `apps/web/tests/import-review-tabs.test.tsx`                        |
-| Year sorting and model-save/import sequencing                          | `apps/web/tests/directory-controls.test.tsx`                        |
-| Sign-up, optional onboarding, student navigation and independent plans | Authenticated Playwright journeys with test-owned accounts          |
-| Admin collections and course review tabs                               | Authenticated Playwright journeys                                   |
-| Shared package dependency direction                                    | `apps/web/tests/workspace-boundaries.test.mjs`                      |
+| Responsibility                                                         | Replacement                                                                  |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Domain calculations and parser regressions                             | Vitest Node discovery with direct TypeScript imports                         |
+| Serial catalogue persistence and concurrency                           | Vitest database project plus the existing pgTAP suite                        |
+| HTTP rendering, legacy redirects and access checks                     | Playwright authenticated and access projects with managed production servers |
+| Import artefact loading, retry and database projections                | `apps/web/tests/import-viewers.test.tsx`                                     |
+| Read-only course and structure inspection tabs                         | `apps/web/tests/import-review-tabs.test.tsx`                                 |
+| Year sorting and model-save/import sequencing                          | `apps/web/tests/directory-controls.test.tsx`                                 |
+| Sign-up, optional onboarding, student navigation and independent plans | Authenticated Playwright journeys with test-owned accounts                   |
+| Admin collections and course review tabs                               | Authenticated Playwright journeys                                            |
+| Shared package dependency direction                                    | `apps/web/tests/workspace-boundaries.test.mjs`                               |
 
 The old per-test compilation loaders and UI-source regular expressions for
 import reviews are removed. Table projection calculations retain their domain
@@ -57,7 +57,7 @@ against isolated local Supabase, not hosted user data.
 
 CI runs four gates. `Quality gate` covers formatting, lint, types, unit and
 component tests and the production dependency audit; `Route gate` covers the
-demonstration and access builds with their Playwright checks; `Database gate`
+the access build and its Playwright checks; `Database gate`
 covers pgTAP, schema lint, generated types and catalogue integration; `Browser
 gate` covers authenticated journeys. The pnpm version comes from
 `packageManager` and the Node version from `.node-version`, so neither is
@@ -74,3 +74,19 @@ and automatic install/build settings together with the previous application
 commit. Never deploy a root setting that does not match its source layout.
 
 Preview validation: [workspace deployment](https://coursemap-workspace-preview-g95udjsbt-coursemap.vercel.app/) built successfully. Login, logo and bundled CSS returned 200; `/plan` returned a 307 login redirect. The original project configuration remains unchanged.
+
+## Removal of demo mode
+
+Application routes always use Supabase authentication and published database data.
+The browser provider persists changes through server actions and no longer stores
+plans in local storage. Planner sample data lives in `tests/fixtures/catalogue.ts`;
+the building asset generator and indoor tests share `scripts/fixtures/campus-map.json`.
+Neither fixture is imported by application runtime modules.
+
+The former demo route suite is replaced by `playwright/rendered.spec.ts` against
+local Supabase, alongside the existing authenticated journeys. It covers public
+catalogue pages, student pages, legacy redirects, key-date controls, live admin
+users/roles, retired routes, room deep links and the indoor editor. The indoor
+fixture creates and deletes its own published map. Malformed auth handlers and
+cross-origin logout remain covered by the access suite. Provider component tests
+cover rejected additions, move rollback and rejected profile updates.

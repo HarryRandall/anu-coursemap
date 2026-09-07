@@ -18,7 +18,7 @@ import {
   type CampusIndoorDocument,
 } from "@/lib/rooms/indoor-map";
 import { readCampusIndoorDocument } from "@/lib/rooms/indoor-map-migrate";
-import { getSupabaseConfig, isDemoMode } from "@/lib/supabase/config";
+import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
 
@@ -135,7 +135,7 @@ const EDITOR_COLUMNS =
 async function loadEditorRows(
   buildingPlaceId?: string,
 ): Promise<CampusIndoorMapEditorRecord[]> {
-  if (isDemoMode() || !getSupabaseConfig() || !(await canManageRooms())) {
+  if (!getSupabaseConfig() || !(await canManageRooms())) {
     return [];
   }
 
@@ -168,20 +168,7 @@ export async function loadIndoorMapPickerData(): Promise<CampusIndoorMapPickerDa
   }
 
   const buildingIds = new Set(buildings.map((place) => place.id));
-  const records = isDemoMode()
-    ? mapData.indoorMaps.map(
-        (map) =>
-          ({
-            id: map.id,
-            buildingPlaceId: map.buildingPlaceId,
-            name: map.name,
-            status: "published",
-            revision: map.revision,
-            document: map.document,
-            updatedAt: null,
-          }) satisfies CampusIndoorMapEditorRecord,
-      )
-    : await loadEditorRows();
+  const records = await loadEditorRows();
 
   return {
     mapData,
@@ -216,23 +203,7 @@ export async function loadIndoorMapForBuilding(
   );
   if (!building) return null;
 
-  const saved = isDemoMode()
-    ? mapData.indoorMaps
-        .filter((map) => map.buildingPlaceId === building.id)
-        .map(
-          (map) =>
-            ({
-              id: map.id,
-              buildingPlaceId: map.buildingPlaceId,
-              name: map.name,
-              status: "published" as const,
-              revision: map.revision,
-              document: map.document,
-              updatedAt: null,
-            }) satisfies CampusIndoorMapEditorRecord,
-        )
-        .at(0)
-    : (await loadEditorRows(building.id)).at(0);
+  const saved = (await loadEditorRows(building.id)).at(0);
 
   return {
     mapData,
@@ -267,9 +238,6 @@ export async function saveCampusIndoorMap(
     return failure("That indoor map revision is not valid.");
   }
 
-  if (isDemoMode()) {
-    return failure("Indoor maps cannot be saved in demo mode.");
-  }
   if (!getSupabaseConfig()) {
     return failure("Indoor map storage is not configured.");
   }

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 const planner = await import("../lib/planner.ts");
-const catalogue = await import("../lib/catalogue.ts");
+const catalogue = await import("./fixtures/catalogue.ts");
 const {
   courseIsAvailable,
   degreeUnitProgress,

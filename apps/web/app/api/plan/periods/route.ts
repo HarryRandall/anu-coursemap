@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 
 export const dynamic = "force-dynamic";
@@ -23,11 +22,6 @@ function formatDateRange(startsOn: string, endsOn: string) {
 }
 
 export async function GET() {
-  if (isDemoMode()) {
-    const { terms: demoTerms } = await import("@/lib/catalogue");
-    return NextResponse.json({ terms: demoTerms.slice(0, 6) });
-  }
-
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("academic_periods")

@@ -1,9 +1,6 @@
 import "server-only";
-
 import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Course } from "@/lib/coursemap/types";
-import { isDemoMode } from "@/lib/supabase/config";
 import { createPublicClient } from "@/lib/supabase/public-server";
 import type { Database, Json } from "@/types/database";
 import type {
@@ -14,12 +11,11 @@ import type {
   CourseOffering,
   CoursePrerequisiteEdge,
   CourseRelatedCourse,
-  CourseRuleExpression,
   CourseRequisiteRule,
+  CourseRuleExpression,
   CourseUnitValue,
 } from "./course-types";
 import { accentFor } from "@/lib/coursemap/course-accent";
-import { parseRequisiteSummary } from "./requisite-summary";
 import type { RequisiteExpression } from "./requisite-summary";
 import {
   type PrerequisiteFallbackDetail,
@@ -869,110 +865,6 @@ export function courseFromSnapshotProjection(
   return detailAsCourseDetails({ ...projection, snapshotId });
 }
 
-function demoPrerequisiteEdges(code: string, courses: Course[]) {
-  const edges = new Map<string, CoursePrerequisiteEdge>();
-  const visited = new Set<string>();
-  const courseByCode = (courseCode: string) =>
-    courses.find((course) => course.code === courseCode);
-  const visit = (courseCode: string) => {
-    if (visited.has(courseCode)) return;
-    visited.add(courseCode);
-    const course = courseByCode(courseCode);
-    if (!course) return;
-    for (const prerequisite of course.prerequisiteCodes) {
-      edges.set(`${prerequisite}:${courseCode}`, {
-        from: prerequisite,
-        to: courseCode,
-        fromIsAvailable: Boolean(courseByCode(prerequisite)),
-        toIsAvailable: true,
-      });
-      visit(prerequisite);
-    }
-  };
-  visit(code);
-  return [...edges.values()];
-}
-
-async function demoCourses(academicYear?: number): Promise<CourseDetails[]> {
-  const { courses } = await import("@/lib/catalogue");
-  return courses
-    .filter(
-      (course) => academicYear === undefined || course.year === academicYear,
-    )
-    .map((course) => {
-      const prerequisiteEdges = demoPrerequisiteEdges(course.code, courses);
-      return {
-        academicCareer: null,
-        accent: course.accent,
-        areasOfInterest: [],
-        assessments: [],
-        assumedKnowledgeText: "",
-        attributes: [],
-        availableCourseCodes: [course.code, ...course.prerequisiteCodes],
-        code: course.code,
-        college: null,
-        convener: course.convener,
-        corequisiteText: course.corequisiteText ?? "",
-        delivery: course.delivery,
-        description: course.description,
-        eftsl: null,
-        fees: [],
-        incompatibilityText: course.incompatibilities.join(", "),
-        inherentRequirements: null,
-        introduction: null,
-        learningOutcomes: [],
-        level: course.level,
-        name: course.name,
-        offeringStatus: course.sessions.length ? "offered" : "unknown",
-        offerings: course.sessions.map((session, index) => ({
-          calendarYear: course.year,
-          censusOn: null,
-          classNumber: null,
-          classSummaryUrl: null,
-          deliveryMode: course.delivery,
-          endsOn: null,
-          enrolClosesOn: null,
-          location: null,
-          periodCode: `DEMO-${index + 1}`,
-          periodName: session,
-          startsOn: null,
-        })),
-        permissionText: course.permissionText ?? "",
-        prescribedTexts: null,
-        prerequisiteCodes: course.prerequisiteCodes,
-        prerequisiteEdges,
-        prerequisiteRule:
-          course.prerequisiteText && course.prerequisiteText !== "None"
-            ? {
-                confidence: 0,
-                expression: parseRequisiteSummary(course.prerequisiteText),
-                hardness: "hard",
-                relationalExpression: null,
-                reviewState:
-                  course.parseState === "Verified" ? "verified" : "automatic",
-                sourceText: course.prerequisiteText,
-              }
-            : null,
-        prerequisiteText: course.prerequisiteText,
-        publicationStatus: "published",
-        relatedCourses: [],
-        reviewState:
-          course.parseState === "Verified" ? "verified" : "automatic",
-        school: course.school,
-        sessions: course.sessions,
-        sourceUpdatedAt: null,
-        sourceUrl: course.sourceUrl,
-        subject: course.subject,
-        subjectName: null,
-        unitValue: { kind: "fixed", units: course.units },
-        units: course.units,
-        workloadHours: null,
-        workloadText: null,
-        year: course.year,
-      };
-    });
-}
-
 async function academicYearRecord(
   supabase: SupabaseClient<Database>,
   requestedYear: number,
@@ -989,12 +881,6 @@ async function academicYearRecord(
 async function loadAcademicYearOptionsUncached(): Promise<
   AcademicYearOption[]
 > {
-  if (isDemoMode()) {
-    const courses = await demoCourses();
-    return [...new Set(courses.map((course) => course.year))]
-      .sort((left, right) => right - left)
-      .map((year) => ({ year, hasPublishedCourses: true }));
-  }
   const supabase = createPublicClient();
   const { data: years, error } = await supabase
     .from("academic_years")
@@ -1018,8 +904,6 @@ async function loadAcademicYearOptionsUncached(): Promise<
 }
 
 export async function loadAcademicYearOptions(): Promise<AcademicYearOption[]> {
-  if (isDemoMode()) return loadAcademicYearOptionsUncached();
-
   return unstable_cache(
     loadAcademicYearOptionsUncached,
     ["published-academic-year-options"],
@@ -1371,26 +1255,6 @@ async function loadPublishedCoursePageUncached({
   const level = Number(firstFilterValue(filters.level));
   const session = firstFilterValue(filters.session);
 
-  if (isDemoMode()) {
-    const courses = (await demoCourses(academicYear)).filter((course) => {
-      const text =
-        `${course.code} ${course.name} ${course.subject} ${course.school} ${course.convener}`.toLowerCase();
-      return (
-        (!query || text.includes(query.toLowerCase())) &&
-        (!subject || course.subject === subject) &&
-        (!level || course.level === level * 1000) &&
-        (!session || course.sessions.includes(session))
-      );
-    });
-    const start = (safePage - 1) * safePageSize;
-    return {
-      courses: courses.slice(start, start + safePageSize),
-      page: safePage,
-      pageSize: safePageSize,
-      total: courses.length,
-    };
-  }
-
   const supabase = createPublicClient();
   const year = await academicYearRecord(supabase, academicYear);
   if (!year) {
@@ -1447,8 +1311,6 @@ export async function loadPublishedCoursePage(args: {
   page?: number;
   pageSize?: number;
 }): Promise<PublishedCoursePage> {
-  if (isDemoMode()) return loadPublishedCoursePageUncached(args);
-
   const safePage = Math.max(1, Math.floor(args.page ?? 1));
   const safePageSize = Math.min(
     100,
@@ -1496,11 +1358,7 @@ export async function loadPublishedCoursesByCodes(
     ),
   ];
   if (normalisedCodes.length === 0) return [];
-  if (isDemoMode()) {
-    return (await demoCourses(academicYear)).filter((course) =>
-      normalisedCodes.includes(course.code),
-    );
-  }
+
   const courses = await Promise.all(
     normalisedCodes.map((code) => loadPublishedCourse(code, academicYear)),
   );
@@ -1531,16 +1389,6 @@ export async function loadPublishedCoursesBySelections(
 }
 
 export async function loadPublishedCourseFilterOptions(academicYear: number) {
-  if (isDemoMode()) {
-    const courses = await demoCourses(academicYear);
-    return {
-      subjects: [...new Set(courses.map((course) => course.subject))].sort(),
-      levels: [...new Set(courses.map((course) => course.level / 1000))].sort(),
-      sessions: [
-        ...new Set(courses.flatMap((course) => course.sessions)),
-      ].sort(),
-    };
-  }
   const supabase = createPublicClient();
   const year = await academicYearRecord(supabase, academicYear);
   if (!year) return { subjects: [], levels: [], sessions: [] };
@@ -1636,10 +1484,6 @@ export async function loadPublishedCourse(
     !Number.isInteger(academicYear)
   ) {
     return null;
-  }
-  if (isDemoMode()) {
-    const courses = await demoCourses(academicYear);
-    return courses.find((course) => course.code === normalisedCode) ?? null;
   }
 
   return unstable_cache(

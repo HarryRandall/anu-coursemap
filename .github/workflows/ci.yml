@@ -87,9 +87,6 @@ jobs:
       - name: Install Chromium
         run: pnpm --filter @coursemap/web exec playwright install --with-deps chromium
 
-      - name: Check demonstration rendering
-        run: pnpm --filter @coursemap/web test:build:demo && pnpm --filter @coursemap/web test:rendered
-
       - name: Check authenticated access control
         run: pnpm --filter @coursemap/web test:build:auth && pnpm --filter @coursemap/web test:auth-access
 

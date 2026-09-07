@@ -32,5 +32,5 @@ that have no runtime surface, such as `tests/workspace-boundaries.test.mjs`.
 Run a focused domain test with `pnpm --filter @coursemap/web exec vitest run tests/requisite-conditions.test.mjs`.
 Run unit and component coverage with `pnpm test` and database integration with `pnpm test:catalogue-db`.
 
-Demo and authenticated profiles share `apps/web/.next`, so build and test them
+Access-control and local-database profiles share `apps/web/.next`, so build and test them
 sequentially. Verification owns the full delivery command sequence.
