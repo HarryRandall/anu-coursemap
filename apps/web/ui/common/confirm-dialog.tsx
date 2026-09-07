@@ -1,4 +1,5 @@
 "use client";
+import { Hint } from "@/ui/common/hint";
 import { Button } from "@coursemap/ui/primitives/button";
 import {
   Dialog,
@@ -65,7 +66,7 @@ export function ConfirmDialog({
     <Dialog onOpenChange={changeOpen} open={resolvedOpen}>
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent
-        className="max-w-[25rem]"
+        className="max-w-[min(25rem,calc(100%-2rem))]"
         onCloseAutoFocus={(event) => {
           if (!returnFocusRef?.current) return;
           event.preventDefault();
@@ -81,15 +82,8 @@ export function ConfirmDialog({
         ref={contentRef}
         showCloseButton={false}
       >
-        <DialogClose
-          aria-label="Close"
-          className="absolute top-2.5 right-2.5 z-10 grid size-8 place-items-center rounded-md text-muted-foreground/80 transition-colors hover:bg-accent hover:text-foreground/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          title="Close"
-        >
-          <X aria-hidden="true" size={17} />
-        </DialogClose>
-        <DialogHeader className="gap-2 px-5 pt-5 pb-3">
-          <div className="flex items-center gap-3 pr-9">
+        <DialogHeader className="min-w-0 gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             {destructive ? (
               <span
                 aria-hidden="true"
@@ -98,9 +92,24 @@ export function ConfirmDialog({
                 <TriangleAlert size={16} />
               </span>
             ) : null}
-            <DialogTitle className="min-w-0 text-base font-semibold">
-              {title}
-            </DialogTitle>
+            <Hint label={title}>
+              <DialogTitle
+                className="min-w-0 flex-1 truncate text-base font-semibold"
+                tabIndex={0}
+              >
+                {title}
+              </DialogTitle>
+            </Hint>
+            <DialogClose asChild>
+              <Button
+                aria-label="Close"
+                className="shrink-0"
+                size="icon-sm"
+                variant="ghost"
+              >
+                <X aria-hidden="true" size={17} />
+              </Button>
+            </DialogClose>
           </div>
           <DialogDescription asChild>
             <div className="text-sm leading-5 text-muted-foreground">
@@ -108,7 +117,7 @@ export function ConfirmDialog({
             </div>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="border-t-0 bg-card px-5 pt-0 pb-4">
+        <DialogFooter className="m-0 min-w-0 rounded-none border-0 bg-transparent p-0">
           <Button
             data-confirm-cancel
             onClick={() => changeOpen(false)}

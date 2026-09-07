@@ -184,20 +184,22 @@
    !important, including data-[variant=destructive]. That silently defeats the
    destructive variant on every dropdown in the application, so a destructive
    action reads as an ordinary one. Restore the destructive colour. */
-.style-nova .cn-menu-translucent [data-variant="destructive"],
-.style-nova .cn-menu-translucent [data-variant="destructive"] * {
-  color: var(--destructive) !important;
-}
+@layer base {
+  .style-nova .cn-menu-translucent [data-variant="destructive"],
+  .style-nova .cn-menu-translucent [data-variant="destructive"] * {
+    color: var(--destructive) !important;
+  }
 
-.style-nova .cn-menu-translucent [data-variant="destructive"]:focus,
-.style-nova
-  .cn-menu-translucent
-  [data-variant="destructive"][data-highlighted] {
-  background-color: color-mix(
-    in oklab,
-    var(--destructive) 12%,
-    transparent
-  ) !important;
+  .style-nova .cn-menu-translucent [data-variant="destructive"]:focus,
+  .style-nova
+    .cn-menu-translucent
+    [data-variant="destructive"][data-highlighted] {
+    background-color: color-mix(
+      in oklab,
+      var(--destructive) 12%,
+      transparent
+    ) !important;
+  }
 }
 
 /* Product surfaces stay flat; state contrast is independent of muted surfaces. */
