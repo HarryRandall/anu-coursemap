@@ -106,7 +106,9 @@ test("indoor search, room links and the editor use a published database map", as
 }) => {
   await login(page, administrator);
   await page.goto("/rooms?q=G01");
-  await expect(page.getByLabel("Search results")).toContainText("G01");
+  await expect(
+    page.getByRole("region", { name: "Search results" }),
+  ).toContainText("G01");
   await page.goto(`/rooms?room=${indoorMap.roomId}`);
   await expect(page.getByLabel("Building floors")).toBeVisible();
   await expect(
@@ -140,7 +142,7 @@ test("application pages share the wide content limit", async ({
     "/admin/courses",
   ]) {
     await page.goto(route);
-    const content = page.locator('[data-slot="page-content"]');
+    const content = page.locator('[data-slot="page-content"]:visible');
     await content.waitFor({ state: "visible" });
     assert.equal(
       await content.evaluate(
@@ -152,7 +154,7 @@ test("application pages share the wide content limit", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(
     await page
-      .locator('[data-slot="page-content"]')
+      .locator('[data-slot="page-content"]:visible')
       .evaluate((element) => element.getBoundingClientRect().width <= 390),
   );
 });
@@ -162,7 +164,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
-    await page.goto("/courses/COMP1100/2026");
+    await page.goto("/courses/COMP1100?year=2026");
     const overview = page.getByRole("tab", { name: "Overview", exact: true });
     const offerings = page.getByRole("tab", { name: "Offerings", exact: true });
     await offerings.click();
