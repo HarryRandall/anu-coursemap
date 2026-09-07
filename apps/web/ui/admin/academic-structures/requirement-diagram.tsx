@@ -1,5 +1,6 @@
 "use client";
 
+import { useGraphColorMode } from "@/ui/common/use-graph-color-mode";
 import { useMemo } from "react";
 import {
   Background,
@@ -16,6 +17,7 @@ export function StructureRequirementDiagram({
 }: {
   projection: Projection;
 }) {
+  const colorMode = useGraphColorMode();
   const { nodes, edges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
@@ -136,6 +138,7 @@ export function StructureRequirementDiagram({
       aria-label="Requirement diagram"
     >
       <ReactFlow
+        colorMode={colorMode}
         nodes={nodes}
         edges={edges}
         fitView

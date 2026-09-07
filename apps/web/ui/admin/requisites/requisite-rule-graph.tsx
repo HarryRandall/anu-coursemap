@@ -1,5 +1,6 @@
 "use client";
 
+import { useGraphColorMode } from "@/ui/common/use-graph-color-mode";
 import {
   forwardRef,
   useMemo,
@@ -563,6 +564,7 @@ export function RequisiteRuleGraph({
   onChange: (tree: ReviewedRuleTree) => void;
   tree: ReviewedRuleTree;
 }) {
+  const colorMode = useGraphColorMode();
   const graph = useMemo(
     () => toFlow(tree, canEdit, onChange),
     [canEdit, onChange, tree],
@@ -576,6 +578,7 @@ export function RequisiteRuleGraph({
   return (
     <div className="h-[30rem] overflow-hidden rounded-lg border border-border bg-muted/30">
       <ReactFlow
+        colorMode={colorMode}
         deleteKeyCode={null}
         edges={graph.edges}
         edgesFocusable={false}
