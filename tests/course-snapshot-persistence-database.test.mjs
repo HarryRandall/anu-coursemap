@@ -12,9 +12,9 @@ const rollbackSignal = new Error(
   "Intentional course snapshot persistence test rollback",
 );
 const academicYear = 2026;
-const courseCode = "COMP2400";
+const courseCode = "PERS9901";
 const programmeCode = "PERSIST-PROG";
-const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/COMP2400";
+const sourceUrl = "https://programsandcourses.anu.edu.au/2026/course/PERS9901";
 const fixtureHtml = await readFile(
   new URL(
     "./fixtures/course-import/anu-2026-comp2400-rich.html",
@@ -23,7 +23,9 @@ const fixtureHtml = await readFile(
   "utf8",
 );
 const extraction = extractDeterministicCourse({
-  html: fixtureHtml,
+  html: fixtureHtml
+    .replaceAll("COMP2400", courseCode)
+    .replaceAll("comp2400", courseCode.toLowerCase()),
   courseCode,
   year: academicYear,
   sourceUrl,
@@ -337,6 +339,84 @@ test("persists and idempotently reuses a complete review candidate", async () =>
           where id = ${first.candidateSnapshotId}
         `;
         assert.equal(snapshot.sealed_at, null);
+
+        const workerId = "93000000-0000-4000-8000-000000000099";
+        const [lease] = await tx`
+          select * from private.claim_course_import_target(
+            ${run.id}::uuid, ${target.id}::uuid, ${"first-draft-test"},
+            ${workerId}::uuid, ${600}
+          )
+        `;
+        await tx`
+          select private.finish_course_import_target(
+            ${run.id}::uuid, ${target.id}::uuid, ${"first-draft-test"},
+            ${workerId}::uuid, ${Number(lease.lock_version)},
+            ${"ready_for_review"}, ${"new"}, ${first.courseId},
+            ${first.courseYearId}, ${Number(sourcePage.id)},
+            ${first.candidateSnapshotId}, null, null
+          )
+        `;
+        const [prepared] = await tx`
+          select draft_snapshot_id, published_snapshot_id
+          from public.course_years where id = ${first.courseYearId}
+        `;
+        assert.equal(
+          Number(prepared.draft_snapshot_id),
+          first.candidateSnapshotId,
+        );
+        assert.equal(prepared.published_snapshot_id, null);
+        const [review] = await tx`
+          select review_status, (select count(*)::integer from public.course_review_items
+            where target_id = ${target.id} and status = 'open') as open_reviews
+          from public.course_import_targets where id = ${target.id}
+        `;
+        assert.equal(review.review_status, "pending");
+        assert.ok(
+          review.open_reviews > 0,
+          "preparing a draft does not confirm extraction warnings",
+        );
+
+        // Exercise the RPC against the exact first draft, including permissions.
+        await tx`
+          insert into auth.users (id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
+          values (${workerId}::uuid, 'authenticated', 'authenticated',
+            'first-draft-test@example.test', '{}'::jsonb, '{}'::jsonb)
+        `;
+        await tx`
+          update private.user_roles set role_id =
+            (select id from private.app_roles where key = 'admin')
+          where user_id = ${workerId}::uuid
+        `;
+        await tx`select set_config('request.jwt.claim.sub', ${workerId}, true)`;
+        await tx.unsafe("savepoint acceptance_check");
+        await tx`
+          select public.accept_course_import_target(
+            ${target.id}::uuid, null, ${first.candidateSnapshotId},
+            ${"Reviewed first imported draft."}
+          )
+        `;
+        const [accepted] = await tx`
+          select review_status from public.course_import_targets where id = ${target.id}
+        `;
+        assert.equal(accepted.review_status, "accepted");
+        await tx.unsafe("rollback to savepoint acceptance_check");
+        await tx`
+          select public.confirm_course_manual_snapshot(
+            ${first.courseYearId}, ${first.candidateSnapshotId},
+            private.course_snapshot_projection(${first.candidateSnapshotId}),
+            (select array_agg(id) from public.course_review_items
+              where target_id = ${target.id} and is_blocking and status = 'open'),
+            ${"Confirmed all imported fields in the workspace."}
+          )
+        `;
+        const [confirmedImport] = await tx`
+          select review_status from public.course_import_targets where id = ${target.id}
+        `;
+        assert.equal(
+          confirmedImport.review_status,
+          "accepted",
+          "one workspace confirmation also resolves its import target",
+        );
         throw rollbackSignal;
       }),
       (error) => error === rollbackSignal,

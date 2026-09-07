@@ -715,3 +715,82 @@ test("stable serialisation and fingerprints ignore object key insertion order", 
     stableFingerprint({ ...right, list: [1, 2] }),
   );
 });
+
+test("equivalent attributes ignore evidence wording and unordered positions", () => {
+  const base = structuredClone(deterministic);
+  base.attributes = [
+    {
+      value: "Critical Thinking",
+      position: 1,
+      sourceText: "Graduate Attributes: Critical Thinking",
+      attributeKind: "graduate_attribute",
+    },
+    {
+      value: "STEM Course",
+      position: 2,
+      sourceText: "STEM Course",
+      attributeKind: "stem",
+    },
+  ];
+  const model = structuredClone(base);
+  model.attributes = model.attributes.reverse().map((attribute, index) => ({
+    ...attribute,
+    position: index + 1,
+    sourceText: attribute.value,
+  }));
+  model.evidence = [];
+  const merged = mergeCourseExtractions({
+    deterministic: base,
+    model,
+    modelInput: selected.modelInput,
+  });
+  assert.equal(
+    merged.conflicts.some(({ fieldKey }) => fieldKey === "attributes"),
+    false,
+  );
+  assert.deepEqual(merged.extraction.attributes, base.attributes);
+  model.attributes[0].value = "Different attribute";
+  const changed = mergeCourseExtractions({
+    deterministic: base,
+    model,
+    modelInput: selected.modelInput,
+  });
+  assert.ok(
+    changed.conflicts.some(({ fieldKey }) => fieldKey === "attributes"),
+  );
+});
+
+test("assessment value and learning-outcome link changes remain conflicts", () => {
+  const model = structuredClone(deterministic);
+  model.evidence = [];
+  assert.ok(model.assessmentItems.length > 0);
+  model.assessmentItems[0].weight = (model.assessmentItems[0].weight ?? 0) + 1;
+  const merged = mergeCourseExtractions({
+    deterministic,
+    model,
+    modelInput: selected.modelInput,
+  });
+  assert.ok(
+    merged.conflicts.some(({ fieldKey }) => fieldKey === "assessmentItems"),
+  );
+  assert.deepEqual(
+    merged.extraction.assessmentItems,
+    deterministic.assessmentItems,
+  );
+});
+
+test("assessment outcome link ordering does not create an extraction conflict", () => {
+  const model = structuredClone(deterministic);
+  model.evidence = [];
+  for (const item of model.assessmentItems)
+    item.learningOutcomePositions.reverse();
+  const merged = mergeCourseExtractions({
+    deterministic,
+    model,
+    modelInput: selected.modelInput,
+  });
+  assert.equal(
+    merged.conflicts.some(({ fieldKey }) => fieldKey === "assessmentItems"),
+    false,
+  );
+});

@@ -115,8 +115,55 @@ function hasUsefulValue(value: unknown) {
   return true;
 }
 
-function valuesEqual(left: unknown, right: unknown) {
-  return stableStringify(left) === stableStringify(right);
+const UNORDERED_FIELDS = new Set([
+  "attributes",
+  "areasOfInterest",
+  "fees",
+  "relatedCourses",
+  "requisites.incompatibilityCourseCodes",
+  "requisites.softIncompatibilityCourseCodes",
+]);
+
+/** Evidence locators and excerpts describe provenance, not a different value.
+ * Only set-like collections ignore ordering. Outcome and assessment positions
+ * remain significant because assessment links refer to those positions.
+ */
+function comparisonValue(value: unknown, unordered: boolean): unknown {
+  if (Array.isArray(value)) {
+    const values = value.map((item) => comparisonValue(item, unordered));
+    return unordered
+      ? values.sort((left, right) =>
+          stableStringify(left).localeCompare(stableStringify(right)),
+        )
+      : values;
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(
+          ([key]) =>
+            key !== "sourceText" &&
+            key !== "sourceLocator" &&
+            !(unordered && key === "position"),
+        )
+        .map(([key, item]) => [
+          key,
+          comparisonValue(
+            item,
+            unordered || key === "learningOutcomePositions",
+          ),
+        ]),
+    );
+  }
+  return value;
+}
+
+function valuesEqual(fieldKey: string, left: unknown, right: unknown) {
+  const unordered = UNORDERED_FIELDS.has(fieldKey);
+  return (
+    stableStringify(comparisonValue(left, unordered)) ===
+    stableStringify(comparisonValue(right, unordered))
+  );
 }
 
 const MERGE_FIELDS = [
@@ -244,7 +291,7 @@ export function mergeCourseExtractions({
     const modelValue = pathValue(modelValidation.data, fieldKey);
     if (
       !hasUsefulValue(modelValue) ||
-      valuesEqual(deterministicValue, modelValue)
+      valuesEqual(fieldKey, deterministicValue, modelValue)
     )
       continue;
 

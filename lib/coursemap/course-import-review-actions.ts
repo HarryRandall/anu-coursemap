@@ -71,6 +71,7 @@ async function decide(
     revalidatePath("/admin/courses/imports");
     revalidatePath(`/admin/courses/imports/${reviewed.targetId}`);
     revalidatePath("/admin/courses");
+    revalidatePath("/admin/courses/[id]", "page");
     return {
       ok: true,
       message:

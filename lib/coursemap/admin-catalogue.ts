@@ -1,3 +1,4 @@
+import type { PendingCatalogueImport } from "./pending-catalogue-import";
 import "server-only";
 
 import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
@@ -144,6 +145,9 @@ export type AdminStructureReviewGroup = {
 };
 
 export type AdminStructureReviewRecord = {
+  pendingImports: PendingCatalogueImport[];
+  draftSnapshotId: number | null;
+  publishedSnapshotId: number | null;
   code: string;
   publicId: string;
   description: string;
@@ -191,8 +195,7 @@ async function selectStructureYear(
   const { data: candidates, error: candidatesError } = await supabase
     .from("academic_structure_years")
     .select("id,academic_year_id,draft_snapshot_id,published_snapshot_id")
-    .eq("structure_id", structureId)
-    .not("draft_snapshot_id", "is", null);
+    .eq("structure_id", structureId);
   if (candidatesError) throw candidatesError;
   const yearIds = (candidates ?? []).map((row) => row.academic_year_id);
   if (yearIds.length === 0) return null;
@@ -214,6 +217,7 @@ async function selectStructureYear(
 export async function loadAdminStructureReview(
   identifier: string,
   requestedYear?: number,
+  requestedSnapshotId?: number,
 ): Promise<AdminStructureReviewRecord | null> {
   const value = identifier.trim();
   const publicId = PUBLIC_ID_PATTERN.test(value) ? value : null;
@@ -238,8 +242,26 @@ export async function loadAdminStructureReview(
   const selection = await selectStructureYear(structure.id, requestedYear);
   if (!selection) return null;
   const { academicYear, structureYear } = selection;
-  const snapshotId =
-    structureYear.draft_snapshot_id ?? structureYear.published_snapshot_id;
+  let snapshotId =
+    requestedSnapshotId ??
+    structureYear.draft_snapshot_id ??
+    structureYear.published_snapshot_id;
+  if (snapshotId === null) {
+    // Older imports can predate automatic draft preparation. Keep their
+    // candidate reviewable without silently rewriting catalogue history.
+    const { data: candidate, error: candidateError } = await supabase
+      .from("academic_structure_import_targets")
+      .select("candidate_snapshot_id")
+      .eq("structure_year_id", structureYear.id)
+      .eq("processing_status", "succeeded")
+      .eq("review_status", "needs_review")
+      .not("candidate_snapshot_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (candidateError) throw candidateError;
+    snapshotId = candidate?.candidate_snapshot_id ?? null;
+  }
   if (snapshotId === null) return null;
 
   const [
@@ -261,6 +283,7 @@ export async function loadAdminStructureReview(
         "academic_career,acronym,atar,can_combine,can_combine_vertical,college,confirmation_status,contact_text,critical_uncertainty,description,duration_years,id,introduction,mode_of_delivery,name,overall_confidence,schema_version,selection_rank,short_name,source_page_id,study_as,units",
       )
       .eq("id", snapshotId)
+      .eq("structure_year_id", structureYear.id)
       .maybeSingle(),
     supabase
       .from("academic_structure_summary_fields")
@@ -365,6 +388,18 @@ export async function loadAdminStructureReview(
   ]);
   if (sourceResult.error) throw sourceResult.error;
   if (reviewResult.error) throw reviewResult.error;
+
+  const { data: pendingTargets, error: pendingError } = await supabase
+    .from("academic_structure_import_targets")
+    .select(
+      "id,run_id,candidate_snapshot_id,baseline_draft_snapshot_id,baseline_published_snapshot_id,review_status,created_at",
+    )
+    .eq("structure_year_id", structureYear.id)
+    .eq("processing_status", "succeeded")
+    .eq("review_status", "needs_review")
+    .not("candidate_snapshot_id", "is", null)
+    .order("created_at", { ascending: false });
+  if (pendingError) throw pendingError;
 
   const conditions = conditionsResult.data ?? [];
   const options = optionsResult.data ?? [];
@@ -524,6 +559,24 @@ export async function loadAdminStructureReview(
 
   return {
     code: structure.code,
+    draftSnapshotId: structureYear.draft_snapshot_id,
+    publishedSnapshotId: structureYear.published_snapshot_id,
+    pendingImports: (pendingTargets ?? []).flatMap((target) =>
+      target.candidate_snapshot_id === null
+        ? []
+        : [
+            {
+              targetId: target.id,
+              runId: target.run_id,
+              candidateSnapshotId: target.candidate_snapshot_id,
+              baselineDraftSnapshotId: target.baseline_draft_snapshot_id,
+              baselinePublishedSnapshotId:
+                target.baseline_published_snapshot_id,
+              reviewStatus: target.review_status,
+              createdAt: target.created_at,
+            },
+          ],
+    ),
     publicId: structure.public_id,
     description: snapshot.description ?? "",
     groups: (groupsResult.data ?? []).map((group) => ({
@@ -579,7 +632,9 @@ export async function loadAdminStructureReview(
     publicationStatus:
       structureYear.published_snapshot_id === snapshot.id
         ? "published"
-        : "draft",
+        : structureYear.draft_snapshot_id === snapshot.id
+          ? "draft"
+          : "candidate",
     reviewState: needsReview ? "needs_review" : "verified",
     source: sourceResult.data
       ? {

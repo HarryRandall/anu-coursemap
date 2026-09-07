@@ -651,6 +651,7 @@ export async function processCourseImportTarget({
           sourcePageId,
           projection,
           extraction: merged.extraction,
+          conflicts: merged.conflicts,
         });
         await persistArtifact({
           stageId,
