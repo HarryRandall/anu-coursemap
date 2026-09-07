@@ -1,0 +1,28 @@
+.row .action {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.row:hover .time,
+.row:focus-within .time,
+.row[data-open="true"] .time {
+  visibility: hidden;
+}
+
+.row:hover .action,
+.row:focus-within .action,
+.row[data-open="true"] .action {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .row .time {
+    visibility: hidden;
+  }
+
+  .row .action {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

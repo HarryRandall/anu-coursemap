@@ -30,14 +30,11 @@ export function CourseReferenceText({
       );
     }
     return (
-      <Hint
-        key={index}
-        label={`${part} is referenced by ANU but has not been imported yet`}
-      >
+      <Hint key={index} label={`${part}: course details unavailable`}>
         <span className="inline-flex items-center gap-1 rounded bg-muted px-1 font-mono font-semibold text-muted-foreground">
           <LockKeyhole size={10} aria-hidden="true" />
           {part}
-          <span className="sr-only">Not imported yet</span>
+          <span className="sr-only">Course details unavailable</span>
         </span>
       </Hint>
     );
@@ -72,12 +69,12 @@ export function CourseReferenceChips({
           ) : (
             <Hint
               key={reference}
-              label={`${reference} has not been imported yet`}
+              label={`${reference}: course details unavailable`}
             >
               <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 font-mono text-xs font-semibold text-muted-foreground ring-1 ring-border">
                 <LockKeyhole size={11} aria-hidden="true" />
                 {reference}
-                <span className="sr-only">Not imported yet</span>
+                <span className="sr-only">Course details unavailable</span>
               </span>
             </Hint>
           ),

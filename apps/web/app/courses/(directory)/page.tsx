@@ -10,7 +10,7 @@ import {
   loadPublishedCoursePage,
   type PublishedCoursePage,
 } from "@/lib/coursemap/published-courses";
-import { CourseDirectory } from "./course-directory";
+import { CourseDirectory } from "../course-directory";
 
 type CoursesSearchParams = {
   q?: string | string[];
@@ -85,7 +85,7 @@ export default async function CoursesPage({
       : "/courses";
     return (
       <AppShell fill>
-        <h1 className="sr-only">Courses</h1>
+        <h1 className="sr-only">Explore courses</h1>
         <div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
           <DataTableShell selectable={false}>
             <CatalogueEmpty
@@ -96,6 +96,9 @@ export default async function CoursesPage({
               <Button asChild variant="default">
                 <ReuiLink href={retryHref}>Try again</ReuiLink>
               </Button>
+              <Button asChild variant="outline">
+                <ReuiLink href="/dashboard">Back to home</ReuiLink>
+              </Button>
             </CatalogueEmpty>
           </DataTableShell>
         </div>
@@ -105,7 +108,7 @@ export default async function CoursesPage({
 
   return (
     <AppShell fill>
-      <h1 className="sr-only">Courses</h1>
+      <h1 className="sr-only">Explore courses</h1>
       <div className="mx-auto flex min-h-0 w-full flex-1 flex-col gap-5">
         <FilterBar
           key={query}

@@ -3,12 +3,12 @@ import { badgeVariantForTone } from "@/lib/ui";
 
 import { Badge } from "@coursemap/ui/components/badge";
 
-import Link from "next/link";
+import { Tabs, TabsContent, TabsTrigger } from "@coursemap/ui/primitives/tabs";
+import { OutlinedTabsList } from "@/ui/common/outlined-tabs-list";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   BookOpen,
   ClipboardCheck,
-  ExternalLink,
   GraduationCap,
   MapPin,
   PenLine,
@@ -127,13 +127,11 @@ function EventRows({
 export function UniversityCalendarView({
   allEvents,
   availableYears,
-  sourceUrl,
   todayIso,
   year,
 }: {
   allEvents: UniversityCalendarEvent[];
   availableYears: number[];
-  sourceUrl: string;
   todayIso: string;
   year: number;
 }) {
@@ -167,14 +165,22 @@ export function UniversityCalendarView({
   function href(nextPeriod: string, nextYear = year) {
     const next = new URLSearchParams(params.toString());
     next.delete("view");
-    next.set("period", nextPeriod);
-    next.set("year", String(nextYear));
-    return `/key-dates?${next}`;
+    const currentYear = Number(todayIso.slice(0, 4));
+    const defaultYear = availableYears.includes(currentYear)
+      ? currentYear
+      : Math.max(...availableYears);
+    const nextDefaultPeriod = nextYear < currentYear ? "past" : "upcoming";
+    if (nextPeriod === nextDefaultPeriod) next.delete("period");
+    else next.set("period", nextPeriod);
+    if (nextYear === defaultYear) next.delete("year");
+    else next.set("year", String(nextYear));
+    const search = next.toString();
+    return search ? `/key-dates?${search}` : "/key-dates";
   }
 
   return (
-    <div className="w-full space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="workspace-scroll w-full space-y-6">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4">
         <h2 className="text-xl font-semibold tracking-tight">
           University calendar
         </h2>
@@ -199,22 +205,10 @@ export function UniversityCalendarView({
           }}
         />
       </div>
-      <FilterBar
-        searchPlaceholder="Search dates, deadlines and events..."
-        filters={[
-          {
-            key: "category",
-            label: "Category",
-            allLabel: "All categories",
-            options: UNIVERSITY_CALENDAR_CATEGORIES,
-          },
-        ]}
-      />
 
-      {!query && !category && period !== "past" && upcoming.length > 0 && (
-        <section aria-label="Next key dates" className="space-y-3">
-          <h3 className="text-sm font-semibold">Coming up next</h3>
-          <div className="grid gap-3 lg:grid-cols-3">
+      {!query && !category && upcoming.length > 0 && (
+        <section aria-label="Next key dates" className="shrink-0 space-y-3">
+          <div className="grid gap-3 md:grid-cols-3">
             {upcoming.map((event, index) => (
               <article
                 key={event.id}
@@ -251,11 +245,24 @@ export function UniversityCalendarView({
         </section>
       )}
 
-      <section aria-label="Monthly agenda" className="space-y-4">
-        <nav
-          aria-label="Date period"
-          className="flex flex-wrap gap-5 border-b border-border"
-        >
+      <FilterBar
+        searchPlaceholder="Search dates, deadlines and events..."
+        filters={[
+          {
+            key: "category",
+            label: "Category",
+            allLabel: "All categories",
+            options: UNIVERSITY_CALENDAR_CATEGORIES,
+          },
+        ]}
+      />
+
+      <Tabs
+        value={period}
+        onValueChange={(value) => router.push(href(value), { scroll: false })}
+        className="gap-4"
+      >
+        <OutlinedTabsList aria-label="Date period">
           {(
             [
               ["upcoming", "Upcoming", futureEvents.length],
@@ -263,74 +270,65 @@ export function UniversityCalendarView({
               ["all", "All dates", events.length],
             ] as const
           ).map(([value, label, count]) => (
-            <Link
-              key={value}
-              href={href(value)}
-              scroll={false}
-              aria-current={period === value ? "page" : undefined}
-              className={cn(
-                "-mb-px flex min-h-11 items-center gap-2 border-b-2 px-1 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring",
-                period === value
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-              )}
-            >
+            <TabsTrigger key={value} value={value} className="gap-2">
               {label}
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {count}
-              </span>
-            </Link>
-          ))}
-        </nav>
-        {months.length === 0 && (
-          <p
-            role="status"
-            className="rounded-xl border border-dashed border-border p-8 text-sm text-muted-foreground"
-          >
-            {period === "upcoming"
-              ? `No upcoming dates match in ${year}. Select Past dates or All dates to browse earlier events.`
-              : `No ${period === "past" ? "past " : ""}dates match in ${year}. Try another search or category.`}
-          </p>
-        )}
-        {months.map((item) => (
-          <section
-            key={item.key}
-            aria-labelledby={`month-heading-${item.key}`}
-            className="overflow-hidden rounded-xl border border-border bg-card lg:grid lg:grid-cols-[12rem_minmax(0,1fr)]"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-6 py-4 lg:flex-col lg:items-start lg:justify-start lg:gap-2 lg:border-r lg:border-b-0 lg:py-6">
-              <h3
-                id={`month-heading-${item.key}`}
-                className="text-sm font-semibold"
+              <Badge
+                variant={period === value ? "primary-light" : "outline"}
+                className={cn(
+                  "tabular-nums",
+                  period !== value && "text-muted-foreground",
+                )}
               >
-                {item.label}
-              </h3>
-              <span className="text-xs text-muted-foreground">
-                {item.events.length}{" "}
-                {item.events.length === 1 ? "date" : "dates"}
-              </span>
-            </div>
-            <EventRows
-              events={
-                period === "past" ? [...item.events].reverse() : item.events
-              }
-              todayIso={todayIso}
-            />
-          </section>
-        ))}
-      </section>
-      <p className="border-t border-border pt-4 text-xs text-muted-foreground">
-        Source:{" "}
-        <a
-          href={sourceUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="underline underline-offset-4"
+                {count}
+              </Badge>
+            </TabsTrigger>
+          ))}
+        </OutlinedTabsList>
+        <TabsContent
+          key={`${year}-${period}-${category}-${query}`}
+          value={period}
+          className="mt-0 space-y-4"
+          aria-label="Key dates"
+          tabIndex={0}
         >
-          ANU university calendar
-          <ExternalLink size={11} aria-hidden="true" className="ml-1 inline" />
-        </a>
-      </p>
+          {months.length === 0 && (
+            <p
+              role="status"
+              className="rounded-xl border border-dashed border-border p-8 text-sm text-muted-foreground"
+            >
+              {period === "upcoming"
+                ? `No upcoming dates match in ${year}. Select Past dates or All dates to browse earlier events.`
+                : `No ${period === "past" ? "past " : ""}dates match in ${year}. Try another search or category.`}
+            </p>
+          )}
+          {months.map((item) => (
+            <section
+              key={item.key}
+              aria-labelledby={`month-heading-${item.key}`}
+              className="overflow-hidden rounded-xl border border-border bg-card lg:grid lg:grid-cols-[12rem_minmax(0,1fr)]"
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-6 py-4 lg:flex-col lg:items-start lg:justify-start lg:gap-2 lg:border-r lg:border-b-0 lg:py-6">
+                <h3
+                  id={`month-heading-${item.key}`}
+                  className="text-sm font-semibold"
+                >
+                  {item.label}
+                </h3>
+                <span className="text-xs text-muted-foreground">
+                  {item.events.length}{" "}
+                  {item.events.length === 1 ? "date" : "dates"}
+                </span>
+              </div>
+              <EventRows
+                events={
+                  period === "past" ? [...item.events].reverse() : item.events
+                }
+                todayIso={todayIso}
+              />
+            </section>
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

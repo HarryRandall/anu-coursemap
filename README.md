@@ -66,6 +66,9 @@ Sign up at `/signup` and the local stack issues a session straight away. To run
 against a hosted Supabase project instead, put its URL and publishable key in
 `apps/web/.env.local` and use `pnpm dev`.
 
+Development uses webpack, matching production builds, to avoid a Turbopack
+hot-reload panic (`VersionedContents` cells no longer exist).
+
 ## How it is built
 
 A pnpm workspace with Turborepo task caching.

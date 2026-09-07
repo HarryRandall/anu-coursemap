@@ -10,6 +10,7 @@ import {
 import { createRequestClient } from "@/lib/supabase/request";
 
 const PROTECTED_ROUTE_PREFIXES = [
+  "/compass",
   "/admin",
   "/dashboard",
   "/onboarding",
@@ -41,7 +42,7 @@ function isProtectedRoute(pathname: string) {
   );
 }
 
-function signInRedirect(request: NextRequest, reason?: string) {
+function signInRedirect(request: NextRequest) {
   const siteOrigin = getSiteOriginForRequest(
     request.nextUrl,
     request.headers.get("x-forwarded-host") ?? request.headers.get("host"),
@@ -58,7 +59,6 @@ function signInRedirect(request: NextRequest, reason?: string) {
     "next",
     safeInternalRedirect(requestPathWithSearch(request.nextUrl)),
   );
-  if (reason) signInUrl.searchParams.set("reason", reason);
   return privateNoStore(NextResponse.redirect(signInUrl));
 }
 
@@ -69,7 +69,7 @@ export async function proxy(request: NextRequest) {
   const protectedRoute = isProtectedRoute(request.nextUrl.pathname);
 
   if (!getSupabaseConfig()) {
-    return protectedRoute ? signInRedirect(request, "configuration") : response;
+    return protectedRoute ? signInRedirect(request) : response;
   }
 
   const { supabase, applyTo } = createRequestClient(request, response);

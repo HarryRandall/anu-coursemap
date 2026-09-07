@@ -54,7 +54,6 @@ export function CourseImportTargetReview({
         admin
         fullBleed
         currentBreadcrumbLabel={detail.target.courseCode}
-        showThemeToggle={false}
         tabs={<SectionTabs label="Import sections" tabs={importSectionTabs} />}
       >
         <CourseImportAutoRefresh active={active} />

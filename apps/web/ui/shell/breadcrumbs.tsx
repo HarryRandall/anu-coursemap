@@ -2,21 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, ChevronRight, type LucideIcon } from "lucide-react";
-import { Fragment } from "react";
+import { BookOpen, type LucideIcon } from "lucide-react";
+import { Fragment, useLayoutEffect, useRef, useState } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@coursemap/ui/primitives/breadcrumb";
+import { BreadcrumbOverflow } from "@/ui/shell/breadcrumb-overflow";
 import { routeIcons } from "@/ui/shell/route-icons";
 
 type Crumb = { label: string; href?: string; icon?: LucideIcon };
 
 const labels: Record<string, string> = {
-  dashboard: "Home",
-  plan: "Plan",
+  dashboard: "Dashboard",
+  plan: "Planner",
   requirements: "Requirements",
-  courses: "Courses",
-  academic: "Academic",
+  courses: "Explore courses",
+  academic: "Academic history",
   calendar: "Calendar",
   "key-dates": "Key dates",
-  roadmap: "Roadmap",
+  roadmap: "Product roadmap",
   rooms: "Room finder",
   help: "Help centre",
   timetable: "Timetable",
@@ -46,7 +55,7 @@ const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}[A-Z]?$/iu;
  * Record identifiers carry no meaning for a reader. A page that knows the name
  * behind one supplies it through `currentLabel`, but it only knows that once
  * its data has loaded, so rendering the raw value in the meantime flashes a
- * UUID into the breadcrumb. Drop the segment instead and let the name appear.
+ * UUID into the breadcrumb. Reserve its position with a placeholder until the name is available.
  */
 const OPAQUE_ID_SEGMENT =
   /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{24,}|\d+)$/iu;
@@ -98,7 +107,9 @@ function buildCrumbs(
         ? "Dashboard"
         : isAdminRooms
           ? "Indoor maps"
-          : (labels[segment] ?? fallbackLabel(segment)));
+          : admin && segment === "courses"
+            ? "Courses"
+            : (labels[segment] ?? fallbackLabel(segment)));
     const icon = isAdminDashboard
       ? routeIcons["admin-dashboard"]
       : isAdminRooms
@@ -155,53 +166,153 @@ export function Breadcrumbs({
       ]
     : named;
 
+  const containerRef = useRef<HTMLElement>(null);
+  const measureRef = useRef<HTMLOListElement>(null);
+  const [hiddenCount, setHiddenCount] = useState(0);
+  const measureKey = JSON.stringify(visibleCrumbs);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+    function update() {
+      if (!container || !measure) return;
+      const width = container.getBoundingClientRect().width;
+      // Layout is unavailable during server rendering and in jsdom.
+      if (!width) return;
+      const items = Array.from(
+        measure.querySelectorAll<HTMLElement>("[data-crumb-measure]"),
+      );
+      const widths = items.map((item) => item.getBoundingClientRect().width);
+      const gap = Number.parseFloat(getComputedStyle(measure).columnGap) || 6;
+      const separator =
+        measure
+          .querySelector<HTMLElement>("[data-slot=breadcrumb-separator]")
+          ?.getBoundingClientRect().width ?? 14;
+      const between = separator + gap * 2;
+      let count = 0;
+      let required =
+        widths.reduce((total, value) => total + value, 0) +
+        Math.max(0, widths.length - 1) * between;
+      while (required > width && count < widths.length - 2) {
+        count += 1;
+        const remaining = widths.filter(
+          (_, index) => index === 0 || index > count,
+        );
+        // The ReUI icon-sm button is 28px wide.
+        required =
+          remaining.reduce((total, value) => total + value, 28) +
+          remaining.length * between;
+      }
+      setHiddenCount(count);
+    }
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(container);
+    observer.observe(measure);
+    return () => observer.disconnect();
+  }, [measureKey]);
+
+  function content(crumb: Crumb, measure = false) {
+    return crumb.label ? (
+      <>
+        {crumb.icon ? (
+          <crumb.icon aria-hidden="true" className="size-3.5 shrink-0" />
+        ) : null}
+        {measure ? (
+          <span
+            data-label={crumb.label}
+            className="after:content-[attr(data-label)]"
+          />
+        ) : (
+          <span className="truncate">{crumb.label}</span>
+        )}
+      </>
+    ) : (
+      <span
+        aria-hidden="true"
+        className="block h-3.5 w-20 animate-pulse rounded bg-muted-foreground/20"
+      />
+    );
+  }
+
+  const collapsed = Math.min(
+    visibleCrumbs.length > 3 ? visibleCrumbs.length - 2 : hiddenCount,
+    Math.max(0, visibleCrumbs.length - 2),
+  );
   return (
-    <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">
-      <ol className="flex min-w-0 items-center gap-1.5 overflow-visible py-0.5">
-        {visibleCrumbs.map((crumb, index) => (
-          <Fragment key={index}>
-            {index > 0 && (
-              <ChevronRight
-                aria-hidden="true"
-                className={`block size-3.5 shrink-0 text-muted-foreground/40 ${currentLabel ? "hidden sm:block" : ""}`}
-              />
-            )}
-            <li
-              className={`min-w-0 overflow-visible ${currentLabel && index < visibleCrumbs.length - 1 ? "hidden sm:block" : ""}`}
-            >
-              {crumb.href ? (
-                <Link
-                  href={crumb.href}
-                  className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-medium text-muted-foreground transition hover:text-foreground"
-                >
-                  {crumb.icon ? (
-                    <crumb.icon
-                      aria-hidden="true"
-                      className="block size-3.5 shrink-0 text-muted-foreground/70"
+    <Breadcrumb
+      ref={containerRef}
+      aria-label="Breadcrumb"
+      className="relative min-w-0 flex-1"
+    >
+      <BreadcrumbList className="min-w-0 flex-nowrap text-[13px] leading-5 whitespace-nowrap">
+        {visibleCrumbs.map((crumb, index) => {
+          if (index > 0 && index <= collapsed) return null;
+          const last = index === visibleCrumbs.length - 1;
+          return (
+            <Fragment key={index}>
+              {index > 0 ? <BreadcrumbSeparator className="shrink-0" /> : null}
+              {index === collapsed + 1 && collapsed > 0 ? (
+                <>
+                  <BreadcrumbItem className="shrink-0">
+                    <BreadcrumbOverflow
+                      crumbs={visibleCrumbs.slice(1, collapsed + 1)}
                     />
-                  ) : null}
-                  <span className="truncate">{crumb.label}</span>
-                </Link>
-              ) : crumb.label ? (
-                <span className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 font-semibold text-foreground">
-                  {crumb.icon ? (
-                    <crumb.icon
-                      aria-hidden="true"
-                      className="block size-3.5 shrink-0 text-muted-foreground"
-                    />
-                  ) : null}
-                  <span className="truncate">{crumb.label}</span>
-                </span>
-              ) : (
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="shrink-0" />
+                </>
+              ) : null}
+              <BreadcrumbItem className={last ? "min-w-0" : "shrink-0"}>
+                {crumb.href && crumb.label ? (
+                  <BreadcrumbLink
+                    asChild
+                    className="flex min-w-0 items-center gap-1.5 font-medium"
+                  >
+                    <Link href={crumb.href} title={crumb.label}>
+                      {content(crumb)}
+                    </Link>
+                  </BreadcrumbLink>
+                ) : crumb.label ? (
+                  <BreadcrumbPage
+                    title={crumb.label || undefined}
+                    className="flex min-w-0 items-center gap-1.5 font-semibold"
+                  >
+                    {content(crumb)}
+                  </BreadcrumbPage>
+                ) : (
+                  content(crumb)
+                )}
+              </BreadcrumbItem>
+            </Fragment>
+          );
+        })}
+      </BreadcrumbList>
+      <div
+        aria-hidden="true"
+        inert
+        className="pointer-events-none invisible absolute inset-x-0 top-0 h-0 overflow-hidden"
+      >
+        <BreadcrumbList
+          ref={measureRef}
+          aria-hidden="true"
+          inert
+          className="w-max flex-nowrap text-[13px] leading-5 whitespace-nowrap"
+        >
+          {visibleCrumbs.map((crumb, index) => (
+            <Fragment key={index}>
+              {index > 0 ? <BreadcrumbSeparator /> : null}
+              <BreadcrumbItem data-crumb-measure className="shrink-0">
                 <span
-                  aria-hidden="true"
-                  className="block h-3.5 w-20 animate-pulse rounded bg-muted-foreground/20"
-                />
-              )}
-            </li>
-          </Fragment>
-        ))}
-      </ol>
-    </nav>
+                  className={`flex items-center gap-1.5 ${crumb.href ? "font-medium" : "font-semibold"}`}
+                >
+                  {content(crumb, true)}
+                </span>
+              </BreadcrumbItem>
+            </Fragment>
+          ))}
+        </BreadcrumbList>
+      </div>
+    </Breadcrumb>
   );
 }

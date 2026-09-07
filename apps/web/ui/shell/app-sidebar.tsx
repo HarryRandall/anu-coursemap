@@ -2,22 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsUpDown, type LucideIcon } from "lucide-react";
+import { Fragment } from "react";
+import { ArrowLeft, Orbit, type LucideIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
   useSidebar,
 } from "@coursemap/ui/primitives/sidebar";
 import { useCoursemap } from "@/app/providers";
+import { AccountMenu } from "@/ui/shell/account-menu";
 import { BrandMark } from "@/ui/brand-mark";
 import { CourseFind } from "@/ui/course-find";
 import { routeIcons } from "@/ui/shell/route-icons";
@@ -38,29 +40,39 @@ const studentNav: NavSection[] = [
   {
     label: null,
     items: [
-      { href: "/dashboard", label: "Home", icon: routeIcons.dashboard },
-      { href: "/plan", label: "Plan", icon: routeIcons.plan },
-      { href: "/courses", label: "Courses", icon: routeIcons.courses },
+      { href: "/dashboard", label: "Dashboard", icon: routeIcons.dashboard },
+      { href: "/plan", label: "Planner", icon: routeIcons.plan },
       {
         href: "/requirements",
         label: "Requirements",
         icon: routeIcons.requirements,
       },
-      { href: "/academic", label: "Academic", icon: routeIcons.academic },
+      {
+        href: "/academic",
+        label: "Academic history",
+        icon: routeIcons.academic,
+      },
     ],
   },
   {
-    label: "Resources",
+    label: "Tools",
     items: [
+      { href: "/compass/new", label: "Compass", icon: Orbit, badge: "Beta" },
+      { href: "/courses", label: "Explore courses", icon: routeIcons.courses },
       { href: "/calendar", label: "Calendar", icon: routeIcons.calendar },
       { href: "/key-dates", label: "Key dates", icon: routeIcons["key-dates"] },
-      { href: "/roadmap", label: "Roadmap", icon: routeIcons.roadmap },
       {
         href: "/rooms",
         label: "Room finder",
         icon: routeIcons.rooms,
         badge: "Preview",
       },
+    ],
+  },
+  {
+    label: "Support",
+    items: [
+      { href: "/roadmap", label: "Product roadmap", icon: routeIcons.roadmap },
       { href: "/help", label: "Help centre", icon: routeIcons.help },
     ],
   },
@@ -139,8 +151,8 @@ const studentEntryNav: NavSection[] = [
     items: [
       {
         href: "/dashboard",
-        label: "Back to student home",
-        icon: routeIcons.dashboard,
+        label: "Back to dashboard",
+        icon: ArrowLeft,
       },
     ],
   },
@@ -174,7 +186,7 @@ function NavMenuItem({
         </Link>
       </SidebarMenuButton>
       {item.badge ? (
-        <SidebarMenuBadge className="rounded-full bg-primary/10 px-1.5 text-[9px] font-bold text-primary uppercase">
+        <SidebarMenuBadge className="top-1/2! right-3 -translate-y-1/2 rounded-full bg-primary/10 px-1.5 text-[9px] font-bold text-primary uppercase">
           {item.badge}
         </SidebarMenuBadge>
       ) : null}
@@ -191,57 +203,46 @@ function NavSections({
 }) {
   return (
     <>
-      {sections.map((section) => (
-        <SidebarGroup
-          key={section.label ?? "primary"}
-          className="px-3 py-2 group-data-[collapsible=icon]:px-2"
-        >
-          {section.label ? (
-            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
-          ) : null}
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-1">
-              {section.items.map((item) => (
-                <NavMenuItem
-                  key={item.href}
-                  item={item}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {sections.map((section, index) => (
+        <Fragment key={section.label ?? "primary"}>
+          {index > 0 ? <SidebarSeparator className="mx-0 w-full" /> : null}
+          <SidebarGroup className="px-3 py-2 group-data-[collapsible=icon]:px-2">
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-1">
+                {section.items.map((item) => (
+                  <NavMenuItem
+                    key={item.href}
+                    item={item}
+                    onNavigate={onNavigate}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </Fragment>
       ))}
     </>
   );
 }
 
 export function AppSidebar({ admin }: { admin: boolean }) {
-  const { state, canAccessAdmin } = useCoursemap();
+  const { canAccessAdmin } = useCoursemap();
   const { isMobile, setOpenMobile } = useSidebar();
   const closeMobileNav = () => {
     if (isMobile) setOpenMobile(false);
   };
 
-  const initials =
-    (state.profile.name || state.profile.email)
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "?";
-
   return (
     <Sidebar collapsible="icon" className="select-none">
-      <SidebarHeader className="gap-3 px-3 pb-3 group-data-[collapsible=icon]:px-2">
+      <SidebarHeader className="gap-3 px-3 pb-3 transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-2 motion-reduce:transition-none">
         <Link
           href={admin ? "/admin/dashboard" : "/dashboard"}
           aria-label="Coursemap home"
           onClick={closeMobileNav}
-          className="flex h-12 items-center gap-2.5 rounded-md px-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+          className="flex h-12 items-center gap-2.5 overflow-hidden rounded-md px-1.5 transition-[padding] duration-200 ease-linear group-data-[collapsible=icon]:px-0 motion-reduce:transition-none"
         >
           <BrandMark className="size-8 shrink-0" />
-          <strong className="brand-wordmark text-[17px] group-data-[collapsible=icon]:hidden">
+          <strong className="brand-wordmark shrink-0 text-[17px] transition-opacity duration-200 ease-linear group-data-[collapsible=icon]:opacity-0 motion-reduce:transition-none">
             coursemap
           </strong>
         </Link>
@@ -259,44 +260,26 @@ export function AppSidebar({ admin }: { admin: boolean }) {
 
         {/* Cross-links between the student and admin shells share the same item styling as the main navigation. */}
         {!admin && canAccessAdmin ? (
-          <NavSections sections={adminEntryNav} onNavigate={closeMobileNav} />
+          <>
+            <SidebarSeparator className="mx-0 w-full" />
+            <NavSections sections={adminEntryNav} onNavigate={closeMobileNav} />
+          </>
         ) : null}
         {admin ? (
-          <div className="mt-auto">
+          <>
+            <SidebarSeparator className="mx-0 w-full" />
             <NavSections
               sections={studentEntryNav}
               onNavigate={closeMobileNav}
             />
-          </div>
+          </>
         ) : null}
       </SidebarContent>
 
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              size="lg"
-              tooltip={state.profile.name || "Profile"}
-            >
-              <Link href="/profile" onClick={closeMobileNav}>
-                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
-                  {initials}
-                </span>
-                <span className="grid min-w-0 flex-1 text-left leading-tight">
-                  <span className="truncate text-[13px] font-semibold">
-                    {state.profile.name || "Set up profile"}
-                  </span>
-                  <span className="truncate text-[11px] text-muted-foreground">
-                    {state.profile.studentId || "Add student ID"}
-                  </span>
-                </span>
-                <ChevronsUpDown
-                  aria-hidden="true"
-                  className="size-3.5 text-muted-foreground"
-                />
-              </Link>
-            </SidebarMenuButton>
+            <AccountMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

@@ -16,6 +16,7 @@ export function ChartHoverCard({
   payload,
   label,
   suffix = "",
+  showLabel = true,
   showNames = true,
   format = (value) => String(value),
 }: {
@@ -24,6 +25,7 @@ export function ChartHoverCard({
   label?: string | number;
   /** Appended after each value, for example " units". */
   suffix?: string;
+  showLabel?: boolean;
   /** Hide series names for single-series charts. */
   showNames?: boolean;
   format?: (value: string | number) => string;
@@ -32,7 +34,7 @@ export function ChartHoverCard({
   if (!active || entries.length === 0) return null;
   return (
     <div className="coursemap-tooltip w-max max-w-56 px-3 py-2 text-xs">
-      {label != null && label !== "" ? (
+      {showLabel && label != null && label !== "" ? (
         <p className="mb-1 font-medium">{label}</p>
       ) : null}
       {entries.map((entry, index) => (

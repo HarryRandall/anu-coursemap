@@ -13,7 +13,9 @@ export default async function DashboardPage() {
   try {
     catalogue = await loadCurrentUserPlanCatalogue();
   } catch {
-    return <PlanningCatalogueError pageTitle="Home" retryHref="/dashboard" />;
+    return (
+      <PlanningCatalogueError pageTitle="Dashboard" retryHref="/dashboard" />
+    );
   }
   return <Dashboard catalogue={catalogue} />;
 }

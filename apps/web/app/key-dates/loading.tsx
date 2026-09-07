@@ -1,11 +1,13 @@
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
 import { AppShell } from "@/ui/shell/app-shell";
 
-/** Mirrors the university calendar: heading and year picker, filters, the next three dates and the monthly agenda. */
 export default function KeyDatesLoading() {
   return (
-    <AppShell>
-      <div aria-busy="true" className="w-full min-w-0 space-y-6">
+    <AppShell loading fill>
+      <div
+        aria-busy="true"
+        className="workspace-scroll w-full min-w-0 space-y-6"
+      >
         <span className="sr-only">Loading key dates</span>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Skeleton className="h-6 w-48" />
@@ -20,12 +22,8 @@ export default function KeyDatesLoading() {
                 key={index}
                 className="space-y-3 rounded-xl border border-border bg-card p-4"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <Skeleton className="h-5 w-24 rounded-full" />
-                  <Skeleton className="h-3 w-16" />
-                </div>
                 <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-3.5 w-3/4" />
+                <Skeleton className="h-3 w-3/4" />
               </div>
             ))}
           </div>
@@ -56,7 +54,6 @@ export default function KeyDatesLoading() {
                       <Skeleton className="h-6 w-8" />
                     </div>
                     <Skeleton className="h-3.5 w-2/3" />
-                    <Skeleton className="hidden h-5 w-24 rounded-full md:block" />
                   </div>
                 ))}
               </div>

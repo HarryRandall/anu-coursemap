@@ -5,7 +5,7 @@ import { AppShell } from "@/ui/shell";
 /** Mirrors the admin dashboard: four stat tiles above the import model card. */
 export default function AdminDashboardLoading() {
   return (
-    <AppShell admin>
+    <AppShell loading admin>
       <div aria-busy="true" className="mx-auto w-full space-y-5">
         <span className="sr-only">Loading live catalogue status</span>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

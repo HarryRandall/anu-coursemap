@@ -1,0 +1,92 @@
+.art {
+  width: 240px;
+  height: 170px;
+  flex-shrink: 0;
+  stroke-width: 1.7;
+  overflow: visible;
+}
+.surface {
+  fill: var(--background);
+  stroke: var(--border);
+}
+.line {
+  stroke: var(--border);
+}
+.dashed {
+  stroke: var(--border);
+  stroke-dasharray: 3 6;
+}
+.accent {
+  stroke: var(--primary);
+}
+.paper {
+  fill: var(--background);
+  stroke: var(--primary);
+}
+.dot {
+  fill: var(--primary);
+}
+.slideLeft {
+  animation: left 6s ease-in-out infinite;
+}
+.slideRight {
+  animation: right 6s ease-in-out infinite;
+}
+.breathe {
+  animation: breathe 5s ease-in-out infinite;
+}
+.ticket {
+  transform-origin: 120px 85px;
+  animation: ticket 8s ease-in-out infinite;
+}
+.pass {
+  transform-origin: 120px 40px;
+  animation: pass 8s ease-in-out infinite;
+}
+.waveOne {
+  animation: breathe 5s ease-in-out infinite;
+}
+.waveTwo {
+  animation: breathe 5s 0.4s ease-in-out infinite;
+}
+.waveThree {
+  animation: breathe 5s 0.8s ease-in-out infinite;
+}
+@keyframes left {
+  50% {
+    transform: translateX(6px);
+  }
+}
+@keyframes right {
+  50% {
+    transform: translateX(-6px);
+  }
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes ticket {
+  50% {
+    transform: rotate(-4deg) translateY(-3px);
+  }
+}
+@keyframes pass {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .art * {
+    animation: none !important;
+  }
+}

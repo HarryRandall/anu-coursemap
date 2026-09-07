@@ -213,8 +213,7 @@ export function CourseDrawer({
           {!recorded && unitRequirement.kind === "unavailable" ? (
             <Alert className="mt-5" variant={"warning"}>
               <AlertDescription>
-                This course has no published unit value, so an attempt cannot be
-                recorded yet.
+                This course cannot be added to your plan yet.
               </AlertDescription>
             </Alert>
           ) : null}

@@ -99,7 +99,7 @@ export const helpArticles: HelpArticle[] = [
     sections: [
       {
         heading: "Light, dark or system theme",
-        body: "The theme control at the top right of every page offers light, dark and system. System follows your operating system setting. The choice is kept on this device.",
+        body: "Open your account menu at the bottom of the sidebar to choose light, dark or system theme. System follows your operating system setting. The choice is kept on this device.",
       },
       {
         heading: "Collapse the sidebar",
@@ -217,7 +217,7 @@ export const helpArticles: HelpArticle[] = [
       },
       {
         heading: "If nothing is listed",
-        body: "A year that has not been imported yet shows an empty state with a link to the ANU calendar. Nothing is missing from your plan; the dates simply have not been published in Coursemap.",
+        body: "If no dates are available for a year, use the link to the ANU calendar.",
       },
     ],
   },
@@ -286,11 +286,11 @@ export const helpArticles: HelpArticle[] = [
       },
       {
         heading: "Completed, planned and still needed",
-        body: "A tick marks a course recorded as completed. A course already on your plan appears as a plain node, and a course you still need is highlighted. A padlock means the code was referenced in the catalogue but has not been imported yet, so it cannot be opened. The Requisites tab lists the same rules as text with your progress against each condition.",
+        body: "A tick marks a course recorded as completed. A course already on your plan appears as a plain node, and a course you still need is highlighted. A padlock means course details are unavailable. The Requisites tab lists the same rules as text with your progress against each condition.",
       },
       {
         heading: "When the graph is empty",
-        body: "The graph only draws course codes it could map from the catalogue wording. If a course has prerequisite text but the column reads No mapped course references yet, read the original wording on the Requisites tab. An imported reference is descriptive; it is not a verified enrolment rule until its source has been reviewed.",
+        body: "The graph only draws course codes it could map from the catalogue wording. If a course has prerequisite text but the column reads See prerequisite requirements, read the original wording on the Requisites tab. Course links show how subjects connect.",
       },
     ],
   },
@@ -304,15 +304,15 @@ export const helpArticles: HelpArticle[] = [
     sections: [
       {
         heading: "What the page shows",
-        body: "Requirements groups the rules for your selected programme, major, minors and specialisations. Each group shows the imported rules and which courses are possible matches.",
+        body: "Use the Degree, Major, Minors and Specialisations tabs to explore your requirements. Course lists show compulsory courses and choices, with completed courses in green and planned or enrolled courses in purple.",
       },
       {
         heading: "Why the same course can appear twice",
         body: "A course can be a candidate for more than one rule group. Coursemap shows possible matches, while final allocation follows the official programme rules. Seeing a course in two places does not mean it will count twice.",
       },
       {
-        heading: "Use it to plan, then confirm",
-        body: "The coverage view is there to help you choose what to add next. Confirm enrolment, substitutions and graduation eligibility with ANU before you treat a group as finished.",
+        heading: "Plan from your requirements",
+        body: "Open a course from its row or use the plus button to choose a semester and add it to your plan. If you have not selected a major, minor or specialisation, its tab shows the available options for your degree.",
       },
     ],
   },

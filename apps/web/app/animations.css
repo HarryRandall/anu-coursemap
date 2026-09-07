@@ -169,6 +169,48 @@
   }
 }
 
+.topbar-progress::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  content: "";
+  pointer-events: none;
+}
+
+.topbar-loading::after {
+  animation: header-loading 12s ease-out forwards;
+}
+
+@keyframes header-loading {
+  0% {
+    transform: scaleX(0);
+  }
+  5% {
+    transform: scaleX(0.35);
+  }
+  20% {
+    transform: scaleX(0.65);
+  }
+  50% {
+    transform: scaleX(0.82);
+  }
+  100% {
+    transform: scaleX(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-loading::after {
+    animation: none;
+    transform: scaleX(0.94);
+  }
+}
+
 /* One reset disables every animation above for readers who ask for it. */
 @media (prefers-reduced-motion: reduce) {
   *,

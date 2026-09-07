@@ -1,0 +1,63 @@
+.art {
+  width: 240px;
+  height: 170px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+  stroke-width: 1.6;
+}
+.surface {
+  fill: var(--background);
+  stroke: var(--border);
+}
+.line {
+  stroke: var(--border);
+}
+.dashed {
+  stroke: var(--border);
+  stroke-dasharray: 3 6;
+}
+.accent {
+  stroke: var(--primary);
+}
+.disc {
+  fill: var(--background);
+  stroke: var(--primary);
+}
+.purple {
+  fill: var(--primary);
+}
+.book {
+  transform-origin: 155px 105px;
+  animation: book 6s ease-in-out infinite;
+}
+.needle {
+  transform-origin: 120px 88px;
+  animation: search 8s ease-in-out infinite;
+}
+@keyframes book {
+  0%,
+  100% {
+    transform: translateY(0) rotate(6deg);
+  }
+  50% {
+    transform: translateY(15px) rotate(-3deg);
+  }
+}
+@keyframes search {
+  0%,
+  100% {
+    transform: rotate(-30deg);
+  }
+  35% {
+    transform: rotate(35deg);
+  }
+  60%,
+  75% {
+    transform: rotate(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .art * {
+    animation: none !important;
+  }
+}

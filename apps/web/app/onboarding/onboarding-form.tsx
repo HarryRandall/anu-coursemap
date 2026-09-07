@@ -180,7 +180,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       return;
     }
     if (stepId === "degree" && !degree) {
-      setMessage("Choose a published degree to continue.");
+      setMessage("Choose a degree to continue.");
       return;
     }
     setMessage(null);
@@ -194,12 +194,12 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
       return;
     }
     if (!catalogueYear || !degree || !name.trim()) {
-      setMessage("Choose a published degree and add your name to continue.");
+      setMessage("Choose a degree and add your name to continue.");
       return;
     }
     if (!planningDurationAvailable) {
       setMessage(
-        "This programme does not have duration or unit information recorded yet, so Coursemap cannot create its timeline.",
+        "Planning is not available for this programme yet. You can skip this step and return later.",
       );
       return;
     }
@@ -296,10 +296,9 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
               <Alert variant="warning">
                 <TriangleAlert aria-hidden="true" />
                 <AlertDescription>
-                  A degree has not been published for the{" "}
-                  {catalogueYear || "current"} catalogue yet. An administrator
-                  needs to review and publish an imported programme before
-                  students can begin onboarding.
+                  No programmes are available for the{" "}
+                  {catalogueYear || "current"} catalogue yet. You can skip this
+                  step and return later.
                 </AlertDescription>
               </Alert>
             </div>
@@ -426,19 +425,15 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
                     />
                   </div>
 
-                  {degree?.durationYears === null || degree?.units === null ? (
+                  {degree && !planningDurationAvailable ? (
                     <Alert variant="warning">
                       <TriangleAlert aria-hidden="true" />
                       <AlertDescription>
-                        {!planningDurationAvailable
-                          ? "Programme duration and unit total are not recorded. An administrator must publish at least one before a year-by-year plan can be created."
-                          : degree.durationYears === null
-                            ? `Programme duration is not recorded. Coursemap is using the published ${degree.units} unit total to size the planning timeline.`
-                            : "Programme unit total is not recorded. Coursemap can build the timeline from its published duration, but unit progress will remain unavailable."}
+                        Planning is not available for this programme yet. You
+                        can skip this step and return later.
                       </AlertDescription>
                     </Alert>
                   ) : null}
-
                   <div className="rounded-2xl bg-muted/50 p-4 ring-1 ring-border">
                     <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
                       Your plan

@@ -16,7 +16,6 @@ export function StructureReviewLoading({ noun }: { noun: string }) {
 
   return (
     <AppShell
-      showThemeToggle={false}
       admin
       breadcrumbSegmentLabels={{ [id]: null }}
       tabs={<TabsLoading widths={["w-14", "w-24", "w-14"]} />}

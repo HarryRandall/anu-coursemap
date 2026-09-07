@@ -1,15 +1,27 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { forceLightTheme } from "@/lib/theme";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@coursemap/ui/primitives/tooltip";
 
-/** Theme initialisation runs through Next Script in the root layout. */
-export function AppThemeProvider({ children }: { children: ReactNode }) {
+/** The root layout applies the initial theme before the page is painted. */
+export function AppThemeProvider({
+  children,
+  authenticated,
+}: {
+  children: ReactNode;
+  authenticated: boolean;
+}) {
+  const pathname = usePathname();
   return (
     <ThemeProvider
       attribute="class"
       value={{ light: "light", dark: "dark-mode" }}
+      forcedTheme={
+        forceLightTheme(pathname ?? "/", authenticated) ? "light" : undefined
+      }
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange

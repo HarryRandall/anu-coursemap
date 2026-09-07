@@ -113,7 +113,6 @@ export function ProgrammeReview({
   return (
     <Tabs className="block" value={tab} onValueChange={setTab}>
       <AppShell
-        showThemeToggle={false}
         admin
         currentBreadcrumbLabel={record.name}
         tabs={

@@ -10,6 +10,7 @@ export default function AdminUserDetailLoading() {
 
   return (
     <AppShell
+      loading
       admin
       breadcrumbSegmentLabels={{ [id]: null }}
       tabs={<TabsLoading widths={["w-16", "w-12", "w-14"]} />}

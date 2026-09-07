@@ -71,6 +71,7 @@ export function FilterBar({
   }
   const [isPending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
   const [field, setField] = useState<FilterConfig | null>(null);
   const [openChip, setOpenChip] = useState<{
     key: string;
@@ -131,7 +132,8 @@ export function FilterBar({
 
   function openMenu(open: boolean) {
     setMenuOpen(open);
-    if (!open) setField(null);
+    setTooltipOpen(false);
+    if (open) setField(null);
   }
 
   function clearFilters() {
@@ -177,7 +179,11 @@ export function FilterBar({
         </label>
         {filters.length > 0 ? (
           <Popover onOpenChange={openMenu} open={menuOpen}>
-            <Tooltip>
+            <Tooltip
+              disableHoverableContent
+              open={tooltipOpen && !menuOpen}
+              onOpenChange={setTooltipOpen}
+            >
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
                   <Button
@@ -189,7 +195,8 @@ export function FilterBar({
                     aria-pressed={active.length > 0}
                     className="size-10 shrink-0"
                     size="icon"
-                    variant={active.length > 0 ? "secondary" : "outline"}
+                    variant="outline"
+                    onFocus={(event) => event.preventDefault()}
                     type="button"
                   >
                     {/* A solid funnel reads as "filtering" at a glance; the

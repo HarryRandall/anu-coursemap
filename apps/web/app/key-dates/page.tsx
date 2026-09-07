@@ -127,8 +127,8 @@ export default async function KeyDatesPage({
     : "/key-dates";
 
   return (
-    <AppShell>
-      <div className="w-full min-w-0">
+    <AppShell fill>
+      <div className="workspace-stack w-full">
         <h1 className="sr-only">Key dates</h1>
 
         {calendarUnavailable ? (
@@ -140,7 +140,6 @@ export default async function KeyDatesPage({
             key={data.year}
             allEvents={allEvents}
             availableYears={data.availableYears}
-            sourceUrl={ANU_CALENDAR_URL}
             todayIso={todayIso}
             year={data.year}
           />

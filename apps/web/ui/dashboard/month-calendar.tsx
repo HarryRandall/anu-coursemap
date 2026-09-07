@@ -205,8 +205,7 @@ export function MonthCalendar({
         </div>
         {events.some((event) => event.startsOn && event.endsOn) ? null : (
           <p className="mt-3 text-xs leading-5 text-muted-foreground">
-            Calendar dates will appear once the selected study periods are
-            published.
+            No dates to show for your selected study periods.
           </p>
         )}
       </CardContent>

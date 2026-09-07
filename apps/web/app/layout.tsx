@@ -1,8 +1,10 @@
+import { AssistantProvider } from "@/ui/assistant/assistant-provider";
 import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
+import { themeInitialisationScript } from "@/lib/theme";
 import { cookies } from "next/headers";
-import Script from "next/script";
+import { LoadingProgressProvider } from "@/ui/shell/loading-progress-provider";
 import { AppThemeProvider } from "@/ui/shell/app-theme-provider";
 import { SIDEBAR_STATE_COOKIE } from "@/ui/shell/sidebar-cookie";
 import { SidebarPreferenceProvider } from "@/ui/shell/sidebar-preference";
@@ -69,29 +71,32 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Apply the theme while parsing HTML, before the Next.js runtime loads. */}
+        <script
+          id="coursemap-theme-init"
+          dangerouslySetInnerHTML={{
+            __html: themeInitialisationScript(Boolean(viewer)),
+          }}
+        />
+      </head>
       {/* style-nova activates the vendored ReUI component styles product-wide. */}
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} style-nova`}
       >
-        <Script id="coursemap-theme-init" strategy="beforeInteractive">
-          {`(() => {
-            let theme = "system";
-            try { theme = localStorage.getItem("coursemap.theme") || "system"; } catch {}
-            const dark = theme === "dark" || (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-            const root = document.documentElement;
-            root.classList.remove("light", "dark-mode");
-            root.classList.add(dark ? "dark-mode" : "light");
-            root.style.colorScheme = dark ? "dark" : "light";
-          })();`}
-        </Script>
-        <AppThemeProvider>
+        <AppThemeProvider authenticated={Boolean(viewer)}>
           <AppProvider
             viewer={viewer}
             canAccessAdmin={canAccessAdmin}
             initialState={initialState}
           >
             <SidebarPreferenceProvider defaultOpen={sidebarDefaultOpen}>
-              {children}
+              <AssistantProvider
+                key={viewer?.id ?? "guest"}
+                owner={viewer?.id ?? null}
+              >
+                <LoadingProgressProvider>{children}</LoadingProgressProvider>
+              </AssistantProvider>
             </SidebarPreferenceProvider>
           </AppProvider>
         </AppThemeProvider>

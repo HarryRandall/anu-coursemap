@@ -39,3 +39,7 @@ browser after changing retained source or dependencies.
 - `ui/tooltip.tsx`: `TooltipContent` defaults to `sideOffset = 6`. Coursemap
   hides the tooltip arrow and restyles the surface in `apps/web/app/vendor.css`, so the
   offset provides the gap the arrow used to.
+
+- Breadcrumb: retained the pinned Radix primitive and Nova breadcrumb styles. The application shell adapts ReUI `c-breadcrumb-2` with width-based collapsing and hover access to its dropdown.
+
+- Notifications: the application shell adapts pinned ReUI `c-dropdown-menu-11` with hard-coded sample messages, Lucide icons in place of avatars, and local unread state. The mark-all action uses a keyboard-accessible menu item; the panel is constrained to the viewport.

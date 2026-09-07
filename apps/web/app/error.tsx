@@ -1,46 +1,37 @@
 "use client";
+
 import { Button } from "@coursemap/ui/primitives/button";
-import { Card } from "@coursemap/ui/primitives/card";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@coursemap/ui/primitives/empty";
-import ReuiLink from "next/link";
+import Link from "next/link";
+import { ErrorPageLayout } from "@/ui/common/error-page-layout";
+import { useOnlineStatus } from "@/lib/browser/use-online-status";
+import { OfflineError } from "@/ui/errors/offline-error";
+import { ErrorState } from "@/ui/common/error-state";
 
-import { CircleAlert } from "lucide-react";
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  const online = useOnlineStatus();
+  if (!online) return <OfflineError retry={reset} />;
 
-export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
-    <main className="grid min-h-dvh place-items-center bg-muted/50 px-4 py-10">
-      <h1 className="sr-only">Coursemap could not load this page</h1>
-      <Card className="w-full max-w-md">
-        <Empty className="px-7 py-8">
-          <EmptyHeader role="alert">
-            <EmptyMedia variant="icon">
-              <CircleAlert aria-hidden="true" />
-            </EmptyMedia>
-            <EmptyTitle>Coursemap could not load this page</EmptyTitle>
-            <EmptyDescription>
-              Something went wrong while loading this page. Try again, or return
-              home.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button variant="default" onClick={reset} type="button">
-                Try again
-              </Button>
-              <Button asChild variant="outline">
-                <ReuiLink href="/dashboard">Return home</ReuiLink>
-              </Button>
-            </div>
-          </EmptyContent>
-        </Empty>
-      </Card>
-    </main>
+    <ErrorPageLayout>
+      <ErrorState
+        code={error.digest ? "500 · Server error" : "Page error"}
+        title="We couldn't load this page"
+        description="Something went wrong on our side. Try again, or head home and come back later."
+        reference={error.digest}
+      >
+        <Button onClick={reset} type="button">
+          Try again
+        </Button>
+        <Button asChild variant="outline">
+          <Link href="/dashboard">Back to home</Link>
+        </Button>
+      </ErrorState>
+    </ErrorPageLayout>
   );
 }

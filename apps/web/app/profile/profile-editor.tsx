@@ -168,10 +168,7 @@ export function ProfileEditor({
   async function save(event: FormEvent) {
     event.preventDefault();
     if (nameError || !draft.degreeCode) {
-      notify(
-        "Add your name and select a published degree before saving",
-        "warning",
-      );
+      notify("Add your name and select a degree before saving", "warning");
       return;
     }
     if (studentNumberError) {
@@ -180,7 +177,7 @@ export function ProfileEditor({
     }
     if (planningDuration === null) {
       notify(
-        "This programme does not have duration or unit information recorded yet",
+        "Planning is not available for this programme yet. Your current plan is unchanged.",
         "warning",
       );
       return;
@@ -283,8 +280,7 @@ export function ProfileEditor({
                       <h2>Course of study</h2>
                     </CardTitle>
                     <CardDescription>
-                      Only administrator-published academic structures appear
-                      here. Changing the degree resets the major, minors and
+                      Changing the degree resets the major, minors and
                       specialisations.
                     </CardDescription>
                   </CardHeader>
@@ -376,16 +372,12 @@ export function ProfileEditor({
                         value={draft.specialisationCodes}
                       />
                     ) : null}
-                    {degree &&
-                    (degree.durationYears === null || degree.units === null) ? (
+                    {degree && planningDuration === null ? (
                       <Alert className="sm:col-span-2" variant="warning">
                         <TriangleAlert aria-hidden="true" />
                         <AlertDescription>
-                          {planningDuration === null
-                            ? "Programme duration and unit total are not recorded. An administrator must publish at least one before this plan can be saved."
-                            : degree.durationYears === null
-                              ? `Programme duration is not recorded. Coursemap is using the published ${degree.units} unit total to size the planning timeline.`
-                              : "Programme unit total is not recorded. The timeline can use its published duration, but unit progress will remain unavailable."}
+                          Planning is not available for this programme yet. Your
+                          current plan is unchanged.
                         </AlertDescription>
                       </Alert>
                     ) : null}
@@ -442,7 +434,7 @@ export function ProfileEditor({
             {/* ---------------------------------------------------- */}
             <aside
               aria-label="Profile summary"
-              className="space-y-4 lg:sticky lg:top-20"
+              className="space-y-4 lg:sticky lg:top-32"
             >
               <Card>
                 <CardContent className="pt-5">

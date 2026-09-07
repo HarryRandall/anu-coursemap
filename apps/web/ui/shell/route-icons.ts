@@ -5,7 +5,6 @@ import {
   CalendarRange,
   GitCompareArrows,
   GraduationCap,
-  House,
   Import,
   KeyRound,
   LayoutDashboard,
@@ -30,7 +29,7 @@ import {
  * is what stops the breadcrumb drifting away from the sidebar entry.
  */
 export const routeIcons = {
-  dashboard: House,
+  dashboard: LayoutDashboard,
   plan: Map,
   courses: BookOpen,
   requirements: ListChecks,
