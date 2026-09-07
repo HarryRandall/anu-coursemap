@@ -209,7 +209,10 @@ test("student and administrator flows preserve every selected structure role", a
       new URL("../app/profile/profile-editor.tsx", import.meta.url),
       "utf8",
     ),
-    readFile(new URL("../ui/admin/user-detail.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../ui/admin/users/user-detail.tsx", import.meta.url),
+      "utf8",
+    ),
   ]);
 
   assert.match(actions, /p_minor_codes: profile\.minorCodes/u);

@@ -1,4 +1,4 @@
-import { RoleMatrixLoadingSkeleton } from "@/ui/admin/access-loading";
+import { RoleMatrixLoadingSkeleton } from "@/ui/admin/users/access-loading";
 import { AppShell } from "@/ui/shell";
 
 export default function AdminRolesLoading() {

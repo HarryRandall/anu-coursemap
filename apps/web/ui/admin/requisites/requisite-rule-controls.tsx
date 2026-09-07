@@ -41,7 +41,7 @@ import {
   type ReviewedGroupNode,
   type ReviewedOperator,
 } from "@/lib/coursemap/requisite-conditions";
-import { ConditionInlineEditor } from "@/ui/admin/requisite-condition-fields";
+import { ConditionInlineEditor } from "@/ui/admin/requisites/requisite-condition-fields";
 
 const CONDITION_ICONS: Record<ReviewedConditionKind, LucideIcon> = {
   course: BookOpen,

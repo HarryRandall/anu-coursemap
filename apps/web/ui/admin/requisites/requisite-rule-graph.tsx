@@ -46,14 +46,14 @@ import {
   type ReviewedRuleNode,
   type ReviewedRuleTree,
 } from "@/lib/coursemap/requisite-conditions";
-import { ConditionInlineEditor } from "@/ui/admin/requisite-condition-fields";
+import { ConditionInlineEditor } from "@/ui/admin/requisites/requisite-condition-fields";
 import {
   AddJoinMenu,
   GroupOperatorMenu,
   operatorChipClass,
   RemoveButton,
   type ConditionActions,
-} from "@/ui/admin/requisite-rule-controls";
+} from "@/ui/admin/requisites/requisite-rule-controls";
 
 /**
  * React Flow checks a second after mount that its attribution is on the page

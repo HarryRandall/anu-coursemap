@@ -1,5 +1,5 @@
 "use client";
-import { AnuSourceDialog } from "@/ui/admin/anu-source-dialog";
+import { AnuSourceDialog } from "@/ui/admin/common/anu-source-dialog";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Button } from "@coursemap/ui/primitives/button";
 import { Field } from "@coursemap/ui/primitives/field";
@@ -14,8 +14,8 @@ import {
 
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
-import { AutomaticMapping } from "@/ui/admin/requisite-automatic-mapping";
-import { RequisiteRuleTree } from "@/ui/admin/requisite-rule-tree";
+import { AutomaticMapping } from "@/ui/admin/requisites/requisite-automatic-mapping";
+import { RequisiteRuleTree } from "@/ui/admin/requisites/requisite-rule-tree";
 
 import { extractAnuCourseCodes } from "@/lib/course-import/course-codes";
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
@@ -33,7 +33,7 @@ import { parseRequisiteSummary } from "@/lib/coursemap/requisite-summary";
 
 const RequisiteRuleGraph = dynamic(
   () =>
-    import("@/ui/admin/requisite-rule-graph").then(
+    import("@/ui/admin/requisites/requisite-rule-graph").then(
       (module) => module.RequisiteRuleGraph,
     ),
   {

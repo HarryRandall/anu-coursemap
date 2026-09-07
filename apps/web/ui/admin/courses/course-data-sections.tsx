@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { CourseUnitOptionsEditor } from "./course-unit-options-editor";
-import { AnuSourceDialog } from "@/ui/admin/anu-source-dialog";
+import { AnuSourceDialog } from "@/ui/admin/common/anu-source-dialog";
 import { Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import { Button } from "@coursemap/ui/primitives/button";

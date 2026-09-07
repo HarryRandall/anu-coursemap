@@ -21,7 +21,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@coursemap/ui/primitives/tabs";
-import { UserActivityTimeline } from "@/ui/admin/user-activity-timeline";
+import { UserActivityTimeline } from "@/ui/admin/users/user-activity-timeline";
 import { ChevronDown } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
@@ -39,7 +39,7 @@ import {
   type ChartConfig,
 } from "@coursemap/ui/primitives/chart";
 import { DataTableShell } from "@/ui/common/data-table";
-import { UserRoleEditor } from "@/ui/admin/user-role-editor";
+import { UserRoleEditor } from "@/ui/admin/users/user-role-editor";
 import { AppShell } from "@/ui/shell";
 import { FilterBar } from "@/ui/common/filter-bar";
 import { GeneratedAvatar } from "@/ui/common/generated-avatar";

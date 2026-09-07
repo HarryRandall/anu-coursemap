@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { AdminUserDetail } from "@/ui/admin/user-detail";
+import { AdminUserDetail } from "@/ui/admin/users/user-detail";
 import { loadAdminUserDetail } from "@/lib/admin/users";
 import { getAuthContext } from "@/lib/auth/viewer";
 

@@ -1,5 +1,5 @@
 import { Badge } from "@coursemap/ui/components/badge";
-import { ExtractionIssue } from "@/ui/admin/extraction-issue";
+import { ExtractionIssue } from "@/ui/admin/imports/extraction-issue";
 
 export function importStatusLabel(processing: string, review: string) {
   if (

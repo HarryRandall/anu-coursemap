@@ -5,7 +5,7 @@ import {
   CardDescription,
 } from "@coursemap/ui/primitives/card";
 import { AlertTriangle, KeyRound } from "lucide-react";
-import { RolePermissionMatrix } from "@/ui/admin/role-permission-matrix";
+import { RolePermissionMatrix } from "@/ui/admin/users/role-permission-matrix";
 import { AppShell } from "@/ui/shell";
 
 import { loadAdminRoleManagement } from "@/lib/admin/users";

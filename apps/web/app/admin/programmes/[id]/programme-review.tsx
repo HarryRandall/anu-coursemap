@@ -40,8 +40,8 @@ import { AppShell } from "@/ui/shell";
 
 import { StructureRequirementDiagram } from "@/ui/admin/academic-structures/requirement-diagram";
 import { structureSectionSourceTexts } from "@/lib/coursemap/structure-source-text";
-import { AnuSourceDialog } from "@/ui/admin/anu-source-dialog";
-import { PendingImportProposals } from "@/ui/admin/pending-import-proposals";
+import { AnuSourceDialog } from "@/ui/admin/common/anu-source-dialog";
+import { PendingImportProposals } from "@/ui/admin/imports/pending-import-proposals";
 import { JsonCode } from "@/ui/common/json-code";
 import {
   AcademicStructureManualSnapshotEditor,

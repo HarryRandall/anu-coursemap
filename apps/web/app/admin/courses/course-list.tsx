@@ -32,7 +32,7 @@ import {
 import { CatalogueIdentity } from "@/ui/admin/catalogue-table/catalogue-table";
 import { CatalogueRowActions } from "@/ui/admin/catalogue-table/catalogue-row-actions";
 import { CatalogueEmpty } from "@/ui/admin/catalogue-table/catalogue-empty";
-import { DirectorySelectionBar } from "@/ui/admin/directory-selection-bar";
+import { DirectorySelectionBar } from "@/ui/admin/common/directory-selection-bar";
 import { FilterBar } from "@/ui/common/filter-bar";
 import { Pagination } from "@/ui/common/pagination";
 import { SortMenu, type SortOption } from "@/ui/common/sort-menu";

@@ -4,7 +4,7 @@ import {
   GraduationCap,
   UsersRound,
 } from "lucide-react";
-import { ImportModelCard } from "@/ui/admin/import-model-card";
+import { ImportModelCard } from "@/ui/admin/imports/import-model-card";
 import { loadImportModelSetting } from "@/lib/admin/settings";
 import { loadAdminUserSummary } from "@/lib/admin/users";
 import { canManageCourseImports } from "@/lib/auth/viewer";

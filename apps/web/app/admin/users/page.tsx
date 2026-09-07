@@ -6,7 +6,7 @@ import {
 } from "@coursemap/ui/primitives/card";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { Suspense } from "react";
-import { UserDirectory } from "@/ui/admin/user-directory";
+import { UserDirectory } from "@/ui/admin/users/user-directory";
 import { AppShell } from "@/ui/shell";
 
 import { FilterBar } from "@/ui/common/filter-bar";

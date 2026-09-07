@@ -1,5 +1,5 @@
 import { Badge } from "@coursemap/ui/components/badge";
-import { CatalogueValue } from "@/ui/admin/catalogue-value";
+import { CatalogueValue } from "@/ui/admin/imports/catalogue-value";
 import { extractionConflict } from "@/lib/coursemap/extraction-conflict";
 
 export function ExtractionIssue({

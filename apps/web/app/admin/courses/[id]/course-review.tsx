@@ -32,7 +32,7 @@ import {
   CourseSnapshotRuleEditor,
   CourseSnapshotRuleViewer,
   type EditableRuleKind,
-} from "@/ui/admin/course-snapshot-rule-editor";
+} from "@/ui/admin/requisites/course-snapshot-rule-editor";
 import {
   CourseReviewTabs,
   type CourseReviewTab,
@@ -45,12 +45,12 @@ import { AppShell } from "@/ui/shell";
 
 import { ConfirmDialog } from "@/ui/common/confirm-dialog";
 
-import { AnuSourceDialog } from "@/ui/admin/anu-source-dialog";
+import { AnuSourceDialog } from "@/ui/admin/common/anu-source-dialog";
 import { CourseProjectionEditor } from "@/ui/admin/courses/course-projection-editor";
 
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
 import { projectionChanges } from "@/lib/coursemap/course-workspace-projection";
-import { PendingImportProposals } from "@/ui/admin/pending-import-proposals";
+import { PendingImportProposals } from "@/ui/admin/imports/pending-import-proposals";
 import { CourseDataSections } from "@/ui/admin/courses/course-data-sections";
 import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";
 import type { CourseDetails } from "@/lib/coursemap/course-types";

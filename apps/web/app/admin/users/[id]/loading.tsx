@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { UserDetailLoadingSkeleton } from "@/ui/admin/access-loading";
+import { UserDetailLoadingSkeleton } from "@/ui/admin/users/access-loading";
 import { AppShell } from "@/ui/shell";
 import { TabsLoading } from "@/ui/common/tabs-loading";
 

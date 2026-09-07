@@ -37,7 +37,7 @@ import {
   GroupOperatorMenu,
   RemoveButton,
   type ConditionActions,
-} from "@/ui/admin/requisite-rule-controls";
+} from "@/ui/admin/requisites/requisite-rule-controls";
 
 type DropTarget = { groupId: string; id: string; index: number };
 type DragPointer = {

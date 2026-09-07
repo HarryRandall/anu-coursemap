@@ -20,7 +20,7 @@ import { readImportStream } from "@/ui/admin/imports/import-stream";
 import { CourseImportAutoRefresh } from "@/ui/admin/imports/course-import-auto-refresh";
 import { AppShell } from "@/ui/shell";
 
-import { DirectorySelectionBar } from "@/ui/admin/directory-selection-bar";
+import { DirectorySelectionBar } from "@/ui/admin/common/directory-selection-bar";
 import {
   DataTableShell,
   Table,
