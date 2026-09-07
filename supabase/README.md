@@ -12,28 +12,27 @@ forward-only migrations and database tests.
 The hosted development project carries the complete migration history, Row
 Level Security policies and the reviewed 2026 structure seed. Day-to-day
 development uses the local Supabase stack. Browser-safe local values belong in
-`.env.local`; service-role keys and database passwords must never be
+`apps/web/.env.local`; service-role keys and database passwords must never be
 committed.
 
 ## Workflow
 
 ```bash
-npm run db:start
-npm run db:reset
-npm run db:test
-npm run db:lint
-npm run db:types
+pnpm db:start
+pnpm db:reset
+pnpm db:test
+pnpm db:lint
+pnpm db:types
 ```
 
 Create each schema change with `supabase migration new <name>`. Rebuild locally,
-regenerate `types/database.ts`, run the database gates, then run
-`npm run verify`. Applying migrations to the hosted project requires explicit
+regenerate `apps/web/types/database.ts`, run the database gates, then run
+`pnpm verify`. Applying migrations to the hosted project requires explicit
 approval and is a separate step.
 
-`seed.sql` intentionally contains no catalogue or user fixtures. `npm run
-db:reset` performs an explicitly local reset, then applies the separate preview
+`seed.sql` intentionally contains no catalogue or user fixtures. `pnpm db:reset` performs an explicitly local reset, then applies the separate preview
 fixture through a database client that refuses every non-loopback connection.
-Reapply it to an already running local stack with `npm run db:seed:preview`.
+Reapply it to an already running local stack with `pnpm db:seed:preview`.
 The demonstration catalogue uses explicit mock provenance and separate
 `DEMO-*` structure codes. Authoritative catalogue data must still be imported
 with source URLs, retrieval metadata and content hashes.
@@ -63,3 +62,9 @@ operation. Afterwards, an admin can open `/admin/users` and switch an account
 between `User` and `Admin`. Role permissions are database-managed and editable
 from `/admin/roles`. The database prevents admins from changing their own role
 or removing the final admin.
+
+## Operational follow-up
+
+Historical local and hosted migration timestamps differ. Preserve the hosted history and compare SQL before reconciliation; do not use a blanket `db push --include-all`. The September audit recorded migrations `20260830090148` and `20260830140000` as applied without replaying them.
+
+Previously reported adviser notices include authenticated SECURITY DEFINER RPCs, disabled leaked-password protection, overlapping read policies and index notices. Recheck current hosted advisories before operational changes. Password protection and policy/index tuning remain separate follow-up work.

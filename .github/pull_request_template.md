@@ -4,8 +4,8 @@
 
 ## Verification
 
-- [ ] `npm run check`
-- [ ] `npm test`
+- [ ] `pnpm check`
+- [ ] `pnpm verify`
 - [ ] `git diff --check`
 - [ ] Browser smoke test, when behaviour changed
 - [ ] Supabase migration, generated types and adviser checks, when data changed

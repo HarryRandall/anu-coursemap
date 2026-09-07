@@ -27,16 +27,28 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
-          cache: npm
+
+      - name: Install pnpm
+        run: npm install --global pnpm@12.3.4
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run repository verification
-        run: npm run verify
+        run: pnpm verify
+
+      - name: Upload route-test report and traces
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-route-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7
 
       - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
+        run: pnpm audit --prod --audit-level=high
 
   database:
     name: Database gate
@@ -51,10 +63,12 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
-          cache: npm
+
+      - name: Install pnpm
+        run: npm install --global pnpm@12.3.4
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
@@ -65,7 +79,7 @@ jobs:
         run: supabase db start
 
       - name: Reset and seed local preview database
-        run: npm run db:reset
+        run: pnpm db:reset
 
       - name: Run database tests
         run: supabase test db
@@ -76,7 +90,44 @@ jobs:
       - name: Verify generated database types
         run: |
           supabase gen types typescript --local --schema public > /tmp/database.ts
-          diff --ignore-blank-lines --unified types/database.ts /tmp/database.ts
+          diff --ignore-blank-lines --unified apps/web/types/database.ts /tmp/database.ts
 
       - name: Test catalogue database import
-        run: npm run test:catalogue-db
+        run: pnpm test:catalogue-db
+
+  browser:
+    name: Browser gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - name: Install pnpm
+        run: npm install --global pnpm@12.3.4
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm --filter @coursemap/web exec playwright install --with-deps chromium
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520 # v3.0.0
+        with:
+          version: 2.114.0
+      - name: Start local services
+        run: pnpm db:start
+      - name: Seed local catalogue
+        run: pnpm db:reset
+      - name: Run authenticated browser journeys
+        run: pnpm test:e2e
+      - name: Upload Playwright report and failure traces
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-browser-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results
+          retention-days: 7

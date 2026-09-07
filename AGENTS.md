@@ -1,46 +1,24 @@
 # Coursemap agent guide
 
-## Project
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and delivery requirements.
+Use Node.js 24 and pnpm. Routes live in `apps/web/app/`, product components in `apps/web/ui/`,
+and domain logic in `apps/web/lib/`. See [architecture](docs/architecture.md) for boundaries.
 
-Coursemap is a Next.js App Router application for discovering ANU courses, understanding prerequisite paths and building degree plans. Supabase provides authentication and the persistent Postgres data model. Vercel is the deployment target.
+## Skills
 
-## Working conventions
+Load the skills relevant to the task:
 
-- Use British English, straight apostrophes and no em dashes in prose, comments and commit messages.
-- Use Node.js 24 and npm. Keep the lockfile committed.
-- Keep server components as the default and client boundaries narrow.
-- Prefer feature-oriented modules and concrete imports over broad barrel files.
-- Add or change database objects only through forward-only files in `supabase/migrations`.
-- Regenerate committed Supabase database types after schema changes.
-- Never commit secrets. Update `.env.example` whenever a required variable changes.
-- Do not store catalogue or durable plan data in hardcoded runtime arrays or browser storage.
-- Preserve unrelated user changes and inspect the working tree before switching branches.
+- [nextjs-development](.agents/skills/nextjs-development/SKILL.md): routes, React state and data flow.
+- [coursemap-ui](.agents/skills/coursemap-ui/SKILL.md): pages, components and accessibility. Also read [UI conventions](apps/web/ui/AGENTS.md).
+- [coursemap-testing](.agents/skills/coursemap-testing/SKILL.md): regression coverage and test implementation.
+- [supabase-change](.agents/skills/supabase-change/SKILL.md): schema, permissions, auth and generated types.
+- [catalogue-import](.agents/skills/catalogue-import/SKILL.md): ANU ingestion and publication.
+- [verify-coursemap](.agents/skills/verify-coursemap/SKILL.md): checks before hand-off.
 
-## Quality gate
+## Safeguards
 
-Use the `$verify-coursemap` skill and run `npm run verify` before hand-off. The full gate is formatting, linting, type checking, tests, production build and `git diff --check`. Add browser verification for behaviour changes and Supabase adviser checks for database changes.
-
-## UI
-
-Read `components/AGENTS.md` and use `$coursemap-ui` for interface work. Use the pinned ReUI components through concrete `@reui` imports. Keep custom components only for Coursemap-specific behaviour and compositions. Preserve the direct course-selection experience and prerequisite exploration while improving structure and accessibility.
-
-## Auth and onboarding
-
-- `/login` and `/signup` share the `AuthShell` split layout and the email-and-password Supabase flow.
-- Social sign-in buttons are placeholders until OAuth ships: they announce that the provider is coming soon and must never start a broken flow.
-- Onboarding is optional. New sign-ups land on `/onboarding`, which offers a "Skip for now" link, and students without a primary plan see the dashboard empty state instead of a forced redirect. Keep `/onboarding` in the proxy's protected prefixes.
-
-## Supabase
-
-Use `$supabase-change` for schema, RLS, auth, client or generated-type work. Every exposed table requires explicit grants and RLS. Never expose a service-role key to the browser. Use the official SSR client pattern and verified claims for protected server access.
-
-## Catalogue data
-
-Use `$catalogue-import` for source ingestion. Keep catalogue years, versions, provenance and import runs explicit. Treat ambiguous source material as review work, not an excuse to invent authoritative data.
-
-## Git and delivery
-
-- Use small branches prefixed with `feat/`, `fix/` or `refactor/`.
-- Use conventional commits such as `feat:`, `fix:` and `refactor:`.
-- Open a pull request for each coherent change and merge only after required checks pass.
-- Do not force-push shared branches or use destructive Git commands without explicit approval.
+- Inspect the working tree and preserve unrelated changes. Use an isolated worktree when another task is active.
+- Keep durable catalogue and plan data in the database. Regenerate database types rather than editing generated output.
+- Keep secrets out of Git and browser bundles. Document configuration requirements in `apps/web/.env.example`.
+- Follow the user's delivery scope. Local work does not authorise hosted mutations, deployment or destructive Git operations.
+- Run `pnpm verify` before hand-off and report blocked checks explicitly. Keep local, browser, CI and production evidence distinct.

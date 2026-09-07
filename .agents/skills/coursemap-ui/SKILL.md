@@ -1,37 +1,40 @@
 ---
 name: coursemap-ui
-description: Design, build and review Coursemap pages and components using the repository's accessible shadcn and Radix conventions. Use for changes to course discovery, degree planning, prerequisite exploration, navigation, responsive layouts, visual states or shared UI components.
+description: Build and review Coursemap interfaces with pinned ReUI components and existing product patterns. Use for pages, navigation, responsive layouts, visual states and accessibility.
 ---
 
 # Coursemap UI
 
-## Overview
+Read `apps/web/ui/AGENTS.md`, the affected route and a comparable existing page.
+The component guide owns shared visual conventions; this skill describes how
+to apply and verify them.
 
-Create a calm, modern planning interface without losing the fast course-selection flow or the prerequisite graph. Prefer composable primitives, clear state and keyboard-complete interactions.
+## Build from existing patterns
 
-## Workflow
+1. Identify the user's action and the states the page must support. Inspect the rendered page when changing an existing interface.
+2. Search for the existing Coursemap composition before creating another one. Reuse shared list filters, tabs, dialogs and tooltips.
+3. Import pinned primitives from `@coursemap/ui/primitives/*` and extended components from `@coursemap/ui/components/*`. `apps/web/ui/ui` holds Coursemap compositions, not a second primitive library.
+4. Follow `apps/web/ui/reui/README.md` when adding or updating upstream components. Preserve retained source and licence; review dependencies and keep only what the product needs.
+5. Keep domain calculations outside visual components. Use `nextjs-development` when changing state or server/client boundaries.
 
-1. Read the affected route, feature components and `components/AGENTS.md` before editing.
-2. Reuse an existing `components/ui` primitive. If a new primitive is needed, inspect the pinned shadcn registry and review its dry-run diff before adding it.
-3. Keep server components as the default. Add `"use client"` only at the narrow interactive boundary.
-4. Model loading, empty, error, unauthenticated and success states explicitly.
-5. Verify the keyboard path, focus treatment, accessible names, contrast and mobile layout.
-6. Run `$verify-coursemap` before hand-off.
+## Preserve product meaning
 
-## Product rules
+- Keep direct course search and selection easy to reach. Pair prerequisite graphs with readable requirement status.
+- Distinguish completed, planned and missing requirements through text or icons as well as colour.
+- Provide loading, empty, error and permission states that tell the user what they can do next.
+- Prefer native semantics and the supplied interaction primitives. Verify keyboard operation, focus return, accessible names and Escape behaviour where relevant.
+- Respect reduced motion and keep controls usable on touch screens. Inspect narrow layouts for clipped actions and accidental page-wide overflow.
 
-- Preserve direct course search, comparison and selection as first-class actions.
-- Preserve the prerequisite graph as an explorable view and pair it with equivalent textual status.
-- Do not communicate completed, planned, unavailable or missing states through colour alone.
-- Use restrained motion and respect `prefers-reduced-motion`.
-- Prefer URL state for shareable filters and selections. Keep durable plan data in Supabase, not browser storage.
-- Use Lucide icons through the shared icon convention. Do not add a second icon library.
-- Keep touch targets at least 44 by 44 CSS pixels where practical.
+## Review the result
 
-## Component rules
+Compare the rendered result with the chosen existing pattern. Exercise the
+changed interaction on desktop and a narrow viewport, including its meaningful
+failure or empty state. Inspect the browser console after interaction.
 
-- Import primitives from their concrete `components/ui/*` modules rather than a barrel file.
-- Use semantic HTML before adding ARIA.
-- Use Radix or native controls for dialogs, popovers, menus, tooltips and selection widgets.
-- Keep domain logic outside visual components and pass typed view models at the boundary.
-- Do not copy registry code from the web by hand. Use the configured shadcn MCP or pinned CLI and inspect the result.
+Use `coursemap-testing` for regression coverage and `verify-coursemap` for the
+repository gate. Report visual checks separately from static and build checks.
+
+## References
+
+- [Supabase Studio task-specific UI guidance](https://github.com/supabase/supabase/blob/master/apps/studio/AGENTS.md) informs the routing approach, not Coursemap's component API.
+- [W3C ARIA practice guidance](https://www.w3.org/WAI/ARIA/apg/practices/read-me-first/) explains the interaction obligations of custom widgets.
