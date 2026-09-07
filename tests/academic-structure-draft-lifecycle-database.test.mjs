@@ -8,6 +8,7 @@ import {
   claimAcademicStructureImportTarget,
   finishAcademicStructureImportTarget,
 } from "../lib/structure-import/import-store.ts";
+import { originalStructureImportSnapshotId } from "../lib/coursemap/structure-snapshot-ancestry.ts";
 import { createLocalDatabaseClient } from "../scripts/catalogue/lib/local-database.mjs";
 function extraction(overrides = {}) {
   return {
@@ -139,6 +140,32 @@ test("editing a first structure draft preserves its review and confirms without 
         await tx`select set_config('request.jwt.claim.sub',${actor},true)`;
         const [edited] =
           await tx`select public.create_academic_structure_manual_snapshot(${candidate.structureYearId},${candidate.candidateSnapshotId},jsonb_set(private.academic_structure_manual_projection(${candidate.candidateSnapshotId}),'{snapshot,title}','"Manually corrected major"'::jsonb)) as id`;
+        const ancestryRows = await tx`
+          select id, parent_snapshot_id, origin
+          from public.academic_structure_snapshots
+          where structure_year_id = ${candidate.structureYearId}
+        `;
+        const ancestry = ancestryRows.map((row) => ({
+          ...row,
+          id: Number(row.id),
+          parent_snapshot_id:
+            row.parent_snapshot_id === null
+              ? null
+              : Number(row.parent_snapshot_id),
+        }));
+        assert.equal(
+          originalStructureImportSnapshotId(Number(edited.id), ancestry),
+          candidate.candidateSnapshotId,
+          "edited structures keep the actual imported snapshot as their original source",
+        );
+        assert.equal(
+          originalStructureImportSnapshotId(
+            candidate.candidateSnapshotId,
+            ancestry,
+          ),
+          candidate.candidateSnapshotId,
+          "an imported structure can display its own original source",
+        );
         await assert.rejects(
           tx.savepoint(async (savepoint) => {
             await savepoint`select public.publish_academic_structure_snapshot(${candidate.structureYearId},${edited.id})`;

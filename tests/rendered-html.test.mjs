@@ -496,7 +496,7 @@ test("removes the routes the imports split replaced", async () => {
   }
 });
 
-test("keeps the course review workspace focused on import evidence", async () => {
+test("opens the course workspace on course data and keeps import evidence available", async () => {
   const [review, tabs, pipeline, loader, targetReview, adminPreview] =
     await Promise.all([
       readFile(
@@ -534,7 +534,19 @@ test("keeps the course review workspace focused on import evidence", async () =>
       ),
     ]);
 
-  assert.match(review, /record\.importTarget \? "pipeline" : "course"/);
+  assert.match(review, /useState<CourseReviewTab>\("course"\)/);
+  assert.ok(
+    tabs.indexOf('value: "course"') < tabs.indexOf('value: "requisites"'),
+  );
+  assert.ok(
+    tabs.indexOf('value: "requisites"') < tabs.indexOf('value: "student"'),
+  );
+  assert.ok(tabs.indexOf('value: "student"') < tabs.indexOf('value: "source"'));
+  assert.ok(
+    tabs.indexOf('value: "source"') < tabs.indexOf('value: "pipeline"'),
+  );
+  assert.match(review, /showThemeToggle=\{false\}/);
+  assert.doesNotMatch(review, /<AppShell[^>]*actions=/s);
   assert.match(review, /<CourseImportPipeline/);
   assert.match(review, /value="requisites"/);
   assert.match(review, /COURSE_REVIEW_CONFIRMATION_NOTE/);
@@ -549,6 +561,26 @@ test("keeps the course review workspace focused on import evidence", async () =>
   assert.match(loader, /\.in\("candidate_snapshot_id", ancestrySnapshotIds\)/);
   assert.match(targetReview, /<CourseImportPipeline/);
   assert.match(adminPreview, /prerequisiteCodesFromSnapshotProjection/);
+
+  const [sourceDialog, sectionEditor] = await Promise.all([
+    readFile(
+      new URL("../components/admin/anu-source-dialog.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../components/admin/courses/course-data-sections.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+  assert.match(sourceDialog, /<DialogTrigger asChild>/);
+  assert.match(sourceDialog, /<DialogTitle>/);
+  assert.match(sourceDialog, /if \(!excerpts\.length\) return null/);
+  assert.doesNotMatch(sourceDialog, /defaultOpen|open=\{true\}/);
+  assert.match(sectionEditor, /record\.sourceOriginalProjection/);
+  assert.doesNotMatch(sectionEditor, /<aside|setSourceSection/);
 });
 
 test("removes the disposable starter and keeps product metadata", async () => {

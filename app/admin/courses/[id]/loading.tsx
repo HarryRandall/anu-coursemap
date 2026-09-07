@@ -17,6 +17,7 @@ export default function AdminCourseDetailLoading() {
 
   return (
     <AppShell
+      showThemeToggle={false}
       admin
       breadcrumbSegmentLabels={{ [id]: null }}
       tabs={<TabsLoading widths={["w-20", "w-14", "w-16", "w-24"]} />}

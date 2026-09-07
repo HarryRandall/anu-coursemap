@@ -1,4 +1,5 @@
 "use client";
+import { AnuSourceDialog } from "@/components/admin/anu-source-dialog";
 import { Alert, AlertDescription } from "@reui/components/alert";
 import { Button } from "@reui/ui/button";
 import { Field } from "@reui/ui/field";
@@ -18,13 +19,11 @@ import {
   type EditableRuleKind,
 } from "@/lib/coursemap/course-snapshot-rule-projection";
 import {
-  createEmptyTree,
   reviewedTreeFromExpression,
   validateReviewedTree,
-  type ReviewedConditionNode,
-  type ReviewedGroupNode,
   type ReviewedRuleTree,
 } from "@/lib/coursemap/requisite-conditions";
+import { ruleTreeFromProjection } from "@/lib/coursemap/course-rule-review-tree";
 import { parseRequisiteSummary } from "@/lib/coursemap/requisite-summary";
 
 const RequisiteRuleGraph = dynamic(
@@ -45,159 +44,6 @@ const RequisiteRuleGraph = dynamic(
 export { applyRuleTreeToProjection };
 export type { EditableRuleKind };
 
-const supportedConditionKinds = new Set([
-  "course",
-  "incompatible",
-  "units_total",
-  "subject_units",
-  "level_units",
-  "course_set_units",
-  "year_standing",
-  "permission",
-  "admission",
-  "gpa",
-  "wam",
-  "other",
-]);
-
-function conditionFromProjection(
-  condition: CourseSnapshotProjectionData["ruleConditions"][number],
-  courseCodes: string[],
-): ReviewedConditionNode | null {
-  if (!supportedConditionKinds.has(condition.conditionKind)) return null;
-  const base = {
-    type: "condition" as const,
-    id: condition.key,
-  };
-  switch (condition.conditionKind) {
-    case "course":
-      return condition.requiredCourseCode
-        ? {
-            ...base,
-            kind: "course",
-            courseCode: condition.requiredCourseCode,
-            courseRequirementMode:
-              condition.courseRequirementMode ?? "completed",
-            mark: condition.minimumMark,
-          }
-        : null;
-    case "incompatible":
-      return condition.requiredCourseCode
-        ? {
-            ...base,
-            kind: "incompatible",
-            courseCode: condition.requiredCourseCode,
-          }
-        : null;
-    case "admission":
-      return {
-        ...base,
-        kind: "admission",
-        structureCode: condition.requiredStructureCode,
-        freeText: condition.freeText,
-      };
-    case "units_total":
-      return { ...base, kind: "units_total", units: condition.minimumUnits };
-    case "subject_units":
-      return {
-        ...base,
-        kind: "subject_units",
-        units: condition.minimumUnits,
-        subjectCode: condition.subjectCode,
-      };
-    case "level_units":
-      return {
-        ...base,
-        kind: "level_units",
-        units: condition.minimumUnits,
-        level: condition.minimumCourseLevel,
-        subjectCode: condition.subjectCode,
-      };
-    case "course_set_units":
-      return {
-        ...base,
-        kind: "course_set_units",
-        units: condition.minimumUnits,
-        courseCodes,
-      };
-    case "year_standing":
-      return {
-        ...base,
-        kind: "year_standing",
-        minimumYear: condition.minimumYear,
-      };
-    case "gpa":
-      return { ...base, kind: "gpa", gpa: condition.minimumGpa };
-    case "wam":
-      return { ...base, kind: "wam", wam: condition.minimumWam };
-    case "permission":
-      return { ...base, kind: "permission", freeText: condition.freeText };
-    case "other":
-      return { ...base, kind: "other", freeText: condition.freeText };
-    default:
-      return null;
-  }
-}
-
-function ruleTreeFromProjection(
-  projection: CourseSnapshotProjectionData,
-  kind: EditableRuleKind,
-) {
-  const groups = projection.ruleGroups.filter(
-    (group) => group.ruleKey === kind,
-  );
-  const conditions = projection.ruleConditions.filter(
-    (condition) => condition.ruleKey === kind,
-  );
-  const unsupported = conditions.filter(
-    (condition) => !supportedConditionKinds.has(condition.conditionKind),
-  );
-  const root = groups.find((group) => group.parentGroupKey === null);
-  if (!root) {
-    return {
-      tree: createEmptyTree(`${kind}-root`),
-      unsupportedKinds: unsupported.map((row) => row.conditionKind),
-    };
-  }
-
-  function groupToTree(
-    group: CourseSnapshotProjectionData["ruleGroups"][number],
-  ): ReviewedGroupNode {
-    const children = [
-      ...groups
-        .filter((candidate) => candidate.parentGroupKey === group.key)
-        .map((candidate) => ({
-          position: candidate.position,
-          node: groupToTree(candidate),
-        })),
-      ...conditions
-        .filter((condition) => condition.groupKey === group.key)
-        .flatMap((condition) => {
-          const courseCodes = projection.ruleConditionCourses
-            .filter((member) => member.conditionKey === condition.key)
-            .sort((left, right) => left.position - right.position)
-            .map((member) => member.sourceCourseCode);
-          const node = conditionFromProjection(condition, courseCodes);
-          return node ? [{ position: condition.position, node }] : [];
-        }),
-    ]
-      .sort((left, right) => left.position - right.position)
-      .map((entry) => entry.node);
-    return {
-      type: "group",
-      id: group.key,
-      operator: group.operator,
-      minimumCount: group.minimumCount,
-      children,
-    };
-  }
-
-  return {
-    tree: groupToTree(root),
-    unsupportedKinds: unsupported.map((row) => row.conditionKind),
-  };
-}
-
 function RuleViews({
   canEdit,
   onChange,
@@ -214,7 +60,7 @@ function RuleViews({
       value={view}
     >
       <TabsList aria-label="Condition view">
-        <TabsTrigger value="tree">List</TabsTrigger>
+        <TabsTrigger value="tree">Rule builder</TabsTrigger>
         <TabsTrigger value="graph">Diagram</TabsTrigger>
       </TabsList>
       <TabsContent value="tree">
@@ -269,12 +115,14 @@ export function CourseSnapshotRuleEditor({
   onCancel,
   onSave,
   projection,
+  originalSourceTexts = [],
 }: {
   canEdit: boolean;
   kind: EditableRuleKind;
   onCancel: () => void;
   onSave: (projection: CourseSnapshotProjectionData) => Promise<void>;
   projection: CourseSnapshotProjectionData;
+  originalSourceTexts?: string[];
 }) {
   const existingRule = projection.rules.find((rule) => rule.ruleKind === kind);
   const initial = useMemo(
@@ -333,13 +181,17 @@ export function CourseSnapshotRuleEditor({
 
   return (
     <div className="space-y-4 px-5 py-5 sm:px-6">
+      <div className="flex justify-end">
+        <AnuSourceDialog
+          title="ANU requisite text"
+          texts={originalSourceTexts}
+        />
+      </div>
       <UnsupportedConditions kinds={initial.unsupportedKinds} />
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_12rem]">
         <Field>
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium">
-              {"Original ANU wording"}
-            </span>
+            <span className="text-sm font-medium">{"Requirement wording"}</span>
             <Textarea
               className="min-h-24"
               disabled={!canEdit}
@@ -415,7 +267,7 @@ export function CourseSnapshotRuleEditor({
           variant="default"
           type="button"
         >
-          {saving ? "Saving..." : "Save rule as new draft snapshot"}
+          {saving ? "Saving..." : "Save requisite"}
         </Button>
       </div>
     </div>

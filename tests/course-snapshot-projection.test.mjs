@@ -702,3 +702,45 @@ test("compacts relational rows while keeping snapshot fields precise", () => {
     false,
   );
 });
+
+test("section edits preserve all other course fields and linked collections", async () => {
+  const { collectionEditorValue, preparedProjection } =
+    await import("../lib/coursemap/course-workspace-projection.ts");
+  const original = projectCourseSnapshot(extraction);
+  const fields = { ...original.snapshot, title: "Reviewed course title" };
+  const saved = preparedProjection(
+    { code: original.courseCode, year: original.academicYear },
+    fields,
+    collectionEditorValue(original),
+  );
+  assert.equal(saved.snapshot.title, "Reviewed course title");
+  assert.equal(original.snapshot.title, extraction.title);
+  for (const key of Object.keys(saved).filter(
+    (key) => !["snapshot", "courseCode", "academicYear"].includes(key),
+  )) {
+    assert.deepEqual(saved[key], original[key], key);
+  }
+  assert.equal(
+    saved.snapshot.sourceUpdatedAt,
+    original.snapshot.sourceUpdatedAt,
+  );
+});
+
+test("section edits reject broken assessment to learning outcome links", async () => {
+  const { collectionEditorValue, preparedProjection } =
+    await import("../lib/coursemap/course-workspace-projection.ts");
+  const original = projectCourseSnapshot(extraction);
+  const collections = JSON.parse(collectionEditorValue(original));
+  collections.assessmentOutcomes = [
+    { assessmentPosition: 999, learningOutcomePosition: 999 },
+  ];
+  assert.throws(
+    () =>
+      preparedProjection(
+        { code: original.courseCode, year: original.academicYear },
+        original.snapshot,
+        JSON.stringify(collections),
+      ),
+    /must reference saved assessment and learning outcome positions/,
+  );
+});

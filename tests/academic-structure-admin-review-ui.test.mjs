@@ -31,40 +31,44 @@ const requirementsViewPath = new URL(
   import.meta.url,
 );
 
-test("makes the pipeline the first and default structure review tab", async () => {
+test("keeps structure imports read-only with pipeline first", async () => {
   const source = await readFile(targetReviewPath, "utf8");
-  assert.match(source, /<Tabs defaultValue="pipeline"(?:\s[^>]*)?>/);
-  const pipeline = source.indexOf(
-    '<TabsTrigger value="pipeline">Pipeline</TabsTrigger>',
+  assert.match(source, /<Tabs defaultValue="pipeline"/);
+  assert.match(source, /<ImportInspectionActions/);
+  assert.match(source, /<AcademicStructureImportPreview/);
+  assert.doesNotMatch(
+    source,
+    /acceptAcademicStructureImportTarget|publishAcademicStructureDraft|Reject candidate/,
   );
-  const candidate = source.indexOf(
-    '<TabsTrigger value="candidate">Candidate</TabsTrigger>',
-  );
-  const review = source.indexOf(
-    '<TabsTrigger value="review">Review</TabsTrigger>',
-  );
-  assert.ok(pipeline >= 0);
-  assert.ok(candidate > pipeline);
-  assert.ok(review > candidate);
-  assert.doesNotMatch(source, /Student preview/);
-});
-
-test("keeps draft acceptance and publication as separate confirmations", async () => {
-  const source = await readFile(targetReviewPath, "utf8");
-  assert.match(source, /confirmLabel="Accept as draft"/);
-  assert.match(source, /confirmLabel="Publish draft"/);
-  assert.match(source, /acceptAcademicStructureImportTarget/);
-  assert.match(source, /publishAcademicStructureDraft/);
-  assert.match(source, /detail\.target\.processingStatus === "succeeded"/);
-  assert.match(source, /\["needs_review", "unchanged"\]/);
+  assert.doesNotMatch(source, /<TabsTrigger value="review">/);
 });
 
 test("shows complete candidate relational areas and concrete database tables", async () => {
-  const [targetSource, rowsSource, tableSource] = await Promise.all([
-    readFile(targetReviewPath, "utf8"),
-    readFile(databaseRowsPath, "utf8"),
-    readFile(databaseRowTablePath, "utf8"),
-  ]);
+  const [previewSource, rowsSource, tableSource, requirementsSource] =
+    await Promise.all([
+      readFile(
+        new URL(
+          "../components/admin/imports/academic-structure-import-preview.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+      readFile(
+        new URL(
+          "../lib/coursemap/academic-structure-import-database-view.ts",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+      readFile(databaseRowTablePath, "utf8"),
+      readFile(
+        new URL(
+          "../components/admin/imports/academic-structure-import-requirements.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ]);
   for (const requiredArea of [
     "Requirements",
     "Fees",
@@ -72,10 +76,13 @@ test("shows complete candidate relational areas and concrete database tables", a
     "Learning outcomes",
     "Evidence and confidence",
   ]) {
-    assert.match(targetSource, new RegExp(requiredArea));
+    assert.match(previewSource, new RegExp(requiredArea));
   }
-  assert.match(targetSource, /conditionUnits/);
-  assert.match(targetSource, /Whole import/);
+  assert.match(requirementsSource, /conditionUnits/);
+  assert.doesNotMatch(
+    previewSource,
+    /Boolean\(|No fee rows|No relationships recorded/,
+  );
   for (const table of [
     "academic_structures",
     "academic_structure_years",
@@ -91,14 +98,9 @@ test("shows complete candidate relational areas and concrete database tables", a
   }
   assert.match(rowsSource, /fee_year: row\.feeYear/);
   assert.match(rowsSource, /requirement_group_id:/);
-  assert.match(rowsSource, /<DatabaseRowsViewer/);
   assert.match(tableSource, /<TableCaption className="sr-only">/);
   assert.match(tableSource, /table\.columns\.map/);
-  assert.match(tableSource, /JSON\.stringify\(value\)/);
-  assert.match(tableSource, /className="h-12"/);
-  assert.match(tableSource, /max-w-\[28rem\]/);
-  assert.match(tableSource, /overflow-x-auto overflow-y-hidden/);
-  assert.match(tableSource, /whitespace-nowrap/);
+  assert.match(tableSource, /formatImportDatabaseValue/);
 });
 
 test("lists structure imports without exposing the batching run", async () => {
@@ -112,16 +114,21 @@ test("lists structure imports without exposing the batching run", async () => {
   assert.match(targetSource, /Run #\{detail\.run\.runNumber\}/);
 });
 
-test("renders JSON artefacts and database projections with the light viewer", async () => {
-  const source = await readFile(artifactViewerPath, "utf8");
-  assert.match(source, /<JsonCode/);
-  assert.match(source, /projectedAcademicStructureDatabaseTables\(parsed\)/);
-  assert.match(source, /\/api\/admin\/academic-structure-imports\/artifacts\//);
-  assert.match(source, /const grouped = useMemo/);
-  assert.match(source, /<OptionPicker/);
-  assert.match(source, /Attempt \$\{artifact\.attemptNumber\}/);
-  assert.doesNotMatch(source, /` · attempt \$\{artifact\.attemptNumber\}`/);
-  assert.doesNotMatch(source, /bg-black|bg-zinc-950/);
+test("uses the shared artefact viewer and planned database inspector", async () => {
+  const [source, rowsSource] = await Promise.all([
+    readFile(artifactViewerPath, "utf8"),
+    readFile(databaseRowsPath, "utf8"),
+  ]);
+  assert.match(source, /<ImportArtefactViewer/);
+  assert.match(
+    source,
+    /endpoint="\/api\/admin\/academic-structure-imports\/artifacts"/,
+  );
+  assert.match(rowsSource, /<ImportDatabaseRows/);
+  assert.match(
+    rowsSource,
+    /project=\{projectedAcademicStructureDatabaseTables\}/,
+  );
 });
 
 test("renders combined subject and level requirements without inflating levels", async () => {

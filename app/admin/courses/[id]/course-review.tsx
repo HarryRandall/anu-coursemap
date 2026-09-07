@@ -1,34 +1,31 @@
 "use client";
-import { badgeVariantForTone } from "@/lib/ui";
 
 import { Alert, AlertDescription } from "@reui/components/alert";
 import { Badge } from "@reui/components/badge";
 import { Button } from "@reui/ui/button";
-import { Field, FieldDescription } from "@reui/ui/field";
-import { Input } from "@reui/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@reui/ui/dropdown-menu";
+
 import { OptionPicker } from "@/components/ui/option-picker";
-import { Textarea } from "@reui/ui/textarea";
 import { Tabs, TabsContent } from "@reui/ui/tabs";
-import ReuiLink from "next/link";
 
 import {
   Archive,
   Check,
   CheckCircle2,
   CircleAlert,
-  ExternalLink,
   FileCode2,
   Pencil,
-  Save,
+  Ellipsis,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  useMemo,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { CourseImportArtifactViewer } from "@/components/admin/imports/course-import-artifact-viewer";
 import { CourseImportPipeline } from "@/components/admin/imports/course-import-pipeline";
 import {
@@ -48,12 +45,14 @@ import { AppShell } from "@/components/shell";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
-import { JsonCode } from "@/components/ui/json-code";
+import { AnuSourceDialog } from "@/components/admin/anu-source-dialog";
+import { CourseProjectionEditor } from "@/components/admin/courses/course-projection-editor";
 
 import type { CourseSnapshotProjectionData } from "@/lib/course-import/project-snapshot";
-import { parseCourseSnapshotProjection } from "@/lib/course-import/snapshot-projection-contract";
+import { projectionChanges } from "@/lib/coursemap/course-workspace-projection";
+import { PendingImportProposals } from "@/components/admin/pending-import-proposals";
+import { CourseDataSections } from "@/components/admin/courses/course-data-sections";
 import type { AdminCourseYearRecord } from "@/lib/coursemap/admin-course-year";
-import { reviewConfidenceTone } from "@/lib/coursemap/course-import-review-state";
 import type { CourseDetails } from "@/lib/coursemap/course-types";
 import {
   archiveCourseYear,
@@ -62,357 +61,12 @@ import {
   saveCourseSnapshot,
 } from "@/lib/coursemap/course-snapshot-actions";
 
-type SnapshotFields = CourseSnapshotProjectionData["snapshot"];
-type AdvancedCollections = Omit<
-  CourseSnapshotProjectionData,
-  "academicYear" | "courseCode" | "snapshot"
->;
-
-const advancedCollectionKeys = [
-  "unitOptions",
-  "fees",
-  "areasOfInterest",
-  "attributes",
-  "relatedCourses",
-  "courseOffering",
-  "offeringSessions",
-  "learningOutcomes",
-  "assessmentItems",
-  "assessmentOutcomes",
-  "rules",
-  "ruleGroups",
-  "ruleConditions",
-  "ruleConditionCourses",
-  "ruleCourseReferences",
-] as const satisfies readonly (keyof AdvancedCollections)[];
-
-const positionedCollectionKeys = [
-  "unitOptions",
-  "fees",
-  "areasOfInterest",
-  "attributes",
-  "relatedCourses",
-  "offeringSessions",
-  "learningOutcomes",
-  "assessmentItems",
-] as const;
-
 const COURSE_REVIEW_CONFIRMATION_NOTE =
   "Administrator confirmed the snapshot against the stored ANU source and resolved every blocking import review item.";
-
-const academicCareerOptions: Array<{
-  value: "" | NonNullable<SnapshotFields["academicCareer"]>;
-  label: string;
-}> = [
-  { value: "", label: "Not recorded" },
-  { value: "UGRD", label: "Undergraduate" },
-  { value: "PGRD", label: "Postgraduate" },
-  { value: "RSCH", label: "Research" },
-  { value: "OTHER", label: "Other" },
-];
-
-function formatDate(value: string | null) {
-  if (!value) return "Not recorded";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "Australia/Sydney",
-  }).format(date);
-}
 
 function readable(value: string) {
   const words = value.replaceAll("_", " ");
   return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-function nullableText(value: string) {
-  return value.trim() ? value : null;
-}
-
-function nullableNumber(value: string) {
-  if (!value.trim()) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function advancedCollections(
-  projection: CourseSnapshotProjectionData,
-): AdvancedCollections {
-  return Object.fromEntries(
-    advancedCollectionKeys.map((key) => [key, projection[key]]),
-  ) as AdvancedCollections;
-}
-
-function collectionEditorValue(projection: CourseSnapshotProjectionData) {
-  return JSON.stringify(advancedCollections(projection), null, 2);
-}
-
-function validatePositions(label: string, rows: unknown[], firstPosition = 1) {
-  const positions = rows.map((row) =>
-    isRecord(row) && Number.isInteger(row.position)
-      ? Number(row.position)
-      : NaN,
-  );
-  if (positions.some((position) => !Number.isInteger(position))) {
-    throw new TypeError(`${label} requires an integer position on every row.`);
-  }
-  if (new Set(positions).size !== positions.length) {
-    throw new TypeError(`${label} contains duplicate positions.`);
-  }
-  const ordered = [...positions].sort((left, right) => left - right);
-  if (ordered.some((position, index) => position !== firstPosition + index)) {
-    throw new TypeError(
-      `${label} positions must run from ${firstPosition} without gaps.`,
-    );
-  }
-}
-
-function parseAdvancedCollections(value: string): AdvancedCollections {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch (error) {
-    throw new TypeError(
-      error instanceof Error ? error.message : "The JSON is not valid.",
-    );
-  }
-  if (!isRecord(parsed)) {
-    throw new TypeError("Advanced collections must be one JSON object.");
-  }
-  const keys = Object.keys(parsed).sort();
-  const expectedKeys = [...advancedCollectionKeys].sort();
-  if (
-    keys.length !== expectedKeys.length ||
-    keys.some((key, index) => key !== expectedKeys[index])
-  ) {
-    throw new TypeError(
-      `Keep exactly these collection keys: ${advancedCollectionKeys.join(", ")}.`,
-    );
-  }
-  for (const key of advancedCollectionKeys) {
-    if (key === "courseOffering") {
-      if (parsed[key] !== null && !isRecord(parsed[key])) {
-        throw new TypeError("courseOffering must be an object or null.");
-      }
-    } else if (!Array.isArray(parsed[key])) {
-      throw new TypeError(`${key} must be a JSON array.`);
-    }
-  }
-  for (const key of positionedCollectionKeys) {
-    validatePositions(key, parsed[key] as unknown[]);
-  }
-
-  const rules = parsed.rules as unknown[];
-  const ruleKeys = new Set(
-    rules.map((rule) => (isRecord(rule) ? rule.key : undefined)),
-  );
-  if (ruleKeys.has(undefined) || ruleKeys.size !== rules.length) {
-    throw new TypeError("Every rule requires a unique key.");
-  }
-  const groups = parsed.ruleGroups as unknown[];
-  const groupKeys = new Set(
-    groups.map((group) => (isRecord(group) ? group.key : undefined)),
-  );
-  if (groupKeys.has(undefined) || groupKeys.size !== groups.length) {
-    throw new TypeError("Every rule group requires a unique key.");
-  }
-  for (const group of groups) {
-    if (
-      !isRecord(group) ||
-      !ruleKeys.has(group.ruleKey) ||
-      (group.parentGroupKey !== null && !groupKeys.has(group.parentGroupKey))
-    ) {
-      throw new TypeError(
-        "Every rule group must reference an existing rule and parent group.",
-      );
-    }
-  }
-  const conditions = parsed.ruleConditions as unknown[];
-  const conditionKeys = new Set(
-    conditions.map((condition) =>
-      isRecord(condition) ? condition.key : undefined,
-    ),
-  );
-  if (
-    conditionKeys.has(undefined) ||
-    conditionKeys.size !== conditions.length
-  ) {
-    throw new TypeError("Every rule condition requires a unique key.");
-  }
-  for (const condition of conditions) {
-    if (
-      !isRecord(condition) ||
-      !ruleKeys.has(condition.ruleKey) ||
-      !groupKeys.has(condition.groupKey)
-    ) {
-      throw new TypeError(
-        "Every rule condition must reference an existing rule and group.",
-      );
-    }
-  }
-  for (const member of parsed.ruleConditionCourses as unknown[]) {
-    if (!isRecord(member) || !conditionKeys.has(member.conditionKey)) {
-      throw new TypeError(
-        "Every condition course must reference an existing condition.",
-      );
-    }
-  }
-  for (const reference of parsed.ruleCourseReferences as unknown[]) {
-    if (!isRecord(reference) || !ruleKeys.has(reference.ruleKey)) {
-      throw new TypeError(
-        "Every course reference must reference an existing rule.",
-      );
-    }
-  }
-
-  const outcomePositions = new Set(
-    (parsed.learningOutcomes as unknown[]).map((row) =>
-      isRecord(row) ? row.position : undefined,
-    ),
-  );
-  const assessmentPositions = new Set(
-    (parsed.assessmentItems as unknown[]).map((row) =>
-      isRecord(row) ? row.position : undefined,
-    ),
-  );
-  for (const link of parsed.assessmentOutcomes as unknown[]) {
-    if (
-      !isRecord(link) ||
-      !assessmentPositions.has(link.assessmentPosition) ||
-      !outcomePositions.has(link.learningOutcomePosition)
-    ) {
-      throw new TypeError(
-        "Every assessment outcome link must reference saved assessment and learning outcome positions.",
-      );
-    }
-  }
-  return parsed as unknown as AdvancedCollections;
-}
-
-function validateUnitValue(
-  snapshot: SnapshotFields,
-  collections: AdvancedCollections,
-) {
-  if (snapshot.unitValueKind === "fixed") {
-    if (snapshot.units === null || collections.unitOptions.length > 0) {
-      throw new TypeError(
-        "Fixed units require one units value and no unit options.",
-      );
-    }
-    return;
-  }
-  if (snapshot.unitValueKind === "range") {
-    if (
-      snapshot.units !== null ||
-      snapshot.minimumUnits === null ||
-      snapshot.maximumUnits === null ||
-      snapshot.maximumUnits < snapshot.minimumUnits ||
-      collections.unitOptions.length > 0
-    ) {
-      throw new TypeError(
-        "A unit range requires minimum and maximum units, with no fixed units or options.",
-      );
-    }
-    return;
-  }
-  if (snapshot.unitValueKind === "variable") {
-    const optionUnits = collections.unitOptions.map((option) => option.units);
-    if (
-      snapshot.units !== null ||
-      optionUnits.length === 0 ||
-      snapshot.minimumUnits !== Math.min(...optionUnits) ||
-      snapshot.maximumUnits !== Math.max(...optionUnits)
-    ) {
-      throw new TypeError(
-        "Variable units require unit options and matching minimum and maximum units.",
-      );
-    }
-    return;
-  }
-  if (
-    snapshot.units !== null ||
-    snapshot.minimumUnits !== null ||
-    snapshot.maximumUnits !== null ||
-    collections.unitOptions.length > 0
-  ) {
-    throw new TypeError(
-      "Unknown units cannot include fixed, minimum, maximum or option values.",
-    );
-  }
-}
-
-function preparedProjection(
-  record: AdminCourseYearRecord,
-  snapshot: SnapshotFields,
-  collectionJson: string,
-) {
-  const collections = parseAdvancedCollections(collectionJson);
-  validateUnitValue(snapshot, collections);
-  for (const session of collections.offeringSessions) {
-    if (session.calendarYear !== record.year) {
-      throw new TypeError(
-        `Every offering session must belong to the selected ${record.year} course year.`,
-      );
-    }
-  }
-  if (!snapshot.title.trim()) throw new TypeError("Course title is required.");
-  if (!/^[A-Z]{4}$/.test(snapshot.subjectCode)) {
-    throw new TypeError("Subject code must contain four uppercase letters.");
-  }
-  if (!Number.isInteger(snapshot.level) || snapshot.level < 0) {
-    throw new TypeError("Course level must be a non-negative whole number.");
-  }
-  return parseCourseSnapshotProjection({
-    courseCode: record.code,
-    academicYear: record.year,
-    snapshot,
-    ...collections,
-  });
-}
-
-function collectionSummary(collections: AdvancedCollections) {
-  return [
-    ["Fees", collections.fees.length],
-    ["Areas", collections.areasOfInterest.length],
-    ["Attributes", collections.attributes.length],
-    ["Sessions", collections.offeringSessions.length],
-    ["Outcomes", collections.learningOutcomes.length],
-    ["Assessments", collections.assessmentItems.length],
-    ["Rules", collections.rules.length],
-  ] as const;
-}
-
-function projectionChanges(
-  current: CourseSnapshotProjectionData,
-  published: CourseSnapshotProjectionData | null,
-) {
-  if (!published) return ["New course year with no published snapshot"];
-  const changes: string[] = [];
-  for (const key of Object.keys(current.snapshot) as Array<
-    keyof SnapshotFields
-  >) {
-    if (
-      JSON.stringify(current.snapshot[key]) !==
-      JSON.stringify(published.snapshot[key])
-    ) {
-      changes.push(`Course field: ${readable(key)}`);
-    }
-  }
-  for (const key of advancedCollectionKeys) {
-    if (JSON.stringify(current[key]) !== JSON.stringify(published[key])) {
-      changes.push(`Collection: ${readable(key)}`);
-    }
-  }
-  return changes;
 }
 
 function Panel({ children, label }: { children: ReactNode; label: string }) {
@@ -426,476 +80,17 @@ function Panel({ children, label }: { children: ReactNode; label: string }) {
   );
 }
 
-function FieldValue({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="grid gap-1 border-b border-border/60 py-3 last:border-b-0 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-5">
-      <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 text-sm leading-6 text-foreground">
-        {value === null || value === undefined || value === "" ? (
-          <span className="text-muted-foreground/80">Not provided</span>
-        ) : (
-          value
-        )}
-      </dd>
-    </div>
-  );
-}
-
-function nullableInputValue(value: number | null) {
-  return value === null ? "" : value;
-}
-
-function SnapshotFieldsEditor({
-  collectionsJson,
-  draft,
-  error,
-  onCancel,
-  onCollectionsChange,
-  onDraftChange,
-  onSubmit,
-  preview,
-  saving,
-}: {
-  collectionsJson: string;
-  draft: SnapshotFields;
-  error: string | null;
-  onCancel: () => void;
-  onCollectionsChange: (value: string) => void;
-  onDraftChange: (value: SnapshotFields) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  preview: CourseSnapshotProjectionData | null;
-  saving: boolean;
-}) {
-  const textField = (
-    key: keyof SnapshotFields,
-    options: { multiline?: boolean; required?: boolean } = {},
-  ) => {
-    const value = draft[key];
-    const props = {
-      onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-        onDraftChange({ ...draft, [key]: nullableText(event.target.value) }),
-      required: options.required,
-      value: typeof value === "string" ? value : "",
-    };
-    return options.multiline ? (
-      <Textarea className="min-h-28" {...props} />
-    ) : (
-      <Input {...props} />
-    );
-  };
-
-  return (
-    <form className="space-y-6 p-5 sm:p-6" onSubmit={onSubmit}>
-      <div>
-        <h2 className="text-sm font-semibold text-foreground">Identity</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field className="sm:col-span-2">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Course title"}</span>
-              <Input
-                onChange={(event) =>
-                  onDraftChange({ ...draft, title: event.target.value })
-                }
-                required
-                value={draft.title}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Course level"}</span>
-              <Input
-                min="0"
-                onChange={(event) =>
-                  onDraftChange({
-                    ...draft,
-                    level: Number(event.target.value),
-                  })
-                }
-                required
-                step="1"
-                type="number"
-                value={draft.level}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Subject code"}</span>
-              <Input
-                maxLength={4}
-                onChange={(event) =>
-                  onDraftChange({
-                    ...draft,
-                    subjectCode: event.target.value.toUpperCase(),
-                  })
-                }
-                pattern="[A-Z]{4}"
-                required
-                value={draft.subjectCode}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Subject name"}</span>
-              {textField("subjectName")}
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Academic career"}</span>
-              <OptionPicker
-                value={"coursemap:" + String(draft.academicCareer ?? "")}
-                onValueChange={(nextValue) => {
-                  const option = academicCareerOptions.find(
-                    (option) =>
-                      "coursemap:" + String(option.value) === nextValue,
-                  );
-                  if (option)
-                    ((academicCareer) =>
-                      onDraftChange({
-                        ...draft,
-                        academicCareer: academicCareer || null,
-                      }))(option.value);
-                }}
-                aria-label={"Academic career"}
-                onPointerDown={(event) => event.stopPropagation()}
-                placeholder={"Select..."}
-                items={academicCareerOptions.map((option) => ({
-                  value: "coursemap:" + String(option.value),
-                  label: option.label,
-                }))}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"School"}</span>
-              {textField("school")}
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"College"}</span>
-              {textField("college")}
-            </label>
-          </Field>
-        </div>
-      </div>
-
-      <div className="border-t border-border/60 pt-6">
-        <h2 className="text-sm font-semibold text-foreground">
-          Units and availability
-        </h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Unit value kind"}</span>
-              <OptionPicker
-                value={"coursemap:" + String(draft.unitValueKind)}
-                onValueChange={(nextValue) => {
-                  const option = (
-                    [
-                      { value: "fixed", label: "Fixed" },
-                      { value: "range", label: "Range" },
-                      { value: "variable", label: "Variable options" },
-                      { value: "unknown", label: "Unknown" },
-                    ] as const
-                  ).find(
-                    (option) =>
-                      "coursemap:" + String(option.value) === nextValue,
-                  );
-                  if (option)
-                    ((unitValueKind) =>
-                      onDraftChange({ ...draft, unitValueKind }))(option.value);
-                }}
-                aria-label={"Unit value kind"}
-                onPointerDown={(event) => event.stopPropagation()}
-                placeholder={"Select..."}
-                items={[
-                  { value: "fixed", label: "Fixed" },
-                  { value: "range", label: "Range" },
-                  { value: "variable", label: "Variable options" },
-                  { value: "unknown", label: "Unknown" },
-                ].map((option) => ({
-                  value: "coursemap:" + String(option.value),
-                  label: option.label,
-                }))}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Fixed units"}</span>
-              <Input
-                min="0"
-                onChange={(event) =>
-                  onDraftChange({
-                    ...draft,
-                    units: nullableNumber(event.target.value),
-                  })
-                }
-                step="0.5"
-                type="number"
-                value={nullableInputValue(draft.units)}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"EFTSL"}</span>
-              <Input
-                min="0"
-                onChange={(event) =>
-                  onDraftChange({
-                    ...draft,
-                    eftsl: nullableNumber(event.target.value),
-                  })
-                }
-                step="0.00001"
-                type="number"
-                value={nullableInputValue(draft.eftsl)}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Minimum units"}</span>
-              <Input
-                min="0"
-                onChange={(event) =>
-                  onDraftChange({
-                    ...draft,
-                    minimumUnits: nullableNumber(event.target.value),
-                  })
-                }
-                step="0.5"
-                type="number"
-                value={nullableInputValue(draft.minimumUnits)}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Maximum units"}</span>
-              <Input
-                min="0"
-                onChange={(event) =>
-                  onDraftChange({
-                    ...draft,
-                    maximumUnits: nullableNumber(event.target.value),
-                  })
-                }
-                step="0.5"
-                type="number"
-                value={nullableInputValue(draft.maximumUnits)}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Offering status"}</span>
-              <OptionPicker
-                value={"coursemap:" + String(draft.offeringStatus)}
-                onValueChange={(nextValue) => {
-                  const option = (
-                    [
-                      { value: "offered", label: "Offered" },
-                      { value: "not_offered", label: "Not offered" },
-                      { value: "unknown", label: "Unknown" },
-                    ] as const
-                  ).find(
-                    (option) =>
-                      "coursemap:" + String(option.value) === nextValue,
-                  );
-                  if (option)
-                    ((offeringStatus) =>
-                      onDraftChange({ ...draft, offeringStatus }))(
-                      option.value,
-                    );
-                }}
-                aria-label={"Offering status"}
-                onPointerDown={(event) => event.stopPropagation()}
-                placeholder={"Select..."}
-                items={[
-                  { value: "offered", label: "Offered" },
-                  { value: "not_offered", label: "Not offered" },
-                  { value: "unknown", label: "Unknown" },
-                ].map((option) => ({
-                  value: "coursemap:" + String(option.value),
-                  label: option.label,
-                }))}
-              />
-            </label>
-          </Field>
-        </div>
-      </div>
-
-      <div className="border-t border-border/60 pt-6">
-        <h2 className="text-sm font-semibold text-foreground">
-          Teaching information
-        </h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Convenor"}</span>
-              {textField("convenerText")}
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Delivery summary"}</span>
-              {textField("deliverySummary")}
-            </label>
-          </Field>
-          <Field className="sm:col-span-2">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Introduction"}</span>
-              {textField("introduction", { multiline: true })}
-            </label>
-          </Field>
-          <Field className="sm:col-span-2">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Description"}</span>
-              {textField("description", { multiline: true })}
-            </label>
-          </Field>
-          <Field className="sm:col-span-2">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Workload"}</span>
-              {textField("workloadText", { multiline: true })}
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Workload hours"}</span>
-              <Input
-                min="0"
-                onChange={(event) =>
-                  onDraftChange({
-                    ...draft,
-                    workloadHours: nullableNumber(event.target.value),
-                  })
-                }
-                step="0.5"
-                type="number"
-                value={nullableInputValue(draft.workloadHours)}
-              />
-            </label>
-          </Field>
-          <Field>
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Source updated"}</span>
-              <Input disabled value={formatDate(draft.sourceUpdatedAt)} />
-              <FieldDescription>
-                {"This is source provenance and cannot be changed manually."}
-              </FieldDescription>
-            </label>
-          </Field>
-          <Field className="sm:col-span-2">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">
-                {"Inherent requirements"}
-              </span>
-              {textField("inherentRequirements", { multiline: true })}
-            </label>
-          </Field>
-          <Field className="sm:col-span-2">
-            <label className="flex flex-col gap-2">
-              <span className="text-sm font-medium">{"Prescribed texts"}</span>
-              {textField("prescribedTexts", { multiline: true })}
-            </label>
-          </Field>
-        </div>
-      </div>
-
-      <div className="border-t border-border/60 pt-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Advanced collections
-            </h2>
-            <p className="mt-1 max-w-3xl text-xs leading-5 text-muted-foreground">
-              This complete relational projection contains unit options, fees,
-              areas, attributes, related courses, offerings and sessions,
-              outcomes, assessments and rule trees. Keys and links are checked
-              before the draft can be saved.
-            </p>
-          </div>
-          <Badge variant={badgeVariantForTone[error ? "danger" : "success"]}>
-            {error ? "Invalid JSON" : "Structure valid"}
-          </Badge>
-        </div>
-        <Field className="mt-4">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium">
-              {"Relational projection JSON"}
-            </span>
-            <Textarea
-              aria-invalid={Boolean(error)}
-              className="min-h-[34rem] font-mono text-xs leading-5"
-              onChange={(event) => onCollectionsChange(event.target.value)}
-              spellCheck={false}
-              value={collectionsJson}
-            />
-          </label>
-        </Field>
-        {error ? (
-          <Alert className="mt-3" variant={"destructive"}>
-            <CircleAlert aria-hidden="true" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : preview ? (
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-            {collectionSummary(advancedCollections(preview)).map(
-              ([label, count]) => (
-                <div
-                  className="rounded-lg border border-border bg-muted/50 px-3 py-2"
-                  key={label}
-                >
-                  <p className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                    {label}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-foreground tabular-nums">
-                    {count}
-                  </p>
-                </div>
-              ),
-            )}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex justify-end gap-2 border-t border-border/60 pt-4">
-        <Button onClick={onCancel} variant="outline" type="button">
-          Cancel
-        </Button>
-        <Button
-          disabled={saving || Boolean(error)}
-          type="submit"
-          variant="default"
-        >
-          <Save aria-hidden="true" size={15} />
-          {saving ? "Saving..." : "Save new draft snapshot"}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
 function RequisitePanel({
   canEdit,
-  empty,
   editing,
   kind,
   onCancelEdit,
   onEdit,
   onSave,
   projection,
+  originalSourceTexts,
 }: {
   canEdit: boolean;
-  empty: string;
   editing: boolean;
   kind:
     | "incompatibility"
@@ -907,6 +102,7 @@ function RequisitePanel({
   onEdit: () => void;
   onSave: (projection: CourseSnapshotProjectionData) => Promise<void>;
   projection: CourseSnapshotProjectionData;
+  originalSourceTexts: string[];
 }) {
   const rules = projection.rules.filter((rule) => rule.ruleKind === kind);
   return (
@@ -918,37 +114,12 @@ function RequisitePanel({
           onCancel={onCancelEdit}
           onSave={onSave}
           projection={projection}
+          originalSourceTexts={originalSourceTexts}
         />
       ) : rules.length ? (
         <>
-          <div className="divide-y divide-border/60">
-            {rules.map((rule) => (
-              <div className="px-5 py-5 sm:px-6" key={rule.key}>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-sm font-semibold text-foreground">
-                    {readable(rule.ruleKind)}
-                  </h2>
-                  <Badge
-                    variant={
-                      badgeVariantForTone[
-                        rule.hardness === "hard" ? "warning" : "neutral"
-                      ]
-                    }
-                  >
-                    {readable(rule.hardness)}
-                  </Badge>
-                </div>
-                <p className="mt-3 border-l-2 border-input pl-4 text-sm leading-7 whitespace-pre-wrap text-foreground/80">
-                  {rule.sourceText}
-                </p>
-              </div>
-            ))}
-          </div>
-          <CourseSnapshotRuleViewer kind={kind} projection={projection} />
-          <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
-            <p className="text-xs text-muted-foreground">
-              Edit the source wording and complete relational tree together.
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
+            <h2 className="text-base font-semibold">{readable(kind)}</h2>
             <Button
               disabled={!canEdit}
               onClick={onEdit}
@@ -957,51 +128,44 @@ function RequisitePanel({
               type="button"
             >
               <Pencil aria-hidden="true" size={14} />
-              Edit rule tree
+              Edit requisite
             </Button>
           </div>
+          <div className="mx-5 mb-3 sm:mx-6">
+            <AnuSourceDialog
+              title={readable(kind)}
+              texts={originalSourceTexts}
+            />
+          </div>
+          <CourseSnapshotRuleViewer kind={kind} projection={projection} />
         </>
-      ) : (
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-7 sm:px-6">
-          <p className="text-sm text-muted-foreground">{empty}</p>
-          <Button
-            disabled={!canEdit}
-            onClick={onEdit}
-            size="sm"
-            variant="outline"
-            type="button"
-          >
-            <Pencil aria-hidden="true" size={14} />
-            Add rule tree
-          </Button>
-        </div>
-      )}
+      ) : null}
     </Panel>
   );
 }
 
 export function CourseReview({
   canWrite,
+  canReviewImports,
   previewCourse,
   record,
 }: {
   canWrite: boolean;
+  canReviewImports: boolean;
   previewCourse: CourseDetails | null;
   record: AdminCourseYearRecord;
 }) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<CourseReviewTab>(
-    record.importTarget ? "pipeline" : "course",
-  );
-  const [editing, setEditing] = useState(false);
+  const actionTriggerRef = useRef<HTMLButtonElement>(null);
+  const [actionDialog, setActionDialog] = useState<
+    "review" | "publish" | "archive" | null
+  >(null);
+  const [activeTab, setActiveTab] = useState<CourseReviewTab>("course");
   const [editingRuleKind, setEditingRuleKind] =
     useState<EditableRuleKind | null>(null);
-  const [draft, setDraft] = useState<SnapshotFields | null>(
-    record.projection ? structuredClone(record.projection.snapshot) : null,
-  );
-  const [collectionsJson, setCollectionsJson] = useState(() =>
-    record.projection ? collectionEditorValue(record.projection) : "{}",
-  );
+  const [newRuleKind, setNewRuleKind] =
+    useState<EditableRuleKind>("prerequisite");
+  const [editingCourse, setEditingCourse] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -1011,6 +175,18 @@ export function CourseReview({
     tone: "success" | "danger";
   } | null>(null);
   const projection = record.projection;
+  const availableRuleKinds = (
+    [
+      "prerequisite",
+      "corequisite",
+      "permission",
+      "assumed_knowledge",
+      "incompatibility",
+    ] as const
+  ).filter((kind) => !projection?.rules.some((rule) => rule.ruleKind === kind));
+  const selectedNewRuleKind = availableRuleKinds.includes(newRuleKind)
+    ? newRuleKind
+    : availableRuleKinds[0];
   const isActive = record.lifecycleStatus === "active";
   const viewingHistorical =
     record.currentSnapshotId !== null &&
@@ -1035,20 +211,6 @@ export function CourseReview({
     record.snapshot?.has_critical_uncertainty ||
     record.blockingReviewItems.length > 0,
   );
-  const editorState = useMemo(() => {
-    if (!draft) return { error: "No snapshot is available.", preview: null };
-    try {
-      return {
-        error: null,
-        preview: preparedProjection(record, draft, collectionsJson),
-      };
-    } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : "The edit is invalid.",
-        preview: null,
-      };
-    }
-  }, [collectionsJson, draft, record]);
   const changes = projection
     ? projectionChanges(projection, record.publishedProjection)
     : [];
@@ -1061,29 +223,8 @@ export function CourseReview({
     );
   }
 
-  function startEditing() {
-    if (!canEdit || !projection) return;
-    setEditingRuleKind(null);
-    setDraft(structuredClone(projection.snapshot));
-    setCollectionsJson(collectionEditorValue(projection));
-    setEditing(true);
-    setActiveTab("course");
-    setMessage(null);
-  }
-
-  function cancelEditing() {
-    if (projection) {
-      setDraft(structuredClone(projection.snapshot));
-      setCollectionsJson(collectionEditorValue(projection));
-    }
-    setEditing(false);
-    setEditingRuleKind(null);
-    setMessage(null);
-  }
-
   function startRuleEditing(kind: EditableRuleKind) {
     if (!canEdit || !projection) return;
-    setEditing(false);
     setEditingRuleKind(kind);
     setMessage(null);
   }
@@ -1092,42 +233,22 @@ export function CourseReview({
     if (record.currentSnapshotId === null) return;
     setSaving(true);
     setMessage(null);
-    const result = await saveCourseSnapshot({
-      coursePublicId: record.publicId,
-      courseYearId: record.courseYearId,
-      expectedBaseSnapshotId: record.currentSnapshotId,
-      projection: next,
-    });
-    setSaving(false);
-    setMessage({
-      text: result.message,
-      tone: result.ok ? "success" : "danger",
-    });
-    if (result.ok) {
+    try {
+      const result = await saveCourseSnapshot({
+        coursePublicId: record.publicId,
+        courseYearId: record.courseYearId,
+        expectedBaseSnapshotId: record.currentSnapshotId,
+        projection: next,
+      });
+      setMessage({
+        text: result.message,
+        tone: result.ok ? "success" : "danger",
+      });
+      if (!result.ok) throw new Error(result.message);
       setEditingRuleKind(null);
       router.refresh();
-    }
-  }
-
-  async function saveDraft(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!editorState.preview || record.currentSnapshotId === null) return;
-    setSaving(true);
-    setMessage(null);
-    const result = await saveCourseSnapshot({
-      coursePublicId: record.publicId,
-      courseYearId: record.courseYearId,
-      expectedBaseSnapshotId: record.currentSnapshotId,
-      projection: editorState.preview,
-    });
-    setSaving(false);
-    setMessage({
-      text: result.message,
-      tone: result.ok ? "success" : "danger",
-    });
-    if (result.ok) {
-      setEditing(false);
-      router.refresh();
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -1199,106 +320,119 @@ export function CourseReview({
       value={activeTab}
     >
       <AppShell
-        actions={
-          <>
-            {!editing ? (
-              <Button
-                disabled={!canEdit}
-                onClick={startEditing}
-                size="sm"
-                title={
-                  canEdit
-                    ? "Create a new snapshot from the current course data"
-                    : "An active snapshot and course write permission are required"
-                }
-                variant="outline"
-                type="button"
-              >
-                <Pencil aria-hidden="true" size={15} />
-                Edit fields
-              </Button>
-            ) : null}
-            {record.publishedSnapshotId ? (
-              <Button asChild size="sm" variant="outline">
-                <ReuiLink href={`/courses/${record.code}?year=${record.year}`}>
-                  <ExternalLink aria-hidden="true" size={15} />
-                  Student page
-                </ReuiLink>
-              </Button>
-            ) : null}
-            {needsExplicitConfirmation && isDraft && !viewingHistorical ? (
-              <ConfirmDialog
-                confirmLabel="Confirm review"
-                description={`Confirm that ${record.code} ${record.year} has been checked against the stored ANU source. This creates a confirmed manual draft, clears any blocking import checks and records a standard audit note.`}
-                onConfirm={confirmReviewedSnapshot}
-                title={`Confirm review of ${record.code}?`}
-                trigger={
-                  <Button
-                    disabled={!canWrite || confirming}
-                    size="sm"
-                    variant="outline"
-                    type="button"
-                  >
-                    <CheckCircle2 aria-hidden="true" size={15} />
-                    {confirming ? "Confirming..." : "Confirm review"}
-                  </Button>
-                }
-              />
-            ) : null}
-            {isDraft ? (
-              <ConfirmDialog
-                confirmLabel="Publish draft"
-                description={`Publish snapshot ${record.draftSnapshotId} for ${record.code} ${record.year}. It will replace the student-facing snapshot for this year.`}
-                onConfirm={publish}
-                title={`Publish ${record.code} ${record.year}?`}
-                trigger={
-                  <Button
-                    disabled={!canPublish || publishing}
-                    size="sm"
-                    title={
-                      record.snapshot?.has_critical_uncertainty
-                        ? "Critical uncertainty must be confirmed through a manual draft before publication"
-                        : canPublish
-                          ? "Publish the current draft"
-                          : "A sealed current draft and course write permission are required"
-                    }
-                    variant="default"
-                    type="button"
-                  >
-                    <Check aria-hidden="true" size={15} />
-                    {publishing ? "Publishing..." : "Publish draft"}
-                  </Button>
-                }
-              />
-            ) : null}
-            <ConfirmDialog
-              confirmLabel="Archive course year"
-              description={`Archive ${record.code} for ${record.year}. Students will no longer see it for this year, but every snapshot and source artefact will be kept.`}
-              destructive
-              onConfirm={archive}
-              title={`Archive ${record.code} ${record.year}?`}
-              trigger={
-                <Button
-                  disabled={!canWrite || !isActive || archiving}
-                  size="sm"
-                  variant="destructive"
-                  type="button"
-                >
-                  <Archive aria-hidden="true" size={15} />
-                  {archiving ? "Archiving..." : "Archive"}
-                </Button>
-              }
-            />
-          </>
-        }
+        showThemeToggle={false}
         admin
         currentBreadcrumbLabel={projection?.snapshot.title ?? record.code}
-        tabs={<CourseReviewTabs hasImport={record.importTarget !== null} />}
+        tabs={
+          <CourseReviewTabs
+            hasImport={record.importTarget !== null}
+            editing={editingCourse || editingRuleKind !== null}
+            activeTab={activeTab}
+          />
+        }
       >
         <div className="mx-auto w-full max-w-7xl min-w-0 pb-10">
           <h1 className="sr-only">
             Review {record.code} {projection?.snapshot.title}
           </h1>
+          <div className="mb-5 flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  ref={actionTriggerRef}
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label="Course actions"
+                >
+                  <Ellipsis aria-hidden="true" size={18} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-52"
+                onCloseAutoFocus={(event) => {
+                  if (actionDialog) event.preventDefault();
+                }}
+              >
+                {needsExplicitConfirmation && canEdit ? (
+                  <DropdownMenuItem
+                    disabled={
+                      confirming || editingCourse || editingRuleKind !== null
+                    }
+                    onSelect={() => setActionDialog("review")}
+                  >
+                    <CheckCircle2 aria-hidden="true" size={15} />
+                    Confirm review
+                  </DropdownMenuItem>
+                ) : null}
+                {isDraft ? (
+                  <DropdownMenuItem
+                    disabled={
+                      !canPublish ||
+                      publishing ||
+                      editingCourse ||
+                      editingRuleKind !== null
+                    }
+                    onSelect={() => setActionDialog("publish")}
+                  >
+                    <Check aria-hidden="true" size={15} />
+                    Publish draft
+                  </DropdownMenuItem>
+                ) : null}
+                {(needsExplicitConfirmation && canEdit) || isDraft ? (
+                  <DropdownMenuSeparator />
+                ) : null}
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={
+                    !canWrite ||
+                    !isActive ||
+                    archiving ||
+                    editingCourse ||
+                    editingRuleKind !== null
+                  }
+                  onSelect={() => setActionDialog("archive")}
+                >
+                  <Archive aria-hidden="true" size={15} />
+                  Archive
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <ConfirmDialog
+              open={actionDialog === "review"}
+              onOpenChange={(open) => {
+                if (!open) setActionDialog(null);
+              }}
+              returnFocusRef={actionTriggerRef}
+              confirmLabel="Confirm review"
+              title={`Confirm review of ${record.code}?`}
+              description={`Confirm that ${record.code} ${record.year} has been checked against the stored ANU source. This creates a confirmed manual draft and resolves blocking checks.`}
+              onConfirm={confirmReviewedSnapshot}
+            />
+            <ConfirmDialog
+              open={actionDialog === "publish"}
+              onOpenChange={(open) => {
+                if (!open) setActionDialog(null);
+              }}
+              returnFocusRef={actionTriggerRef}
+              confirmLabel="Publish draft"
+              title={`Publish ${record.code} ${record.year}?`}
+              description={`Publish the current draft for ${record.year}. It will replace the student-facing version for this year.`}
+              onConfirm={publish}
+            />
+            <ConfirmDialog
+              open={actionDialog === "archive"}
+              onOpenChange={(open) => {
+                if (!open) setActionDialog(null);
+              }}
+              returnFocusRef={actionTriggerRef}
+              confirmLabel="Archive course year"
+              title={`Archive ${record.code} ${record.year}?`}
+              description={`Archive ${record.code} for ${record.year}. Students will no longer see it for this year. Saved versions and source artefacts will be kept.`}
+              destructive
+              onConfirm={archive}
+            />
+          </div>
 
           {message ? (
             <Alert
@@ -1363,6 +497,16 @@ export function CourseReview({
             </TabsContent>
           ) : null}
 
+          {canReviewImports && !viewingHistorical ? (
+            <PendingImportProposals
+              pendingImports={record.pendingImports.filter(
+                (proposal) =>
+                  proposal.candidateSnapshotId !== record.draftSnapshotId &&
+                  !proposal.isCurrentDraftSource,
+              )}
+              currentDraftSnapshotId={record.draftSnapshotId}
+            />
+          ) : null}
           <TabsContent className="mt-0" value="course">
             <div className="mb-4 flex flex-wrap items-center gap-2">
               {record.snapshotHistory.length > 1 &&
@@ -1397,225 +541,44 @@ export function CourseReview({
                   />
                 </div>
               ) : null}
-              <Badge
-                variant={badgeVariantForTone[isActive ? "success" : "neutral"]}
-              >
-                {readable(record.lifecycleStatus)}
+              <span className="font-mono text-sm font-semibold">
+                {record.code}
+              </span>
+              <Badge variant="outline">{record.year}</Badge>
+              <Badge variant={isDraft ? "primary-light" : "success-light"}>
+                {isDraft ? "Draft" : "Published"}
               </Badge>
-              {isDraft ? <Badge variant={"primary-light"}>Draft</Badge> : null}
               {viewingHistorical ? (
-                <Badge variant={"outline"}>Historical snapshot</Badge>
+                <Badge variant="outline">Historical snapshot</Badge>
               ) : null}
-              {record.publishedSnapshotId ? (
-                <Badge variant={"success-light"}>
-                  Published snapshot available
-                </Badge>
-              ) : (
-                <Badge variant={"outline"}>Not published</Badge>
-              )}
-              {record.snapshot?.overall_confidence !== null &&
-              record.snapshot?.overall_confidence !== undefined ? (
-                <Badge
-                  variant={
-                    badgeVariantForTone[
-                      reviewConfidenceTone(
-                        record.snapshot.overall_confidence,
-                        needsExplicitConfirmation,
-                      )
-                    ]
-                  }
-                >
-                  {Math.round(record.snapshot.overall_confidence * 100)}%
-                  confidence
-                </Badge>
-              ) : null}
+              {!isActive ? <Badge variant="outline">Archived</Badge> : null}
             </div>
 
             <div className="space-y-4">
-              <Panel label="Published comparison">
-                <div className="border-b border-border px-5 py-4 sm:px-6">
-                  <h2 className="text-sm font-semibold text-foreground">
-                    Published comparison
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    A short summary of the current snapshot compared with the
-                    student-facing version. Field evidence appears below when
-                    the import recorded it.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 border-b border-border sm:grid-cols-4">
-                  {[
-                    ["Course year", String(record.year)],
-                    [
-                      "Snapshot",
-                      record.snapshot
-                        ? `${record.snapshot.snapshot_number} · ${readable(record.snapshot.origin)}`
-                        : "None",
-                    ],
-                    [
-                      "Validation",
-                      record.snapshot
-                        ? readable(record.snapshot.validation_status)
-                        : "Not recorded",
-                    ],
-                    ["Differences", String(changes.length)],
-                  ].map(([label, value], index) => (
-                    <div
-                      className={`px-4 py-4 sm:px-6 ${index ? "border-l border-border" : ""}`}
-                      key={label}
-                    >
-                      <p className="text-xs font-medium text-muted-foreground">
-                        {label}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-foreground">
-                        {value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <div className="divide-y divide-border/60 px-5 sm:px-6">
-                  {changes.length ? (
-                    changes.map((change) => (
-                      <div
-                        className="py-3 text-sm text-foreground/80"
-                        key={change}
-                      >
-                        <span className="inline-flex rounded-md bg-muted px-2 py-1 text-xs font-medium text-foreground/80">
-                          {change}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="py-7 text-sm text-muted-foreground">
-                      The draft matches the currently published projection.
-                    </p>
-                  )}
-                </div>
-                {record.evidence.length ? (
-                  <details className="border-t border-border">
-                    <summary className="cursor-pointer px-5 py-3 text-sm font-medium text-foreground/80 hover:bg-accent/50 sm:px-6">
-                      Field evidence ({record.evidence.length})
-                    </summary>
-                    <JsonCode
-                      label="Snapshot field evidence"
-                      value={record.evidence}
-                    />
-                  </details>
-                ) : null}
-              </Panel>
-              <Panel label="Course fields">
-                <div className="border-b border-border px-5 py-4 sm:px-6">
-                  <h2 className="text-sm font-semibold text-foreground">
-                    Course fields
-                  </h2>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Review the saved values or create a manual draft from the
-                    complete relational course record.
-                  </p>
-                </div>
-                {editing && draft ? (
-                  <SnapshotFieldsEditor
-                    collectionsJson={collectionsJson}
-                    draft={draft}
-                    error={editorState.error}
-                    onCancel={cancelEditing}
-                    onCollectionsChange={setCollectionsJson}
-                    onDraftChange={setDraft}
-                    onSubmit={saveDraft}
-                    preview={editorState.preview}
-                    saving={saving}
-                  />
-                ) : projection ? (
-                  <>
-                    <div className="px-5 sm:px-6">
-                      <dl>
-                        <FieldValue label="Course code" value={record.code} />
-                        <FieldValue
-                          label="Title"
-                          value={projection.snapshot.title}
-                        />
-                        <FieldValue label="Academic year" value={record.year} />
-                        <FieldValue
-                          label="Units"
-                          value={
-                            projection.snapshot.units ??
-                            `${projection.snapshot.minimumUnits ?? "?"} to ${projection.snapshot.maximumUnits ?? "?"}`
-                          }
-                        />
-                        <FieldValue
-                          label="Subject"
-                          value={`${projection.snapshot.subjectCode}${projection.snapshot.subjectName ? ` · ${projection.snapshot.subjectName}` : ""}`}
-                        />
-                        <FieldValue
-                          label="Level"
-                          value={projection.snapshot.level}
-                        />
-                        <FieldValue
-                          label="School"
-                          value={projection.snapshot.school}
-                        />
-                        <FieldValue
-                          label="College"
-                          value={projection.snapshot.college}
-                        />
-                        <FieldValue
-                          label="Career"
-                          value={projection.snapshot.academicCareer}
-                        />
-                        <FieldValue
-                          label="Convenor"
-                          value={projection.snapshot.convenerText}
-                        />
-                        <FieldValue
-                          label="Delivery"
-                          value={projection.snapshot.deliverySummary}
-                        />
-                        <FieldValue
-                          label="Description"
-                          value={projection.snapshot.description}
-                        />
-                        <FieldValue
-                          label="Workload"
-                          value={projection.snapshot.workloadText}
-                        />
-                        <FieldValue
-                          label="Source updated"
-                          value={formatDate(
-                            projection.snapshot.sourceUpdatedAt,
-                          )}
-                        />
-                      </dl>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
-                      <div className="flex flex-wrap gap-2">
-                        {collectionSummary(advancedCollections(projection)).map(
-                          ([label, count]) => (
-                            <Badge key={label} variant={"outline"}>
-                              {count}
-                              {label.toLowerCase()}
-                            </Badge>
-                          ),
-                        )}
-                      </div>
-                      <Button
-                        disabled={!canEdit}
-                        onClick={startEditing}
-                        size="sm"
-                        variant="outline"
-                        type="button"
-                      >
-                        <Pencil aria-hidden="true" size={14} />
-                        Edit complete snapshot
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <p className="px-5 py-8 text-sm text-muted-foreground sm:px-6">
-                    This course year does not have a draft or published
-                    snapshot.
-                  </p>
-                )}
-              </Panel>
+              {record.publishedProjection && changes.length > 0 ? (
+                <details className="rounded-xl border border-border bg-card">
+                  <summary className="cursor-pointer px-5 py-4 text-sm font-medium">
+                    {changes.length} changes from the published version
+                  </summary>
+                  <ul className="space-y-2 px-5 pb-4 text-sm text-muted-foreground">
+                    {changes.map((change) => (
+                      <li key={change}>{change}</li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+              <CourseDataSections
+                canEdit={canEdit && !saving}
+                onSave={saveRuleProjection}
+                onEditingChange={setEditingCourse}
+                record={record}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent className="mt-0" value="source">
+            <div className="space-y-4">
+              <CourseImportArtifactViewer artifacts={record.artifacts} />
               <Panel label="Relational projection">
                 <details>
                   <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-foreground marker:content-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:px-6">
@@ -1626,78 +589,88 @@ export function CourseReview({
                     />
                     Relational projection
                   </summary>
-                  <p className="border-t border-border/60 px-5 py-3 text-xs leading-5 text-muted-foreground sm:px-6">
-                    Assembled from the saved snapshot and child rows. This is an
-                    inspection view, not a stored import JSON blob.
-                  </p>
-                  <JsonCode
-                    label="Canonical course projection"
-                    value={projection}
+
+                  <CourseProjectionEditor
+                    canEdit={canEdit}
+                    onEditingChange={setEditingCourse}
+                    onSave={saveRuleProjection}
+                    record={record}
                   />
                 </details>
               </Panel>
             </div>
           </TabsContent>
 
-          <TabsContent className="mt-0" value="source">
-            <div className="space-y-4">
-              <CourseImportArtifactViewer artifacts={record.artifacts} />
-            </div>
-          </TabsContent>
-
           <TabsContent className="mt-0" value="requisites">
             {projection ? (
               <div className="space-y-4">
-                <RequisitePanel
-                  canEdit={canEdit}
-                  empty="No prerequisite rules are stored for this snapshot."
-                  editing={editingRuleKind === "prerequisite"}
-                  kind="prerequisite"
-                  onCancelEdit={() => setEditingRuleKind(null)}
-                  onEdit={() => startRuleEditing("prerequisite")}
-                  onSave={saveRuleProjection}
-                  projection={projection}
-                />
-                <RequisitePanel
-                  canEdit={canEdit}
-                  empty="No corequisite rules are stored for this snapshot."
-                  editing={editingRuleKind === "corequisite"}
-                  kind="corequisite"
-                  onCancelEdit={() => setEditingRuleKind(null)}
-                  onEdit={() => startRuleEditing("corequisite")}
-                  onSave={saveRuleProjection}
-                  projection={projection}
-                />
-                <RequisitePanel
-                  canEdit={canEdit}
-                  empty="No permission rules are stored for this snapshot."
-                  editing={editingRuleKind === "permission"}
-                  kind="permission"
-                  onCancelEdit={() => setEditingRuleKind(null)}
-                  onEdit={() => startRuleEditing("permission")}
-                  onSave={saveRuleProjection}
-                  projection={projection}
-                />
-                <RequisitePanel
-                  canEdit={canEdit}
-                  empty="No assumed knowledge rules are stored for this snapshot."
-                  editing={editingRuleKind === "assumed_knowledge"}
-                  kind="assumed_knowledge"
-                  onCancelEdit={() => setEditingRuleKind(null)}
-                  onEdit={() => startRuleEditing("assumed_knowledge")}
-                  onSave={saveRuleProjection}
-                  projection={projection}
-                />
-                <RequisitePanel
-                  canEdit={canEdit}
-                  empty="No incompatibility rules are stored for this snapshot."
-                  editing={editingRuleKind === "incompatibility"}
-                  kind="incompatibility"
-                  onCancelEdit={() => setEditingRuleKind(null)}
-                  onEdit={() => startRuleEditing("incompatibility")}
-                  onSave={saveRuleProjection}
-                  projection={projection}
-                />
+                {(
+                  [
+                    "prerequisite",
+                    "corequisite",
+                    "permission",
+                    "assumed_knowledge",
+                    "incompatibility",
+                  ] as const
+                )
+                  .filter(
+                    (kind) =>
+                      projection.rules.some((rule) => rule.ruleKind === kind) ||
+                      editingRuleKind === kind,
+                  )
+                  .map((kind) => (
+                    <RequisitePanel
+                      key={kind}
+                      canEdit={canEdit}
+                      editing={editingRuleKind === kind}
+                      kind={kind}
+                      onCancelEdit={() => setEditingRuleKind(null)}
+                      onEdit={() => startRuleEditing(kind)}
+                      onSave={saveRuleProjection}
+                      projection={projection}
+                      originalSourceTexts={
+                        record.sourceOriginalProjection?.rules
+                          .filter((rule) => rule.ruleKind === kind)
+                          .map((rule) => rule.sourceText) ?? []
+                      }
+                    />
+                  ))}
+                {!projection.rules.length && !editingRuleKind ? (
+                  <p className="py-8 text-sm text-muted-foreground">
+                    No requisites recorded.
+                  </p>
+                ) : null}
+                {canEdit &&
+                !editingRuleKind &&
+                availableRuleKinds.length > 0 ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="w-56">
+                      <OptionPicker
+                        aria-label="Requisite type"
+                        value={selectedNewRuleKind ?? ""}
+                        onValueChange={(value) =>
+                          setNewRuleKind(value as EditableRuleKind)
+                        }
+                        items={availableRuleKinds.map((kind) => ({
+                          value: kind,
+                          label: readable(kind),
+                        }))}
+                      />
+                    </div>
+                    <Button
+                      disabled={!selectedNewRuleKind}
+                      onClick={() =>
+                        selectedNewRuleKind &&
+                        startRuleEditing(selectedNewRuleKind)
+                      }
+                      variant="outline"
+                      type="button"
+                    >
+                      <Plus aria-hidden="true" size={15} />
+                      Add requisite
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </TabsContent>

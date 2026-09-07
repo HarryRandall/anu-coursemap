@@ -1,4 +1,5 @@
 import type { PendingCatalogueImport } from "./pending-catalogue-import";
+import { originalStructureImportSnapshotId } from "./structure-snapshot-ancestry";
 import "server-only";
 
 import { cumulativeGrowthSeries } from "@/lib/coursemap/admin-catalogue-history";
@@ -417,25 +418,10 @@ export async function loadAdminStructureReview(
     ancestorId = parentsById.get(ancestorId) ?? null;
   }
 
-  // Preserve the original imported wording when a manual draft changes fields.
-  const snapshotsById = new Map(
-    (snapshotAncestry ?? []).map((item) => [item.id, item]),
+  const originalImportId = originalStructureImportSnapshotId(
+    snapshotId,
+    snapshotAncestry ?? [],
   );
-  const displayedAncestry = new Set<number>();
-  let originalImportId: number | null = null;
-  let displayedAncestorId: number | null = snapshotId;
-  while (
-    displayedAncestorId !== null &&
-    !displayedAncestry.has(displayedAncestorId)
-  ) {
-    displayedAncestry.add(displayedAncestorId);
-    const ancestor = snapshotsById.get(displayedAncestorId);
-    if (ancestor?.origin === "import") {
-      originalImportId = ancestor.id;
-      break;
-    }
-    displayedAncestorId = ancestor?.parent_snapshot_id ?? null;
-  }
 
   const conditions = conditionsResult.data ?? [];
   const options = optionsResult.data ?? [];

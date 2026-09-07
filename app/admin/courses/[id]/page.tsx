@@ -84,6 +84,7 @@ export default async function AdminCourseDetailPage({
     <CourseReview
       key={`${record.courseYearId}:${record.currentSnapshotId ?? "none"}`}
       canWrite={!isDemoMode() && canWrite}
+      canReviewImports={!isDemoMode() && canViewImports}
       previewCourse={toStudentPreviewCourseYear(record, publishedPrerequisites)}
       record={record}
     />

@@ -16,7 +16,12 @@ export function ImportTargetReviewLoading({ noun }: { noun: string }) {
   const { targetId } = useParams<{ targetId: string }>();
 
   return (
-    <AppShell admin fullBleed breadcrumbSegmentLabels={{ [targetId]: null }}>
+    <AppShell
+      showThemeToggle={false}
+      admin
+      fullBleed
+      breadcrumbSegmentLabels={{ [targetId]: null }}
+    >
       <div aria-busy="true" className="w-full px-4 pb-10 sm:px-6">
         <span className="sr-only">Loading {noun} import</span>
         <div className="-mx-4 border-b border-border px-4 sm:-mx-6 sm:px-6">

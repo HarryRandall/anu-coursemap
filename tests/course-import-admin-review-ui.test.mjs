@@ -103,80 +103,94 @@ test("gives Radix popovers a concrete trigger inside tooltips", async () => {
   }
 });
 
-test("makes the pipeline the first and default course import review tab", async () => {
+test("keeps imports read-only with pipeline and inspection tabs", async () => {
   const source = await readFile(targetReviewPath, "utf8");
-  assert.match(source, /<Tabs defaultValue="pipeline"(?:\s[^>]*)?>/);
-  const pipeline = source.indexOf(
-    '<TabsTrigger value="pipeline">Pipeline<\/TabsTrigger>',
+  assert.match(source, /<Tabs defaultValue="pipeline"/);
+  const labels = [
+    "Pipeline",
+    "Source and artefacts",
+    "Database rows",
+    "Course preview",
+  ];
+  let previous = -1;
+  for (const label of labels) {
+    const position = source.indexOf(`>${label}</TabsTrigger>`);
+    assert.ok(position > previous, `${label} appears in order`);
+    previous = position;
+  }
+  assert.match(source, /<ImportInspectionActions/);
+  assert.doesNotMatch(
+    source,
+    /acceptCourseImportTarget|rejectCourseImportTarget|Saved value/,
   );
-  const review = source.indexOf(
-    '<TabsTrigger value="changes">Review<\/TabsTrigger>',
-  );
-  const artefacts = source.indexOf(
-    '<TabsTrigger value="source">Source and artefacts<\/TabsTrigger>',
-  );
-  const database = source.indexOf(
-    '<TabsTrigger value="database">Database rows<\/TabsTrigger>',
-  );
-  const preview = source.indexOf(
-    '<TabsTrigger value="preview">Course preview<\/TabsTrigger>',
-  );
-  assert.ok(pipeline >= 0);
-  assert.ok(review > pipeline);
-  assert.ok(artefacts > review);
-  assert.ok(database > artefacts);
-  assert.ok(preview > database);
-  assert.doesNotMatch(source, />Changes<\/TabsTrigger>/);
+  assert.doesNotMatch(source, /<TabsTrigger value="changes">/);
 });
 
-test("explains review checks and shows readable before and after values", async () => {
+test("provides a full candidate preview without redundant explanations", async () => {
   const source = await readFile(targetReviewPath, "utf8");
-  assert.match(source, /Checks requiring confirmation/);
-  assert.match(source, /extraction warnings or safety checks/);
-  assert.match(source, /Course differences/);
-  assert.match(source, /Imported values compared with/);
-  assert.match(source, /Imported candidate/);
-  assert.match(source, /Saved value/);
-});
-
-test("keeps draft decisions compact and provides a full candidate course preview", async () => {
-  const source = await readFile(targetReviewPath, "utf8");
-  const appShell = source.indexOf("<AppShell");
-  const accept = source.indexOf('confirmLabel="Accept as draft"');
-  const tabs = source.indexOf('<Tabs defaultValue="pipeline"');
-  assert.ok(appShell >= 0);
-  assert.ok(accept > appShell && accept < tabs);
   assert.match(source, /<CourseDetailTabsList \/>/);
   assert.match(source, /<CourseDetailView/);
-  assert.match(source, /full student-facing course view/);
+  assert.doesNotMatch(
+    source,
+    /full student-facing course view|These are the exact candidate/,
+  );
+  assert.match(source, /artifacts=\{detail.artifacts\}/);
 });
 
-test("uses light JSON artefacts and table-shaped database projections", async () => {
-  const [artifactSource, databaseRowsSource, tableSource] = await Promise.all([
+test("keeps saved and planned rows together while retaining artefact attempts", async () => {
+  const [
+    artifactSource,
+    databaseRowsSource,
+    tableSource,
+    sharedViewer,
+    databaseViewer,
+    dataSource,
+  ] = await Promise.all([
     readFile(artifactViewerPath, "utf8"),
     readFile(databaseRowsPath, "utf8"),
     readFile(databaseRowTablePath, "utf8"),
+    readFile(
+      new URL(
+        "../components/admin/imports/import-artefact-viewer.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../components/admin/imports/import-database-rows.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../components/admin/imports/import-artefact-data.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
   ]);
-  assert.match(artifactSource, /<JsonCode/);
-  assert.match(artifactSource, /projectedCourseDatabaseTables\(parsed\)/);
-  assert.match(artifactSource, /<DatabaseRowsViewer/);
-  assert.match(databaseRowsSource, /<DatabaseRowsViewer/);
-  assert.match(tableSource, /<TableHeader>/);
-  assert.match(tableSource, /<TableHead/);
-  assert.match(tableSource, /<TableRow/);
-  assert.match(tableSource, /<TableCell/);
-  assert.match(tableSource, /normaliseImportDatabaseTable\(rows\)/);
-  assert.match(tableSource, /className="h-12"/);
-  assert.match(tableSource, /max-w-\[28rem\]/);
-  assert.match(tableSource, /overflow-x-auto overflow-y-hidden/);
-  assert.match(artifactSource, /const grouped = useMemo/);
-  assert.match(artifactSource, /<OptionPicker/);
-  assert.match(artifactSource, /Attempt \$\{artifact\.attemptNumber\}/);
-  assert.doesNotMatch(
-    artifactSource,
-    /` · attempt \$\{artifact\.attemptNumber\}`/,
+  assert.match(artifactSource, /<ImportArtefactViewer/);
+  assert.match(databaseRowsSource, /project=\{projectedCourseDatabaseTables\}/);
+  assert.match(
+    databaseViewer,
+    /<TabsTrigger value="saved">Saved<\/TabsTrigger>/,
   );
-  assert.doesNotMatch(artifactSource, /bg-black|bg-zinc-950/);
+  assert.match(
+    databaseViewer,
+    /<TabsTrigger value="planned">Planned<\/TabsTrigger>/,
+  );
+  assert.match(databaseViewer, /Original projection JSON/);
+  assert.match(dataSource, /entry\.kind !== "database_projection"/);
+  assert.match(tableSource, /normaliseImportDatabaseTable\(rows\)/);
+  assert.match(tableSource, /importDatabaseFieldLabel\(column\)/);
+  assert.match(
+    sharedViewer,
+    /useImportArtefact\(\s*artifact,\s*endpoint,?\s*\)/,
+  );
+  assert.match(sharedViewer, /Choose \$\{label\} attempt/);
+  assert.doesNotMatch(sharedViewer, /bg-black|bg-zinc-950/);
 });
 
 test("addresses imports by target id and keeps the run out of the URL", async () => {
@@ -213,8 +227,8 @@ test("keeps the requisite editor and complete student-preview chain", async () =
   assert.match(previewSource, /prerequisiteEdgesWithSnapshotFallback/);
   assert.match(previewSource, /course\.prerequisiteEdges/);
   assert.match(reviewSource, /value="requisites"/);
-  assert.match(reviewSource, /Edit rule tree/);
-  assert.match(editorSource, />List</);
+  assert.match(reviewSource, /CourseRequisites|Edit requisite|Edit rule tree/);
+  assert.match(editorSource, />Rule builder</);
   assert.match(editorSource, />Diagram</);
   assert.match(editorSource, /<RequisiteRuleTree/);
   assert.match(editorSource, /<RequisiteRuleGraph/);

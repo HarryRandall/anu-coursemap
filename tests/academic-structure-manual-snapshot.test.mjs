@@ -9,6 +9,7 @@ import {
   normaliseAcademicStructureManualSnapshotProjection,
   parseAcademicStructureManualSnapshotProjection,
 } from "../lib/structure-import/manual-snapshot.ts";
+import { structureSectionSourceTexts } from "../lib/coursemap/structure-source-text.ts";
 import { projectAcademicStructureSnapshot } from "../lib/structure-import/project-snapshot.ts";
 
 function extraction() {
@@ -259,13 +260,27 @@ test("manual save is permission checked, immutable, CAS protected and draft only
 
 test("admin editor uses structured controls rather than persisted JSON", async () => {
   const [editor, action] = await Promise.all([
-    readFile(
-      new URL(
-        "../components/admin/academic-structures/manual-snapshot-editor.tsx",
-        import.meta.url,
+    Promise.all(
+      [
+        "manual-snapshot-editor",
+        "source-fields-editor",
+        "requirement-group-editor",
+        "details-section-editor",
+        "sections-section-editor",
+        "outcomes-section-editor",
+        "fees-section-editor",
+        "relationships-section-editor",
+        "requirements-section-editor",
+      ].map((file) =>
+        readFile(
+          new URL(
+            `../components/admin/academic-structures/${file}.tsx`,
+            import.meta.url,
+          ),
+          "utf8",
+        ),
       ),
-      "utf8",
-    ),
+    ).then((sources) => sources.join("\n")),
     readFile(
       new URL(
         "../lib/coursemap/academic-structure-snapshot-actions.ts",
@@ -292,4 +307,16 @@ test("admin editor uses structured controls rather than persisted JSON", async (
   assert.doesNotMatch(editor, /Relational projection JSON/);
   assert.match(action, /create_academic_structure_manual_snapshot/);
   assert.match(action, /It has not been published/);
+});
+
+test("ANU text shows original overview values even without per-field evidence", () => {
+  const original = manualProjection();
+  original.evidence = [];
+  const manual = structuredClone(original);
+  manual.snapshot.description = "Administrator rewritten description";
+  const texts = structureSectionSourceTexts(original, "details");
+  assert.ok(texts.includes("Introduction: Study computing at ANU."));
+  assert.ok(texts.includes("Description: A computing programme."));
+  assert.ok(!texts.join(" ").includes(manual.snapshot.description));
+  assert.deepEqual(structureSectionSourceTexts(null, "details"), []);
 });

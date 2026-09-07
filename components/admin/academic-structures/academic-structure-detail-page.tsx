@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { ProgrammeReview } from "@/app/admin/programmes/[id]/programme-review";
-import { canWriteCatalogue } from "@/lib/auth/viewer";
+import { canWriteCatalogue, canManageCourseImports } from "@/lib/auth/viewer";
 import { loadAdminStructureReview } from "@/lib/coursemap/admin-catalogue";
 import { adminAcademicStructureDetailPath } from "@/lib/coursemap/academic-structure-routes";
 import {
@@ -37,8 +37,16 @@ export async function AcademicStructureDetailPage({
     redirect(canonicalPath);
   }
 
-  const canWrite = await canWriteCatalogue();
+  const [canWrite, canReviewImports] = await Promise.all([
+    canWriteCatalogue(),
+    canManageCourseImports(),
+  ]);
   return (
-    <ProgrammeReview canEdit={canWrite} canPublish={canWrite} record={record} />
+    <ProgrammeReview
+      canEdit={canWrite}
+      canPublish={canWrite}
+      canReviewImports={canReviewImports}
+      record={record}
+    />
   );
 }

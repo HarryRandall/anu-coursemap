@@ -135,3 +135,21 @@ test("groups artefact attempts while keeping database projections in their own t
     ["first", "projection", "second", "html"],
   );
 });
+
+test("shows extraction comparisons only when both original results were recorded", async () => {
+  const { extractionConflict } =
+    await import("../lib/coursemap/extraction-conflict.ts");
+  const conflict = {
+    deterministicValue: null,
+    modelValue: false,
+    retained: "deterministic",
+  };
+  assert.strictEqual(extractionConflict(conflict), conflict);
+  assert.equal(
+    extractionConflict({ deterministicValue: [], retained: "deterministic" }),
+    null,
+  );
+  assert.equal(extractionConflict([{ value: "Critical Thinking" }]), null);
+  assert.equal(extractionConflict(null), null);
+  assert.equal(extractionConflict({ ...conflict, retained: "unknown" }), null);
+});
