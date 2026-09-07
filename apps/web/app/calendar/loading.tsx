@@ -18,7 +18,7 @@ const filters = [
 export default function CalendarLoading() {
   return (
     <AppShell>
-      <div aria-busy="true" className="mx-auto flex max-w-6xl flex-col gap-4">
+      <div aria-busy="true" className="mx-auto flex flex-col gap-4">
         <span className="sr-only">Loading study calendar</span>
         <div className="flex flex-wrap items-center gap-1.5">
           {filters.map((width, index) => (

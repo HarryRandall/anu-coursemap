@@ -33,7 +33,7 @@ export function CatalogueLoading({
     <AppShell admin={layout !== "public-courses"} fill>
       <div
         aria-busy="true"
-        className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4"
+        className="mx-auto flex min-h-0 w-full flex-1 flex-col gap-4"
       >
         <h1 className="sr-only">Loading {noun}</h1>
         {!imports && !layout ? (

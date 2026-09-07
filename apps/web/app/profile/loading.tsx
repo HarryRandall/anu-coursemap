@@ -16,7 +16,7 @@ function FieldSkeleton({ className }: { className?: string }) {
 export default function ProfileLoading() {
   return (
     <AppShell tabs={<TabsLoading widths={["w-16", "w-24", "w-14"]} />}>
-      <div aria-busy="true" className="mx-auto w-full max-w-7xl">
+      <div aria-busy="true" className="mx-auto w-full">
         <span className="sr-only">Loading profile and study details</span>
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
           <Card className="min-w-0 gap-0 p-0">

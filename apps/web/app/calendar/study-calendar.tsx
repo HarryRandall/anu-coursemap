@@ -146,7 +146,7 @@ export function StudyCalendar({
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-6xl flex-col gap-4">
+      <div className="mx-auto flex flex-col gap-4">
         <h1 className="sr-only">Study calendar</h1>
 
         <div

@@ -208,7 +208,7 @@ export function AdminUserDetail({
         currentBreadcrumbLabel={data.user.displayName}
         tabs={tabs}
       >
-        <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5 pb-8">
+        <div className="mx-auto w-full min-w-0 space-y-5 pb-8">
           <header className="flex items-center gap-3">
             <GeneratedAvatar
               name={data.user.displayName}

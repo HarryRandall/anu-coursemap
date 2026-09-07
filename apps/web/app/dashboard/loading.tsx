@@ -19,7 +19,7 @@ function MetricFrame({ children }: { children: ReactNode }) {
 export default function DashboardLoading() {
   return (
     <AppShell>
-      <div aria-busy="true" className="mx-auto flex max-w-7xl flex-col gap-6">
+      <div aria-busy="true" className="mx-auto flex flex-col gap-6">
         <span className="sr-only">Loading dashboard</span>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

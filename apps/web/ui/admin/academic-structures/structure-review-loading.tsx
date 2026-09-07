@@ -21,10 +21,7 @@ export function StructureReviewLoading({ noun }: { noun: string }) {
       breadcrumbSegmentLabels={{ [id]: null }}
       tabs={<TabsLoading widths={["w-14", "w-24", "w-14"]} />}
     >
-      <div
-        aria-busy="true"
-        className="mx-auto w-full max-w-7xl min-w-0 space-y-4 pb-10"
-      >
+      <div aria-busy="true" className="mx-auto w-full min-w-0 space-y-4 pb-10">
         <span className="sr-only">Loading {noun}</span>
         <section className="overflow-hidden rounded-xl border border-border bg-card">
           <div className="grid grid-cols-2 border-b border-border sm:grid-cols-4">

@@ -86,7 +86,7 @@ export default async function CoursesPage({
     return (
       <AppShell fill>
         <h1 className="sr-only">Courses</h1>
-        <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col">
+        <div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
           <DataTableShell selectable={false}>
             <CatalogueEmpty
               error
@@ -106,7 +106,7 @@ export default async function CoursesPage({
   return (
     <AppShell fill>
       <h1 className="sr-only">Courses</h1>
-      <div className="mx-auto flex min-h-0 w-full max-w-[1280px] flex-1 flex-col gap-5">
+      <div className="mx-auto flex min-h-0 w-full flex-1 flex-col gap-5">
         <FilterBar
           key={query}
           searchPlaceholder="Search by course code, name or school"

@@ -132,7 +132,6 @@ export function CourseImportTargetReview({
                 <div className="py-5">
                   <CourseDetailView
                     course={previewCourse}
-                    fullWidth
                     requisiteCompletion={{
                       completedCourses: [],
                       isAuthenticated: false,

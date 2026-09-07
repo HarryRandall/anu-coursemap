@@ -138,7 +138,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
   if (!degree) {
     return (
       <AppShell>
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="mx-auto w-full">
           <h1 className="sr-only">Requirements</h1>
           <Card>
             <Empty>
@@ -165,7 +165,7 @@ export function Requirements({ catalogue }: { catalogue: PlanCatalogue }) {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-7xl">
+      <div className="mx-auto w-full">
         <h1 className="sr-only">Requirements</h1>
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">

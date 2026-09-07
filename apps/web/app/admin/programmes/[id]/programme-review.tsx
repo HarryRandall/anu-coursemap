@@ -135,7 +135,7 @@ export function ProgrammeReview({
           </TabsList>
         }
       >
-        <div className="mx-auto w-full max-w-7xl min-w-0 space-y-5 pb-10">
+        <div className="mx-auto w-full min-w-0 space-y-5 pb-10">
           <h1 className="sr-only">
             Review {record.code} {record.name}
           </h1>

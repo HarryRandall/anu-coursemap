@@ -4,7 +4,7 @@ import { AppShell } from "@/ui/shell";
 
 export default function PlanLoading() {
   return (
-    <AppShell>
+    <AppShell fullWidth>
       <div aria-busy="true">
         <span className="sr-only">Loading your course plan</span>
         <div className="mb-4 space-y-3 rounded-2xl bg-card px-4 py-3.5 shadow-sm ring-1 ring-border sm:px-5">

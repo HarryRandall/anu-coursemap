@@ -6,7 +6,7 @@ import { AppShell } from "@/ui/shell";
 export default function RequirementsLoading() {
   return (
     <AppShell>
-      <div aria-busy="true" className="mx-auto w-full max-w-7xl">
+      <div aria-busy="true" className="mx-auto w-full">
         <span className="sr-only">Loading degree requirements</span>
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="space-y-5">

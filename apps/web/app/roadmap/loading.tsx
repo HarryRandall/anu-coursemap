@@ -9,7 +9,7 @@ export default function RoadmapLoading() {
     <AppShell>
       <div aria-busy="true" className="py-2 sm:py-4">
         <span className="sr-only">Loading roadmap</span>
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto">
           <div className="flex flex-wrap gap-2 pb-1">
             {stagePillWidths.map((width, index) => (
               <Skeleton key={index} className={`h-9 rounded-full ${width}`} />

@@ -210,7 +210,7 @@ export function ProfileEditor({
   return (
     <Tabs className="block" onValueChange={selectSection} value={section}>
       <AppShell tabs={tabs}>
-        <form className="mx-auto w-full max-w-7xl" onSubmit={save} noValidate>
+        <form className="mx-auto w-full" onSubmit={save} noValidate>
           <h1 className="sr-only">Profile and study details</h1>
 
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">

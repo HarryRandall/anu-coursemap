@@ -10,6 +10,7 @@
 - Keep domain calculations outside presentational components.
 - Keep client components as small as the interaction requires.
 - Verify desktop, mobile, keyboard, empty, loading and error states for material UI changes.
+- `AppShell` owns the shared `max-w-8xl` page width, defined in the Tailwind theme. Page and loading wrappers must not add their own width cap. Keep narrower limits for prose and controls; use `fullWidth` or `fullBleed` for interactive canvases.
 
 ## Marketing and auth surfaces
 

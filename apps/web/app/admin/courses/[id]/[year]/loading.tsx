@@ -22,10 +22,7 @@ export default function AdminCourseDetailLoading() {
       breadcrumbSegmentLabels={{ [id]: null }}
       tabs={<TabsLoading widths={["w-20", "w-14", "w-16", "w-24"]} />}
     >
-      <div
-        aria-busy="true"
-        className="mx-auto w-full max-w-7xl min-w-0 space-y-4 pb-10"
-      >
+      <div aria-busy="true" className="mx-auto w-full min-w-0 space-y-4 pb-10">
         <span className="sr-only">Loading course review</span>
         <div className="flex flex-wrap items-center gap-2">
           <Skeleton className="h-5 w-24" />

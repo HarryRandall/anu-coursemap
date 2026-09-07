@@ -340,7 +340,7 @@ export function CourseReview({
           />
         }
       >
-        <div className="mx-auto w-full max-w-7xl min-w-0 pb-10">
+        <div className="mx-auto w-full min-w-0 pb-10">
           <h1 className="sr-only">
             Review {record.code} {projection?.snapshot.title}
           </h1>
@@ -695,7 +695,6 @@ export function CourseReview({
                 <div className="pt-6">
                   <CourseDetailView
                     course={previewCourse}
-                    fullWidth
                     requisiteCompletion={{
                       completedCourses: [],
                       isAuthenticated: false,

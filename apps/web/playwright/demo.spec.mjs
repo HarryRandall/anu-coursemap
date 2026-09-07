@@ -6,6 +6,32 @@ import { load } from "cheerio";
 
 const origin = "http://127.0.0.1:4217";
 
+test("application pages share the wide content limit", async ({ page }) => {
+  await page.setViewportSize({ width: 2048, height: 1000 });
+  for (const route of [
+    "/dashboard",
+    "/courses",
+    "/calendar",
+    "/admin/courses",
+  ]) {
+    await page.goto(route);
+    const content = page.locator('[data-slot="page-content"]');
+    await content.waitFor({ state: "visible" });
+    assert.equal(
+      await content.evaluate(
+        (element) => element.getBoundingClientRect().width,
+      ),
+      1536,
+    );
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  assert.ok(
+    await page
+      .locator('[data-slot="page-content"]')
+      .evaluate((element) => element.getBoundingClientRect().width <= 390),
+  );
+});
+
 async function render(api, path = "/plan") {
   return api(`${origin}${path}`, {
     headers: { accept: "text/html" },

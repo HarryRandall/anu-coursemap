@@ -5,7 +5,7 @@ import { AppShell } from "@/ui/shell";
 export default function AcademicLoading() {
   return (
     <AppShell>
-      <div aria-busy="true" className="mx-auto max-w-6xl space-y-5">
+      <div aria-busy="true" className="mx-auto space-y-5">
         <span className="sr-only">Loading academic overview</span>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => (

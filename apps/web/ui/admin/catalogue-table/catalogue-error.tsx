@@ -9,7 +9,7 @@ import { DataTableShell } from "./catalogue-table";
 export function CatalogueError({ reset }: { reset: () => void }) {
   return (
     <AppShell admin fill>
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col">
+      <div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
         <DataTableShell>
           <CatalogueEmpty
             error

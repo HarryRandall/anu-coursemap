@@ -210,7 +210,7 @@ export function AcademicRecord({ catalogue }: { catalogue: PlanCatalogue }) {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-7xl space-y-5">
+      <div className="mx-auto w-full space-y-5">
         <h1 className="sr-only">Academic overview</h1>
 
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">

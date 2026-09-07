@@ -6,7 +6,7 @@ import { AppShell } from "@/ui/shell";
 export default function AdminDashboardLoading() {
   return (
     <AppShell admin>
-      <div aria-busy="true" className="mx-auto w-full max-w-7xl space-y-5">
+      <div aria-busy="true" className="mx-auto w-full space-y-5">
         <span className="sr-only">Loading live catalogue status</span>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }, (_, index) => (

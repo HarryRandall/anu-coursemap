@@ -229,7 +229,7 @@ export function OnboardingForm({ catalogue, email }: OnboardingFormProps) {
 
   return (
     <main className="landing-mesh min-h-dvh px-4 py-8 sm:py-12">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <BrandMark className="size-10" />

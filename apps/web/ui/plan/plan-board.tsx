@@ -597,7 +597,7 @@ export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     : undefined;
 
   return (
-    <AppShell>
+    <AppShell fullWidth>
       {degree && (degree.duration === null || degree.units === null) ? (
         <Alert className="mb-5">
           <AlertTriangle aria-hidden="true" />

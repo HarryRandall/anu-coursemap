@@ -27,6 +27,8 @@ export type AppShellProps = {
   fill?: boolean;
   /** Removes the default page padding + max width (used by the plan board). */
   fullBleed?: boolean;
+  /** Keeps interactive canvases at the available width while retaining page padding. */
+  fullWidth?: boolean;
 };
 
 export function AppShell({
@@ -40,6 +42,7 @@ export function AppShell({
   admin = false,
   fill = false,
   fullBleed = false,
+  fullWidth = false,
 }: AppShellProps) {
   const { open, setOpen } = useSidebarDefaultOpen();
   return (
@@ -93,7 +96,19 @@ export function AppShell({
             fill && "flex flex-col md:min-h-0 md:flex-1 md:overflow-hidden",
           )}
         >
-          {children}
+          {fullBleed || fullWidth ? (
+            children
+          ) : (
+            <div
+              data-slot="page-content"
+              className={cn(
+                "mx-auto w-full max-w-8xl min-w-0",
+                fill && "flex min-h-0 flex-1 flex-col",
+              )}
+            >
+              {children}
+            </div>
+          )}
         </div>
       </SidebarInset>
     </SidebarProvider>
