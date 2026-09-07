@@ -127,12 +127,18 @@
   color: var(--foreground);
 }
 
+/* Keep the outgoing indicator from reverting to a foreground-coloured line
+   below the divider while the primitive's opacity transition finishes. */
+.style-nova .cn-tabs-list[data-variant="line"] .cn-tabs-trigger::after {
+  background-color: var(--primary);
+  bottom: 0;
+  transition: none;
+}
+
 .style-nova
   .cn-tabs-list[data-variant="line"]
   .cn-tabs-trigger[data-state="active"]::after {
   opacity: 1;
-  background-color: var(--primary);
-  bottom: 0;
 }
 
 /* Clickable controls share a pointer, including Radix menu and select items. */

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   BookOpen,
   GraduationCap,
@@ -104,9 +105,9 @@ export function CatalogueIdentity({
       </span>
       <div className={styles.identityText}>
         {href ? (
-          <a className={styles.title} href={href} title={title}>
+          <Link className={styles.title} href={href} title={title}>
             {title}
-          </a>
+          </Link>
         ) : (
           <span className={styles.title} title={title}>
             {title}

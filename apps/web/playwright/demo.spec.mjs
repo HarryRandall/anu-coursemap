@@ -20,6 +20,56 @@ async function assertNotFoundPage(response) {
   assert.match(html, /noindex/);
 }
 
+for (const colorScheme of ["light", "dark"]) {
+  test(`course tab indicators switch without a stray line in ${colorScheme} mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto("/courses/COMP1100");
+    const overview = page.getByRole("tab", { name: "Overview", exact: true });
+    const offerings = page.getByRole("tab", { name: "Offerings", exact: true });
+    await offerings.click();
+    const indicator = (element) => {
+      const style = getComputedStyle(element, "::after");
+      return {
+        colour: style.backgroundColor,
+        bottom: style.bottom,
+        opacity: style.opacity,
+        transition: style.transitionDuration,
+      };
+    };
+    const inactive = await overview.evaluate(indicator);
+    const active = await offerings.evaluate(indicator);
+    assert.equal(inactive.colour, active.colour);
+    assert.equal(inactive.bottom, "0px");
+    assert.equal(active.bottom, "0px");
+    assert.equal(inactive.opacity, "0");
+    assert.equal(active.opacity, "1");
+    assert.equal(inactive.transition, "0s");
+    assert.equal(active.transition, "0s");
+  });
+}
+
+test("course directory links retain the document while loading the course", async ({
+  page,
+}) => {
+  await page.goto("/courses?q=COMP3900");
+  const link = page.getByRole("link", {
+    name: "Computing Project",
+    exact: true,
+  });
+  await link.waitFor({ state: "visible" });
+  const documentOrigin = await page.evaluate(() => performance.timeOrigin);
+  await link.click();
+  await page
+    .getByRole("heading", { name: "Computing Project", exact: true })
+    .waitFor();
+  assert.equal(
+    await page.evaluate(() => performance.timeOrigin),
+    documentOrigin,
+  );
+});
+
 test("keeps the public entry, catalogue and authentication routes accessible", async ({
   request: api,
 }) => {
