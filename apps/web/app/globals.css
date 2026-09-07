@@ -1,0 +1,768 @@
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+/* ------------------------------------------------------------------ */
+/* ReUI foundations                                                    */
+/* ------------------------------------------------------------------ */
+/* ReUI component styles use the product theme values defined below. */
+@import "@coursemap/ui/theme.css";
+@source "../../../packages/ui";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+/* The vendored theme declares data-active as a presence check, but React
+   renders boolean attributes literally, so ReUI components that write
+   data-active={false} still carry data-active="false" and match it. The
+   sidebar menu buttons do exactly that and every resting item picked up the
+   accent background. Redeclare the variant so an explicit "false" never
+   counts as active; later declarations win, and the vendored source stays
+   untouched. */
+@custom-variant data-active (&:is([data-active]:not([data-active="false"]), [data-state="active"]));
+
+@utility transition-inherit-all {
+  transition-property: inherit;
+  transition-duration: inherit;
+  transition-timing-function: inherit;
+}
+
+@utility scrollbar-hide {
+  &::-webkit-scrollbar {
+    display: none;
+    -webkit-appearance: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ReUI uses this shadcn utility name inside its Nova style preset. */
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Design tokens (Tailwind v4 @theme)                                  */
+/* ------------------------------------------------------------------ */
+@theme {
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 1rem;
+
+  --animate-caret-blink: caret-blink 1s infinite;
+
+  @keyframes caret-blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+    51%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  --font-sans:
+    var(--font-geist-sans), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* Brand — refined violet. The ReUI semantic tokens (--primary and friends)
+     are the preferred way to colour new work; this ramp remains for the
+     legacy components that predate the overhaul. */
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(18, 18, 22, 0.05);
+  --shadow-sm:
+    0 1px 2px rgba(18, 18, 22, 0.04), 0 2px 8px rgba(18, 18, 22, 0.035);
+  --shadow-md:
+    0 8px 24px rgba(18, 18, 22, 0.08), 0 2px 7px rgba(18, 18, 22, 0.04);
+  --shadow-lg:
+    0 24px 60px rgba(12, 12, 16, 0.18), 0 8px 24px rgba(12, 12, 16, 0.08);
+
+  /* Motion */
+  --animate-modal-in: modal-in 160ms ease-out;
+  --animate-drawer-in-right: drawer-in-right 200ms
+    cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-drawer-out-right: drawer-out-right 160ms ease-in;
+  --animate-drawer-in-left: drawer-in-left 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-drawer-out-left: drawer-out-left 160ms ease-in;
+  --animate-toast-in: toast-in 180ms ease-out;
+  --animate-fade-in: fade-in 140ms ease-out;
+  --animate-fade-out: fade-out 100ms ease-in;
+  --animate-modal-out: modal-out 120ms ease-in;
+  --animate-drop-slot-in: drop-slot-in 160ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-spin-slow: spin 900ms linear infinite;
+  --animate-count-pop: count-pop 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-limit-nudge: limit-nudge 420ms ease-out;
+  --animate-limit-flash: limit-flash 900ms ease-out;
+  --animate-limit-ring: limit-ring 900ms ease-out;
+}
+
+/* ------------------------------------------------------------------ */
+/* Product theme — ReUI semantic tokens                                */
+/* ------------------------------------------------------------------ */
+/* ReUI semantic tokens with Coursemap violet branding. */
+:root {
+  --radius: 0.375rem;
+  --skeleton: color-mix(in oklab, var(--foreground) 12%, var(--background));
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: var(--background);
+  /* One tooltip surface for Radix tooltips and chart hover cards. */
+  --tooltip: oklch(1 0 0);
+  --tooltip-foreground: oklch(0.145 0 0);
+  --tooltip-border: oklch(0.922 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: var(--background);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.541 0.281 293.009);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: var(--background);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: var(--background);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: var(--color-red-800);
+  --success: var(--color-emerald-500);
+  --success-foreground: var(--color-emerald-900);
+  --info: var(--color-violet-500);
+  --info-foreground: var(--color-violet-900);
+  --warning: var(--color-yellow-500);
+  --warning-foreground: var(--color-yellow-900);
+  --invert: var(--color-zinc-900);
+  --invert-foreground: var(--color-zinc-50);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.702 0.183 293.541);
+  --surface: oklch(0.98 0 0);
+  --surface-foreground: var(--foreground);
+  --code: var(--surface);
+  --code-foreground: var(--surface-foreground);
+  --code-highlight: oklch(0.96 0 0);
+  --code-number: oklch(0.56 0 0);
+  --selection: var(--color-violet-100);
+  --selection-foreground: var(--foreground);
+  --chart-1: oklch(0.541 0.281 293.009);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.6 0.118 184.704);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.541 0.281 293.009);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.702 0.183 293.541);
+}
+
+.dark-mode {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: var(--background);
+  --tooltip: oklch(0 0 0);
+  --tooltip-foreground: oklch(1 0 0);
+  --tooltip-border: oklch(1 0 0 / 18%);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: var(--background);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.606 0.25 292.717);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: var(--background);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: var(--background);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: color-mix(in oklab, var(--foreground) 7%, var(--background));
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: var(--color-red-400);
+  --success: var(--color-emerald-400);
+  --success-foreground: var(--color-emerald-950);
+  --info: var(--color-violet-400);
+  --info-foreground: var(--color-violet-950);
+  --warning: var(--color-yellow-400);
+  --warning-foreground: var(--color-yellow-950);
+  --invert: var(--color-zinc-50);
+  --invert-foreground: var(--color-zinc-900);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.541 0.281 293.009);
+  --surface: oklch(0.205 0 0);
+  --code-highlight: oklch(0.269 0 0);
+  --code-number: oklch(0.708 0 0);
+  --selection: oklch(0.371 0 0);
+  --chart-1: oklch(0.606 0.25 292.717);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  /* The sidebar and topbar share the page ground in dark so the chrome reads
+     as one surface and the cards carry the elevation. */
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.606 0.25 292.717);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.541 0.281 293.009);
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes drawer-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes drawer-out-right {
+  to {
+    transform: translateX(100%);
+    opacity: 0.4;
+  }
+}
+@keyframes drawer-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes drawer-out-left {
+  to {
+    transform: translateX(-100%);
+    opacity: 0.4;
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes drop-slot-in {
+  from {
+    opacity: 0;
+    transform: scaleY(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* A refused action pushes back instead of announcing itself: the control
+   rocks against the limit and the count reddens, which stays local to the
+   thing the reader just clicked. */
+@keyframes limit-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-5px);
+  }
+  35% {
+    transform: translateX(5px);
+  }
+  55% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+@keyframes limit-ring {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes limit-flash {
+  0%,
+  55% {
+    color: var(--color-rose-600);
+  }
+  100% {
+    color: var(--color-zinc-500);
+  }
+}
+/* A short swell when a running count grows, so the change is felt as well
+   as read. */
+@keyframes count-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes find-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes find-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                                */
+/* ------------------------------------------------------------------ */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  .dark-mode {
+    color-scheme: dark;
+  }
+
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* No `scrollbar-gutter: stable` here. It reserved a bar's width on every
+       page, including ones that never scroll, on top of what the bar itself
+       already took. */
+    overflow-y: auto;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  p {
+    text-wrap: pretty;
+  }
+
+  h1 {
+    text-wrap: balance;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  /* Refined scrollbars — for panes inside the page, never the document one.
+     Both engines drop their overlay scrollbar for any scroller an author
+     styles, and the classic bar that replaces it permanently takes its width
+     out of the layout. Style the root and every page loses that strip down
+     its right edge; leave it alone and macOS floats the bar over the content
+     the way it does on any other site. `html` and `body` are both excluded
+     because the viewport's bar can be steered by either. */
+  *:not(html, body) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-zinc-300) transparent;
+  }
+  *:not(html, body)::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *:not(html, body)::-webkit-scrollbar-thumb {
+    background: var(--color-zinc-300);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+  *:not(html, body)::-webkit-scrollbar-thumb:hover {
+    background: var(--color-zinc-400);
+    background-clip: content-box;
+  }
+  .dark-mode *:not(html, body) {
+    scrollbar-color: var(--color-zinc-600) transparent;
+  }
+  .dark-mode *:not(html, body)::-webkit-scrollbar-thumb {
+    background: var(--color-zinc-600);
+    background-clip: content-box;
+  }
+  .dark-mode *:not(html, body)::-webkit-scrollbar-thumb:hover {
+    background: var(--color-zinc-500);
+    background-clip: content-box;
+  }
+}
+
+.landing-mesh {
+  background-color: #fafafa;
+  background-image:
+    radial-gradient(
+      ellipse 70% 55% at 12% 8%,
+      rgba(167, 139, 250, 0.38),
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 88% 12%,
+      rgba(125, 211, 252, 0.34),
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 72% 88%,
+      rgba(251, 207, 232, 0.42),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 40% 35% at 8% 78%,
+      rgba(167, 243, 208, 0.22),
+      transparent 50%
+    );
+}
+
+.brand-wordmark {
+  font-family: ui-rounded, "SF Pro Rounded", "Avenir Next", var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* Keep the search surface steady while its results change. */
+.find-dialog[data-state="open"] {
+  animation: find-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.find-dialog[data-state="closed"] {
+  animation: find-out 120ms ease-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .find-dialog[data-state] {
+    animation: none;
+  }
+}
+
+.find-command-list {
+  overscroll-behavior: contain;
+  scroll-padding-block: 0.25rem;
+}
+
+/* Keep diagram nodes as the card only. "group" is a reserved React Flow
+   type with its own framed chrome, so rule groups use a different name. */
+.react-flow__node {
+  padding: 0;
+  overflow: visible;
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  pointer-events: all !important;
+  width: max-content !important;
+  height: max-content !important;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.react-flow__node-group,
+.react-flow__node-default {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.react-flow__node.selectable.selected,
+.react-flow__node.selectable:focus,
+.react-flow__node.selectable:focus-visible,
+.react-flow__node.selected {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.room-map .maplibregl-ctrl-group {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  box-shadow: var(--shadow-sm);
+}
+
+.room-map .maplibregl-ctrl-group button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-bottom-color: var(--color-zinc-200);
+}
+
+.room-map .maplibregl-ctrl-group button:focus-visible {
+  outline: 3px solid var(--color-brand-300);
+  outline-offset: 2px;
+}
+
+.room-map .maplibregl-ctrl-group button:disabled {
+  opacity: 0.4;
+}
+
+.room-map .maplibregl-ctrl-attrib {
+  border-radius: 0.375rem 0 0 0;
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.room-map .maplibregl-ctrl-attrib a {
+  color: inherit;
+}
+
+.room-map .maplibregl-canvas:focus-visible {
+  outline: 3px solid var(--color-brand-400);
+  outline-offset: -3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Product surfaces stay flat; state contrast is independent of muted surfaces. */
+@layer base {
+  .style-nova .cn-input:not(:disabled),
+  .style-nova .cn-textarea:not(:disabled),
+  .style-nova .cn-select-trigger:not(:disabled),
+  .style-nova .cn-input-group,
+  .style-nova .cn-button-variant-outline:not(:disabled) {
+    background-color: var(--background);
+  }
+
+  .style-nova .cn-skeleton {
+    background-color: var(--skeleton);
+  }
+
+  @media (hover: hover) {
+    .style-nova
+      .cn-button-variant-ghost[data-size^="icon"]:not(:disabled):not(
+        [aria-disabled="true"]
+      ):hover {
+      background-color: var(--accent);
+    }
+
+    .style-nova .cn-button-variant-outline:not(:disabled):hover,
+    .style-nova .cn-select-trigger:not(:disabled):hover {
+      background-color: var(--accent);
+    }
+  }
+}
+
+/*
+ * Tooltips share one surface everywhere: white with a hairline in light mode,
+ * black with a light hairline and white text in dark mode. Radix tooltips,
+ * ReUI chart tooltips and the custom Recharts hover cards all use it.
+ */
+.coursemap-tooltip,
+.style-nova .cn-tooltip-content,
+.style-nova .cn-chart-tooltip {
+  border: 1px solid var(--tooltip-border);
+  border-radius: 0.5rem;
+  background-color: var(--tooltip);
+  color: var(--tooltip-foreground);
+  box-shadow: 0 8px 24px -12px oklch(0 0 0 / 35%);
+}
+
+/* Radix sets display: block inline on the arrow, so the override must win. */
+.style-nova .cn-tooltip-arrow {
+  display: none !important;
+}
+
+/* Collapsed sidebar: the hidden group label is pulled over the previous
+   group's last item, so it must not take pointer events. */
+.style-nova .group[data-collapsible="icon"] .cn-sidebar-group-label {
+  pointer-events: none;
+}
+
+/* Page sections use one tab rhythm; the indicator stays above the divider. */
+.style-nova .cn-tabs-list[data-variant="line"] {
+  height: 48px;
+  min-width: max-content;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0;
+}
+
+.style-nova .cn-tabs-list[data-variant="line"] .cn-tabs-trigger {
+  height: 48px;
+  flex: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0 20px;
+  font-size: 14px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.style-nova .cn-tabs-trigger[data-state="active"] {
+  color: var(--foreground);
+}
+
+.style-nova
+  .cn-tabs-list[data-variant="line"]
+  .cn-tabs-trigger[data-state="active"]::after {
+  opacity: 1;
+  background-color: var(--primary);
+  bottom: 0;
+}
+
+/* Clickable controls share a pointer, including Radix menu and select items. */
+.style-nova
+  :where(
+    button,
+    a[href],
+    summary,
+    [role="button"],
+    [role="tab"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    [role="combobox"],
+    [role="option"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"]
+  ):not(:disabled):not([aria-disabled="true"]):not([data-disabled]) {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .style-nova .cn-skeleton {
+    animation: none;
+  }
+}
+
+.dark-mode .room-map .maplibregl-ctrl-icon,
+.dark-mode .room-map .maplibregl-ctrl-attrib-button {
+  filter: invert(1) grayscale(1);
+}
+.room-map .maplibregl-ctrl-attrib-button:focus,
+.room-map .maplibregl-ctrl-group button:focus-visible {
+  box-shadow: none;
+}
+.room-map .maplibregl-ctrl-attrib-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

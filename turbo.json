@@ -1,0 +1,32 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [".node-version", "pnpm-lock.yaml"],
+  "globalEnv": [
+    "NEXT_PUBLIC_*",
+    "COURSEMAP_*",
+    "ROOM_MAP_*",
+    "SUPABASE_*",
+    "OPENROUTER_*"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"]
+    },
+    "test:unit": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    }
+  }
+}
