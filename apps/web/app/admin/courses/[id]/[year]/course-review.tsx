@@ -36,6 +36,7 @@ import {
 } from "@/ui/admin/requisites/course-snapshot-rule-editor";
 import {
   CourseReviewTabs,
+  courseReviewTabs,
   type CourseReviewTab,
 } from "@/ui/admin/imports/course-review-tabs";
 import {
@@ -325,7 +326,12 @@ export function CourseReview({
       <AppShell
         showThemeToggle={false}
         admin
-        currentBreadcrumbLabel={projection?.snapshot.title ?? record.code}
+        // The identifier segment carries the course code, the year segment
+        // reads as itself, and the open tab is appended.
+        breadcrumbSegmentLabels={{ [record.publicId]: record.code }}
+        breadcrumbTrailingLabel={
+          courseReviewTabs.find((tab) => tab.value === activeTab)?.label
+        }
         tabs={
           <CourseReviewTabs
             hasImport={record.importTarget !== null}

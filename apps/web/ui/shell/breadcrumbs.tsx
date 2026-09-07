@@ -51,6 +51,13 @@ const COURSE_CODE_SEGMENT = /^[A-Z]{4}\d{4}[A-Z]?$/iu;
 const OPAQUE_ID_SEGMENT =
   /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{24,}|\d+)$/iu;
 
+/** An academic year is a number a reader understands, not an identifier. */
+const YEAR_SEGMENT = /^(?:19|20|21)\d{2}$/u;
+
+function isOpaqueId(segment: string) {
+  return OPAQUE_ID_SEGMENT.test(segment) && !YEAR_SEGMENT.test(segment);
+}
+
 /**
  * Only course codes are shouted. Upper-casing every unmapped segment turned
  * ordinary path parts into headlines -- /admin/courses/imports read as
@@ -76,8 +83,7 @@ function buildCrumbs(
     href += `/${segment}`;
     if (segmentLabels[segment] === null) return;
     const isLast = index === segments.length - 1;
-    const opaque =
-      segmentLabels[segment] === undefined && OPAQUE_ID_SEGMENT.test(segment);
+    const opaque = segmentLabels[segment] === undefined && isOpaqueId(segment);
     if (opaque) {
       // Hold the position so `currentLabel` still lands on this crumb once the
       // page knows the name. Rendering shows a placeholder until then.
@@ -120,18 +126,34 @@ function buildCrumbs(
 export function Breadcrumbs({
   currentLabel,
   segmentLabels,
+  trailingLabel,
 }: {
   currentLabel?: string;
   /** Relabels a route segment, or hides it when the value is null. */
   segmentLabels?: Record<string, string | null>;
+  /**
+   * The section within the page, such as the open tab. It is not a path
+   * segment, so it is appended rather than read from the URL.
+   */
+  trailingLabel?: string;
 }) {
   const pathname = usePathname();
   const { crumbs } = buildCrumbs(pathname, segmentLabels);
-  const visibleCrumbs = currentLabel
+  const named = currentLabel
     ? crumbs.map((crumb, index) =>
         index === crumbs.length - 1 ? { ...crumb, label: currentLabel } : crumb,
       )
     : crumbs;
+  const visibleCrumbs = trailingLabel
+    ? [
+        ...named.map((crumb, index) =>
+          index === named.length - 1 && !crumb.href
+            ? { ...crumb, href: pathname }
+            : crumb,
+        ),
+        { label: trailingLabel },
+      ]
+    : named;
 
   return (
     <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5">

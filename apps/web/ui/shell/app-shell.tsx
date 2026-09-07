@@ -20,6 +20,8 @@ export type AppShellProps = {
   currentBreadcrumbLabel?: string;
   /** Relabels generated path segments, or hides them when their value is null. */
   breadcrumbSegmentLabels?: Record<string, string | null>;
+  /** Appends the open section, such as the active tab, to the breadcrumb. */
+  breadcrumbTrailingLabel?: string;
   admin?: boolean;
   /** Makes the main region a flex column so one child can claim the rest of the viewport. */
   fill?: boolean;
@@ -34,6 +36,7 @@ export function AppShell({
   tabs,
   currentBreadcrumbLabel,
   breadcrumbSegmentLabels,
+  breadcrumbTrailingLabel,
   admin = false,
   fill = false,
   fullBleed = false,
@@ -64,6 +67,7 @@ export function AppShell({
           actions={actions}
           breadcrumbSegmentLabels={breadcrumbSegmentLabels}
           currentBreadcrumbLabel={currentBreadcrumbLabel}
+          breadcrumbTrailingLabel={breadcrumbTrailingLabel}
         />
         {tabs && (
           <div

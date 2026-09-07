@@ -11,11 +11,13 @@ export function Topbar({
   actions,
   currentBreadcrumbLabel,
   breadcrumbSegmentLabels,
+  breadcrumbTrailingLabel,
 }: {
   showThemeToggle?: boolean;
   actions?: ReactNode;
   currentBreadcrumbLabel?: string;
   breadcrumbSegmentLabels?: Record<string, string | null>;
+  breadcrumbTrailingLabel?: string;
 }) {
   return (
     <header className="relative flex min-h-14 flex-wrap items-center justify-between gap-2 overflow-visible border-b border-border bg-background px-4 py-2 sm:flex-nowrap sm:gap-3 sm:px-6 sm:py-0">
@@ -28,6 +30,7 @@ export function Topbar({
         <Breadcrumbs
           currentLabel={currentBreadcrumbLabel}
           segmentLabels={breadcrumbSegmentLabels}
+          trailingLabel={breadcrumbTrailingLabel}
         />
       </div>
 
