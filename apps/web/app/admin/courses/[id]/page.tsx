@@ -20,7 +20,10 @@ export default async function AdminCourseYearlessPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ year?: string | string[] }>;
+  searchParams: Promise<{
+    year?: string | string[];
+    snapshot?: string | string[];
+  }>;
 }) {
   const [{ id }, query, canViewImports] = await Promise.all([
     params,
@@ -31,10 +34,26 @@ export default async function AdminCourseYearlessPage({
   const legacyYear = Number.isSafeInteger(legacyYearValue)
     ? legacyYearValue
     : undefined;
-  const record = await loadAdminCourseYear(id, legacyYear, canViewImports);
+  const snapshotValue = Number(first(query.snapshot));
+  const requestedSnapshotId = Number.isSafeInteger(snapshotValue)
+    ? snapshotValue
+    : undefined;
+  const record = await loadAdminCourseYear(
+    id,
+    legacyYear,
+    canViewImports,
+    requestedSnapshotId,
+  );
   if (!record) notFound();
   redirect(
-    adminCourseDetailPath({ publicId: record.publicId, year: record.year }),
+    adminCourseDetailPath({
+      publicId: record.publicId,
+      year: record.year,
+      snapshotId:
+        record.currentSnapshotId !== record.activeSnapshotId
+          ? record.currentSnapshotId
+          : null,
+    }),
   );
 }
 
