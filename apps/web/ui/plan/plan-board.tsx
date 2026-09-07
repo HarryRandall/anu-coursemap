@@ -19,11 +19,6 @@ import { cn } from "@/lib/cn";
 import { useCoursemap } from "@/app/providers";
 import { AppShell } from "@/ui/shell";
 import { CourseDrawer, CoursePicker } from "@/ui/overlays";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@coursemap/ui/primitives/alert";
 import { Button } from "@coursemap/ui/primitives/button";
 import { FixIssueButton } from "@/ui/plan/fix-issue-button";
 import {
@@ -97,6 +92,7 @@ export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
   const [dragPreview, setDragPreview] = useState<PendingDrop | null>(null);
   const [dragPointer, setDragPointer] = useState<DragPointer | null>(null);
   const dragPreviewRef = useRef<PendingDrop | null>(null);
+  const boardRef = useRef<HTMLElement>(null);
   const floatingCardRef = useRef<HTMLDivElement | null>(null);
   const pointerCleanupRef = useRef<(() => void) | null>(null);
 
@@ -154,7 +150,10 @@ export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
 
   const entriesFor = (termId: string): Entry[] =>
     state.attempts
-      .filter((attempt) => attempt.termId === termId)
+      .filter(
+        (attempt) =>
+          attempt.termId === termId && attempt.status !== "withdrawn",
+      )
       .map((attempt) => {
         const course = planningCourseForAttempt(attempt, planningCatalogue);
         return course
@@ -224,7 +223,11 @@ export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
 
     if (attempt.termId === drop.termId) return;
 
-    if (attempt.status === "completed" || attempt.status === "failed") {
+    if (
+      attempt.status === "completed" ||
+      attempt.status === "failed" ||
+      attempt.status === "withdrawn"
+    ) {
       notify(
         `${attempt.courseCode} is recorded and cannot move to another semester`,
         "warning",
@@ -343,10 +346,15 @@ export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
         floatingCardRef.current.style.transform = `translate3d(${moveEvent.clientX - (event.clientX - rect.left)}px, ${moveEvent.clientY - (event.clientY - rect.top)}px, 0)`;
       }
 
-      if (moveEvent.clientY < 72)
-        window.scrollBy({ top: -12, behavior: "auto" });
-      if (moveEvent.clientY > window.innerHeight - 72) {
-        window.scrollBy({ top: 12, behavior: "auto" });
+      const board = boardRef.current;
+      const contained = board && getComputedStyle(board).overflowY === "auto";
+      const bounds = contained ? board.getBoundingClientRect() : null;
+      const scrollTarget = contained ? board : window;
+      if (moveEvent.clientY < (bounds?.top ?? 0) + 72) {
+        scrollTarget.scrollBy({ top: -12, behavior: "auto" });
+      }
+      if (moveEvent.clientY > (bounds?.bottom ?? window.innerHeight) - 72) {
+        scrollTarget.scrollBy({ top: 12, behavior: "auto" });
       }
 
       const target = document.elementFromPoint(
@@ -596,21 +604,13 @@ export function PlanBoard({ catalogue }: { catalogue: PlanCatalogue }) {
     : undefined;
 
   return (
-    <AppShell fullWidth>
-      {degree && (degree.duration === null || degree.units === null) ? (
-        <Alert className="mb-5">
-          <AlertTriangle aria-hidden="true" />
-          <AlertTitle>Programme planning data is incomplete</AlertTitle>
-          <AlertDescription>
-            {degreeYears.length === 0
-              ? "Programme duration and unit total are not recorded, so Coursemap cannot create a year-by-year timeline. Courses can remain in Later until an administrator publishes those details."
-              : degree.duration === null
-                ? `Programme duration is not recorded. This timeline is sized from its published ${degree.units} unit total.`
-                : "Programme unit total is not recorded. The published duration can still size this timeline, but completion progress is unavailable."}
-          </AlertDescription>
-        </Alert>
-      ) : null}
-      <section aria-label="Course plan" className="year-board">
+    <AppShell fill fullWidth>
+      <section
+        aria-label="Course plan"
+        className="workspace-scroll year-board"
+        tabIndex={0}
+        ref={boardRef}
+      >
         <div data-testid="roadmap-board" className="flex flex-col gap-5">
           {scheduledYears.map((yearGroup) => {
             const yearEntries = yearGroup.terms.flatMap((term) =>

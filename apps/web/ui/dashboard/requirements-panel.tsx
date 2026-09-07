@@ -18,12 +18,11 @@ import type { RequirementBucketProgress } from "@/lib/coursemap/requirement-prog
  */
 export function RequirementsPanel({
   buckets,
-  requirementsImported,
 }: {
   buckets: readonly RequirementBucketProgress[];
-  requirementsImported: boolean;
 }) {
   const visible = buckets.slice(0, 4);
+  if (visible.length === 0) return null;
 
   return (
     <Card className="h-full py-0">
@@ -46,64 +45,56 @@ export function RequirementsPanel({
           </Button>
         </div>
 
-        {visible.length === 0 ? (
-          <p className="my-auto text-sm text-muted-foreground">
-            {requirementsImported
-              ? "The published rules for this programme have no unit groups to summarise yet."
-              : "Requirement groups appear once the official programme rules have been imported and reviewed."}
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-4">
-            {visible.map((bucket) => {
-              const target = bucket.targetUnits;
-              const scale = Math.max(
-                target ?? 0,
-                bucket.completedUnits + bucket.plannedUnits,
-                1,
-              );
-              return (
-                <li key={bucket.key}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link
-                        href="/requirements"
-                        className="group flex flex-col gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        <ul className="flex flex-col gap-4">
+          {visible.map((bucket) => {
+            const target = bucket.targetUnits;
+            const scale = Math.max(
+              target ?? 0,
+              bucket.completedUnits + bucket.plannedUnits,
+              1,
+            );
+            return (
+              <li key={bucket.key}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href="/requirements"
+                      className="group flex flex-col gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="truncate text-xs font-medium">
+                          {bucket.title}
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                          {bucket.completedUnits + bucket.plannedUnits}
+                          {target ? ` / ${target}` : ""} units
+                        </span>
+                      </span>
+                      <span
+                        className="flex h-2.5 overflow-hidden rounded-sm bg-border transition-opacity group-hover:opacity-80"
+                        aria-hidden="true"
                       >
-                        <span className="flex items-baseline justify-between gap-3">
-                          <span className="truncate text-xs font-medium">
-                            {bucket.title}
-                          </span>
-                          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                            {bucket.completedUnits + bucket.plannedUnits}
-                            {target ? ` / ${target}` : ""} units
-                          </span>
-                        </span>
                         <span
-                          className="flex h-2.5 overflow-hidden rounded-sm bg-border transition-opacity group-hover:opacity-80"
-                          aria-hidden="true"
-                        >
-                          <span
-                            className="h-full bg-emerald-500"
-                            style={{
-                              width: `${(bucket.completedUnits / scale) * 100}%`,
-                            }}
-                          />
-                          <span
-                            className="h-full bg-primary/60"
-                            style={{
-                              width: `${(bucket.plannedUnits / scale) * 100}%`,
-                            }}
-                          />
-                        </span>
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent>{`${bucket.title}: ${bucket.completedUnits} completed, ${bucket.plannedUnits} planned${target ? ` · ${target} units` : ""}`}</TooltipContent>
-                  </Tooltip>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                          className="h-full bg-emerald-500"
+                          style={{
+                            width: `${(bucket.completedUnits / scale) * 100}%`,
+                          }}
+                        />
+                        <span
+                          className="h-full bg-primary/60"
+                          style={{
+                            width: `${(bucket.plannedUnits / scale) * 100}%`,
+                          }}
+                        />
+                      </span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>{`${bucket.title}: ${bucket.completedUnits} completed, ${bucket.plannedUnits} planned${target ? ` · ${target} units` : ""}`}</TooltipContent>
+                </Tooltip>
+              </li>
+            );
+          })}
+        </ul>
       </CardContent>
     </Card>
   );

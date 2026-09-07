@@ -87,6 +87,8 @@ function Panel({ children, label }: { children: ReactNode; label: string }) {
   );
 }
 
+import { CoursePlanningDiagnostics } from "@/ui/admin/courses/course-planning-diagnostics";
+
 function RequisitePanel({
   canEdit,
   editing,
@@ -330,6 +332,7 @@ export function CourseReview({
       value={activeTab}
     >
       <AppShell
+        fill={["source", "student", "pipeline"].includes(activeTab)}
         admin
         breadcrumbSegmentLabels={{
           [record.publicId]: record.code,
@@ -346,7 +349,13 @@ export function CourseReview({
           />
         }
       >
-        <div className="mx-auto w-full min-w-0 pb-10">
+        <div
+          className={
+            ["source", "student", "pipeline"].includes(activeTab)
+              ? "workspace-stack"
+              : "mx-auto w-full min-w-0"
+          }
+        >
           <h1 className="sr-only">
             Review {record.code} {projection?.snapshot.title}
           </h1>
@@ -416,7 +425,7 @@ export function CourseReview({
           ) : null}
 
           {record.importTarget ? (
-            <TabsContent className="mt-0" value="pipeline">
+            <TabsContent className="workspace-stack mt-0" value="pipeline">
               <CourseImportPipeline
                 extractions={record.importTarget.extractions}
                 reviewHref={`/admin/courses/imports/${record.importTarget.targetId}`}
@@ -425,7 +434,7 @@ export function CourseReview({
             </TabsContent>
           ) : null}
 
-          {canReviewImports && !viewingHistorical ? (
+          {canReviewImports && !viewingHistorical && activeTab === "course" ? (
             <PendingImportProposals
               pendingImports={record.pendingImports.filter(
                 (proposal) =>
@@ -604,10 +613,10 @@ export function CourseReview({
             </div>
           </TabsContent>
 
-          <TabsContent className="mt-0" value="source">
-            <div className="space-y-4">
+          <TabsContent className="workspace-stack mt-0" value="source">
+            <div className="workspace-stack">
               <Panel label="Relational projection">
-                <details>
+                <details className="max-h-[40dvh] overflow-auto">
                   <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 px-5 py-4 text-sm font-semibold text-foreground marker:content-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:px-6">
                     <FileCode2
                       aria-hidden="true"
@@ -630,6 +639,11 @@ export function CourseReview({
           </TabsContent>
 
           <TabsContent className="mt-0" value="requisites">
+            {previewCourse ? (
+              <div className="mb-4">
+                <CoursePlanningDiagnostics course={previewCourse} />
+              </div>
+            ) : null}
             {projection ? (
               <div className="space-y-4">
                 {(
@@ -703,13 +717,18 @@ export function CourseReview({
             ) : null}
           </TabsContent>
 
-          <TabsContent className="mt-0" value="student">
+          <TabsContent className="workspace-stack mt-0" value="student">
             {previewCourse ? (
-              <Tabs className="gap-0" defaultValue="overview">
+              <Tabs className="workspace-stack gap-0" defaultValue="overview">
                 <div className="border-b border-border">
                   <CourseDetailTabsList />
                 </div>
-                <div className="pt-6">
+                <div
+                  className="workspace-scroll pt-6"
+                  role="region"
+                  aria-label="Course preview"
+                  tabIndex={0}
+                >
                   <CourseDetailView
                     course={previewCourse}
                     requisiteCompletion={{

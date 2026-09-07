@@ -1,5 +1,9 @@
 import type { Accent, Attempt, Course, Term } from "@/lib/coursemap/types";
-import { planningCourseForAttempt, unitsForAttempt } from "@/lib/planner";
+import {
+  isActiveAttempt,
+  planningCourseForAttempt,
+  unitsForAttempt,
+} from "@/lib/planner";
 
 type DashboardCatalogue = {
   courses: readonly Course[];
@@ -43,7 +47,7 @@ function termLabel(term: Term) {
 function activeAttempts(attempts: readonly Attempt[]) {
   const byCourse = new Map<string, Attempt>();
   attempts
-    .filter((attempt) => attempt.status !== "failed")
+    .filter(isActiveAttempt)
     .forEach((attempt) => byCourse.set(attempt.courseCode, attempt));
   return [...byCourse.values()];
 }

@@ -99,6 +99,27 @@ const option = (code) => ({
   structureKind: null,
 });
 
+test("withdrawn courses do not contribute requirement units or hide a planned repeat", () => {
+  const rule = condition(1, {
+    minimumUnits: 6,
+    options: [option("COMP1100")],
+  });
+  const root = group(10, "all_of", [rule]);
+  const withdrawn = attempt("withdrawn", "COMP1100", "withdrawn");
+  const progress = (attempts) =>
+    requirementTreeProgress({ root, attempts, catalogue }).get(
+      requirementNodeKey(rule),
+    );
+  assert.equal(progress([withdrawn]).state, "not_started");
+  assert.equal(progress([withdrawn]).plannedUnits, 0);
+  assert.deepEqual(progress([withdrawn]).matchedCourseCodes, []);
+  assert.equal(
+    progress([attempt("repeat", "COMP1100", "planned"), withdrawn])
+      .plannedUnits,
+    6,
+  );
+});
+
 test("a listed-course rule is satisfied once its minimum units are completed", () => {
   const rule = condition(1, {
     minimumUnits: 12,

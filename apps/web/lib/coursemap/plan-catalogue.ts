@@ -141,7 +141,7 @@ function formatDateRange(startsOn: string, endsOn: string) {
   return `${format.format(new Date(startsOn))} to ${format.format(new Date(endsOn))}`;
 }
 
-function planCourseFromDetails(course: CourseDetails): Course {
+export function planCourseFromDetails(course: CourseDetails): Course {
   return {
     code: course.code,
     name: course.name,

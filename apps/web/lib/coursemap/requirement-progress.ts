@@ -6,6 +6,7 @@ import type {
 } from "@/lib/coursemap/plan-catalogue";
 import type { Attempt } from "@/lib/coursemap/types";
 import {
+  isActiveAttempt,
   planningCourseForAttempt,
   unitsForAttempt,
   type PlanningCatalogue,
@@ -43,7 +44,14 @@ function levelWithin(
 }
 
 function conditionPredicates(
-  condition: PlanRequirementCondition,
+  condition: Pick<
+    PlanRequirementCondition,
+    | "options"
+    | "conditionKind"
+    | "subjectCode"
+    | "minimumLevel"
+    | "maximumLevel"
+  >,
 ): CoursePredicate[] {
   const predicates: CoursePredicate[] = [];
   const codes = new Set(
@@ -73,6 +81,27 @@ function conditionPredicates(
   return predicates;
 }
 
+export function canMeasureRequirementCondition(
+  condition: Pick<
+    PlanRequirementCondition,
+    | "options"
+    | "conditionKind"
+    | "subjectCode"
+    | "minimumLevel"
+    | "maximumLevel"
+    | "minimumUnits"
+    | "maximumUnits"
+    | "minimumCourses"
+  >,
+) {
+  return (
+    conditionPredicates(condition).length > 0 &&
+    (condition.minimumUnits !== null ||
+      condition.maximumUnits !== null ||
+      condition.minimumCourses !== null)
+  );
+}
+
 function collectPredicates(node: PlanRequirementNode): CoursePredicate[] {
   if (node.type === "condition") return conditionPredicates(node);
   return node.children.flatMap(collectPredicates);
@@ -98,13 +127,11 @@ function bucketTargetUnits(node: PlanRequirementNode): number | null {
 /** Keep earned credit even when a later planned entry repeats the course. */
 function activeAttempts(attempts: readonly Attempt[]) {
   const byCourse = new Map<string, Attempt>();
-  attempts
-    .filter((attempt) => attempt.status !== "failed")
-    .forEach((attempt) => {
-      if (byCourse.get(attempt.courseCode)?.status !== "completed") {
-        byCourse.set(attempt.courseCode, attempt);
-      }
-    });
+  attempts.filter(isActiveAttempt).forEach((attempt) => {
+    if (byCourse.get(attempt.courseCode)?.status !== "completed") {
+      byCourse.set(attempt.courseCode, attempt);
+    }
+  });
   return [...byCourse.values()];
 }
 
@@ -283,7 +310,7 @@ function conditionProgress(
       completedUnits,
       plannedUnits,
       completedCourses,
-      measurable: predicates.length > 0,
+      measurable: canMeasureRequirementCondition(condition),
     }),
     targetUnits,
     maximumUnits,

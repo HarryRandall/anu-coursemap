@@ -315,7 +315,11 @@ export function AppProvider({
   const removeAttempt = useCallback(
     async (attemptId: string) => {
       const attempt = state.attempts.find((item) => item.id === attemptId);
-      if (attempt?.status === "completed" || attempt?.status === "failed") {
+      if (
+        attempt?.status === "completed" ||
+        attempt?.status === "failed" ||
+        attempt?.status === "withdrawn"
+      ) {
         return {
           ok: false,
           message: "Recorded attempts stay in your academic history",
