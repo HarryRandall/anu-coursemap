@@ -1,6 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, BookOpen, Lightbulb } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Video } from "lucide-react";
 import { ArticleToc } from "@/ui/help/article-toc";
 import { helpCategoryTints, helpTopicIcons } from "@/ui/help/topic-icons";
 import { AppShell } from "@/ui/shell";
@@ -31,7 +32,7 @@ function RelatedGuideCard({ article }: { article: HelpArticle }) {
     <li>
       <Link
         href={`/help/${article.slug}`}
-        className="group flex h-full items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-xs transition hover:border-input hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
+        className="group flex h-full items-start gap-4 rounded-xl border border-border bg-card p-5 shadow-xs transition hover:border-input hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none"
       >
         <span
           className={cn(
@@ -42,10 +43,10 @@ function RelatedGuideCard({ article }: { article: HelpArticle }) {
           <Icon size={16} aria-hidden="true" />
         </span>
         <span className="min-w-0">
-          <span className="block text-[14px] leading-snug font-semibold text-foreground group-hover:text-primary">
+          <span className="block text-base leading-snug font-semibold text-foreground group-hover:text-primary">
             {article.title}
           </span>
-          <span className="mt-1 block text-[13px] leading-relaxed text-muted-foreground">
+          <span className="mt-1.5 block text-sm leading-relaxed text-muted-foreground">
             {article.description}
           </span>
         </span>
@@ -115,7 +116,7 @@ export default async function HelpArticlePage({
 
   return (
     <AppShell currentBreadcrumbLabel={article.title}>
-      <div className="mx-auto grid max-w-5xl items-start gap-10 py-2 sm:py-4 lg:grid-cols-[minmax(0,1fr)_13rem] lg:gap-14">
+      <div className="mx-auto grid max-w-6xl items-start gap-10 py-2 sm:py-4 lg:grid-cols-[minmax(0,1fr)_18rem] lg:gap-10">
         <article className="max-w-3xl min-w-0">
           <h1 className="sr-only">{article.title}</h1>
 
@@ -140,18 +141,6 @@ export default async function HelpArticlePage({
               </Link>
               <p className="mt-2 text-lg leading-snug font-medium tracking-tight text-foreground sm:text-xl">
                 {article.description}
-              </p>
-              <p className="mt-2 text-[13px] text-muted-foreground">
-                {article.sections.length} sections
-                <span aria-hidden="true" className="mx-1.5">
-                  ·
-                </span>
-                <Link
-                  href={article.productHref}
-                  className="font-medium text-primary hover:underline"
-                >
-                  {article.productLabel}
-                </Link>
               </p>
             </div>
           </header>
@@ -200,20 +189,44 @@ export default async function HelpArticlePage({
                         ))}
                       </ol>
                     ) : null}
-                    {section.tip ? (
-                      <aside className="mt-4 flex gap-3 rounded-lg border border-primary/15 bg-primary/5 px-4 py-3">
-                        <Lightbulb
-                          size={16}
-                          aria-hidden="true"
-                          className="mt-0.5 shrink-0 text-primary"
+                    {section.image ? (
+                      <figure className="mt-6">
+                        <Image
+                          src={section.image.src}
+                          loading="eager"
+                          alt={section.image.alt}
+                          width={480}
+                          height={285}
+                          className="h-auto w-full rounded-lg border border-border"
                         />
-                        <p className="text-[14px] leading-6 text-foreground/90">
-                          <span className="font-semibold text-foreground">
-                            Tip{" "}
-                          </span>
-                          {section.tip}
-                        </p>
-                      </aside>
+                        <figcaption className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {section.image.caption}
+                        </figcaption>
+                      </figure>
+                    ) : null}
+                    {section.videoPlaceholder ? (
+                      <figure className="mt-6">
+                        <div className="flex aspect-video flex-col items-center justify-center gap-3 rounded-lg bg-muted px-6 text-center">
+                          <Video
+                            className="size-8 text-muted-foreground"
+                            aria-hidden="true"
+                          />
+                          <p className="text-sm font-medium">
+                            {section.videoPlaceholder}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Video placeholder · Recording to be added
+                          </p>
+                        </div>
+                      </figure>
+                    ) : null}
+                    {section.tip ? (
+                      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                          Tip:{" "}
+                        </span>
+                        {section.tip}
+                      </p>
                     ) : null}
                   </div>
                 </section>

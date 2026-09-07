@@ -5,6 +5,8 @@ export type HelpArticleSection = {
   steps?: string[];
   /** One-line aside rendered as a callout after the body and steps. */
   tip?: string;
+  image?: { src: string; alt: string; caption: string };
+  videoPlaceholder?: string;
 };
 
 export type HelpCategoryId =
@@ -123,14 +125,49 @@ export const helpArticles: HelpArticle[] = [
         body: "The plan is a working view of your degree. Add courses to a study period, move them as your ideas change, and record completed or enrolled work so the rest of Coursemap can keep up.",
       },
       {
-        heading: "Add and arrange courses",
-        body: "Search from the plan or the course catalogue, then place a course in a study period. Drag a course to another term when the sequence changes.",
+        heading: "Choose a study period",
+        body: "The board groups your plan by year and study period. Each period shows its courses and unit total. Start with the period you want to plan, then use Add course in an empty slot or the plus button beside its heading.",
+        image: {
+          src: "/help/plan-study-period.png",
+          alt: "A plan board showing semester unit totals, Add course slots and a course placed in Second Semester.",
+          caption:
+            "Example plan board. Use an empty slot or a period's plus button to start finding a course. Dates, courses and units depend on your plan.",
+        },
+      },
+      {
+        heading: "Find and add a course",
+        body: "The Find a course dialog keeps your chosen study period visible while you search. It searches published courses for the selected year.",
         steps: [
-          "Use the search bar on the plan to find a course by code or title.",
-          "Pick the study period it belongs in; the preview shows units, prerequisites and offering sessions before you commit.",
-          "Drag a course between periods to reorder, or open its menu to record it as planned, enrolled, completed or a failed attempt.",
+          "Select Add course in the period you want to use.",
+          "Enter at least two characters of a course code or name.",
+          "Select a result and review its course details before adding it to your plan.",
         ],
-        tip: "Prerequisite warnings are a planning signal, not an enrolment decision. Confirm with the ANU handbook before you rely on one.",
+        tip: "If a course is missing, check the catalogue year and try its code. A missing search result does not establish whether ANU offers the course.",
+        videoPlaceholder: "Walkthrough: find and add a course",
+      },
+      {
+        heading: "Move courses between periods",
+        body: "Drag a planned or enrolled course using its reorder handle to change where it sits in your plan. Completed and failed attempts cannot move between periods. Check the destination period's unit total and review any prerequisite warnings after the move.",
+        steps: [
+          "Find the course on the board and use its reorder handle.",
+          "Move it to the destination study period.",
+          "Review the new sequence before adding more courses.",
+        ],
+        tip: "A course tied to one catalogue year cannot move into another year. Remove it and add the destination year's course instead.",
+      },
+      {
+        heading: "Record completed and enrolled work",
+        body: "Keep an attempt's status aligned with your actual study. Planned work represents an intention; enrolled work represents a current enrolment. Completed and failed attempts record past study. Open a course on the board to review or change its attempt details.",
+        tip: "Updating Coursemap does not enrol you in or withdraw you from a course at ANU.",
+      },
+      {
+        heading: "Review prerequisites and progress",
+        body: "Revisit Requirements after changing your plan to see how your courses contribute to programme rules. Check prerequisite warnings against the course details, especially when moving a course earlier in your degree.",
+        steps: [
+          "Review warnings on the courses you added or moved.",
+          "Open Requirements to check completed, planned and missing work.",
+          "Confirm uncertain rules with the ANU handbook or an academic adviser before relying on the sequence.",
+        ],
       },
       {
         heading: "Where are class times and rooms?",

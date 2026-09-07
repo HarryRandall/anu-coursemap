@@ -107,6 +107,7 @@ Run `pnpm verify` before opening a pull request.
 [Contributing](CONTRIBUTING.md) ·
 [Architecture](docs/architecture.md) ·
 [Catalogue workspaces](docs/catalogue-workspace-refresh.md) ·
+[Review design](docs/catalogue-review-design.md) ·
 [Workspace layout](docs/workspace-migration.md) ·
 [Database setup](supabase/README.md) ·
 [Security policy](SECURITY.md) ·
