@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { AccessDeniedError } from "@/ui/errors/access-denied-error";
 import { BuildingPicker } from "@/ui/admin/rooms/building-picker";
 import { AppShell } from "@/ui/shell/app-shell";
 import { canManageRooms } from "@/lib/auth/viewer";
@@ -7,7 +7,7 @@ import { loadIndoorMapPickerData } from "@/lib/rooms/indoor-map-admin";
 export const dynamic = "force-dynamic";
 
 export default async function AdminRoomsPage() {
-  if (!(await canManageRooms())) notFound();
+  if (!(await canManageRooms())) return <AccessDeniedError />;
 
   const { mapData, buildings, summaries } = await loadIndoorMapPickerData();
 

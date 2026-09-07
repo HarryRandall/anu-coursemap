@@ -1,4 +1,6 @@
 "use client";
+
+import { addCampusSurround } from "@/lib/rooms/campus-map-surround";
 import { animateLiftCabins } from "@/ui/admin/rooms/animate-lift-cabins";
 import { DEFAULT_INDOOR_PALETTE } from "@/lib/rooms/indoor-palette";
 import { useTheme } from "next-themes";
@@ -8,9 +10,10 @@ import {
 } from "@/lib/rooms/campus-map-appearance";
 import { resolveCampusMapImage } from "@/lib/rooms/campus-map-images";
 import { Button } from "@coursemap/ui/primitives/button";
+import { CampusMapLoading } from "@/ui/rooms/campus-map-loading";
 
 import { useEffect, useRef, useState } from "react";
-import { Box, LoaderCircle, MapPinOff } from "lucide-react";
+import { Box, MapPinOff } from "lucide-react";
 
 import {
   addIndoorLayers,
@@ -376,6 +379,7 @@ export function CampusMap({
   onCameraSettled,
 }: CampusMapProps) {
   const { resolvedTheme } = useTheme();
+  const themeReady = resolvedTheme !== undefined;
   const darkRef = useRef(resolvedTheme === "dark");
   useEffect(() => {
     darkRef.current = resolvedTheme === "dark";
@@ -395,6 +399,7 @@ export function CampusMap({
   const onSelectRef = useRef(onSelect);
   const onClearSelectionRef = useRef(onClearSelection);
   const [mapReady, setMapReady] = useState(false);
+  const [mapVisible, setMapVisible] = useState(false);
   const [mapFailed, setMapFailed] = useState(false);
   const [isPerspective, setIsPerspective] = useState(true);
 
@@ -420,13 +425,15 @@ export function CampusMap({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !campus) return;
+    if (!container || !campus || !themeReady) return;
 
     let cancelled = false;
     let styleLoaded = false;
+    let firstFrameReady = false;
     let loadTimeout: ReturnType<typeof setTimeout> | null = null;
     setMapFailed(false);
     setMapReady(false);
+    setMapVisible(false);
 
     void import("maplibre-gl")
       .then((maplibregl) => {
@@ -494,14 +501,12 @@ export function CampusMap({
         map.on("pitch", updatePerspective);
 
         loadTimeout = setTimeout(() => {
-          if (!cancelled && !styleLoaded) setMapFailed(true);
+          if (!cancelled && !firstFrameReady) setMapFailed(true);
         }, 12_000);
 
         map.once("style.load", () => {
           if (cancelled) return;
           styleLoaded = true;
-          if (loadTimeout) clearTimeout(loadTimeout);
-
           const styleLayers = map.getStyle().layers;
           const firstTransportLayer = styleLayers.find((layer) =>
             /^(tunnel_|road_|bridge_|building)/.test(layer.id),
@@ -767,45 +772,22 @@ export function CampusMap({
           const frameEast = Math.max(...campusRing.map(([lng]) => lng));
           const frameSouth = Math.min(...campusRing.map(([, lat]) => lat));
           const frameNorth = Math.max(...campusRing.map(([, lat]) => lat));
-          // A world polygon with a campus-sized hole makes the map a finite tile.
-          map.addSource("coursemap-campus-frame", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              properties: {},
-              geometry: {
-                type: "Polygon",
-                coordinates: [
-                  [
-                    [-180, -85],
-                    [180, -85],
-                    [180, 85],
-                    [-180, 85],
-                    [-180, -85],
-                  ],
-                  [
-                    [frameWest, frameSouth],
-                    [frameWest, frameNorth],
-                    [frameEast, frameNorth],
-                    [frameEast, frameSouth],
-                    [frameWest, frameSouth],
-                  ],
-                ],
-              },
-            },
-          });
-          map.addLayer({
-            id: "coursemap-campus-frame",
-            type: "fill",
-            source: "coursemap-campus-frame",
-            paint: {
-              "fill-color": darkRef.current ? "#09090b" : "#fafafa",
-              "fill-opacity": 1,
-            },
-          });
+          addCampusSurround(map, [
+            frameWest,
+            frameSouth,
+            frameEast,
+            frameNorth,
+          ]);
           applyCampusMapAppearance(map, darkRef.current);
           setMapReady(true);
-          setMapFailed(false);
+          // Style readiness precedes tile loading and the first themed frame.
+          map.once("idle", () => {
+            if (cancelled) return;
+            firstFrameReady = true;
+            if (loadTimeout) clearTimeout(loadTimeout);
+            setMapVisible(true);
+            setMapFailed(false);
+          });
         });
 
         map.on("error", (event) => {
@@ -829,7 +811,7 @@ export function CampusMap({
       mapRef.current = null;
       mapLibreRef.current = null;
     };
-  }, [campus, layers]);
+  }, [campus, layers, themeReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -896,7 +878,7 @@ export function CampusMap({
   useEffect(() => {
     const map = mapRef.current;
     if (
-      !mapReady ||
+      !mapVisible ||
       !map ||
       !indoorScene ||
       !visibleLayerSlugs.has("buildings")
@@ -907,7 +889,7 @@ export function CampusMap({
       indoorScene.connectors,
       DEFAULT_INDOOR_PALETTE,
     );
-  }, [mapReady, indoorScene, visibleLayerSlugs]);
+  }, [mapVisible, indoorScene, visibleLayerSlugs]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1102,25 +1084,18 @@ export function CampusMap({
   }
 
   return (
-    <div className="room-map relative h-full min-h-80 overflow-hidden bg-muted lg:min-h-0">
+    <div
+      aria-busy={Boolean(campus && !mapVisible && !mapFailed)}
+      className="room-map relative h-full min-h-80 overflow-hidden bg-muted lg:min-h-0"
+    >
       <div
         ref={containerRef}
         aria-label="Interactive vector map of ANU and central Canberra"
         className="h-full w-full"
+        style={{ visibility: mapVisible ? "visible" : "hidden" }}
       />
 
-      {campus && !mapReady && !mapFailed ? (
-        <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted/60 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 shadow-sm">
-            <LoaderCircle
-              aria-hidden="true"
-              className="animate-spin"
-              size={16}
-            />
-            Loading ANU vector map...
-          </span>
-        </div>
-      ) : null}
+      {campus && !mapVisible && !mapFailed ? <CampusMapLoading /> : null}
 
       {!campus ? (
         <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-muted text-sm text-muted-foreground">
@@ -1140,7 +1115,7 @@ export function CampusMap({
         </div>
       ) : null}
 
-      {campus && mapReady ? (
+      {campus && mapVisible ? (
         <div className="absolute bottom-8 left-3 z-10 flex items-center gap-2">
           <Button
             size="sm"

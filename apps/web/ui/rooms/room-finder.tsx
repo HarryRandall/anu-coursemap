@@ -743,7 +743,7 @@ export function RoomFinder({
   }));
 
   return (
-    <div className="relative h-[calc(100dvh-4rem)] min-h-[28rem] overflow-hidden bg-muted">
+    <div className="relative h-[calc(100dvh-3.5rem)] min-h-[28rem] overflow-hidden bg-muted md:h-auto md:min-h-0 md:flex-1">
       <h1 className="sr-only">Room finder</h1>
       <section
         aria-label="Campus map"

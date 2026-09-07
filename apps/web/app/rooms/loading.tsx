@@ -1,15 +1,16 @@
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
+import { CampusMapLoading } from "@/ui/rooms/campus-map-loading";
 import { AppShell } from "@/ui/shell";
 
 /** Mirrors the room finder: a full-height map surface with the floating controls card. */
 export default function RoomsLoading() {
   return (
-    <AppShell fullBleed>
+    <AppShell loading fill fullBleed>
       <div
         aria-busy="true"
-        className="relative h-[calc(100dvh-4rem)] min-h-[28rem] overflow-hidden bg-muted"
+        className="relative h-[calc(100dvh-3.5rem)] min-h-[28rem] overflow-hidden bg-muted md:h-auto md:min-h-0 md:flex-1"
       >
-        <span className="sr-only">Loading room finder</span>
+        <CampusMapLoading />
         <div className="absolute top-3 right-16 left-3 z-10 sm:right-auto sm:w-[22rem]">
           <div className="space-y-2 rounded-md border border-border bg-card p-2.5 shadow-sm">
             <Skeleton className="h-10 w-full rounded-md" />

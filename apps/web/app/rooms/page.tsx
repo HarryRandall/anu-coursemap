@@ -30,7 +30,7 @@ export default async function RoomsPage({ searchParams }: RoomsPageProps) {
   ]);
 
   return (
-    <AppShell fullBleed>
+    <AppShell fill fullBleed>
       <RoomFinder
         data={mapResult.data}
         loadError={mapResult.error}

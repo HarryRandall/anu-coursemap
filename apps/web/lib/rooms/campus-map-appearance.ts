@@ -1,3 +1,4 @@
+import { setCampusSurroundTheme } from "@/lib/rooms/campus-map-surround";
 import type { Map as MapLibreMap, LayerSpecification } from "maplibre-gl";
 
 const originals = new WeakMap<MapLibreMap, LayerSpecification[]>();
@@ -99,12 +100,18 @@ export function applyCampusMapAppearance(map: MapLibreMap, dark: boolean) {
       dark ? "#171c22" : "#ffffff",
     );
   }
-  if (map.getLayer("coursemap-campus-frame"))
-    map.setPaintProperty(
-      "coursemap-campus-frame",
-      "fill-color",
-      dark ? "#09090b" : "#fafafa",
-    );
+  if (map.getLayer("coursemap-surround-grid")) {
+    setCampusSurroundTheme(map, dark);
+    map.setSky({
+      "sky-color": dark ? "#13171c" : "#f7f3ef",
+      "horizon-color": dark ? "#202023" : "#e4e4e7",
+      "sky-horizon-blend": 0.35,
+      "horizon-fog-blend": 0.5,
+      "fog-color": dark ? "#13171c" : "#f7f3ef",
+      "fog-ground-blend": 0.6,
+      "atmosphere-blend": 0,
+    });
+  }
   if (map.getLayer("coursemap-woodland-trees"))
     map.setPaintProperty("coursemap-woodland-trees", "fill-extrusion-color", [
       "match",

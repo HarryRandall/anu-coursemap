@@ -3,10 +3,9 @@ import { AppShell } from "@/ui/shell";
 
 const stagePillWidths = ["w-24", "w-16", "w-16", "w-16", "w-24", "w-20"];
 
-/** Mirrors the roadmap: stage pills, then a vertical timeline of stages with their item cards. */
 export default function RoadmapLoading() {
   return (
-    <AppShell>
+    <AppShell loading>
       <div aria-busy="true" className="py-2 sm:py-4">
         <span className="sr-only">Loading roadmap</span>
         <div className="mx-auto">
@@ -30,10 +29,8 @@ export default function RoadmapLoading() {
                         key={item}
                         className="flex flex-col rounded-xl border border-border bg-card p-4 shadow-xs"
                       >
-                        <Skeleton className="h-5 w-16 rounded-full" />
-                        <Skeleton className="mt-3 h-3.5 w-3/4" />
-                        <Skeleton className="mt-2 h-3 w-full" />
-                        <Skeleton className="mt-1.5 h-3 w-2/3" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="mt-4 h-12 w-full" />
                       </div>
                     ))}
                   </div>
