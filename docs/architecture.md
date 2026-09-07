@@ -15,7 +15,7 @@ Next.js owns routing, server rendering and mutations. Supabase Auth owns identit
 - `apps/web` owns Next.js routes, application UI, domain modules, assets, scripts and tests.
 - `packages/ui` owns retained ReUI primitives, extended components, supporting hooks and compatibility styles. It exports TypeScript source through concrete subpaths and cannot import application code.
 - Root tooling owns pnpm, Turbo, Prettier, CI and shared commands. Supabase remains at the root.
-- Next.js transpiles `@coursemap/ui`; Tailwind explicitly scans its sources. Product branding remains in `apps/web/app/globals.css`.
+- Next.js transpiles `@coursemap/ui`; Tailwind explicitly scans its sources. Product branding remains in `apps/web/app/globals.css`, with keyframes in `animations.css` and third-party corrections in `vendor.css`.
 - Turbo caches build, lint, type checking and unit tests. Build inputs include application environment files and relevant environment variables. Development, database operations and Playwright run uncached.
 
 ## Application structure

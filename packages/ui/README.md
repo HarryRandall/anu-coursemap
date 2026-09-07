@@ -29,5 +29,5 @@ browser after changing retained source or dependencies.
 ## Coursemap adjustments
 
 - `ui/tooltip.tsx`: `TooltipContent` defaults to `sideOffset = 6`. Coursemap
-  hides the tooltip arrow and restyles the surface in `apps/web/app/globals.css`, so the
+  hides the tooltip arrow and restyles the surface in `apps/web/app/vendor.css`, so the
   offset provides the gap the arrow used to.

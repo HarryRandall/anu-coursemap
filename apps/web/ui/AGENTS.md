@@ -28,6 +28,7 @@
 ## ReUI styling and source
 
 - Use the Nova styles and product tokens in `apps/web/app/globals.css`. Keep Coursemap branding and semantic success, warning and error states.
+- Stylesheets split by concern: `globals.css` holds tokens, base and product surfaces, `animations.css` holds keyframes, and `vendor.css` holds corrections to React Flow, MapLibre and the Nova preset. Put a new rule in the file that matches what it styles.
 - Prefer ReUI defaults. Keep layout, accessibility and product behaviour in Coursemap compositions rather than copying primitive markup.
 - The retained upstream source and licence live in `packages/ui`. See `../../../packages/ui/README.md` for the pinned revision and update procedure.
 - Keep vendor source formatting intact. Local integration, hooks and compositions remain covered by lint and formatting checks.
