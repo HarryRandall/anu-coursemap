@@ -5241,6 +5241,16 @@ export type Database = {
         Args: { p_decision: string; p_note?: string; p_target_id: string }
         Returns: undefined
       }
+      save_current_user_academic_result: {
+        Args: {
+          p_grade?: string
+          p_id: string
+          p_mark?: number
+          p_operation?: string
+          p_units?: number
+        }
+        Returns: string
+      }
       save_current_user_primary_plan: {
         Args: {
           p_academic_year: number

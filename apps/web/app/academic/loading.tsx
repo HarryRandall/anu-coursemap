@@ -4,12 +4,12 @@ import { AppShell } from "@/ui/shell";
 
 export default function AcademicLoading() {
   return (
-    <AppShell>
-      <div aria-busy="true" className="mx-auto space-y-5">
+    <AppShell loading fill>
+      <div aria-busy="true" className="workspace-scroll mx-auto space-y-5">
         <span className="sr-only">Loading academic overview</span>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }, (_, index) => (
-            <Card key={index} className="flex items-center gap-3 p-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_2fr]">
+          {Array.from({ length: 3 }, (_, index) => (
+            <Card key={index} className="h-44 p-4">
               <Skeleton className="size-9 shrink-0 rounded-lg" />
               <div className="min-w-0 flex-1 space-y-1.5">
                 <Skeleton className="h-5 w-12" />
