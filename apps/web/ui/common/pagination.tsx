@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -44,29 +45,54 @@ const stepClasses =
   "grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
 export function Pagination({
-  pathname,
-  searchParams,
+  pathname = "",
+  searchParams = {},
+  onPageChange,
   page,
   pageSize,
   total,
   itemName,
   alwaysShowControls = false,
 }: {
-  pathname: string;
-  searchParams: Record<string, string | undefined>;
   page: number;
   pageSize: number;
   total: number;
   itemName: string;
   /** Keep previous/next visible even on a single page, disabled when blocked. */
   alwaysShowControls?: boolean;
-}) {
+} & (
+  | {
+      pathname: string;
+      searchParams: Record<string, string | undefined>;
+      onPageChange?: never;
+    }
+  | {
+      pathname?: never;
+      searchParams?: never;
+      onPageChange: (page: number) => void;
+    }
+)) {
   const pageCount = Math.max(1, Math.ceil(total / pageSize) || 1);
   const safePage = Math.min(Math.max(1, page), pageCount);
   const start = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const end = Math.min(safePage * pageSize, total);
   const href = (target: number) =>
     pageHref({ pathname, searchParams, page: target });
+  const control = (target: number, className: string, children: ReactNode) =>
+    onPageChange ? (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onPageChange(target)}
+        key={target}
+      >
+        {children}
+      </button>
+    ) : (
+      <Link className={className} href={href(target)} key={target}>
+        {children}
+      </Link>
+    );
   const showControls = alwaysShowControls || pageCount > 1;
 
   return (
@@ -96,10 +122,14 @@ export function Pagination({
       {showControls ? (
         <div className="ml-auto flex items-center gap-0.5">
           {safePage > 1 ? (
-            <Link className={stepClasses} href={href(safePage - 1)}>
-              <ChevronLeft aria-hidden="true" size={16} />
-              <span className="sr-only">Previous page</span>
-            </Link>
+            control(
+              safePage - 1,
+              stepClasses,
+              <>
+                <ChevronLeft aria-hidden="true" size={16} />
+                <span className="sr-only">Previous page</span>
+              </>,
+            )
           ) : (
             <span
               aria-disabled="true"
@@ -132,14 +162,14 @@ export function Pagination({
                   {entry}
                 </span>
               ) : (
-                <Link
-                  className="grid size-8 place-items-center rounded-md text-xs font-medium text-muted-foreground tabular-nums transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  href={href(entry)}
-                  key={entry}
-                >
-                  <span className="sr-only">Page </span>
-                  {entry}
-                </Link>
+                control(
+                  entry,
+                  "grid size-8 cursor-pointer place-items-center rounded-md text-xs font-medium text-muted-foreground tabular-nums transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                  <>
+                    <span className="sr-only">Page </span>
+                    {entry}
+                  </>,
+                )
               ),
             )
           ) : (
@@ -152,10 +182,14 @@ export function Pagination({
           )}
 
           {safePage < pageCount && total > 0 ? (
-            <Link className={stepClasses} href={href(safePage + 1)}>
-              <ChevronRight aria-hidden="true" size={16} />
-              <span className="sr-only">Next page</span>
-            </Link>
+            control(
+              safePage + 1,
+              stepClasses,
+              <>
+                <ChevronRight aria-hidden="true" size={16} />
+                <span className="sr-only">Next page</span>
+              </>,
+            )
           ) : (
             <span
               aria-disabled="true"

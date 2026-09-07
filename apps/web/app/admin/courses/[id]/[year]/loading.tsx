@@ -7,13 +7,13 @@ import { AppShell } from "@/ui/shell";
 import { TabsLoading } from "@/ui/common/tabs-loading";
 
 export default function AdminCourseDetailLoading() {
-  const { id, year } = useParams<{ id: string; year: string }>();
+  const { year } = useParams<{ year: string }>();
 
   return (
     <AppShell
-      showThemeToggle={false}
+      loading
       admin
-      breadcrumbSegmentLabels={{ [id]: null, [year]: null }}
+      breadcrumbSegmentLabels={{ [year]: null }}
       breadcrumbTrailingLabel="Course data"
       tabs={<TabsLoading widths={["w-20", "w-16", "w-24", "w-14", "w-16"]} />}
     >

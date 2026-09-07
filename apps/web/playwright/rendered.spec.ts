@@ -110,9 +110,11 @@ test("indoor search, room links and the editor use a published database map", as
     page.getByRole("region", { name: "Search results" }),
   ).toContainText("G01");
   await page.goto(`/rooms?room=${indoorMap.roomId}`);
-  await expect(page.getByLabel("Building floors")).toBeVisible();
   await expect(
-    page.locator('[aria-labelledby="indoor-directions-heading"]'),
+    page.getByRole("group", { name: "Building floors", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Indoor directions", exact: true }),
   ).toContainText("Take the lift");
   await page.goto(`/admin/rooms/${indoorMap.buildingSlug}`);
   await expect(page.getByLabel("Floor plan canvas")).toBeVisible();
@@ -210,4 +212,91 @@ test("course directory links retain the document while loading the course", asyn
     await page.evaluate(() => performance.timeOrigin),
     documentOrigin,
   );
+});
+
+test("pointer selection clears picker rings while keyboard focus remains visible", async ({
+  page,
+}) => {
+  await page.goto("/key-dates");
+  const trigger = page.getByRole("button", { name: "Calendar year" });
+  const appearance = () =>
+    trigger.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        outline: style.outlineStyle,
+        ring: style.getPropertyValue("--tw-ring-shadow"),
+        border: style.borderColor,
+      };
+    });
+  const resting = await appearance();
+  await trigger.click();
+  await page.getByRole("dialog").getByRole("button", { pressed: true }).click();
+  await expect(trigger).toBeFocused();
+  await expect.poll(appearance).toEqual(resting);
+  await page.keyboard.press("Space");
+  await page.keyboard.press("Escape");
+  await expect(trigger).toBeFocused();
+  await expect.poll(appearance).not.toEqual(resting);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await trigger.click();
+  await page.getByRole("dialog").getByRole("button", { pressed: true }).click();
+  await expect.poll(appearance).toEqual(resting);
+});
+
+test("text fields keep pointer focus rings without passing them to buttons or links", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  const email = page.getByRole("textbox", { name: "Email address" });
+  const ring = () =>
+    email.evaluate((element) => getComputedStyle(element).boxShadow);
+  const resting = await ring();
+  await email.click();
+  await expect(email).toBeFocused();
+  await expect.poll(ring).not.toEqual(resting);
+
+  for (const control of [
+    page.getByRole("button", { name: "Continue with Google" }),
+    page.getByRole("link", { name: "Create an account" }),
+  ]) {
+    await email.click();
+    // Menu and dialog libraries restore focus programmatically from text entry.
+    await control.focus();
+    await expect(control).toBeFocused();
+    await expect
+      .poll(() =>
+        control.evaluate((element) => ({
+          outline: getComputedStyle(element).outlineStyle,
+          ring: getComputedStyle(element).getPropertyValue("--tw-ring-shadow"),
+        })),
+      )
+      .toEqual({ outline: "none", ring: "0 0 #0000" });
+    await page.keyboard.press("Tab");
+    await control.focus();
+    await expect
+      .poll(() =>
+        control.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return (
+            style.outlineStyle !== "none" ||
+            style.getPropertyValue("--tw-ring-shadow") !== "0 0 #0000"
+          );
+        }),
+      )
+      .toBe(true);
+    // Preserve the browser's native :focus-visible state to reproduce a stale
+    // ring during pointer-driven focus return, independently of its heuristics.
+    await control.dispatchEvent("pointerdown", { pointerType: "mouse" });
+    expect(
+      await control.evaluate((element) => element.matches(":focus-visible")),
+    ).toBe(true);
+    await expect
+      .poll(() =>
+        control.evaluate((element) => ({
+          outline: getComputedStyle(element).outlineStyle,
+          ring: getComputedStyle(element).getPropertyValue("--tw-ring-shadow"),
+        })),
+      )
+      .toEqual({ outline: "none", ring: "0 0 #0000" });
+  }
 });

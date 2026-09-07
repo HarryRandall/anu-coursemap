@@ -3,6 +3,46 @@
    own, so each rule notes what it is correcting. Imported by globals.css
    after the stylesheets they override. */
 
+/* Sonner keeps neutral surfaces with status borders and an inset close button. */
+.toaster [data-sonner-toast][data-styled="true"] {
+  padding-right: 48px;
+}
+
+.toaster [data-sonner-toast][data-type="success"] {
+  --toast-status-colour: var(--success);
+}
+
+.toaster [data-sonner-toast][data-type="info"] {
+  --toast-status-colour: var(--info);
+}
+
+.toaster [data-sonner-toast][data-type="warning"] {
+  --toast-status-colour: var(--warning);
+}
+
+.toaster [data-sonner-toast][data-type="error"] {
+  --toast-status-colour: var(--destructive);
+}
+
+.toaster [data-sonner-toast][data-styled="true"] {
+  border-color: var(--toast-status-colour, var(--border));
+}
+
+.toaster [data-sonner-toast] [data-icon] {
+  color: var(--toast-status-colour, inherit);
+}
+
+.toaster [data-sonner-toast][data-styled="true"] [data-close-button] {
+  top: 12px;
+  right: 12px;
+  left: auto;
+  width: 24px;
+  height: 24px;
+  transform: none;
+  border: none;
+  border-radius: var(--radius-sm);
+}
+
 /* Keep diagram nodes as the card only. "group" is a reserved React Flow
    type with its own framed chrome, so rule groups use a different name. */
 .react-flow__node {
@@ -29,7 +69,9 @@
 
 .react-flow__node.selectable.selected,
 .react-flow__node.selectable:focus,
-.react-flow__node.selectable:focus-visible,
+.react-flow__node.selectable:focus-visible:where(
+    html:not([data-input-modality="pointer"]) *
+  ),
 .react-flow__node.selected {
   box-shadow: none !important;
   outline: none !important;
@@ -53,7 +95,9 @@
   border-bottom-color: var(--color-zinc-200);
 }
 
-.room-map .maplibregl-ctrl-group button:focus-visible {
+.room-map
+  .maplibregl-ctrl-group
+  button:focus-visible:where(html:not([data-input-modality="pointer"]) *) {
   outline: 3px solid var(--color-brand-300);
   outline-offset: 2px;
 }
@@ -72,7 +116,10 @@
   color: inherit;
 }
 
-.room-map .maplibregl-canvas:focus-visible {
+.room-map
+  .maplibregl-canvas:focus-visible:where(
+    html:not([data-input-modality="pointer"]) *
+  ) {
   outline: 3px solid var(--color-brand-400);
   outline-offset: -3px;
 }
@@ -101,6 +148,20 @@
    group's last item, so it must not take pointer events. */
 .style-nova .group[data-collapsible="icon"] .cn-sidebar-group-label {
   pointer-events: none;
+}
+
+/* The light theme's muted token matches the canvas, so compact tabs need a track. */
+:root:not(.dark-mode) .style-nova .cn-tabs-list[data-variant="default"] {
+  background-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+:root:not(.dark-mode)
+  .style-nova
+  .cn-tabs-list[data-variant="default"]
+  .cn-tabs-trigger[data-state="active"] {
+  border-color: var(--border);
+  background-color: var(--background);
 }
 
 /* Page sections use one tab rhythm; the indicator stays above the divider. */
@@ -172,10 +233,15 @@
   filter: invert(1) grayscale(1);
 }
 .room-map .maplibregl-ctrl-attrib-button:focus,
-.room-map .maplibregl-ctrl-group button:focus-visible {
+.room-map
+  .maplibregl-ctrl-group
+  button:focus-visible:where(html:not([data-input-modality="pointer"]) *) {
   box-shadow: none;
 }
-.room-map .maplibregl-ctrl-attrib-button:focus-visible {
+.room-map
+  .maplibregl-ctrl-attrib-button:focus-visible:where(
+    html:not([data-input-modality="pointer"]) *
+  ) {
   outline: 2px solid currentColor;
   outline-offset: 2px;
 }

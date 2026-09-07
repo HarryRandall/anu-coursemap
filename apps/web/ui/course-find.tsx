@@ -58,31 +58,31 @@ const defaultOptions: DefaultOption[] = [
   {
     href: "/courses",
     icon: BookOpen,
-    label: "Browse Courses",
+    label: "Explore courses",
     scope: "Catalogue",
   },
   {
     href: "/plan",
     icon: Map,
-    label: "Course Plan",
+    label: "Planner",
     scope: "Planning",
   },
   {
     href: "/requirements",
     icon: ListChecks,
-    label: "Degree Requirements",
+    label: "Requirements",
     scope: "Planning",
   },
   {
     href: "/academic",
     icon: GraduationCap,
-    label: "Academic Record",
+    label: "Academic history",
     scope: "Your study",
   },
   {
     href: "/key-dates",
     icon: CalendarDays,
-    label: "Key Dates",
+    label: "Key dates",
     scope: "Calendar",
   },
 ];

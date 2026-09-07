@@ -1,6 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useRef } from "react";
+import { AssistantIcon } from "@/ui/assistant/assistant-icon";
+import { Button } from "@coursemap/ui/primitives/button";
+import { useAssistant } from "@/ui/assistant/assistant-provider";
+import { AssistantPanel } from "@/ui/assistant/assistant-panel";
+import assistantStyles from "@/ui/assistant/assistant-panel.module.css";
 import {
   SidebarInset,
   SidebarProvider,
@@ -8,11 +14,11 @@ import {
 import { cn } from "@/lib/cn";
 import { AppSidebar } from "@/ui/shell/app-sidebar";
 import { useSidebarDefaultOpen } from "@/ui/shell/sidebar-preference";
+import { NotificationsMenu } from "@/ui/shell/notifications-menu";
 import { Topbar } from "@/ui/shell/topbar";
 
 export type AppShellProps = {
   children: ReactNode;
-  showThemeToggle?: boolean;
   actions?: ReactNode;
   /** Section tab links rendered in a full-width bar below the breadcrumbs. */
   tabs?: ReactNode;
@@ -22,6 +28,7 @@ export type AppShellProps = {
   breadcrumbSegmentLabels?: Record<string, string | null>;
   /** Appends the open section, such as the active tab, to the breadcrumb. */
   breadcrumbTrailingLabel?: string;
+  loading?: boolean;
   admin?: boolean;
   /** Makes the main region a flex column so one child can claim the rest of the viewport. */
   fill?: boolean;
@@ -33,18 +40,35 @@ export type AppShellProps = {
 
 export function AppShell({
   children,
-  showThemeToggle = true,
   actions,
   tabs,
   currentBreadcrumbLabel,
   breadcrumbSegmentLabels,
   breadcrumbTrailingLabel,
+  loading = false,
   admin = false,
   fill = false,
   fullBleed = false,
   fullWidth = false,
 }: AppShellProps) {
   const { open, setOpen } = useSidebarDefaultOpen();
+  const { panelOpen: assistantOpen, setPanelOpen: setAssistantOpen } =
+    useAssistant();
+  const assistantTrigger = useRef<HTMLButtonElement>(null);
+  const restoreAssistantFocus = useRef(false);
+  function closeAssistant() {
+    restoreAssistantFocus.current = true;
+    setAssistantOpen(false);
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce), (width < 48rem)")
+        .matches
+    ) {
+      requestAnimationFrame(() => {
+        assistantTrigger.current?.focus();
+        restoreAssistantFocus.current = false;
+      });
+    }
+  }
   return (
     <SidebarProvider
       open={open}
@@ -66,8 +90,46 @@ export function AppShell({
         )}
       >
         <Topbar
-          showThemeToggle={showThemeToggle}
-          actions={actions}
+          loading={loading}
+          actions={
+            <>
+              {actions}
+              <NotificationsMenu />
+              <div
+                className={assistantStyles.triggerSlot}
+                data-open={assistantOpen}
+              >
+                <Button
+                  ref={assistantTrigger}
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    assistantStyles.trigger,
+                    "group h-10 w-28 rounded-lg hover:bg-accent dark:hover:bg-accent",
+                  )}
+                  aria-expanded={assistantOpen}
+                  onTransitionEnd={(event) => {
+                    if (
+                      event.target === event.currentTarget &&
+                      event.propertyName === "visibility" &&
+                      !assistantOpen &&
+                      restoreAssistantFocus.current
+                    ) {
+                      assistantTrigger.current?.focus();
+                      restoreAssistantFocus.current = false;
+                    }
+                  }}
+                  onClick={() => {
+                    restoreAssistantFocus.current = false;
+                    setAssistantOpen(!assistantOpen);
+                  }}
+                >
+                  <AssistantIcon className="size-4" />
+                  Compass
+                </Button>
+              </div>
+            </>
+          }
           breadcrumbSegmentLabels={breadcrumbSegmentLabels}
           currentBreadcrumbLabel={currentBreadcrumbLabel}
           breadcrumbTrailingLabel={breadcrumbTrailingLabel}
@@ -75,7 +137,7 @@ export function AppShell({
         {tabs && (
           <div
             className={cn(
-              "border-b border-border bg-background px-4 sm:px-6",
+              "sticky top-14 z-30 shrink-0 border-b border-border bg-background px-4 sm:px-6",
               fill && "md:shrink-0",
             )}
           >
@@ -89,11 +151,11 @@ export function AppShell({
         )}
         <div
           className={cn(
-            "min-h-[calc(100dvh-4rem)] w-full max-w-none min-w-0 bg-muted/40 dark:bg-transparent",
-            !fullBleed && "px-4 py-6 sm:px-6 sm:py-7",
+            "w-full max-w-none min-w-0 flex-1 bg-muted/40 dark:bg-transparent",
+            !fullBleed && "page-padded px-4 py-6 sm:px-6 sm:py-7",
             // Lets a page hand its remaining height to one scrolling child,
             // such as a directory table that should reach the viewport floor.
-            fill && "flex flex-col md:min-h-0 md:flex-1 md:overflow-hidden",
+            fill && "flex min-h-0 flex-1 flex-col md:overflow-hidden",
           )}
         >
           {fullBleed || fullWidth ? (
@@ -111,6 +173,7 @@ export function AppShell({
           )}
         </div>
       </SidebarInset>
+      <AssistantPanel open={assistantOpen} onClose={closeAssistant} />
     </SidebarProvider>
   );
 }

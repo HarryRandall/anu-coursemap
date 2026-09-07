@@ -1,5 +1,7 @@
 "use client";
+import { useInputModality } from "@/lib/browser/use-input-modality";
 import { Toaster } from "@coursemap/ui/primitives/sonner";
+import type { CSSProperties } from "react";
 import { toast } from "sonner";
 import {
   createContext,
@@ -107,6 +109,7 @@ export function AppProvider({
   canAccessAdmin: boolean;
   initialState?: AppState;
 }) {
+  useInputModality();
   const router = useRouter();
   const initialState = useMemo(
     () => suppliedInitialState ?? createInitialState(viewer),
@@ -386,7 +389,12 @@ export function AppProvider({
   return (
     <AppContext.Provider value={value}>
       {children}
-      <Toaster />
+      <Toaster
+        position="top-center"
+        style={{ "--width": "560px" } as CSSProperties}
+        closeButton
+        visibleToasts={3}
+      />
     </AppContext.Provider>
   );
 }

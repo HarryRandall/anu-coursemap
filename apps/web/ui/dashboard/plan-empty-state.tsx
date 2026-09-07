@@ -206,8 +206,7 @@ export function PlanEmptyState() {
         </EmptyMedia>
         <EmptyTitle>Set up your plan first</EmptyTitle>
         <EmptyDescription>
-          Choose a published degree before Coursemap can calculate your
-          progress.
+          Choose a degree before Coursemap can calculate your progress.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>

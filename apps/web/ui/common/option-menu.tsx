@@ -63,7 +63,7 @@ export function OptionMenu<T extends string>({
         </div>
       ) : null}
 
-      <ScrollArea className="-mx-1.5 [&_[data-slot=scroll-area-scrollbar]]:w-1 [&_[data-slot=scroll-area-viewport]]:max-h-64 [&_[data-slot=scroll-area-viewport]]:overscroll-contain [&_[data-slot=scroll-area-viewport]]:px-1.5">
+      <ScrollArea className="-mx-1.5 [&_[data-slot=scroll-area-scrollbar]]:w-1 [&_[data-slot=scroll-area-viewport]]:max-h-64 [&_[data-slot=scroll-area-viewport]]:overscroll-contain [&_[data-slot=scroll-area-viewport]]:px-1.5 [&_[data-slot=scroll-area-viewport]>div]:block!">
         <div className={cn("flex flex-col", searchPlaceholder && "pt-1.5")}>
           {visible.length === 0 ? (
             <p className="px-2.5 py-3 text-sm text-muted-foreground">
@@ -85,7 +85,7 @@ export function OptionMenu<T extends string>({
                   onClick={() => onSelect(item.value)}
                   type="button"
                 >
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
                     {item.icon ? (
                       <span className="shrink-0 text-muted-foreground/80">
                         {item.icon}

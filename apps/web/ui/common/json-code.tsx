@@ -43,10 +43,12 @@ export function JsonCode({
   label,
   value,
   uncapped = false,
+  borderTop = true,
 }: {
   label: string;
   value: unknown;
   uncapped?: boolean;
+  borderTop?: boolean;
 }) {
   // JSON.stringify returns undefined, not a string, for undefined and for
   // functions and symbols. An artefact that was never recorded reaches this
@@ -56,7 +58,7 @@ export function JsonCode({
     return (
       <p
         aria-label={label}
-        className="border-t border-border bg-muted/40 px-5 py-4 text-[13px] text-muted-foreground italic sm:px-6 sm:py-5"
+        className={`${borderTop ? "border-t border-border" : ""} bg-muted/40 px-5 py-4 text-[13px] text-muted-foreground italic sm:px-6 sm:py-5`}
       >
         Nothing was recorded for this step.
       </p>
@@ -66,7 +68,7 @@ export function JsonCode({
   return (
     <pre
       aria-label={label}
-      className={`${uncapped ? "" : "max-h-[min(65vh,40rem)]"} overflow-auto border-t border-border bg-muted/40 px-5 py-4 font-mono text-[13px] leading-[1.7] break-words whitespace-pre-wrap text-muted-foreground outline-none selection:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-6 sm:py-5`}
+      className={`${uncapped ? "" : "max-h-[min(65vh,40rem)]"} overflow-auto ${borderTop ? "border-t border-border" : ""} bg-muted/40 px-5 py-4 font-mono text-[13px] leading-[1.7] break-words whitespace-pre-wrap text-muted-foreground outline-none selection:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset sm:px-6 sm:py-5`}
       tabIndex={0}
     >
       <code className="font-[inherit] leading-[inherit] text-[inherit]">

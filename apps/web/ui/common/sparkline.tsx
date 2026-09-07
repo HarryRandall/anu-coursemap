@@ -50,6 +50,7 @@ function axes(peak: number) {
       <Tooltip
         content={
           <ChartHoverCard
+            showLabel={false}
             showNames={false}
             format={(value) => Number(value).toLocaleString("en-AU")}
           />

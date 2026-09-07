@@ -5,15 +5,15 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@coursemap/ui/primitives/empty";
 import { Input } from "@coursemap/ui/primitives/input";
 import Link from "next/link";
 import { useId, useState } from "react";
-import { ArrowRight, BookOpen, Search, SearchX, X } from "lucide-react";
+import { ArrowRight, BookOpen, Search, X } from "lucide-react";
 import { helpCategoryTints, helpTopicIcons } from "@/ui/help/topic-icons";
 import { cn } from "@/lib/cn";
+import { CatalogueIllustration } from "@/ui/common/catalogue-illustration";
 import {
   groupHelpArticles,
   searchHelpArticles,
@@ -111,15 +111,7 @@ export function HelpGuides() {
             </Button>
           ) : null}
         </div>
-        <p
-          id={statusId}
-          role="status"
-          aria-live="polite"
-          className={cn(
-            "mt-2 text-center text-[13px] text-muted-foreground",
-            !trimmed && "sr-only",
-          )}
-        >
+        <p id={statusId} role="status" aria-live="polite" className="sr-only">
           {trimmed
             ? total === 0
               ? `No guides match "${trimmed}".`
@@ -130,16 +122,17 @@ export function HelpGuides() {
 
       {trimmed && total === 0 ? (
         <Empty className="rounded-xl border border-dashed border-border bg-card py-12">
+          <CatalogueIllustration variant={5} />
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <SearchX aria-hidden="true" />
-            </EmptyMedia>
             <EmptyTitle>Nothing matches that search</EmptyTitle>
             <EmptyDescription>
               Try a shorter word, or use the contact options below and we will
               point you to the right place.
             </EmptyDescription>
           </EmptyHeader>
+          <Button variant="outline" type="button" onClick={() => setQuery("")}>
+            Clear search
+          </Button>
         </Empty>
       ) : (
         <div className="space-y-10">

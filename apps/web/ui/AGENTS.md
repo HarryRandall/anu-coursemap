@@ -12,6 +12,13 @@
 - Verify desktop, mobile, keyboard, empty, loading and error states for material UI changes.
 - `AppShell` owns the shared `max-w-8xl` page width, defined in the Tailwind theme. Page and loading wrappers must not add their own width cap. Keep narrower limits for prose and controls; use `fullWidth` or `fullBleed` for interactive canvases.
 
+## Scrolling layouts
+
+- Use `AppShell fill` for desktop workspaces. Pass the remaining height through `workspace-stack` containers and assign `workspace-scroll` to the content that owns scrolling. Avoid subtracting estimated header heights from the viewport.
+- Card-based scroll areas reserve space for border rings and a scrollbar in the page gutter. Use `data-scroll-kind="table"` when the scrollbar belongs inside a table instead.
+- Keep page scrolling for reading and editing views. Use section navigation and sticky actions for long forms. Narrow screens return to natural page flow.
+- Loading, empty and populated states must use the same scroll owner. Check the last item is reachable and its borders are visible, not just that the document fits the viewport.
+
 ## Marketing and auth surfaces
 
 - Landing, auth and onboarding pages use a white canvas with pastel accent tints from the default Tailwind palette (sky, amber, emerald, rose and the brand violet scale) and large radii.

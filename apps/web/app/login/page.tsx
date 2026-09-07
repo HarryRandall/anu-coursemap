@@ -1,6 +1,6 @@
 import { Alert, AlertDescription } from "@coursemap/ui/components/alert";
 import Link from "next/link";
-import { CircleCheck, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { AuthShell } from "@/app/auth/auth-shell";
 import { SignInForm } from "@/app/auth/sign-in/sign-in-form";
 import { SocialSignIn } from "@/app/auth/social-sign-in";
@@ -23,8 +23,6 @@ export default async function LoginPage({
   const next = safeInternalRedirect(first(params.next));
 
   const configured = Boolean(getSupabaseConfig());
-  const signedOut = first(params.signedOut) === "true";
-  const configurationMissing = first(params.reason) === "configuration";
   const signUpHref = `/signup?next=${encodeURIComponent(next)}`;
 
   return (
@@ -36,14 +34,7 @@ export default async function LoginPage({
         Sign in to your plan and pick up where you left off.
       </p>
 
-      {signedOut && (
-        <Alert className="mt-5" variant={"default"}>
-          <CircleCheck aria-hidden="true" />
-          <AlertDescription>You have been signed out.</AlertDescription>
-        </Alert>
-      )}
-
-      {(!configured || configurationMissing) && (
+      {!configured && (
         <Alert className="mt-5" role="alert" variant={"warning"}>
           <TriangleAlert aria-hidden="true" />
           <AlertDescription>

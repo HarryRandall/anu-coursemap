@@ -48,7 +48,6 @@ export function AcademicStructureImportTargetReview({
         admin
         fullBleed
         currentBreadcrumbLabel={detail.target.code}
-        showThemeToggle={false}
         tabs={<SectionTabs label="Import sections" tabs={importSectionTabs} />}
       >
         <CourseImportAutoRefresh active={active} />

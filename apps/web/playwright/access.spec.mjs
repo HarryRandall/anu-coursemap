@@ -50,6 +50,10 @@ test("redirects protected routes to the canonical login page", async ({
   request: api,
 }) => {
   for (const path of [
+    "/compass",
+    "/compass/new",
+    "/compass/usage",
+    "/compass/11111111-1111-4111-8111-111111111111",
     "/plan?year=2026",
     "/profile",
     "/dashboard",

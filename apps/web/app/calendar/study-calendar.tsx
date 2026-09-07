@@ -145,8 +145,8 @@ export function StudyCalendar({
   ];
 
   return (
-    <AppShell>
-      <div className="mx-auto flex flex-col gap-4">
+    <AppShell fill>
+      <div className="workspace-stack">
         <h1 className="sr-only">Study calendar</h1>
 
         <div
@@ -190,7 +190,7 @@ export function StudyCalendar({
           </Alert>
         ) : null}
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs md:flex-1">
           <EventCalendar
             events={events}
             defaultView="month"
@@ -198,7 +198,7 @@ export function StudyCalendar({
             interactions={{ drag: false, resize: false, selectSlot: false }}
             eventTooltip
             agendaDayCount={60}
-            className="h-[clamp(32rem,calc(100dvh-14rem),46rem)]"
+            className="h-[32rem] md:h-full md:min-h-0 md:flex-1"
             classNames={{ nav: "border-b border-border px-3 py-2" }}
           >
             <EventCalendarNav />

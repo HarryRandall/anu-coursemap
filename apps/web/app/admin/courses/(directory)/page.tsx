@@ -9,7 +9,7 @@ import {
   type CourseDirectorySort,
   type CourseDirectoryStatus,
 } from "@/lib/coursemap/admin-course-imports";
-import { AdminCourseDirectory } from "./course-list";
+import { AdminCourseDirectory } from "../course-list";
 
 export const dynamic = "force-dynamic";
 

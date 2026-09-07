@@ -213,9 +213,9 @@ export function PrereqGraph({
                       className="absolute inset-x-0 mx-auto flex w-full max-w-36 items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 px-2 text-center text-[10px] font-medium text-muted-foreground/80"
                     >
                       {column.label === "Unlocks"
-                        ? "No imported unlocks yet"
+                        ? "No linked courses"
                         : hasPrerequisiteWording
-                          ? "No mapped course references yet"
+                          ? "See prerequisite requirements"
                           : "No prerequisite listed"}
                     </div>
                   )}
@@ -241,7 +241,9 @@ export function PrereqGraph({
                         {isCompleted && <Check size={12} strokeWidth={2.5} />}
                         <span>{item}</span>
                         {!isAvailable && (
-                          <span className="sr-only">Not imported yet</span>
+                          <span className="sr-only">
+                            Course details unavailable
+                          </span>
                         )}
                       </>
                     );
@@ -263,7 +265,7 @@ export function PrereqGraph({
                       return (
                         <Hint
                           key={item}
-                          label={`${item} has not been imported yet`}
+                          label={`${item}: course details unavailable`}
                         >
                           <span style={style} className={nodeClassName}>
                             <LockKeyhole size={11} aria-hidden="true" />
@@ -290,11 +292,6 @@ export function PrereqGraph({
           </div>
         </div>
       </div>
-
-      <p className="mt-4 text-center text-[11px] text-muted-foreground">
-        Imported courses are links. Locked courses are known references that
-        have not been imported yet.
-      </p>
     </div>
   );
 }

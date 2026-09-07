@@ -216,7 +216,7 @@ export function buildMetricViews(
       note:
         unitTarget && unitTarget > 0
           ? `${progress.mapped} of ${unitTarget} units have a place`
-          : "No unit target recorded for this programme",
+          : `${progress.completed} completed · ${progress.planned} planned`,
       aside: unitTarget ? (
         <DonutChart
           segments={[
@@ -287,12 +287,14 @@ export function buildMetricViews(
     remaining: {
       id: "remaining",
       title: METRIC_OPTIONS.remaining.title,
-      value: String(progress.remaining),
+      value: unitTarget === null ? "Not available" : String(progress.remaining),
       unit: "units free",
       note:
-        progress.remaining === 0
-          ? "Every unit of the degree has a course"
-          : `Equivalent to ${freeCourses} standard 6-unit ${courseWord(freeCourses)}`,
+        unitTarget === null
+          ? `${progress.mapped} units mapped`
+          : progress.remaining === 0
+            ? "Every unit of the degree has a course"
+            : `Equivalent to ${freeCourses} standard 6-unit ${courseWord(freeCourses)}`,
       body: unitTarget ? (
         <TickMeter
           percent={(progress.remaining / unitTarget) * 100}
@@ -328,7 +330,7 @@ export function buildMetricViews(
       unit: unitTarget ? "complete" : "units completed",
       note: unitTarget
         ? `${progress.completed} of ${unitTarget} units completed`
-        : "No unit target recorded for this programme",
+        : `${progress.completed} completed · ${progress.planned} planned`,
       aside: unitTarget ? (
         <Ring
           percent={progress.percent}
@@ -384,7 +386,7 @@ export function buildMetricViews(
       unit: buckets.length === 1 ? "degree group" : "degree groups",
       note:
         buckets.length === 0
-          ? "Programme rules have not been imported yet"
+          ? "No requirement progress to show"
           : "Completed units in each applicable group",
       body: buckets.length > 0 && (
         <div className="flex flex-col gap-1">

@@ -330,7 +330,6 @@ export function CourseReview({
       value={activeTab}
     >
       <AppShell
-        showThemeToggle={false}
         admin
         breadcrumbSegmentLabels={{
           [record.publicId]: record.code,

@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
   }
 
   const signInUrl = new URL("/login", siteOrigin);
-  signInUrl.searchParams.set("signedOut", "true");
   const response = NextResponse.redirect(signInUrl, 303);
   response.headers.set(
     "Cache-Control",

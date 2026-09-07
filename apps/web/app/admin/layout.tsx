@@ -1,4 +1,5 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
+import { AccessDeniedError } from "@/ui/errors/access-denied-error";
 import { getAuthContext } from "@/lib/auth/viewer";
 
 export default async function AdminLayout({
@@ -12,7 +13,7 @@ export default async function AdminLayout({
   }
 
   if (!canAccessAdmin) {
-    notFound();
+    return <AccessDeniedError />;
   }
 
   return children;
