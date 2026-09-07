@@ -156,6 +156,7 @@ export type AdminStructureReviewRecord = {
   kind: AcademicStructureKind;
   name: string;
   projection: AcademicStructureManualSnapshotProjection;
+  sourceOriginalProjection: AcademicStructureManualSnapshotProjection | null;
   publicationStatus: string;
   reviewState: string;
   source: {
@@ -401,6 +402,41 @@ export async function loadAdminStructureReview(
     .order("created_at", { ascending: false });
   if (pendingError) throw pendingError;
 
+  const { data: snapshotAncestry, error: ancestryError } = await supabase
+    .from("academic_structure_snapshots")
+    .select("id,parent_snapshot_id,origin")
+    .eq("structure_year_id", structureYear.id);
+  if (ancestryError) throw ancestryError;
+  const parentsById = new Map(
+    (snapshotAncestry ?? []).map((item) => [item.id, item.parent_snapshot_id]),
+  );
+  const currentDraftAncestry = new Set<number>();
+  let ancestorId = structureYear.draft_snapshot_id;
+  while (ancestorId !== null && !currentDraftAncestry.has(ancestorId)) {
+    currentDraftAncestry.add(ancestorId);
+    ancestorId = parentsById.get(ancestorId) ?? null;
+  }
+
+  // Preserve the original imported wording when a manual draft changes fields.
+  const snapshotsById = new Map(
+    (snapshotAncestry ?? []).map((item) => [item.id, item]),
+  );
+  const displayedAncestry = new Set<number>();
+  let originalImportId: number | null = null;
+  let displayedAncestorId: number | null = snapshotId;
+  while (
+    displayedAncestorId !== null &&
+    !displayedAncestry.has(displayedAncestorId)
+  ) {
+    displayedAncestry.add(displayedAncestorId);
+    const ancestor = snapshotsById.get(displayedAncestorId);
+    if (ancestor?.origin === "import") {
+      originalImportId = ancestor.id;
+      break;
+    }
+    displayedAncestorId = ancestor?.parent_snapshot_id ?? null;
+  }
+
   const conditions = conditionsResult.data ?? [];
   const options = optionsResult.data ?? [];
   const needsReview =
@@ -557,6 +593,19 @@ export async function loadAdminStructureReview(
     })),
   });
 
+  const sourceOriginalProjection =
+    originalImportId === null
+      ? null
+      : originalImportId === snapshotId
+        ? projection
+        : ((
+            await loadAdminStructureReview(
+              structure.public_id,
+              academicYear.year,
+              originalImportId,
+            )
+          )?.projection ?? null);
+
   return {
     code: structure.code,
     draftSnapshotId: structureYear.draft_snapshot_id,
@@ -569,6 +618,10 @@ export async function loadAdminStructureReview(
               targetId: target.id,
               runId: target.run_id,
               candidateSnapshotId: target.candidate_snapshot_id,
+              isCurrentDraftSource:
+                target.baseline_draft_snapshot_id === null &&
+                target.baseline_published_snapshot_id === null &&
+                currentDraftAncestry.has(target.candidate_snapshot_id),
               baselineDraftSnapshotId: target.baseline_draft_snapshot_id,
               baselinePublishedSnapshotId:
                 target.baseline_published_snapshot_id,
@@ -629,6 +682,7 @@ export async function loadAdminStructureReview(
     kind: structure.kind as AcademicStructureKind,
     name: snapshot.name,
     projection,
+    sourceOriginalProjection,
     publicationStatus:
       structureYear.published_snapshot_id === snapshot.id
         ? "published"

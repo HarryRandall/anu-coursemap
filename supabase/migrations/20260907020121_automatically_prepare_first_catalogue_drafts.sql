@@ -219,6 +219,8 @@ declare
   actor uuid := auth.uid();
   selected_run_id uuid;
   target_row public.academic_structure_import_targets%rowtype;
+  selected_year public.academic_structure_years%rowtype;
+  reviewing_current_draft boolean := false;
 begin
   if actor is null or not private.has_permission('imports.manage') then
     raise exception using errcode = '42501', message = 'Import permission is required.';
@@ -258,18 +260,37 @@ begin
     raise exception using errcode = '55000', message = 'This target has no candidate snapshot.';
   end if;
 
-  if p_decision = 'accepted' and target_row.candidate_snapshot_id is not null then
+  select * into selected_year from public.academic_structure_years
+  where id = target_row.structure_year_id for update;
+
+  if target_row.baseline_draft_snapshot_id is null
+    and target_row.baseline_published_snapshot_id is null
+    and selected_year.published_snapshot_id is null
+    and selected_year.draft_snapshot_id is not null
+  then
+    with recursive ancestry as (
+      select id, parent_snapshot_id from public.academic_structure_snapshots
+      where id = selected_year.draft_snapshot_id
+      union
+      select parents.id, parents.parent_snapshot_id
+      from public.academic_structure_snapshots as parents
+      join ancestry on ancestry.parent_snapshot_id = parents.id
+    )
+    select exists(select 1 from ancestry where id = target_row.candidate_snapshot_id)
+    into reviewing_current_draft;
+  end if;
+
+  if p_decision = 'rejected' and reviewing_current_draft then
+    raise exception using errcode = '55000', message = 'Edit and review the current draft instead of rejecting its source import.';
+  end if;
+
+  if p_decision = 'accepted' and target_row.candidate_snapshot_id is not null
+    and not reviewing_current_draft
+  then
     update public.academic_structure_years
     set draft_snapshot_id = target_row.candidate_snapshot_id, updated_at = now()
     where id = target_row.structure_year_id
-      and (
-        draft_snapshot_id is not distinct from target_row.baseline_draft_snapshot_id
-        or (
-          target_row.baseline_draft_snapshot_id is null
-          and target_row.baseline_published_snapshot_id is null
-          and draft_snapshot_id = target_row.candidate_snapshot_id
-        )
-      )
+      and draft_snapshot_id is not distinct from target_row.baseline_draft_snapshot_id
       and published_snapshot_id is not distinct from target_row.baseline_published_snapshot_id;
     if not found then
       raise exception using errcode = '40001', message = 'The draft changed after this import completed.';
@@ -590,10 +611,18 @@ begin
   if selected_snapshot.critical_uncertainty
      or selected_snapshot.confirmation_status = 'required'
      or exists (
-       select 1
-       from public.academic_structure_review_items
-       where snapshot_id = p_snapshot_id and status = 'open'
-         and (severity = 'error' or item_kind = 'manual_review')
+       with recursive ancestry as (
+         select id, parent_snapshot_id from public.academic_structure_snapshots
+         where id = p_snapshot_id
+         union
+         select parents.id, parents.parent_snapshot_id
+         from public.academic_structure_snapshots as parents
+         join ancestry on ancestry.parent_snapshot_id = parents.id
+       )
+       select 1 from public.academic_structure_review_items as reviews
+       join ancestry on ancestry.id = reviews.snapshot_id
+       where reviews.status = 'open'
+         and (reviews.severity = 'error' or reviews.item_kind = 'manual_review')
      ) then
     raise exception using errcode = '55000', message = 'Resolve blocking review items before publication.';
   end if;
@@ -602,4 +631,3 @@ begin
   where id = p_structure_year_id;
 end;
 $$;
-

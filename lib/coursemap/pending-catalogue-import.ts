@@ -7,4 +7,5 @@ export type PendingCatalogueImport = {
   baselinePublishedSnapshotId: number | null;
   reviewStatus: string;
   createdAt: string;
+  isCurrentDraftSource?: boolean;
 };

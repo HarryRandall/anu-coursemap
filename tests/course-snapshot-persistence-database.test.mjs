@@ -78,7 +78,9 @@ test("persists and idempotently reuses a complete review candidate", async () =>
         assert.ok(source);
         assert.ok(year);
 
-        const directoryHash = hash("course persistence directory fixture");
+        const directoryHash = hash(
+          `course persistence directory fixture ${courseCode}`,
+        );
         const [directoryDocument] = await tx`
           insert into public.course_source_pages (
             source_id,
@@ -341,15 +343,16 @@ test("persists and idempotently reuses a complete review candidate", async () =>
         assert.equal(snapshot.sealed_at, null);
 
         const workerId = "93000000-0000-4000-8000-000000000099";
+        const messageId = `first-draft-test-${target.id}`;
         const [lease] = await tx`
           select * from private.claim_course_import_target(
-            ${run.id}::uuid, ${target.id}::uuid, ${"first-draft-test"},
+            ${run.id}::uuid, ${target.id}::uuid, ${messageId},
             ${workerId}::uuid, ${600}
           )
         `;
         await tx`
           select private.finish_course_import_target(
-            ${run.id}::uuid, ${target.id}::uuid, ${"first-draft-test"},
+            ${run.id}::uuid, ${target.id}::uuid, ${messageId},
             ${workerId}::uuid, ${Number(lease.lock_version)},
             ${"ready_for_review"}, ${"new"}, ${first.courseId},
             ${first.courseYearId}, ${Number(sourcePage.id)},

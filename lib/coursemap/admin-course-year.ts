@@ -771,6 +771,18 @@ export async function loadAdminCourseYear(
       ? (snapshotById.get(ancestryCursor.based_on_snapshot_id) ?? null)
       : null;
   }
+  const currentDraftAncestry = new Set<number>();
+  let draftAncestor =
+    selectedYear.draftSnapshotId === null
+      ? undefined
+      : snapshotById.get(selectedYear.draftSnapshotId);
+  while (draftAncestor && !currentDraftAncestry.has(draftAncestor.id)) {
+    currentDraftAncestry.add(draftAncestor.id);
+    draftAncestor =
+      draftAncestor.based_on_snapshot_id === null
+        ? undefined
+        : snapshotById.get(draftAncestor.based_on_snapshot_id);
+  }
   const [projection, publishedProjection] = await Promise.all([
     snapshot
       ? loadCourseSnapshotProjection(snapshot, course.code, selectedYear.year)
@@ -920,6 +932,9 @@ export async function loadAdminCourseYear(
               targetId: target.id,
               runId: target.run_id,
               candidateSnapshotId: target.candidate_snapshot_id,
+              isCurrentDraftSource: currentDraftAncestry.has(
+                target.candidate_snapshot_id,
+              ),
               baselineDraftSnapshotId: target.baseline_draft_snapshot_id,
               baselinePublishedSnapshotId:
                 target.baseline_published_snapshot_id,
