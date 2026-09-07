@@ -6,10 +6,8 @@ import { Textarea } from "@coursemap/ui/primitives/textarea";
 import { OptionPicker } from "@/ui/common/option-picker";
 import { Plus, Trash2 } from "lucide-react";
 import {
-  nullableText,
   nullableNumber,
   numberValue,
-  nextKey,
   structureKindOptions,
   type Condition,
   type Projection,

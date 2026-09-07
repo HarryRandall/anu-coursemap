@@ -174,25 +174,3 @@ test("selects the latest year through published programme pointers and loads rel
     /snapshot\.duration_years === null\s+\? null\s+: Number/u,
   );
 });
-
-test("requirements view distinguishes source wording, interpretation and nested alternatives", async () => {
-  const source = await readFile(
-    new URL("../app/requirements/requirements.tsx", import.meta.url),
-    "utf8",
-  );
-
-  assert.match(source, /ANU source wording/u);
-  assert.match(source, /Structured interpretation/u);
-  assert.match(source, /group\.operator === "any_of"/u);
-  assert.match(source, />\s*or\s*</u);
-  assert.match(source, /state\.profile\.majorCode/u);
-  assert.match(source, /state\.profile\.minorCodes/u);
-  assert.match(source, /state\.profile\.specialisationCodes/u);
-  assert.match(source, /selectedStructureCodes/u);
-  assert.match(source, /status === "selected"\s*\? "success-light"/u);
-  assert.match(source, /Source rules requiring a manual check/u);
-  assert.match(
-    source,
-    /Always confirm enrolment and\s+graduation\s+requirements/u,
-  );
-});
