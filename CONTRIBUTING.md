@@ -13,6 +13,27 @@ Coursemap is currently a private project. Keep changes focused, reviewable and r
 
 Use conventional commit subjects such as `feat: add email sign-in` or `refactor: move catalogue reads to Supabase`. Write in British English, use straight apostrophes and avoid em dashes.
 
+## Conventions
+
+Follow [code conventions](docs/conventions.md) for naming, comments and placement,
+and [UI conventions](apps/web/ui/AGENTS.md) for product components.
+
+## Verification
+
+| Command                                                                                    | Purpose                                                                              | When required                         |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------- |
+| `pnpm check`                                                                               | Formatting, repository conventions, lint and strict types                            | During development and CI             |
+| `pnpm test`                                                                                | Unit and component regressions                                                       | Included in local verification and CI |
+| `pnpm verify`                                                                              | Check, unit/component tests, production build, anonymous access tests and whitespace | Before hand-off or a PR               |
+| `pnpm db:reset`, `pnpm db:test`, `pnpm db:lint`, `pnpm db:types`, `pnpm test:catalogue-db` | Local migrations, policies, schema, generated types and import integration           | Database changes; CI database gate    |
+| `pnpm test:e2e`                                                                            | Authenticated browser journeys using local Supabase                                  | Affected journeys; CI browser gate    |
+| `pnpm audit --prod --audit-level=high`                                                     | Production dependency audit                                                          | Dependency changes; CI quality gate   |
+
+`pnpm verify` is the local application gate, not all CI jobs. Report checks that
+passed, failed or did not run. Do not run production builds concurrently because
+they share `apps/web/.next`. Database resets require a task-owned local stack.
+Documentation-only changes do not require a database reset.
+
 ## Database changes
 
 - Put forward-only SQL migrations in `supabase/migrations`.

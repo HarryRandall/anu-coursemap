@@ -14,7 +14,7 @@ import {
 import {
   COURSE_MATCH_OPTIONS,
   CourseMarkInput,
-  OpenBind,
+  type OpenBind,
   inlineControl,
   middleOptions,
   stackedMatchControl,

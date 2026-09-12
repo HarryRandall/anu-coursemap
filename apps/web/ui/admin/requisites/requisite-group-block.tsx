@@ -29,7 +29,7 @@ import {
   RemoveButton,
   type ConditionActions,
 } from "@/ui/admin/requisites/requisite-rule-controls";
-import { DragController } from "@/ui/admin/requisites/requisite-drag";
+import { type DragController } from "@/ui/admin/requisites/requisite-drag";
 
 export function OperatorControl({
   canEdit,

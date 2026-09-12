@@ -48,6 +48,7 @@ function termsFor(catalogue?: PlanningCatalogue) {
   return catalogue?.terms ?? [];
 }
 
+/** Returns undefined when the supplied code and year do not identify one course. */
 export function planningCourseByCode(
   code: string,
   catalogue?: PlanningCatalogue,
@@ -61,6 +62,10 @@ export function planningCourseByCode(
   return matches.length === 1 ? matches[0] : undefined;
 }
 
+/**
+ * A pinned snapshot must resolve exactly; it never falls back to a newer course.
+ * Unpinned attempts use their academic year, then the scheduled term's year.
+ */
 export function planningCourseForAttempt(
   attempt: Attempt,
   catalogue?: PlanningCatalogue,

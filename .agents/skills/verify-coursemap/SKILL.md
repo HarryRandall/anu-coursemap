@@ -23,7 +23,9 @@ pnpm verify
 
 This runs formatting, lint, types, unit and component tests, the production build
 and anonymous access checks, then `git diff --check`.
-CI splits the same work across the quality, route, database and browser gates.
+The [verification matrix](../../../CONTRIBUTING.md#verification) owns the
+command coverage. CI additionally runs database checks, authenticated browser
+journeys and the production dependency audit; `pnpm verify` does not include them.
 Do not run the builds concurrently: they share `apps/web/.next`.
 
 Additional checks depend on the change:

@@ -26,7 +26,6 @@ import {
   GripVertical,
   KeyRound,
   Layers,
-  Split,
   SquareStack,
   Trash2,
   X,
@@ -108,8 +107,6 @@ export function RemoveButton({
   );
 }
 
-export const GroupIcon = Split;
-
 export function operatorChipClass(operator: ReviewedOperator) {
   if (operator === "any_of") {
     return "border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 hover:border-sky-300 hover:bg-sky-100 dark:hover:bg-sky-950/60";
@@ -118,14 +115,6 @@ export function operatorChipClass(operator: ReviewedOperator) {
     return "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 hover:border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/60";
   }
   return "border-primary/25 bg-primary/10 text-primary hover:border-primary/40 hover:bg-primary/15";
-}
-
-export function operatorTileClass(operator: ReviewedOperator) {
-  if (operator === "any_of")
-    return "bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300";
-  if (operator === "at_least")
-    return "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300";
-  return "bg-primary/15 text-primary";
 }
 
 export function ConditionIcon({

@@ -1,6 +1,5 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies
+# Installed packages and package-manager state are recreated from the lockfile.
 **/node_modules
 /.pnp
 .pnp.*
@@ -10,48 +9,53 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
+# Test output
+# Reports, traces and saved browser sessions can contain account data.
 **/coverage
 **/playwright-report
 **/test-results
 /.playwright-cli
+**/playwright/.auth/
 
-# next.js
+# Next.js output
+# The MapLibre worker is copied from node_modules before development and builds.
 **/.next/
 /out/
 /apps/web/public/maplibre/
 
-# misc
+# Local machine files and compiler caches
 .DS_Store
 *.pem
 *.tsbuildinfo
 .eslintcache
 
-# editor and agent tooling state
+# Editor and agent session state
+# Shared instructions live in the tracked .agents directory.
 /.codex/
 /.cursor/
 
-# debug
+# Package-manager debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# environment files
+# Environment files
+# Track the empty setup template, but keep every populated environment local.
 .env*
 !.env.example
 
-# vercel
+# Vercel project-link state
 .vercel
 
-# local Supabase state
+# Supabase CLI state
+# Configuration, migrations and seeds remain tracked under supabase/.
 /.supabase/
 /supabase/.temp/
 
-# local build and tooling state
+# Rebuildable import, build and task caches
 /.catalogue-cache/
 **/.turbo/
 **/dist/
 
-**/playwright/.auth/
 /apps/web/.catalogue-cache/

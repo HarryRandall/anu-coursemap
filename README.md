@@ -63,8 +63,10 @@ pnpm dev:local     # http://127.0.0.1:3000
 ```
 
 Sign up at `/signup` and the local stack issues a session straight away. To run
-against a hosted Supabase project instead, put its URL and publishable key in
-`apps/web/.env.local` and use `pnpm dev`.
+against a hosted Supabase project instead, configure its URL, publishable key
+and your application origin in `apps/web/.env.local`, then use `pnpm dev`.
+The [environment template](apps/web/.env.example) explains the required settings,
+optional import credentials and map-service defaults.
 
 Development uses webpack, matching production builds, to avoid a Turbopack
 hot-reload panic (`VersionedContents` cells no longer exist).
@@ -101,17 +103,19 @@ Level Security, and the service-role key never reaches the browser.
 | `pnpm db:reset`  | Rebuild the local database and reseed fixtures |
 | `pnpm db:test`   | pgTAP database tests                           |
 | `pnpm db:types`  | Regenerate committed database types            |
-| `pnpm verify`    | The full gate, and what CI runs                |
+| `pnpm verify`    | Local application delivery checks              |
 
-Run `pnpm verify` before opening a pull request.
+Run `pnpm verify` before opening a pull request. CI additionally runs database
+checks, authenticated browser journeys and a production dependency audit. See
+the [verification matrix](CONTRIBUTING.md#verification).
 
 ## Documentation
 
 [Contributing](CONTRIBUTING.md) ·
 [Architecture](docs/architecture.md) ·
 [Catalogue workspaces](docs/catalogue-workspace-refresh.md) ·
-[Review design](docs/catalogue-review-design.md) ·
-[Workspace layout](docs/workspace-migration.md) ·
+[Documentation index](docs/README.md) ·
+[Code conventions](docs/conventions.md) ·
 [Database setup](supabase/README.md) ·
 [Security policy](SECURITY.md) ·
 [Agent guide](AGENTS.md)

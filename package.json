@@ -14,7 +14,7 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck",
+    "check": "pnpm format:check && pnpm check:repository && pnpm lint && pnpm typecheck",
     "test": "turbo run test:unit",
     "test:unit": "turbo run test:unit",
     "test:e2e": "pnpm --filter @coursemap/web test:e2e:build && pnpm --filter @coursemap/web test:e2e",
@@ -32,7 +32,8 @@
     "calendar:import": "pnpm --filter @coursemap/web calendar:import",
     "course-import:benchmark": "pnpm --filter @coursemap/web course-import:benchmark",
     "rooms:buildings:fetch": "pnpm --filter @coursemap/web rooms:buildings:fetch",
-    "rooms:buildings:generate": "pnpm --filter @coursemap/web rooms:buildings:generate"
+    "rooms:buildings:generate": "pnpm --filter @coursemap/web rooms:buildings:generate",
+    "check:repository": "node scripts/check-repository.mjs"
   },
   "devDependencies": {
     "prettier": "catalog:",

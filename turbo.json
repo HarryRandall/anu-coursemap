@@ -3,7 +3,8 @@
   "globalDependencies": [
     ".node-version",
     "pnpm-lock.yaml",
-    "pnpm-workspace.yaml"
+    "pnpm-workspace.yaml",
+    "scripts/**"
   ],
   "globalEnv": [
     "NEXT_PUBLIC_*",

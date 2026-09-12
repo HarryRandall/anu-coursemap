@@ -4,9 +4,9 @@
 
 ## Verification
 
-- [ ] `pnpm check`
+<!-- Use CONTRIBUTING.md#verification. State failures and checks not run. -->
+
 - [ ] `pnpm verify`
-- [ ] `git diff --check`
 - [ ] Browser smoke test, when behaviour changed
 - [ ] Supabase migration, generated types and adviser checks, when data changed
 

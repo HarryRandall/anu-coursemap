@@ -1,6 +1,8 @@
 # Coursemap agent guide
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and delivery requirements.
+See [code conventions](docs/conventions.md) for naming and comments and the
+[documentation index](docs/README.md) for current guides and proposals.
 Use Node.js 24 and pnpm. Routes live in `apps/web/app/`, shared product components in
 `apps/web/ui/common/`, feature components in `apps/web/ui/<area>/`, domain logic in
 `apps/web/lib/` and the vendored design system in `packages/ui/`. Dependency versions live
