@@ -63,6 +63,19 @@ Keep a TODO only when it explains the missing work and references a tracked issu
 An intentionally ignored error needs a brief reason; other failures must reach
 the caller or the established error-reporting path.
 
+## Configuration comments
+
+Configuration files are also setup guides. Use short comment sections to group
+settings by purpose, with plain ASCII separators in longer templates such as
+`.env.example`. For each environment setting, explain whether it is required,
+which feature needs it, its default or unset behaviour, and where to obtain a
+value. State browser visibility and build-time behaviour where relevant.
+
+Keep optional examples commented out and credentials empty. Check defaults
+against the consuming code before documenting them. In tool configs, explain
+non-obvious choices and exceptions next to the setting. Avoid copying an entire
+upstream manual or adding a comment that only repeats the option's name.
+
 ## Errors and interface copy
 
 Write complete, specific error messages with a final full stop, for example:

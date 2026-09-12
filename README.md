@@ -63,8 +63,10 @@ pnpm dev:local     # http://127.0.0.1:3000
 ```
 
 Sign up at `/signup` and the local stack issues a session straight away. To run
-against a hosted Supabase project instead, put its URL and publishable key in
-`apps/web/.env.local` and use `pnpm dev`.
+against a hosted Supabase project instead, configure its URL, publishable key
+and your application origin in `apps/web/.env.local`, then use `pnpm dev`.
+The [environment template](apps/web/.env.example) explains the required settings,
+optional import credentials and map-service defaults.
 
 Development uses webpack, matching production builds, to avoid a Turbopack
 hot-reload panic (`VersionedContents` cells no longer exist).
