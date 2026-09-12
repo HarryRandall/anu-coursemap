@@ -9,6 +9,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
+          // Run domain tests without a DOM; database tests have a separate project.
           environment: "node",
           include: ["tests/**/*.test.{ts,mjs}"],
           exclude: ["tests/**/*database.test.{ts,mjs}"],
@@ -19,6 +20,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "component",
+          // DOM interactions use jsdom; layout and navigation belong in Playwright.
           environment: "jsdom",
           include: ["tests/**/*.test.tsx"],
           setupFiles: ["./tests/setup-component.ts"],
@@ -30,6 +32,7 @@ export default defineConfig({
           name: "database",
           environment: "node",
           include: ["tests/**/*database.test.{ts,mjs}"],
+          // Integration files share the local catalogue and must not mutate it concurrently.
           fileParallelism: false,
           testTimeout: 30000,
           setupFiles: ["./tests/setup.ts"],

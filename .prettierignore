@@ -1,3 +1,4 @@
+# Generated output and local dependencies
 **/.next
 **/.turbo
 **/node_modules
@@ -5,10 +6,16 @@
 **/dist
 **/playwright-report
 **/test-results
+
+# pnpm owns lockfile formatting.
 pnpm-lock.yaml
+
+# Preserve downloaded assets, source fixtures and generated database types.
 apps/web/public
 apps/web/tests/fixtures/calendar
 apps/web/types/database.ts
+
+# Retained ReUI source stays diffable against upstream; format our integration code.
 packages/ui/primitives
 packages/ui/components
 packages/ui/hooks

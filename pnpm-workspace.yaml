@@ -2,6 +2,8 @@ packages:
   - apps/*
   - packages/*
 
+# Install scripts are allowed only for these dependencies. Review any additions
+# when upgrading packages rather than enabling every dependency's build script.
 allowBuilds:
   esbuild: true
   sharp: true
