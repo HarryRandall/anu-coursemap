@@ -65,6 +65,8 @@ or removing the final admin.
 
 ## Operational follow-up
 
-Historical local and hosted migration timestamps differ. Preserve the hosted history and compare SQL before reconciliation; do not use a blanket `db push --include-all`. The September audit recorded migrations `20260830090148` and `20260830140000` as applied without replaying them.
+Before reconciling local and hosted migration history, compare the recorded
+versions and SQL. Preserve migrations already applied on the hosted project;
+do not use a blanket `db push --include-all` to resolve a history mismatch.
 
 Previously reported adviser notices include authenticated SECURITY DEFINER RPCs, disabled leaked-password protection, overlapping read policies and index notices. Recheck current hosted advisories before operational changes. Password protection and policy/index tuning remain separate follow-up work.
