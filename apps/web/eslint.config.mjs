@@ -7,6 +7,19 @@ export default defineConfig([
   ...nextVitals,
   ...nextTypeScript,
   prettier,
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    rules: {
+      "@typescript-eslint/consistent-type-imports": [
+        "error",
+        {
+          prefer: "type-imports",
+          fixStyle: "inline-type-imports",
+          disallowTypeAnnotations: false,
+        },
+      ],
+    },
+  },
   globalIgnores([
     ".next/**",
     "playwright-report/**",

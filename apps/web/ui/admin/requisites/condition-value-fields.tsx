@@ -8,7 +8,7 @@ import { type ReviewedConditionNode } from "@/lib/coursemap/requisite-conditions
 import {
   COURSE_LEVELS,
   CourseCodesInput,
-  OpenBind,
+  type OpenBind,
   UnitsInput,
   inlineControl,
 } from "@/ui/admin/requisites/condition-inputs";

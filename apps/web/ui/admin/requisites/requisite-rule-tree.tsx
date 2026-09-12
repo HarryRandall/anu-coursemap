@@ -16,8 +16,8 @@ import { ConditionChip } from "@/ui/admin/requisites/requisite-rule-controls";
 import {
   DRAG_PREVIEW_ACTIONS,
   DRAG_PREVIEW_HANDLE,
-  DragController,
-  DragPointer,
+  type DragController,
+  type DragPointer,
   dropTargetAtPoint,
 } from "@/ui/admin/requisites/requisite-drag";
 import { GroupBlock } from "@/ui/admin/requisites/requisite-group-block";

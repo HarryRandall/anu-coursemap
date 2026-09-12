@@ -10,7 +10,7 @@ import {
   type Edge,
   type Node,
 } from "@xyflow/react";
-import { AcademicStructureManualSnapshotProjection as Projection } from "@/lib/structure-import/manual-snapshot";
+import { type AcademicStructureManualSnapshotProjection as Projection } from "@/lib/structure-import/manual-snapshot";
 
 export function StructureRequirementDiagram({
   projection,
