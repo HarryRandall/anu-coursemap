@@ -23,20 +23,6 @@ export type MetricId =
   | "next-term"
   | "load-balance"
   | "finish";
-export const METRIC_ORDER: readonly MetricId[] = [
-  "load",
-  "coverage",
-  "readiness",
-  "remaining",
-  "semester-bars",
-  "completion-ring",
-  "unit-mix",
-  "progress-line",
-  "requirements",
-  "next-term",
-  "load-balance",
-  "finish",
-];
 export const METRIC_OPTIONS: Record<
   MetricId,
   { title: string; blurb: string }
@@ -90,11 +76,6 @@ export const METRIC_OPTIONS: Record<
     blurb: "When the current plan runs out of scheduled semesters.",
   },
 };
-export const DEFAULT_METRIC_IDS: readonly MetricId[] = [
-  "load",
-  "coverage",
-  "readiness",
-];
 
 /* ------------------------------------------------------------------ */
 /* Inputs                                                              */

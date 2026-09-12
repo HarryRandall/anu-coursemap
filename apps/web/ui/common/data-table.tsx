@@ -72,38 +72,3 @@ export function DataTableEmpty({
     </Empty>
   );
 }
-
-export function tableClasses(className?: string) {
-  return cn(
-    "w-full min-w-[720px] caption-bottom border-collapse text-left text-sm",
-    className,
-  );
-}
-
-export function tableHeadClasses(className?: string) {
-  return cn(
-    "border-b border-border/80 bg-muted/50 [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-muted/95 [&_th]:backdrop-blur-sm",
-    className,
-  );
-}
-
-export function tableHeaderCellClasses(className?: string) {
-  return cn(
-    "h-10 px-4 text-left align-middle text-[11px] font-medium tracking-wide whitespace-nowrap text-muted-foreground uppercase",
-    className,
-  );
-}
-
-export function tableRowClasses(className?: string) {
-  return cn(
-    "border-b border-border/60 transition-colors duration-150 ease-out last:border-b-0 motion-reduce:transition-none",
-    className,
-  );
-}
-
-export function tableCellClasses(className?: string) {
-  return cn(
-    "px-4 py-3 align-middle text-sm whitespace-nowrap text-foreground/90",
-    className,
-  );
-}

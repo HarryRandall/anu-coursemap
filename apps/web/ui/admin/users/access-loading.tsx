@@ -1,37 +1,5 @@
 import { Skeleton } from "@coursemap/ui/primitives/skeleton";
-import { cn } from "@/lib/cn";
 import { DataTableShell } from "@/ui/common/data-table";
-
-export function UserDirectoryLoadingSkeleton() {
-  return (
-    <div className="mx-auto flex w-full flex-col gap-5">
-      <DataTableShell footer={<Skeleton className="h-2.5 w-32" />}>
-        <div className="grid h-10 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-border bg-muted/30 px-4">
-          {["w-10", "w-9", "w-11", "w-12"].map((width, index) => (
-            <Skeleton key={index} className={cn("h-2.5", width)} />
-          ))}
-        </div>
-        {Array.from({ length: 5 }, (_, index) => (
-          <div
-            key={index}
-            className="grid min-h-14 min-w-[720px] grid-cols-[42%_28%_15%_15%] items-center border-b border-border px-4 last:border-b-0"
-          >
-            <div className="flex items-center gap-2.5">
-              <Skeleton className="size-7 shrink-0 rounded-full" />
-              <span className="space-y-1.5">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton className="h-2.5 w-40" />
-              </span>
-            </div>
-            <Skeleton className="h-6 w-32 rounded-full" />
-            <Skeleton className="h-2.5 w-20" />
-            <Skeleton className="h-2.5 w-20" />
-          </div>
-        ))}
-      </DataTableShell>
-    </div>
-  );
-}
 
 export function RoleMatrixLoadingSkeleton() {
   return (
