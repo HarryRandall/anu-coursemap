@@ -4,7 +4,10 @@ A field-level review step between an import and publication, modelled on a pull
 request: see what changed, check the flagged fields against the ANU source,
 resolve each one, then publish.
 
-This is a design for review before implementation. Nothing here is built yet.
+Status: proposal. The implementation claims and source paths below describe the
+original design snapshot and must be checked against current code before use.
+See [the catalogue lifecycle](catalogue-workspace-refresh.md) for the documented
+workspace behaviour.
 
 ## What already exists
 

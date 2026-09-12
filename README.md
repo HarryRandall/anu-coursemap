@@ -101,17 +101,19 @@ Level Security, and the service-role key never reaches the browser.
 | `pnpm db:reset`  | Rebuild the local database and reseed fixtures |
 | `pnpm db:test`   | pgTAP database tests                           |
 | `pnpm db:types`  | Regenerate committed database types            |
-| `pnpm verify`    | The full gate, and what CI runs                |
+| `pnpm verify`    | Local application delivery checks              |
 
-Run `pnpm verify` before opening a pull request.
+Run `pnpm verify` before opening a pull request. CI additionally runs database
+checks, authenticated browser journeys and a production dependency audit. See
+the [verification matrix](CONTRIBUTING.md#verification).
 
 ## Documentation
 
 [Contributing](CONTRIBUTING.md) ·
 [Architecture](docs/architecture.md) ·
 [Catalogue workspaces](docs/catalogue-workspace-refresh.md) ·
-[Review design](docs/catalogue-review-design.md) ·
-[Workspace layout](docs/workspace-migration.md) ·
+[Documentation index](docs/README.md) ·
+[Code conventions](docs/conventions.md) ·
 [Database setup](supabase/README.md) ·
 [Security policy](SECURITY.md) ·
 [Agent guide](AGENTS.md)

@@ -1,5 +1,9 @@
 # Workspace migration
 
+Status: historical migration record. Deployment settings and preview results below
+record that migration and are not current operating instructions. See
+[architecture](../architecture.md) and [contributing](../../CONTRIBUTING.md).
+
 ## Regression coverage
 
 | Responsibility                                                         | Replacement                                                                  |
